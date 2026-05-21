@@ -1,138 +1,194 @@
-export default function ShadowScoreLanding() {
+export default function Home() {
   return (
-    <div className="min-h-screen bg-black text-white font-sans">
-      <section className="relative overflow-hidden border-b border-zinc-800">
-        <div className="absolute inset-0 bg-gradient-to-br from-red-900/20 via-black to-zinc-900"></div>
+    <main className="min-h-screen bg-black text-white overflow-hidden">
+      <section className="relative min-h-screen px-6 py-8">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(220,38,38,0.25),transparent_35%),radial-gradient(circle_at_bottom_left,rgba(127,29,29,0.25),transparent_35%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:60px_60px]" />
 
-        <div className="relative max-w-7xl mx-auto px-6 py-24">
-          <div className="inline-flex items-center rounded-full border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm text-red-300 mb-6">
-            Marketplace Risk Intelligence
-          </div>
-
-          <h1 className="text-5xl md:text-7xl font-black leading-tight max-w-5xl">
-            Detect Marketplace Risk Before Enforcement
-          </h1>
-
-          <p className="mt-8 text-zinc-400 text-xl max-w-3xl leading-relaxed">
-            ShadowScore identifies hidden marketplace trust degradation signals before suspensions, payout holds and seller reviews happen.
-          </p>
-
-          <div className="mt-10 flex flex-wrap gap-4">
-            <button className="bg-red-600 hover:bg-red-500 transition px-8 py-4 rounded-2xl text-lg font-semibold shadow-2xl shadow-red-600/20">
-              Scan My Store
-            </button>
-
-            <button className="border border-zinc-700 hover:border-zinc-500 transition px-8 py-4 rounded-2xl text-lg font-semibold bg-zinc-900/50">
-              Join Early Access
-            </button>
-          </div>
-
-          <div className="mt-20 grid md:grid-cols-4 gap-6">
-            <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-6">
-              <div className="text-zinc-500 text-sm">Marketplace Trust Score</div>
-              <div className="mt-4 text-5xl font-black text-red-500">72</div>
-              <div className="mt-2 text-red-300">Elevated Risk</div>
-            </div>
-
-            <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-6">
-              <div className="text-zinc-500 text-sm">Tracking Integrity</div>
-              <div className="mt-4 text-5xl font-black text-yellow-400">61</div>
-              <div className="mt-2 text-yellow-300">Degrading</div>
-            </div>
-
-            <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-6">
-              <div className="text-zinc-500 text-sm">Enforcement Probability</div>
-              <div className="mt-4 text-5xl font-black text-red-400">HIGH</div>
-              <div className="mt-2 text-red-300">Within 30 Days</div>
-            </div>
-
-            <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-6">
-              <div className="text-zinc-500 text-sm">Risk Signals</div>
-              <div className="mt-4 text-lg font-semibold leading-8 text-zinc-300">
-                TBA Exposure<br />
-                Velocity Spike<br />
-                Late Tracking Uploads
+        <div className="relative max-w-7xl mx-auto">
+          <header className="flex items-center justify-between mb-20">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-zinc-800 to-black border border-red-500/40 flex items-center justify-center shadow-lg shadow-red-900/30">
+                <div className="text-3xl font-black text-white">
+                  S
+                </div>
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="max-w-7xl mx-auto px-6 py-24">
-        <div className="grid md:grid-cols-2 gap-14 items-center">
-          <div>
-            <div className="text-red-400 font-semibold uppercase tracking-widest text-sm">
-              Invisible Marketplace Signals
-            </div>
-
-            <h2 className="mt-5 text-4xl md:text-5xl font-black leading-tight">
-              Your Marketplace Account Has A Hidden Risk Score
-            </h2>
-
-            <p className="mt-8 text-zinc-400 text-lg leading-relaxed">
-              Marketplaces silently evaluate seller behavior every day using hidden trust systems and behavioral scoring.
-            </p>
-
-            <div className="mt-10 space-y-5 text-zinc-300">
-              <div className="flex items-start gap-4">
-                <div className="w-3 h-3 bg-red-500 rounded-full mt-2"></div>
-                <div>Tracking quality degradation</div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="w-3 h-3 bg-yellow-400 rounded-full mt-2"></div>
-                <div>Velocity and fulfillment anomalies</div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="w-3 h-3 bg-red-500 rounded-full mt-2"></div>
-                <div>Payout and operational trust deterioration</div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="w-3 h-3 bg-yellow-400 rounded-full mt-2"></div>
-                <div>Behavioral patterns linked to enforcement</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-zinc-950 border border-zinc-800 rounded-[32px] p-8 shadow-2xl shadow-red-900/10">
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-5">
               <div>
-                <div className="text-zinc-500 text-sm">Live Threat Feed</div>
-                <div className="text-2xl font-bold mt-2">ShadowScore Monitor</div>
-              </div>
-
-              <div className="px-4 py-2 rounded-full bg-red-500/10 border border-red-500/30 text-red-300 text-sm">
-                Elevated Risk
+                <div className="text-2xl font-black tracking-tight">
+                  Shadow<span className="text-red-500">Score</span>
+                </div>
+                <div className="text-xs tracking-[0.35em] text-zinc-500 uppercase">
+                  Risk Intelligence
+                </div>
               </div>
             </div>
 
-            <div className="mt-8 space-y-5">
-              <div className="bg-black rounded-2xl border border-zinc-800 p-5">
-                <div className="text-red-400 font-semibold">Tracking Validation Decline</div>
-                <div className="text-zinc-500 mt-2 text-sm">
-                  Upload delays increased 43% during the last 7 days.
+            <nav className="hidden md:flex items-center gap-8 text-sm text-zinc-400">
+              <a href="#signals" className="hover:text-white">Signals</a>
+              <a href="#platforms" className="hover:text-white">Platforms</a>
+              <a href="#contact" className="hover:text-white">Contact</a>
+            </nav>
+          </header>
+
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm text-red-300 mb-8">
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                Marketplace Risk Intelligence
+              </div>
+
+              <h1 className="text-5xl md:text-7xl font-black leading-[0.95] tracking-tight">
+                Detect Trust Decay Before Enforcement
+              </h1>
+
+              <p className="mt-8 text-xl text-zinc-400 leading-relaxed max-w-2xl">
+                ShadowScore identifies hidden seller risk signals before suspensions,
+                payout holds and marketplace reviews happen.
+              </p>
+
+              <div className="mt-10 bg-zinc-950/80 border border-zinc-800 rounded-3xl p-4 max-w-2xl shadow-2xl shadow-red-950/30">
+                <div className="flex flex-col md:flex-row gap-3">
+                  <input
+                    className="flex-1 bg-black border border-zinc-800 rounded-2xl px-5 py-4 text-white outline-none focus:border-red-500"
+                    placeholder="Paste eBay, Amazon, Walmart or SHEIN store URL"
+                  />
+                  <a
+                    href="mailto:intel@shadowscore.io?subject=Private ShadowScore Risk Audit"
+                    className="bg-red-600 hover:bg-red-500 transition rounded-2xl px-7 py-4 text-center font-bold"
+                  >
+                    Scan My Store
+                  </a>
+                </div>
+                <div className="mt-3 text-xs text-zinc-500">
+                  Private audit requests are reviewed manually during early access.
                 </div>
               </div>
 
-              <div className="bg-black rounded-2xl border border-zinc-800 p-5">
-                <div className="text-yellow-300 font-semibold">Behavioral Drift Detected</div>
-                <div className="text-zinc-500 mt-2 text-sm">
-                  Marketplace behavior resembles accounts reviewed within 30 days.
+              <div className="mt-8 flex flex-wrap gap-4">
+                <a
+                  href="mailto:intel@shadowscore.io"
+                  className="border border-zinc-700 hover:border-red-500 rounded-2xl px-7 py-4 font-semibold bg-zinc-950/60"
+                >
+                  Contact ShadowScore
+                </a>
+                <a
+                  href="#signals"
+                  className="text-zinc-400 hover:text-white px-4 py-4"
+                >
+                  View Risk Signals
+                </a>
+              </div>
+            </div>
+
+            <div className="bg-zinc-950/90 border border-zinc-800 rounded-[32px] p-6 shadow-2xl shadow-red-950/30">
+              <div className="flex items-center justify-between border-b border-zinc-800 pb-5">
+                <div>
+                  <div className="text-zinc-500 text-sm">Live Risk Terminal</div>
+                  <div className="text-2xl font-black mt-1">ShadowScore Monitor</div>
+                </div>
+                <div className="px-4 py-2 rounded-full bg-red-500/10 border border-red-500/30 text-red-300 text-sm">
+                  Elevated
                 </div>
               </div>
 
-              <div className="bg-black rounded-2xl border border-zinc-800 p-5">
-                <div className="text-red-400 font-semibold">Fulfillment Exposure</div>
-                <div className="text-zinc-500 mt-2 text-sm">
-                  Elevated TBA dependency and inconsistent scan quality detected.
-                </div>
+              <div className="grid grid-cols-2 gap-4 mt-6">
+                <Metric title="Marketplace Trust" value="72" status="Elevated Risk" color="text-red-500" />
+                <Metric title="Tracking Integrity" value="61" status="Degrading" color="text-yellow-400" />
+                <Metric title="Payout Stability" value="54" status="Watchlist" color="text-orange-400" />
+                <Metric title="Enforcement Risk" value="HIGH" status="30 Day Window" color="text-red-400" />
+              </div>
+
+              <div className="mt-6 space-y-4">
+                <Alert title="Tracking Validation Decline" text="Upload delays increased 43% during the last 7 days." />
+                <Alert title="Behavioral Drift Detected" text="Current behavior resembles accounts reviewed within 30 days." />
+                <Alert title="Fulfillment Exposure" text="Elevated TBA dependency and inconsistent scan quality detected." />
               </div>
             </div>
           </div>
         </div>
       </section>
+
+      <section id="signals" className="relative border-t border-zinc-900 px-6 py-24 bg-zinc-950">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-red-400 uppercase tracking-[0.35em] text-sm font-bold">
+            Invisible Marketplace Signals
+          </div>
+
+          <h2 className="mt-5 text-4xl md:text-5xl font-black max-w-4xl">
+            Your Marketplace Account Has A Hidden Risk Profile
+          </h2>
+
+          <div className="mt-12 grid md:grid-cols-3 gap-6">
+            <Card title="Tracking Integrity Scanner" text="Detect weak tracking, delayed uploads, TBA exposure and scan inconsistency." />
+            <Card title="Trust Decay Timeline" text="Visualize account deterioration before visible marketplace enforcement." />
+            <Card title="Risk Recommendations" text="Receive direct actions to stabilize fulfillment, velocity and proof quality." />
+          </div>
+        </div>
+      </section>
+
+      <section id="platforms" className="px-6 py-20 border-t border-zinc-900 bg-black">
+        <div className="max-w-7xl mx-auto text-center">
+          <div className="text-zinc-500 uppercase tracking-[0.35em] text-sm font-bold">
+            Marketplaces We Monitor
+          </div>
+
+          <div className="mt-10 grid grid-cols-2 md:grid-cols-5 gap-4">
+            {["eBay", "Amazon", "Walmart", "SHEIN", "TikTok Shop"].map((item) => (
+              <div key={item} className="rounded-3xl border border-zinc-800 bg-zinc-950 px-6 py-6 text-xl font-black text-zinc-300">
+                {item}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="contact" className="px-6 py-24 bg-gradient-to-b from-zinc-950 to-black border-t border-zinc-900 text-center">
+        <h2 className="text-4xl md:text-6xl font-black">
+          Know Your Risk Before The Marketplace Does
+        </h2>
+        <p className="mt-6 text-zinc-400 text-xl max-w-2xl mx-auto">
+          Early access is open for sellers, agencies and multi-store operators.
+        </p>
+
+        <a
+          href="mailto:intel@shadowscore.io?subject=ShadowScore Early Access"
+          className="inline-block mt-10 bg-red-600 hover:bg-red-500 transition rounded-2xl px-10 py-5 font-black text-lg shadow-xl shadow-red-900/30"
+        >
+          Request Private Risk Audit
+        </a>
+
+        <div className="mt-10 text-zinc-600 text-sm">
+          ShadowScore © 2026 · Marketplace Risk Intelligence
+        </div>
+      </section>
+    </main>
+  );
+}
+
+function Metric({ title, value, status, color }: { title: string; value: string; status: string; color: string }) {
+  return (
+    <div className="bg-black border border-zinc-800 rounded-3xl p-5">
+      <div className="text-zinc-500 text-sm">{title}</div>
+      <div className={`mt-3 text-4xl font-black ${color}`}>{value}</div>
+      <div className="mt-2 text-sm text-zinc-400">{status}</div>
     </div>
-  )
+  );
+}
+
+function Alert({ title, text }: { title: string; text: string }) {
+  return (
+    <div className="bg-black border border-zinc-800 rounded-2xl p-5">
+      <div className="text-red-400 font-bold">{title}</div>
+      <div className="mt-2 text-sm text-zinc-500">{text}</div>
+    </div>
+  );
+}
+
+function Card({ title, text }: { title: string; text: string }) {
+  return (
+    <div className="rounded-3xl border border-zinc-800 bg-black p-8 hover:border-red-500/50 transition">
+      <div className="text-2xl font-black">{title}</div>
+      <div className="mt-4 text-zinc-400 leading-relaxed">{text}</div>
+    </div>
+  );
 }
