@@ -517,7 +517,7 @@ I would like a private marketplace exposure audit.`;
       </section>
 
       <section className="relative py-24 border-t border-red-950/40 overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,0,0,0.12),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,0,0,0.16),transparent_60%)]" />
 
         <div className="relative z-10 max-w-7xl mx-auto px-6">
           <div className="text-center mb-14">
@@ -530,31 +530,59 @@ I would like a private marketplace exposure audit.`;
             </h2>
 
             <p className="mt-5 text-zinc-400 max-w-3xl mx-auto text-lg leading-relaxed">
-              ShadowScore monitors behavioral marketplace exposure patterns across
-              multiple seller ecosystems before visible enforcement actions happen.
+              ShadowScore monitors marketplace exposure across multiple seller ecosystems before visible enforcement actions happen.
             </p>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
             {[
-              ["eBay", "https://upload.wikimedia.org/wikipedia/commons/1/1b/EBay_logo.svg"],
-              ["Amazon", "https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg"],
-              ["Walmart", "https://upload.wikimedia.org/wikipedia/commons/c/ca/Walmart_logo.svg"],
-              ["SHEIN", "https://upload.wikimedia.org/wikipedia/commons/a/a2/Shein_logo.svg"],
-              ["TikTok Shop", "https://upload.wikimedia.org/wikipedia/commons/a/a9/TikTok_logo.svg"],
-              ["Etsy", "https://upload.wikimedia.org/wikipedia/commons/8/89/Etsy_logo.svg"],
-            ].map(([name, logo]) => (
+              {
+                name: "eBay",
+                style: "text-[#e53238]",
+                sub: "seller risk",
+              },
+              {
+                name: "amazon",
+                style: "text-[#ff9900] lowercase",
+                sub: "payout exposure",
+              },
+              {
+                name: "Walmart",
+                style: "text-[#fdbb30]",
+                sub: "trust signals",
+              },
+              {
+                name: "SHEIN",
+                style: "text-white tracking-[0.25em]",
+                sub: "fulfillment risk",
+              },
+              {
+                name: "TikTok",
+                style: "text-[#25f4ee]",
+                sub: "shop signals",
+              },
+              {
+                name: "Etsy",
+                style: "text-[#f1641e]",
+                sub: "seller safety",
+              },
+            ].map((platform) => (
               <div
-                key={name}
-                className="relative group rounded-3xl border border-white/10 bg-black/60 backdrop-blur-xl p-8 flex items-center justify-center min-h-[170px] overflow-hidden transition-all duration-500 hover:scale-[1.03] hover:border-red-500/40 hover:shadow-[0_0_40px_rgba(255,0,0,0.18)]"
+                key={platform.name}
+                className="relative group rounded-3xl border border-red-500/20 bg-black/70 backdrop-blur-xl p-7 flex flex-col items-center justify-center min-h-[170px] overflow-hidden transition-all duration-500 hover:scale-[1.03] hover:border-red-500/60 hover:shadow-[0_0_45px_rgba(255,0,0,0.24)]"
               >
-                <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_top,rgba(255,0,0,0.18),transparent_65%)]" />
+                <div className="absolute inset-0 opacity-40 bg-[radial-gradient(circle_at_top,rgba(255,0,0,0.20),transparent_68%)]" />
+                <div className="absolute inset-x-6 bottom-6 h-10 rounded-full bg-red-900/25 blur-xl" />
 
-                <img
-                  src={logo}
-                  alt={name}
-                  className="relative z-10 max-h-14 object-contain drop-shadow-[0_0_12px_rgba(255,255,255,0.18)] transition-transform duration-500 group-hover:scale-110"
-                />
+                <div className={`relative z-10 text-3xl md:text-4xl font-black drop-shadow-[0_0_14px_rgba(255,255,255,0.18)] ${platform.style}`}>
+                  {platform.name}
+                </div>
+
+                <div className="relative z-10 mt-4 text-[10px] uppercase tracking-[0.24em] text-zinc-500">
+                  {platform.sub}
+                </div>
+
+                <div className="absolute right-4 top-4 h-2 w-2 rounded-full bg-red-500 shadow-[0_0_16px_rgba(255,0,0,0.9)]" />
               </div>
             ))}
           </div>
