@@ -26,8 +26,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "ShadowScore | Marketplace Risk Intelligence",
-    description:
-      "Cyber-intelligence for marketplace sellers.",
+    description: "Cyber-intelligence for marketplace sellers.",
     images: ["/shadowscore-og.jpg"],
   },
   icons: {

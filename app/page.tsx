@@ -1,847 +1,736 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 
-type PlanKey = "audit" | "pro" | "agency";
-
-type PlanProps = {
-  planKey: PlanKey;
-  selectedPlan: PlanKey;
-  onSelect: (plan: PlanKey) => void;
-  name: string;
-  price: string;
-  note: string;
-  badge?: string;
-  text: string;
-  features: string[];
-  cta: string;
-  href: string;
-  highlighted?: boolean;
-};
-
-const WHATSAPP_BASE =
-  "https://wa.me/9720557293979?text=I%20want%20a%20ShadowScore%20risk%20audit%20for%20my%20store";
-
-const SUPPORT_EMAIL = "help@shadowscore.io";
-
-const rotatingBanners = [
-  "Marketplace monitoring starts before visible seller warnings appear.",
-  "Most sellers discover account risk only after marketplace action begins.",
-  "Silent trust decay can start weeks before payout holds, account reviews or restrictions.",
-  "Tracking, fulfillment, payout and buyer signals can expose hidden account risk.",
-];
-
-const liveSignals = [
-  "eBay · Tracking integrity drift detected",
-  "Amazon · Velocity anomaly increasing",
-  "Walmart · Payout exposure watchlist",
-  "SHEIN · Fulfillment pattern instability",
-  "TikTok Shop · Buyer signal volatility rising",
-  "eBay · Seller behavior similarity elevated",
-  "Amazon · Tracking upload delay increased",
-];
-
 export default function Home() {
-  const [storeUrl, setStoreUrl] = useState("");
-  const [scanOpen, setScanOpen] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<PlanKey>("audit");
-  const [bannerIndex, setBannerIndex] = useState(0);
+  const [selectedPlan, setSelectedPlan] = useState("Risk Audit");
+  const [scanText, setScanText] = useState("");
+  const [showScanner, setShowScanner] = useState(false);
+  const [activeSignal, setActiveSignal] = useState(0);
+  const [showMoreFaq, setShowMoreFaq] = useState(false);
+
+  const rotatingSignals = useMemo(
+    () => [
+      "Amazon · Tracking upload delay increased",
+      "eBay · Tracking integrity drift detected",
+      "Walmart · Payout exposure watchlist",
+      "TikTok Shop · Seller velocity anomaly detected",
+      "Etsy · Behavioral trust degradation identified",
+      "Amazon · Increased review exposure probability",
+    ],
+    []
+  );
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setBannerIndex((current) => (current + 1) % rotatingBanners.length);
-    }, 3800);
-    return () => clearInterval(timer);
-  }, []);
+    const interval = setInterval(() => {
+      setActiveSignal((prev) => (prev + 1) % rotatingSignals.length);
+    }, 2500);
 
-  const whatsappHref = `${WHATSAPP_BASE}%0A%0AStore%20URL%3A%20${encodeURIComponent(
-    storeUrl || "Paste store URL here"
-  )}%0ASelected%20Plan%3A%20${encodeURIComponent(selectedPlan)}`;
+    return () => clearInterval(interval);
+  }, [rotatingSignals]);
+
+  const faqItems = [
+    {
+      q: "Is ShadowScore a reinstatement service?",
+      a: "No. ShadowScore focuses on identifying elevated marketplace exposure before visible enforcement actions happen.",
+    },
+    {
+      q: "Do you need my marketplace password?",
+      a: "No. Initial reviews can begin using store URLs, exports, screenshots and operational context.",
+    },
+    {
+      q: "Is the 30-day protection available forever?",
+      a: "No. The protection applies only to the first paid audit.",
+    },
+    {
+      q: "Which sellers is this for?",
+      a: "Marketplace operators, agencies, dropshippers and sellers who depend heavily on account continuity.",
+    },
+    {
+      q: "Does ShadowScore connect directly to marketplaces?",
+      a: "No direct marketplace integration is required during early access.",
+    },
+    {
+      q: "Can ShadowScore guarantee no restriction will happen?",
+      a: "No platform can guarantee that. ShadowScore helps identify elevated exposure before visible action occurs.",
+    },
+    {
+      q: "What marketplaces are supported?",
+      a: "eBay, Amazon, Walmart, SHEIN, TikTok Shop and Etsy during early access.",
+    },
+    {
+      q: "What makes ShadowScore different?",
+      a: "ShadowScore focuses on marketplace behavioral intelligence and operational exposure monitoring.",
+    },
+    {
+      q: "How long does an audit take?",
+      a: "Most first audits are reviewed within 24-72 hours.",
+    },
+    {
+      q: "What does ShadowScore actually analyze?",
+      a: "ShadowScore analyzes hidden marketplace trust and enforcement signals linked to elevated account exposure.",
+    },
+    {
+      q: "Can agencies use ShadowScore?",
+      a: "Yes. Agency plans support multi-account operational monitoring.",
+    },
+    {
+      q: "Do you store marketplace credentials?",
+      a: "No marketplace credentials are requested during initial reviews.",
+    },
+  ];
+
+  const visibleFaq = showMoreFaq ? faqItems : faqItems.slice(0, 4);
+
+  const handleScan = () => {
+    if (!scanText) return;
+
+    setShowScanner(true);
+
+    setTimeout(() => {
+      const message = `ShadowScore Audit Request
+
+Store:
+${scanText}
+
+Selected Plan:
+${selectedPlan}
+
+I would like a private marketplace exposure audit.`;
+
+      window.open(
+        `https://wa.me/9720557293979?text=${encodeURIComponent(message)}`,
+        "_blank"
+      );
+    }, 2500);
+  };
 
   return (
-    <main className="min-h-screen overflow-hidden bg-black text-white">
-      <div className="fixed inset-0 bg-[radial-gradient(circle_at_top_right,rgba(220,38,38,0.24),transparent_31%),radial-gradient(circle_at_bottom_left,rgba(127,29,29,0.20),transparent_35%)]" />
-      <div className="fixed inset-0 bg-[linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[size:64px_64px]" />
-      <div className="fixed inset-x-0 top-0 h-40 bg-gradient-to-b from-black via-black/80 to-transparent" />
+    <main className="min-h-screen bg-black text-white overflow-hidden">
+      <div className="fixed inset-0 opacity-[0.08] pointer-events-none bg-[linear-gradient(to_right,#ff000015_1px,transparent_1px),linear-gradient(to_bottom,#ff000015_1px,transparent_1px)] bg-[size:70px_70px]" />
 
-      <div className="relative">
-        <Header whatsappHref={whatsappHref} />
-
-        <section className="mx-auto grid max-w-7xl items-center gap-12 px-5 pb-14 pt-10 lg:grid-cols-2 lg:pb-20 lg:pt-16">
-          <div>
-            <Badge text="Marketplace Behavioral Intelligence Active" />
-
-            <h1 className="mt-7 text-5xl font-black leading-[0.93] tracking-tight md:text-7xl">
-              The Marketplace Already Decided You're Risky.
-              <span className="block text-red-500">ShadowScore Tells You First.</span>
-            </h1>
-
-            <p className="mt-7 max-w-2xl text-lg leading-relaxed text-zinc-400 md:text-xl">
-              ShadowScore detects silent marketplace exposure before enforcement systems react.
-            </p>
-
-            <div className="mt-8 rounded-3xl border border-red-500/35 bg-red-500/10 p-4 text-sm text-red-100 shadow-[0_0_35px_rgba(220,38,38,0.12)]">
-              <div className="flex items-center gap-3">
-                <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
-                <span className="font-semibold">{rotatingBanners[bannerIndex]}</span>
-              </div>
+      <header className="sticky top-0 z-50 border-b border-red-950/30 bg-black/85 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <div className="absolute inset-0 rounded-2xl bg-red-600/30 blur-xl" />
+              <img
+                src="/shadowscore-shield-logo.png"
+                alt="ShadowScore"
+                className="relative h-16 w-16 rounded-2xl object-cover border border-red-500/40 shadow-[0_0_28px_rgba(255,0,0,0.35)]"
+              />
             </div>
 
-            <div className="mt-8 max-w-2xl rounded-3xl border border-zinc-800 bg-zinc-950/90 p-4 shadow-2xl shadow-red-950/30">
-              <div className="flex flex-col gap-3 md:flex-row">
+            <div className="leading-none">
+              <div className="text-3xl font-black tracking-tight">
+                Shadow<span className="text-red-500">Score</span>
+              </div>
+              <div className="mt-2 text-[11px] uppercase tracking-[0.38em] text-zinc-500">
+                Risk Intelligence
+              </div>
+            </div>
+          </div>
+
+          <nav className="hidden md:flex items-center gap-10 text-zinc-400">
+            <a href="#signals" className="hover:text-white transition">
+              Signals
+            </a>
+            <a href="#agent" className="hover:text-white transition">
+              Agent
+            </a>
+            <a href="#guarantee" className="hover:text-white transition">
+              Guarantee
+            </a>
+            <a href="#pricing" className="hover:text-white transition">
+              Pricing
+            </a>
+            <a href="#contact" className="hover:text-white transition">
+              Contact
+            </a>
+          </nav>
+
+          <a
+            href="#pricing"
+            className="rounded-2xl bg-red-600 hover:bg-red-500 transition px-7 py-4 font-bold shadow-[0_0_30px_rgba(255,0,0,0.35)]"
+          >
+            Get Audit
+          </a>
+        </div>
+      </header>
+
+      <section className="relative max-w-7xl mx-auto px-6 pt-24 pb-16">
+        <div className="absolute top-0 right-0 w-[700px] h-[700px] bg-red-700/10 blur-3xl rounded-full" />
+
+        <div className="grid lg:grid-cols-2 gap-20 items-center">
+          <div>
+            <div className="inline-flex items-center gap-2 border border-red-500/30 bg-red-500/10 px-5 py-2 rounded-full text-red-300 text-sm mb-8">
+              ● Marketplace Behavioral Intelligence Active
+            </div>
+
+            <h1 className="text-6xl md:text-7xl font-black leading-[0.95] tracking-tight">
+              The Marketplace Already Decided You're Risky.
+              <span className="text-red-500 block mt-3">
+                ShadowScore Tells You First.
+              </span>
+            </h1>
+
+            <p className="mt-8 text-xl text-zinc-400 leading-relaxed max-w-2xl">
+              ShadowScore detects silent marketplace exposure before enforcement
+              systems react.
+            </p>
+
+            <p className="mt-5 text-zinc-500 text-lg max-w-2xl">
+              Silent trust decay can start weeks before payout holds, account
+              reviews or restrictions.
+            </p>
+
+            <div className="mt-10 border border-white/10 bg-black/60 rounded-[28px] p-6 backdrop-blur-xl shadow-[0_0_40px_rgba(255,0,0,0.12)]">
+              <div className="flex flex-col md:flex-row gap-4">
                 <input
-                  value={storeUrl}
-                  onChange={(e) => setStoreUrl(e.target.value)}
-                  className="flex-1 rounded-2xl border border-zinc-800 bg-black px-5 py-4 text-white outline-none placeholder:text-zinc-600 focus:border-red-500"
+                  value={scanText}
+                  onChange={(e) => setScanText(e.target.value)}
                   placeholder="Paste store URL or seller username"
+                  className="flex-1 bg-black border border-white/10 rounded-2xl px-6 py-5 text-lg outline-none focus:border-red-500"
                 />
+
                 <button
-                  type="button"
-                  onClick={() => setScanOpen(true)}
-                  className="rounded-2xl bg-red-600 px-7 py-4 text-center font-black transition hover:bg-red-500 hover:shadow-[0_0_35px_rgba(220,38,38,0.45)]"
+                  onClick={handleScan}
+                  className="bg-red-600 hover:bg-red-500 transition rounded-2xl px-10 py-5 text-lg font-black shadow-[0_0_30px_rgba(255,0,0,0.35)]"
                 >
                   Scan My Store
                 </button>
               </div>
 
-              <div className="mt-3 text-xs text-zinc-500">
-                No password required • First paid audit includes 30-Day Risk Protection
+              <div className="mt-5 text-zinc-500 text-sm">
+                No password required • First paid audit includes 30-Day Risk
+                Protection
               </div>
             </div>
 
-            <div className="mt-7 flex flex-wrap gap-4">
+            <div className="flex flex-wrap gap-4 mt-8">
               <a
-                href={whatsappHref}
-                target="_blank"
-                rel="noreferrer"
-                className="rounded-2xl bg-red-600 px-7 py-4 font-black transition hover:bg-red-500 hover:shadow-[0_0_35px_rgba(220,38,38,0.45)]"
+                href="#pricing"
+                className="rounded-2xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 transition px-8 py-4 font-bold"
               >
                 Request Private Audit
               </a>
 
               <a
                 href="#pricing"
-                className="rounded-2xl border border-zinc-700 bg-zinc-950/70 px-7 py-4 font-semibold transition hover:border-red-500 hover:text-white"
+                className="rounded-2xl border border-white/10 hover:border-white/20 transition px-8 py-4 font-bold text-zinc-300"
               >
                 View Pricing
               </a>
             </div>
 
-            <div className="mt-8 grid max-w-2xl grid-cols-3 gap-3">
-              <MiniProof value="30 Days" label="Risk Protection" />
-              <MiniProof value="$199" label="First Audit" />
-              <MiniProof value="No Login" label="Password Needed" />
-            </div>
-          </div>
-
-          <div>
-            <HeroLogoPanel />
-            <RiskTerminal />
-          </div>
-        </section>
-
-        <NetworkMetrics />
-
-        <section id="agent" className="border-t border-zinc-900 bg-zinc-950/90 px-5 py-20">
-          <div className="mx-auto max-w-7xl">
-            <Kicker text="The Agent" />
-            <h2 className="mt-5 max-w-4xl text-4xl font-black md:text-6xl">
-              A Seller Defense Agent, Not Another Dashboard
-            </h2>
-
-            <div className="mt-12 grid gap-5 md:grid-cols-4">
-              <Stage number="01" title="Observe" text="Detects marketplace exposure across operational behavior, trust signals and fulfillment consistency." />
-              <Stage number="02" title="Score" text="Translates invisible marketplace signals into a private risk view." />
-              <Stage number="03" title="Warn" text="Warns before exposure becomes a payout hold, account review or restriction." />
-              <Stage number="04" title="Prepare" text="Shows what to stabilize before the marketplace acts." />
-            </div>
-          </div>
-        </section>
-
-        <section id="signals" className="border-t border-zinc-900 px-5 py-20">
-          <div className="mx-auto max-w-7xl">
-            <Kicker text="Signal Engine" />
-            <h2 className="mt-5 max-w-4xl text-4xl font-black md:text-5xl">
-              Marketplace Enforcement Starts Before The Warning
-            </h2>
-
-            <div className="mt-12 grid gap-6 md:grid-cols-3">
-              <Card title="Tracking Integrity" text="Late uploads, TBA exposure, invalid scans, carrier mismatch and weak proof of delivery." icon="01" />
-              <Card title="Velocity Risk" text="Sudden sales growth, category spikes, new account pressure and fulfillment instability." icon="02" />
-              <Card title="Trust Decay" text="Buyer sentiment, INR activity, refund drift, payout friction and support routing changes." icon="03" />
-              <Card title="Operational Exposure" text="SKU churn, source dependency, fulfillment gaps and account stability signals." icon="04" />
-              <Card title="Review Exposure" text="Identifies elevated similarity to accounts that later entered review or restriction." icon="05" />
-              <Card title="Action Layer" text="Direct actions before damage reaches account health or payout systems." icon="06" />
-            </div>
-          </div>
-        </section>
-
-        <section id="guarantee" className="border-t border-zinc-900 bg-black px-5 py-20">
-          <div className="mx-auto max-w-7xl rounded-[36px] border border-red-500/30 bg-red-950/10 p-8 shadow-2xl shadow-red-950/30 md:p-12">
-            <Kicker text="30-Day Risk Protection" />
-            <h2 className="mt-5 max-w-4xl text-4xl font-black md:text-5xl">
-              First Paid Audit Protected For 30 Days
-            </h2>
-            <p className="mt-6 max-w-4xl text-lg leading-relaxed text-zinc-300">
-              If a first-time paid audit fails to identify elevated marketplace exposure signals and a new restriction or payout review occurs within 30 days, ShadowScore refunds the audit fee.
-            </p>
-            <p className="mt-4 text-sm text-zinc-500">
-              Applies to first-time audits only. Existing warnings must be disclosed. Recommended actions must be followed. Future scans do not include first-audit protection.
-            </p>
-          </div>
-        </section>
-
-        <section id="pricing" className="border-t border-zinc-900 bg-zinc-950 px-5 py-20">
-          <div className="mx-auto max-w-7xl">
-            <Kicker text="Pricing" />
-            <h2 className="mt-5 text-4xl font-black md:text-5xl">
-              Built For Sellers Who Cannot Afford To Lose The Account
-            </h2>
-
-            <p className="mt-5 max-w-3xl text-zinc-400">
-              Choose a plan. The selected plan gets a red security frame and is included automatically in the WhatsApp audit request.
-            </p>
-
-            <Pricing whatsappHref={whatsappHref} selectedPlan={selectedPlan} setSelectedPlan={setSelectedPlan} />
-          </div>
-        </section>
-
-        <MarketplaceLogos />
-        <FAQ />
-
-        <section id="contact" className="border-t border-red-950/30 bg-gradient-to-b from-black to-zinc-950 px-5 py-24 text-center">
-          <div className="mx-auto max-w-4xl">
-            <div className="mb-4 inline-flex rounded-full border border-red-500/30 bg-red-500/10 px-5 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-red-400">
-              Contact ShadowScore
-            </div>
-
-            <h2 className="text-4xl font-black text-white md:text-6xl">
-              Speak With The Risk Agent
-            </h2>
-
-            <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-zinc-400">
-              Private early-access reviews for marketplace sellers, agencies and multi-store operators.
-            </p>
-
-            <div className="mt-12 flex flex-col items-center justify-center gap-5 sm:flex-row">
-              <a
-                href={whatsappHref}
-                target="_blank"
-                rel="noreferrer"
-                className="rounded-2xl bg-red-600 px-10 py-5 text-lg font-bold text-white transition hover:bg-red-500 hover:shadow-[0_0_40px_rgba(255,0,0,0.45)]"
-              >
-                Open WhatsApp Chat
-              </a>
-
-              <a
-                href={`mailto:${SUPPORT_EMAIL}`}
-                className="rounded-2xl border border-zinc-800 bg-zinc-950 px-10 py-5 text-lg font-semibold text-zinc-300 transition hover:border-red-500/40 hover:text-white"
-              >
-                {SUPPORT_EMAIL}
-              </a>
-            </div>
-
-            <div className="mt-12 text-sm text-zinc-600">
-              ShadowScore © 2026 · Marketplace Risk Intelligence
-            </div>
-          </div>
-        </section>
-      </div>
-
-      <MobileCTA href={whatsappHref} />
-
-      {scanOpen && (
-        <ScanModal storeUrl={storeUrl} onClose={() => setScanOpen(false)} href={whatsappHref} />
-      )}
-    </main>
-  );
-}
-
-function Header({ whatsappHref }: { whatsappHref: string }) {
-  return (
-    <header className="sticky top-0 z-50 border-b border-red-950/40 bg-black/80 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
-        <a href="#contact" className="flex items-center gap-3 transition hover:scale-[1.02]">
-          <HeaderLogo />
-        </a>
-
-        <nav className="hidden items-center gap-8 text-sm text-zinc-400 md:flex">
-          <a href="#signals" className="hover:text-white">Signals</a>
-          <a href="#agent" className="hover:text-white">Agent</a>
-          <a href="#guarantee" className="hover:text-white">Guarantee</a>
-          <a href="#pricing" className="hover:text-white">Pricing</a>
-          <a href="#contact" className="hover:text-white">Contact</a>
-        </nav>
-
-        <a
-          href={whatsappHref}
-          target="_blank"
-          rel="noreferrer"
-          className="rounded-2xl bg-red-600 px-4 py-3 text-sm font-black text-white transition hover:bg-red-500 hover:shadow-[0_0_30px_rgba(255,0,0,0.45)] md:px-6"
-        >
-          Get Audit
-        </a>
-      </div>
-    </header>
-  );
-}
-
-function HeaderLogo() {
-  return (
-    <div className="flex items-center gap-3">
-      <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl border border-red-500/60 bg-gradient-to-br from-zinc-900 via-black to-zinc-950 shadow-lg shadow-red-900/40">
-        <span className="absolute inset-2 rounded-xl border-l-2 border-r-2 border-red-600/80" />
-        <span className="relative text-2xl font-black text-white">S</span>
-      </div>
-      <div>
-        <div className="text-xl font-black tracking-tight text-white md:text-3xl">
-          Shadow<span className="text-red-500">Score</span>
-        </div>
-        <div className="text-[10px] uppercase tracking-[0.28em] text-zinc-500 md:text-[11px] md:tracking-[0.35em]">
-          Risk Intelligence
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function MobileCTA({ href }: { href: string }) {
-  return (
-    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-800 bg-black/90 p-3 backdrop-blur-xl md:hidden">
-      <a href={href} target="_blank" rel="noreferrer" className="block rounded-2xl bg-red-600 px-5 py-4 text-center font-black">
-        Request Private Audit
-      </a>
-    </div>
-  );
-}
-
-function HeroLogoPanel() {
-  return (
-    <div className="mb-6 rounded-[34px] border border-zinc-800 bg-gradient-to-br from-zinc-950 via-black to-red-950/20 p-8 shadow-2xl shadow-red-950/30">
-      <div className="mx-auto flex max-w-md flex-col items-center text-center">
-        <div className="relative mb-6 flex h-28 w-28 items-center justify-center rounded-[32px] border border-red-500/50 bg-black shadow-[0_0_55px_rgba(220,38,38,0.35)]">
-          <div className="absolute inset-4 rounded-[24px] border-l-4 border-r-4 border-red-600/80" />
-          <div className="text-7xl font-black tracking-tight text-white">S</div>
-        </div>
-        <div className="text-4xl font-black tracking-tight">
-          SHADOW<span className="text-red-500">SCORE</span>
-        </div>
-        <div className="mt-3 text-sm font-semibold uppercase tracking-[0.42em] text-zinc-400">
-          Marketplace Risk Intelligence
-        </div>
-        <div className="mt-8 h-px w-full bg-gradient-to-r from-transparent via-red-500 to-transparent" />
-        <div className="mt-6 text-xs font-black uppercase tracking-[0.35em] text-zinc-300">
-          Detect trust decay <span className="text-red-500">before enforcement</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function RiskTerminal() {
-  const [signalIndex, setSignalIndex] = useState(0);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setSignalIndex((current) => (current + 1) % liveSignals.length);
-    }, 1400);
-    return () => clearInterval(timer);
-  }, []);
-
-  const visibleSignals = [
-    liveSignals[signalIndex % liveSignals.length],
-    liveSignals[(signalIndex + 1) % liveSignals.length],
-    liveSignals[(signalIndex + 2) % liveSignals.length],
-    liveSignals[(signalIndex + 3) % liveSignals.length],
-  ];
-
-  return (
-    <div className="rounded-[32px] border border-zinc-800 bg-zinc-950/95 p-5 shadow-2xl shadow-red-950/30 md:p-6">
-      <div className="flex items-center justify-between border-b border-zinc-800 pb-5">
-        <div>
-          <div className="text-sm text-zinc-500">Live Risk Terminal</div>
-          <div className="mt-1 text-2xl font-black">ShadowScore Monitor</div>
-        </div>
-        <div className="rounded-full border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm text-red-300">Elevated</div>
-      </div>
-
-      <div className="mt-6 grid grid-cols-2 gap-4">
-        <Metric title="Marketplace Trust" value="72" status="Elevated Risk" color="text-red-500" />
-        <Metric title="Tracking Integrity" value="61" status="Degrading" color="text-yellow-400" />
-        <Metric title="Payout Stability" value="54" status="Watchlist" color="text-orange-400" />
-        <Metric title="Enforcement Risk" value="HIGH" status="30 Day Window" color="text-red-400" />
-      </div>
-
-      <div className="mt-6 rounded-2xl border border-zinc-800 bg-black p-5">
-        <div className="mb-3 flex items-center justify-between">
-          <div className="text-xs font-black uppercase tracking-[0.25em] text-red-400">Live Signal Feed</div>
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] text-zinc-500">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
-            Active
-          </div>
-        </div>
-        <div className="space-y-3">
-          {visibleSignals.map((item) => (
-            <div key={item} className="flex items-center gap-3 text-sm text-zinc-400">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
-              {item}
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function NetworkMetrics() {
-  const baseStats = useMemo(
-    () => [
-      { label: "Stores Reviewed", base: 487, daily: 8, monthly: 63, suffix: "" },
-      { label: "Risk Events", base: 63, daily: 3, monthly: 18, suffix: "" },
-      { label: "Alerts Sent", base: 41, daily: 2, monthly: 13, suffix: "" },
-      { label: "Sellers Stabilized", base: 19, daily: 1, monthly: 7, suffix: "" },
-      { label: "Exposure Monitored", base: 184000, daily: 9000, monthly: 41000, suffix: "$" },
-      { label: "Markets Covered", base: 5, daily: 0, monthly: 0, suffix: "" },
-    ],
-    []
-  );
-
-  const [tick, setTick] = useState(0);
-
-  useEffect(() => {
-    const timer = setInterval(() => setTick((current) => current + 1), 2400);
-    return () => clearInterval(timer);
-  }, []);
-
-  const formatValue = (value: number, suffix: string) => {
-    if (suffix === "$") {
-      if (value >= 1000000) return `$${(value / 1000000).toFixed(2)}M`;
-      return `$${Math.round(value / 1000)}K`;
-    }
-    return value.toLocaleString();
-  };
-
-  return (
-    <section className="px-5 pb-20">
-      <div className="mx-auto max-w-7xl rounded-[32px] border border-zinc-800 bg-zinc-950/80 p-5 shadow-2xl shadow-red-950/20 md:p-6">
-        <div className="text-center">
-          <Kicker text="ShadowScore Network Intelligence" />
-          <div className="mt-2 text-sm text-zinc-500">
-            Early Access Network Metrics. Metrics shown for demonstration during early access.
-          </div>
-        </div>
-
-        <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-6">
-          {baseStats.map((stat, index) => {
-            const bump = stat.label === "Markets Covered" ? 0 : Math.floor((tick + index) / 3);
-            const value = stat.base + bump;
-            const daily = stat.daily + Math.floor((tick + index) / 7);
-            const monthly = stat.monthly + Math.floor((tick + index) / 2);
-
-            return (
-              <div key={stat.label} className="rounded-3xl border border-zinc-800 bg-black p-5">
-                <div className="text-2xl font-black md:text-3xl">{formatValue(value, stat.suffix)}</div>
-                <div className="mt-2 text-sm text-zinc-400">{stat.label}</div>
-                <div className="mt-3 text-xs text-green-400">
-                  {stat.label === "Markets Covered" ? "active" : `+${formatValue(daily, stat.suffix)} today`}
+            <div className="grid grid-cols-3 gap-4 mt-10 max-w-2xl">
+              {[
+                ["30 Days", "Risk Protection"],
+                ["$199", "First Audit"],
+                ["No Login", "Password Needed"],
+              ].map(([value, label]) => (
+                <div key={label} className="rounded-2xl border border-white/10 bg-black/60 p-4">
+                  <div className="text-2xl md:text-3xl font-black text-red-500">{value}</div>
+                  <div className="text-zinc-400 mt-2 text-sm">{label}</div>
                 </div>
-                <div className="mt-1 text-xs text-red-400">
-                  {stat.label === "Markets Covered" ? "monitoring" : `+${formatValue(monthly, stat.suffix)} this month`}
+              ))}
+            </div>
+          </div>
+
+          <div className="relative">
+            <div className="absolute -inset-10 bg-red-600/20 blur-3xl rounded-full" />
+
+            <div className="relative overflow-hidden rounded-[32px] border border-red-500/20 bg-black/70 backdrop-blur-xl shadow-[0_0_70px_rgba(255,0,0,0.18)]">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,0,0,0.20),transparent_58%)]" />
+              <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,0,0,0.06)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,0,0,0.05)_1px,transparent_1px)] bg-[size:44px_44px] opacity-40" />
+
+              <div className="relative flex flex-col items-center justify-center px-8 py-12 text-center">
+                <img
+                  src="/shadowscore-shield-logo.png"
+                  alt="ShadowScore"
+                  className="h-64 w-64 rounded-[36px] object-cover shadow-[0_0_80px_rgba(255,0,0,0.35)]"
+                />
+
+                <div className="mt-8 text-5xl font-black tracking-tight">
+                  SHADOW<span className="text-red-500">SCORE</span>
                 </div>
-                <div className="mt-4 h-10 rounded-xl bg-[linear-gradient(90deg,transparent,rgba(220,38,38,0.35),transparent)]" />
+
+                <div className="mt-4 text-sm font-semibold uppercase tracking-[0.42em] text-zinc-400">
+                  Marketplace Risk Intelligence
+                </div>
+
+                <div className="mt-8 h-px w-full max-w-md bg-gradient-to-r from-transparent via-red-500 to-transparent" />
+
+                <div className="mt-6 text-xs font-black uppercase tracking-[0.35em] text-zinc-300">
+                  Saving seller accounts before enforcement
+                </div>
               </div>
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  );
-}
+            </div>
 
-function Pricing({
-  whatsappHref,
-  selectedPlan,
-  setSelectedPlan,
-}: {
-  whatsappHref: string;
-  selectedPlan: PlanKey;
-  setSelectedPlan: (plan: PlanKey) => void;
-}) {
-  return (
-    <div className="mt-12 grid gap-6 md:grid-cols-3">
-      <Plan
-        planKey="audit"
-        selectedPlan={selectedPlan}
-        onSelect={setSelectedPlan}
-        name="Risk Audit"
-        price="$199"
-        note="one time"
-        badge="Most Popular"
-        text="Private marketplace exposure review for one seller account."
-        features={["Hidden risk review", "Marketplace exposure analysis", "Tracking integrity review", "30 day risk outlook", "Seller protection recommendations", "30 day protection"]}
-        cta="Request Audit"
-        href={`${whatsappHref}%0APlan%3A%20Risk%20Audit`}
-      />
-      <Plan
-        planKey="pro"
-        selectedPlan={selectedPlan}
-        onSelect={setSelectedPlan}
-        name="Pro Monitor"
-        price="$299"
-        note="per month"
-        text="Monthly monitoring for active marketplace operators."
-        features={["Weekly monitoring", "Behavioral drift tracking", "Tracking integrity analysis", "Priority alerts", "Monthly recommendations"]}
-        cta="Start Monitoring"
-        highlighted
-        href={`${whatsappHref}%0APlan%3A%20Pro%20Monitor`}
-      />
-      <Plan
-        planKey="agency"
-        selectedPlan={selectedPlan}
-        onSelect={setSelectedPlan}
-        name="Agency"
-        price="$1,499"
-        note="per month"
-        text="For agencies and multi-store operators."
-        features={["Multi-account monitoring", "Cross-marketplace exposure tracking", "Founder access", "Private intelligence playbooks", "Custom reporting"]}
-        cta="Talk To Us"
-        href={`${whatsappHref}%0APlan%3A%20Agency`}
-      />
-    </div>
-  );
-}
+            <div className="mt-8 rounded-[28px] border border-white/10 bg-black/70 p-8 backdrop-blur-xl">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-zinc-500 uppercase tracking-[0.25em] text-xs">
+                    Live Risk Terminal
+                  </div>
 
-function MarketplaceLogos() {
-  return (
-    <section className="border-t border-zinc-900 bg-black px-5 py-20">
-      <div className="mx-auto max-w-7xl text-center">
-        <Kicker text="Marketplaces Under Active Monitoring" />
+                  <div className="text-3xl font-black mt-2">
+                    ShadowScore Monitor
+                  </div>
+                </div>
 
-        <div className="mx-auto mt-10 max-w-5xl overflow-hidden rounded-[28px] border border-zinc-800 bg-zinc-950/80 shadow-2xl shadow-red-950/20 transition hover:border-red-500/30">
-          <Image
-            src="/marketplaces-monitor.jpg"
-            alt="Marketplaces monitored by ShadowScore"
-            width={1100}
-            height={430}
-            className="h-auto w-full grayscale transition duration-500 hover:grayscale-0"
-          />
-        </div>
+                <div className="rounded-full border border-red-500/30 bg-red-500/10 px-4 py-2 text-red-300">
+                  Elevated
+                </div>
+              </div>
 
-        <div className="mt-5 text-xs text-zinc-600">
-          Marketplace names are displayed for monitoring coverage only. ShadowScore is independent and not affiliated with these platforms.
-        </div>
-      </div>
-    </section>
-  );
-}
+              <div className="grid grid-cols-2 gap-5 mt-8">
+                {[
+                  ["Marketplace Trust", "72", "Elevated Risk"],
+                  ["Tracking Integrity", "61", "Degrading"],
+                  ["Payout Stability", "54", "Watchlist"],
+                  ["Enforcement Risk", "HIGH", "30 Day Window"],
+                ].map(([title, value, label]) => (
+                  <div
+                    key={title}
+                    className="rounded-2xl border border-white/10 bg-black/50 p-5"
+                  >
+                    <div className="text-zinc-500 text-sm">{title}</div>
 
-function ScanModal({ storeUrl, onClose, href }: { storeUrl: string; onClose: () => void; href: string }) {
-  const [step, setStep] = useState(0);
+                    <div className="text-4xl font-black mt-3">{value}</div>
 
-  const scanSteps = useMemo(
-    () => ["Reading marketplace signals", "Checking tracking exposure", "Analyzing velocity drift", "Comparing enforcement similarity", "Preparing private audit request"],
-    []
-  );
+                    <div className="text-red-400 mt-2 text-sm">{label}</div>
+                  </div>
+                ))}
+              </div>
 
-  useEffect(() => {
-    if (step >= scanSteps.length) return;
-    const timer = setTimeout(() => setStep((current) => current + 1), 650);
-    return () => clearTimeout(timer);
-  }, [step, scanSteps.length]);
+              <div className="mt-8 rounded-2xl border border-red-500/20 bg-red-500/10 p-5">
+                <div className="flex items-center justify-between">
+                  <div className="text-red-300 uppercase tracking-[0.2em] text-xs">
+                    Live Signal Feed
+                  </div>
+                  <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-zinc-500">
+                    <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                    Active
+                  </div>
+                </div>
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-5 backdrop-blur-sm">
-      <div className="w-full max-w-xl rounded-[32px] border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-red-950/40">
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="text-sm font-black uppercase tracking-[0.25em] text-red-400">ShadowScore Scan</div>
-            <h3 className="mt-3 text-3xl font-black">{step >= scanSteps.length ? "Elevated Exposure Detected" : "Scanning Behavioral Signals"}</h3>
+                <div className="mt-4 text-xl font-semibold text-white transition-all duration-500">
+                  {rotatingSignals[activeSignal]}
+                </div>
+              </div>
+            </div>
           </div>
-          <button type="button" onClick={onClose} className="text-zinc-500 hover:text-white">✕</button>
+        </div>
+      </section>
+
+      <section className="max-w-7xl mx-auto px-6 py-12">
+        <div className="rounded-[36px] border border-white/10 bg-black/60 backdrop-blur-xl p-10">
+          <div className="text-center">
+            <div className="text-red-400 tracking-[0.35em] uppercase text-sm">
+              ShadowScore Network Intelligence
+            </div>
+
+            <p className="mt-4 text-zinc-500">
+              Early Access Network Metrics. Metrics shown for demonstration
+              during early access.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 lg:grid-cols-6 gap-6 mt-10">
+            {[
+              ["488", "Stores Reviewed", "+8 today", "+64 this month"],
+              ["64", "Risk Events", "+3 today", "+20 this month"],
+              ["42", "Alerts Sent", "+2 today", "+15 this month"],
+              ["21", "Sellers Stabilized", "+1 today", "+10 this month"],
+              ["$184K", "Exposure Monitored", "+$9K today", "+$41K this month"],
+              ["6", "Markets Covered", "active", "monitoring"],
+            ].map(([value, label, daily, monthly]) => (
+              <div
+                key={label}
+                className="rounded-3xl border border-white/10 bg-black/70 p-7 hover:border-red-500/30 transition"
+              >
+                <div className="text-5xl font-black">{value}</div>
+
+                <div className="mt-3 text-zinc-400">{label}</div>
+
+                <div className="mt-6 text-emerald-400">{daily}</div>
+
+                <div className="mt-2 text-red-400">{monthly}</div>
+
+                <div className="mt-6 h-14 rounded-xl bg-gradient-to-r from-black via-red-900 to-black opacity-80" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="agent" className="max-w-7xl mx-auto px-6 py-24">
+        <div className="text-center">
+          <div className="text-red-400 tracking-[0.35em] uppercase text-sm">
+            The Agent
+          </div>
+
+          <h2 className="mt-6 text-5xl font-black">
+            A Seller Defense Agent, Not Another Dashboard
+          </h2>
         </div>
 
-        <div className="mt-6 rounded-2xl border border-zinc-800 bg-black p-5">
-          <div className="text-sm text-zinc-500">Store URL</div>
-          <div className="mt-2 break-all text-zinc-200">{storeUrl || "No URL entered yet"}</div>
-        </div>
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mt-16">
+          {[
+            [
+              "01",
+              "Observe",
+              "Detects marketplace exposure across operational behavior, trust signals and fulfillment consistency.",
+            ],
+            [
+              "02",
+              "Score",
+              "Translates invisible marketplace signals into a private risk view.",
+            ],
+            [
+              "03",
+              "Warn",
+              "Warns before exposure becomes a payout hold, account review or restriction.",
+            ],
+            [
+              "04",
+              "Prepare",
+              "Shows what to stabilize before the marketplace acts.",
+            ],
+          ].map(([num, title, text]) => (
+            <div
+              key={title}
+              className="rounded-[28px] border border-white/10 bg-black/60 p-8 backdrop-blur-xl"
+            >
+              <div className="text-red-500 text-5xl font-black">{num}</div>
 
-        <div className="mt-6 space-y-3">
-          {scanSteps.map((scanStep, index) => (
-            <div key={scanStep} className="flex items-center gap-3 text-sm text-zinc-400">
-              <span className={`h-2 w-2 rounded-full ${index < step ? "bg-red-500" : "bg-zinc-700"}`} />
-              {scanStep}
+              <div className="mt-6 text-3xl font-black">{title}</div>
+
+              <p className="mt-5 text-zinc-400 leading-relaxed">{text}</p>
             </div>
           ))}
         </div>
+      </section>
 
-        {step >= scanSteps.length && (
-          <>
-            <div className="mt-6 rounded-3xl border border-red-500/30 bg-red-950/20 p-5">
-              <div className="text-6xl font-black text-red-500">72</div>
-              <div className="mt-2 text-xl font-black">Elevated Risk Similarity</div>
-              <p className="mt-3 text-sm leading-relaxed text-zinc-400">
-                This public scan is limited. A full private audit requires store context, screenshots and exports.
+      <section id="signals" className="max-w-7xl mx-auto px-6 py-24">
+        <div className="text-center">
+          <div className="text-red-400 tracking-[0.35em] uppercase text-sm">
+            Signal Engine
+          </div>
+
+          <h2 className="mt-6 text-5xl font-black">
+            Marketplace Enforcement Starts Before The Warning
+          </h2>
+        </div>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mt-16">
+          {[
+            ["01", "Tracking Integrity", "Late uploads, TBA exposure, invalid scans, carrier mismatch and weak proof of delivery."],
+            ["02", "Velocity Risk", "Sudden sales growth, category spikes, new account pressure and fulfillment instability."],
+            ["03", "Trust Decay", "Buyer sentiment, INR activity, refund drift, payout friction and support routing changes."],
+            ["04", "Operational Exposure", "SKU churn, source dependency, fulfillment gaps and account stability signals."],
+            ["05", "Review Exposure", "Identifies elevated similarity to accounts that later entered review or restriction."],
+            ["06", "Action Layer", "Direct actions before damage reaches account health or payout systems."],
+          ].map(([num, title, text]) => (
+            <div key={title} className="rounded-[28px] border border-white/10 bg-black/60 p-8 backdrop-blur-xl">
+              <div className="text-red-500 text-sm font-black">{num}</div>
+              <div className="mt-5 text-2xl font-black">{title}</div>
+              <p className="mt-4 text-zinc-400 leading-relaxed">{text}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section id="guarantee" className="max-w-7xl mx-auto px-6 py-20">
+        <div className="rounded-[36px] border border-red-500/20 bg-red-500/10 p-10 shadow-[0_0_50px_rgba(255,0,0,0.12)]">
+          <div className="text-red-400 tracking-[0.35em] uppercase text-sm">
+            30-Day Risk Protection
+          </div>
+
+          <h2 className="mt-6 text-5xl font-black">
+            First Paid Audit Protected For 30 Days
+          </h2>
+
+          <p className="mt-6 text-zinc-300 text-lg leading-relaxed max-w-4xl">
+            If a first-time paid audit fails to identify elevated marketplace
+            exposure signals and a new restriction or payout review occurs within
+            30 days, ShadowScore refunds the audit fee.
+          </p>
+
+          <p className="mt-5 text-zinc-500">
+            Applies to first-time audits only. Existing warnings must be
+            disclosed. Recommended actions must be followed. Future scans do not
+            include first-audit protection.
+          </p>
+        </div>
+      </section>
+
+      <section id="pricing" className="max-w-7xl mx-auto px-6 py-24">
+        <div className="text-center">
+          <div className="text-red-400 tracking-[0.35em] uppercase text-sm">
+            Pricing
+          </div>
+
+          <h2 className="mt-6 text-5xl font-black">
+            Built For Sellers Who Cannot Afford To Lose The Account
+          </h2>
+        </div>
+
+        <div className="grid lg:grid-cols-3 gap-8 mt-16">
+          {[
+            {
+              name: "Risk Audit",
+              price: "$199",
+              tag: "Most Popular",
+              desc: "Private marketplace exposure review for one seller account.",
+              items: [
+                "Hidden risk review",
+                "Marketplace exposure analysis",
+                "Tracking integrity review",
+                "30 day risk outlook",
+                "Seller protection recommendations",
+                "30 day protection",
+              ],
+              button: "Request Audit",
+            },
+            {
+              name: "Pro Monitor",
+              price: "$299",
+              tag: "",
+              desc: "Monthly monitoring for active marketplace operators.",
+              items: [
+                "Weekly monitoring",
+                "Behavioral drift tracking",
+                "Tracking integrity analysis",
+                "Priority alerts",
+                "Monthly recommendations",
+              ],
+              button: "Start Monitoring",
+            },
+            {
+              name: "Agency",
+              price: "$1,499",
+              tag: "",
+              desc: "For agencies and multi-store operators.",
+              items: [
+                "Multi-account monitoring",
+                "Cross-marketplace exposure tracking",
+                "Founder access",
+                "Private intelligence playbooks",
+                "Custom reporting",
+              ],
+              button: "Talk To Us",
+            },
+          ].map((plan) => (
+            <div
+              key={plan.name}
+              onClick={() => setSelectedPlan(plan.name)}
+              className={`rounded-[32px] border p-10 cursor-pointer transition-all duration-300 ${
+                selectedPlan === plan.name
+                  ? "border-red-500 shadow-[0_0_50px_rgba(255,0,0,0.25)] bg-red-500/5"
+                  : "border-white/10 bg-black/60"
+              }`}
+            >
+              {plan.tag && (
+                <div className="inline-flex px-4 py-2 rounded-full bg-red-500 text-white text-sm font-bold mb-6">
+                  {plan.tag}
+                </div>
+              )}
+
+              <div className="text-3xl font-black">{plan.name}</div>
+
+              <div className="mt-6 text-6xl font-black text-red-500">
+                {plan.price}
+              </div>
+
+              <div className="mt-5 text-zinc-400">{plan.desc}</div>
+
+              <div className="mt-8 space-y-4">
+                {plan.items.map((item) => (
+                  <div key={item} className="flex items-start gap-3">
+                    <div className="text-red-500 mt-1">✓</div>
+                    <div className="text-zinc-300">{item}</div>
+                  </div>
+                ))}
+              </div>
+
+              <button className="mt-10 w-full rounded-2xl bg-red-600 hover:bg-red-500 transition py-4 font-black">
+                {plan.button}
+              </button>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="relative py-24 border-t border-red-950/40 overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,0,0,0.12),transparent_60%)]" />
+
+        <div className="relative z-10 max-w-7xl mx-auto px-6">
+          <div className="text-center mb-14">
+            <div className="inline-flex items-center gap-3 border border-red-500/30 bg-red-500/10 px-5 py-2 rounded-full text-red-300 text-sm tracking-[0.25em] uppercase">
+              Active Marketplace Intelligence Network
+            </div>
+
+            <h2 className="mt-6 text-4xl md:text-5xl font-black text-white">
+              Platforms Under Behavioral Monitoring
+            </h2>
+
+            <p className="mt-5 text-zinc-400 max-w-3xl mx-auto text-lg leading-relaxed">
+              ShadowScore monitors marketplace exposure across multiple seller
+              ecosystems before visible enforcement actions happen.
+            </p>
+          </div>
+
+          <div className="mx-auto max-w-5xl overflow-hidden rounded-[28px] border border-red-500/20 bg-black/80 shadow-[0_0_50px_rgba(255,0,0,0.16)]">
+            <img
+              src="/marketplaces-monitor.jpg"
+              alt="eBay, Amazon, Walmart and SHEIN monitored by ShadowScore"
+              className="w-full h-auto object-cover"
+            />
+          </div>
+
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+            <div className="rounded-3xl border border-[#f1641e]/40 bg-[#f1641e]/10 p-8 text-center shadow-[0_0_35px_rgba(241,100,30,0.16)]">
+              <div className="text-5xl font-black text-[#f1641e]">Etsy</div>
+              <div className="mt-3 text-xs uppercase tracking-[0.25em] text-zinc-500">
+                Seller safety monitoring
+              </div>
+            </div>
+
+            <div className="rounded-3xl border border-red-500/30 bg-red-500/10 p-8 text-center shadow-[0_0_35px_rgba(255,0,0,0.16)]">
+              <div className="text-4xl font-black text-white">TikTok Shop</div>
+              <div className="mt-3 text-xs uppercase tracking-[0.25em] text-zinc-500">
+                Shop signal monitoring
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-12 text-center text-zinc-500 text-sm">
+            Marketplace names are displayed for monitoring coverage only.
+            ShadowScore is independent and not affiliated with these platforms.
+          </div>
+        </div>
+      </section>
+
+      <section className="max-w-5xl mx-auto px-6 py-24">
+        <div className="text-center">
+          <div className="text-red-400 tracking-[0.35em] uppercase text-sm">
+            FAQ
+          </div>
+
+          <h2 className="mt-6 text-5xl font-black">
+            Questions Sellers Ask Before They Realize The Risk Is Already Building
+          </h2>
+        </div>
+
+        <div className="mt-16 space-y-5">
+          {visibleFaq.map((faq) => (
+            <details
+              key={faq.q}
+              className="rounded-3xl border border-white/10 bg-black/60 p-8"
+            >
+              <summary className="cursor-pointer text-xl font-bold">
+                {faq.q}
+              </summary>
+
+              <p className="mt-5 text-zinc-400 leading-relaxed">{faq.a}</p>
+            </details>
+          ))}
+        </div>
+
+        {!showMoreFaq && (
+          <div className="text-center mt-10">
+            <button
+              onClick={() => setShowMoreFaq(true)}
+              className="rounded-2xl border border-white/10 px-8 py-4 hover:border-red-500/30 transition"
+            >
+              Show More Questions
+            </button>
+          </div>
+        )}
+      </section>
+
+      <section id="contact" className="max-w-5xl mx-auto px-6 py-24 text-center">
+        <div className="rounded-[40px] border border-red-500/20 bg-black/70 p-14 backdrop-blur-xl">
+          <div className="text-red-400 tracking-[0.35em] uppercase text-sm">
+            Contact ShadowScore
+          </div>
+
+          <h2 className="mt-6 text-5xl font-black">
+            Speak With The Risk Agent
+          </h2>
+
+          <p className="mt-6 text-zinc-400 text-lg leading-relaxed">
+            Private early-access reviews for marketplace sellers, agencies and
+            multi-store operators.
+          </p>
+
+          <div className="flex flex-col md:flex-row items-center justify-center gap-5 mt-12">
+            <a
+              href="https://wa.me/9720557293979"
+              target="_blank"
+              className="rounded-2xl bg-red-600 hover:bg-red-500 transition px-10 py-5 font-black shadow-[0_0_40px_rgba(255,0,0,0.25)]"
+            >
+              Open WhatsApp Chat
+            </a>
+
+            <a
+              href="mailto:help@shadowscore.io"
+              className="rounded-2xl border border-white/10 px-10 py-5 text-zinc-300 hover:border-red-500/30 transition"
+            >
+              help@shadowscore.io
+            </a>
+          </div>
+        </div>
+
+        <div className="mt-12 text-zinc-600 text-sm">
+          ShadowScore © 2026 · Marketplace Risk Intelligence
+        </div>
+      </section>
+
+      {showScanner && (
+        <div className="fixed inset-0 z-[999] bg-black/90 backdrop-blur-xl flex items-center justify-center px-6">
+          <div className="w-full max-w-2xl rounded-[32px] border border-red-500/20 bg-black p-10">
+            <div className="text-red-400 tracking-[0.25em] uppercase text-sm">
+              Elevated Exposure Detected
+            </div>
+
+            <div className="mt-6 rounded-2xl border border-white/10 bg-black/60 p-5">
+              <div className="text-zinc-500 text-sm">Store URL</div>
+
+              <div className="mt-3 text-xl break-all">{scanText}</div>
+            </div>
+
+            <div className="space-y-4 mt-8 text-zinc-400">
+              <div>● Reading marketplace signals</div>
+              <div>● Checking tracking exposure</div>
+              <div>● Analyzing review exposure</div>
+              <div>● Preparing private audit request</div>
+            </div>
+
+            <div className="mt-10 rounded-3xl border border-red-500/20 bg-red-500/10 p-8">
+              <div className="text-7xl font-black text-red-500">72</div>
+
+              <div className="text-3xl font-black mt-4">
+                Elevated Exposure Preview
+              </div>
+
+              <p className="mt-5 text-zinc-400 leading-relaxed">
+                This public scan is intentionally limited. A full private audit
+                requires store context, screenshots and operational exports.
               </p>
             </div>
 
-            <div className="mt-6 space-y-3">
-              <Progress label="Tracking Exposure" value="78%" />
-              <Progress label="Marketplace Trust Drift" value="64%" />
-              <Progress label="Review Exposure" value="71%" />
-            </div>
-          </>
-        )}
-
-        <a href={href} target="_blank" rel="noreferrer" className="mt-6 block rounded-2xl bg-red-600 px-7 py-4 text-center font-black hover:bg-red-500">
-          Continue On WhatsApp
-        </a>
-      </div>
-    </div>
-  );
-}
-
-function FAQ() {
-  const [expanded, setExpanded] = useState(false);
-
-  const faqs = [
-    {
-      q: "Is ShadowScore a reinstatement service?",
-      a: "No. ShadowScore is built to detect risk before enforcement. If you already received MC011, a payout hold or a major restriction, you may already be late.",
-    },
-    {
-      q: "Do you need my marketplace password?",
-      a: "No. The first audit can start with a store URL, screenshots and exports. No marketplace password is required.",
-    },
-    {
-      q: "Is the 30 day protection available forever?",
-      a: "No. It applies only to the first paid audit. Future scans do not include the first-audit guarantee.",
-    },
-    {
-      q: "Which sellers is this for?",
-      a: "High-volume sellers, dropshippers, agencies, Walmart sellers, eBay sellers, Amazon sellers and operators who cannot afford sudden restrictions.",
-    },
-    {
-      q: "What does ShadowScore analyze?",
-      a: "ShadowScore analyzes hidden marketplace trust and enforcement signals linked to elevated account exposure.",
-    },
-    {
-      q: "Can ShadowScore guarantee my account will not be suspended?",
-      a: "No. No outside service can control marketplace enforcement. ShadowScore helps identify elevated exposure early so sellers can strengthen proof, fulfillment and operational behavior before risk escalates.",
-    },
-    {
-      q: "What do I receive after a private audit?",
-      a: "You receive a risk breakdown, key exposure signals, a 30 day risk outlook and a practical action plan focused on reducing marketplace risk.",
-    },
-    {
-      q: "Can you scan Amazon, eBay, Walmart, SHEIN and TikTok Shop?",
-      a: "Yes. ShadowScore is designed around cross-marketplace behavioral signals, with the strongest early focus on sellers exposed to tracking, fulfillment and payout risk.",
-    },
-    {
-      q: "Do you access private customer data?",
-      a: "No. The early audit can be performed from store context, screenshots, exports and operational details that the seller chooses to share.",
-    },
-    {
-      q: "How fast do I get results?",
-      a: "During early access, most private audits are reviewed manually. Response time depends on volume and the quality of the information provided.",
-    },
-    {
-      q: "Is this only for dropshippers?",
-      a: "No. Dropshippers are highly exposed, but the same risk patterns can affect any seller with fulfillment delays, tracking weakness, sudden sales velocity or account health pressure.",
-    },
-    {
-      q: "Why is marketplace risk hard to see?",
-      a: "Marketplaces do not show sellers the full trust model. Sellers often see the visible warning only after hidden risk signals have already accumulated.",
-    },
-    {
-      q: "Why is ShadowScore difficult to replicate?",
-      a: "A landing page can be copied. Marketplace intelligence cannot.",
-    },
-    {
-      q: "Can agencies use ShadowScore for multiple stores?",
-      a: "Yes. The Agency plan is built for multi-store operators, consultants and teams managing several seller accounts.",
-    },
-    {
-      q: "What should I prepare before requesting an audit?",
-      a: "Prepare your store URL, recent tracking examples, account health screenshots, payout or review notices if any, fulfillment workflow details and any recent change in sales velocity.",
-    },
-  ];
-
-  const visibleFaqs = expanded ? faqs : faqs.slice(0, 4);
-
-  return (
-    <section className="border-t border-zinc-900 bg-zinc-950 px-5 py-20">
-      <div className="mx-auto max-w-5xl">
-        <Kicker text="FAQ" />
-        <h2 className="mt-5 text-4xl font-black md:text-5xl">
-          Questions Sellers Ask Before They Realize The Risk Is Already Building
-        </h2>
-
-        <div className="mt-8 grid gap-4">
-          {visibleFaqs.map((item) => (
-            <FAQItem key={item.q} q={item.q} a={item.a} />
-          ))}
-        </div>
-
-        <button
-          type="button"
-          onClick={() => setExpanded((current) => !current)}
-          className="mx-auto mt-8 flex items-center gap-3 rounded-2xl border border-zinc-800 bg-black px-7 py-4 font-black text-zinc-200 transition hover:border-red-500/50 hover:text-white"
-        >
-          {expanded ? "Show Less Questions" : "Show More Questions"}
-          <span className={`text-red-500 transition ${expanded ? "rotate-180" : ""}`}>⌄</span>
-        </button>
-      </div>
-    </section>
-  );
-}
-
-function FAQItem({ q, a }: { q: string; a: string }) {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <div className="rounded-3xl border border-zinc-800 bg-black transition hover:border-red-500/30">
-      <button
-        type="button"
-        onClick={() => setOpen((current) => !current)}
-        className="flex w-full items-center justify-between gap-5 p-6 text-left"
-      >
-        <span className="text-xl font-black">{q}</span>
-        <span className={`shrink-0 text-2xl text-red-500 transition ${open ? "rotate-180" : ""}`}>
-          ⌄
-        </span>
-      </button>
-
-      {open && (
-        <div className="border-t border-zinc-900 px-6 pb-6 pt-1 leading-relaxed text-zinc-400">
-          {a}
+            <button
+              onClick={() => setShowScanner(false)}
+              className="mt-8 w-full rounded-2xl border border-white/10 px-8 py-4 hover:border-red-500/30 transition"
+            >
+              Back To Site
+            </button>
+          </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function MiniProof({ value, label }: { value: string; label: string }) {
-  return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-950/80 p-4">
-      <div className="text-xl font-black text-white">{value}</div>
-      <div className="mt-1 text-xs text-zinc-500">{label}</div>
-    </div>
-  );
-}
-
-function Badge({ text }: { text: string }) {
-  return (
-    <div className="inline-flex items-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm text-red-300">
-      <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
-      {text}
-    </div>
-  );
-}
-
-function Kicker({ text }: { text: string }) {
-  return <div className="text-sm font-black uppercase tracking-[0.35em] text-red-400">{text}</div>;
-}
-
-function Metric({ title, value, status, color }: { title: string; value: string; status: string; color: string }) {
-  return (
-    <div className="rounded-3xl border border-zinc-800 bg-black p-4 md:p-5">
-      <div className="text-sm text-zinc-500">{title}</div>
-      <div className={`mt-3 text-3xl font-black md:text-4xl ${color}`}>{value}</div>
-      <div className="mt-2 text-sm text-zinc-400">{status}</div>
-    </div>
-  );
-}
-
-function Card({ title, text, icon }: { title: string; text: string; icon: string }) {
-  return (
-    <div className="rounded-3xl border border-zinc-800 bg-black p-8 transition hover:border-red-500/50">
-      <div className="text-sm font-black text-red-500">{icon}</div>
-      <div className="mt-4 text-2xl font-black">{title}</div>
-      <div className="mt-4 leading-relaxed text-zinc-400">{text}</div>
-    </div>
-  );
-}
-
-function Stage({ number, title, text }: { number: string; title: string; text: string }) {
-  return (
-    <div className="rounded-3xl border border-zinc-800 bg-black p-7">
-      <div className="text-sm font-black text-red-500">{number}</div>
-      <div className="mt-4 text-2xl font-black">{title}</div>
-      <div className="mt-4 leading-relaxed text-zinc-400">{text}</div>
-    </div>
-  );
-}
-
-function Plan({ planKey, selectedPlan, onSelect, name, price, note, badge, text, features, cta, href, highlighted = false }: PlanProps) {
-  const active = selectedPlan === planKey;
-
-  return (
-    <div
-      onClick={() => onSelect(planKey)}
-      className={`cursor-pointer rounded-[32px] border p-8 transition ${
-        active
-          ? "border-red-500 bg-red-950/20 shadow-2xl shadow-red-950/40"
-          : highlighted
-          ? "border-red-500/40 bg-red-950/10"
-          : "border-zinc-800 bg-black hover:border-red-500/40"
-      }`}
-    >
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          {badge && (
-            <div className="mb-3 inline-flex rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1 text-xs font-bold text-red-300">
-              {badge}
-            </div>
-          )}
-          <div className="text-2xl font-black">{name}</div>
-        </div>
-
-        {active && (
-          <div className="rounded-full border border-red-500/40 bg-red-500/10 px-3 py-1 text-xs font-bold text-red-300">
-            Selected
-          </div>
-        )}
-      </div>
-
-      <div className="mt-6 flex items-end gap-2">
-        <div className="text-5xl font-black">{price}</div>
-        <div className="mb-2 text-zinc-500">{note}</div>
-      </div>
-
-      <p className="mt-5 leading-relaxed text-zinc-400">{text}</p>
-
-      <div className="mt-7 space-y-3">
-        {features.map((f) => (
-          <div key={f} className="text-zinc-300">✓ {f}</div>
-        ))}
-      </div>
-
-      <a
-        href={href}
-        target="_blank"
-        rel="noreferrer"
-        onClick={(e) => e.stopPropagation()}
-        className={`mt-8 block rounded-2xl px-6 py-4 text-center font-black ${
-          active ? "bg-red-600 hover:bg-red-500" : "border border-zinc-700 hover:border-red-500"
-        }`}
-      >
-        {cta}
-      </a>
-    </div>
-  );
-}
-
-function Progress({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <div className="mb-2 flex justify-between text-sm">
-        <span className="text-zinc-400">{label}</span>
-        <span className="font-bold text-red-400">{value}</span>
-      </div>
-      <div className="h-2 overflow-hidden rounded-full bg-zinc-900">
-        <div className="h-full rounded-full bg-red-600" style={{ width: value }} />
-      </div>
-    </div>
+    </main>
   );
 }
