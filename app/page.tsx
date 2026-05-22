@@ -73,12 +73,12 @@ export default function Home() {
             <Badge text="Marketplace Behavioral Intelligence Active" />
 
             <h1 className="mt-7 text-5xl font-black leading-[0.93] tracking-tight md:text-7xl">
-              Your Marketplace Is Scoring You Before It Warns You.
-              <span className="block text-red-500">Most Sellers Find Out Too Late.</span>
+              The Marketplace Already Decided You're Risky.
+              <span className="block text-red-500">ShadowScore Tells You First.</span>
             </h1>
 
             <p className="mt-7 max-w-2xl text-lg leading-relaxed text-zinc-400 md:text-xl">
-              ShadowScore detects hidden seller risk signals before marketplace reviews, payout holds and account restrictions happen.
+              ShadowScore detects hidden marketplace risk signals before payout holds, seller reviews and account restrictions happen.
             </p>
 
             <div className="mt-8 rounded-3xl border border-red-500/35 bg-red-500/10 p-4 text-sm text-red-100 shadow-[0_0_35px_rgba(220,38,38,0.12)]">
@@ -422,7 +422,7 @@ function NetworkMetrics() {
         <div className="text-center">
           <Kicker text="ShadowScore Network Intelligence" />
           <div className="mt-2 text-sm text-zinc-500">
-            Daily and monthly marketplace exposure metrics. Updated continuously during early access.
+            Metrics shown for demonstration during early access.
           </div>
         </div>
 
@@ -472,8 +472,8 @@ function Pricing({
         price="$199"
         note="one time"
         badge="Most Popular"
-        text="Private risk review for one marketplace account."
-        features={["Store URL review", "Risk signal breakdown", "Tracking exposure analysis", "30 day outlook", "Action plan", "30 day protection"]}
+        text="Private marketplace exposure review for one seller account."
+        features={["Hidden risk review", "Marketplace exposure analysis", "Tracking integrity review", "30 day risk outlook", "Seller protection recommendations", "30 day protection"]}
         cta="Request Audit"
         href={`${whatsappHref}%0APlan%3A%20Risk%20Audit`}
       />
@@ -616,8 +616,8 @@ function FAQ() {
       a: "High-volume sellers, dropshippers, agencies, Walmart sellers, eBay sellers, Amazon sellers and operators who cannot afford sudden restrictions.",
     },
     {
-      q: "What does ShadowScore actually look for?",
-      a: "We look for tracking degradation, fulfillment inconsistencies, velocity spikes, refund drift, buyer signal changes, payout friction and behavior patterns that resemble accounts entering review.",
+      q: "What does ShadowScore analyze?",
+      a: "ShadowScore analyzes hidden marketplace trust and enforcement signals linked to elevated account exposure.",
     },
     {
       q: "Can ShadowScore guarantee my account will not be suspended?",
@@ -625,7 +625,7 @@ function FAQ() {
     },
     {
       q: "What do I receive after a private audit?",
-      a: "You receive a risk breakdown, key exposure signals, a 30 day outlook and a practical action plan focused on reducing marketplace risk.",
+      a: "You receive a risk breakdown, key exposure signals, a 30 day risk outlook and a practical action plan focused on reducing marketplace risk.",
     },
     {
       q: "Can you scan Amazon, eBay, Walmart, SHEIN and TikTok Shop?",
@@ -648,8 +648,8 @@ function FAQ() {
       a: "Marketplaces do not show sellers the full trust model. Sellers often see the visible warning only after hidden risk signals have already accumulated.",
     },
     {
-      q: "What makes ShadowScore hard to copy?",
-      a: "The value is not the landing page. The value is the private signal framework, accumulated seller outcomes and action playbooks built from repeated audits.",
+      q: "Why is ShadowScore difficult to replicate?",
+      a: "A landing page can be copied. Marketplace intelligence cannot.",
     },
     {
       q: "Can agencies use ShadowScore for multiple stores?",
