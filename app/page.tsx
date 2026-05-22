@@ -1,8 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+
+type PlanKey = "audit" | "pro" | "agency";
 
 type PlanProps = {
+  planKey: PlanKey;
+  selectedPlan: PlanKey;
+  onSelect: (plan: PlanKey) => void;
   name: string;
   price: string;
   note: string;
@@ -13,49 +18,55 @@ type PlanProps = {
   highlighted?: boolean;
 };
 
-const WHATSAPP_AUDIT_URL = "https://call.whatsapp.com/video/Rmh08tVtcrjG5ToEGoZ71U";
+const WHATSAPP_BASE =
+  "https://wa.me/972547721404?text=Hi%20ShadowScore%2C%20I%20want%20a%20private%20risk%20audit";
+
+const SUPPORT_EMAIL = "help@shadowscore.io";
 
 export default function Home() {
   const [storeUrl, setStoreUrl] = useState("");
   const [scanOpen, setScanOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<PlanKey>("pro");
 
-  const mailSubject = encodeURIComponent("ShadowScore Private Risk Audit");
-  const mailBody = encodeURIComponent(
-    `Hi ShadowScore,\n\nI want a private marketplace risk audit.\n\nStore URL:\n${storeUrl || "Paste store URL here"}\n\nMarketplace:\n\nMain concern:\n\n`
-  );
-
-  const mailHref = `mailto:intel@shadowscore.io?subject=${mailSubject}&body=${mailBody}`;
+  const whatsappHref = `${WHATSAPP_BASE}%0A%0AStore%20URL%3A%20${encodeURIComponent(
+    storeUrl || "Paste store URL here"
+  )}%0ASelected%20Plan%3A%20${encodeURIComponent(selectedPlan)}`;
 
   return (
     <main className="min-h-screen overflow-hidden bg-black text-white">
-      <div className="fixed inset-0 bg-[radial-gradient(circle_at_top_right,rgba(220,38,38,0.26),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(127,29,29,0.22),transparent_35%)]" />
+      <div className="fixed inset-0 bg-[radial-gradient(circle_at_top_right,rgba(220,38,38,0.25),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(127,29,29,0.20),transparent_34%)]" />
       <div className="fixed inset-0 bg-[linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[size:64px_64px]" />
-      <div className="fixed inset-x-0 top-0 h-28 bg-gradient-to-b from-black via-black/80 to-transparent" />
+      <div className="fixed inset-x-0 top-0 h-32 bg-gradient-to-b from-black via-black/80 to-transparent" />
 
       <div className="relative">
-        <Header mailHref={mailHref} />
+        <Header whatsappHref={whatsappHref} />
 
         <section className="mx-auto grid max-w-7xl items-center gap-12 px-5 pb-16 pt-12 lg:grid-cols-2 lg:pb-20 lg:pt-16">
           <div>
             <Badge text="Marketplace Risk Intelligence" />
 
             <h1 className="mt-7 text-5xl font-black leading-[0.95] tracking-tight md:text-7xl">
-              Know Your Risk Before The Marketplace Does
+              Your Account Is Already Being Scored. Most Sellers Find Out Too Late.
             </h1>
 
             <p className="mt-7 max-w-2xl text-lg leading-relaxed text-zinc-400 md:text-xl">
-              ShadowScore detects seller trust decay before suspensions, payout holds and account reviews happen.
+              ShadowScore detects silent trust decay before payout holds, account reviews, MC011 patterns or marketplace restrictions.
             </p>
 
-            <div className="mt-9 max-w-2xl rounded-3xl border border-zinc-800 bg-zinc-950/90 p-4 shadow-2xl shadow-red-950/30">
+            <div className="mt-8 rounded-3xl border border-yellow-500/30 bg-yellow-500/10 p-4 text-sm text-yellow-200">
+              First 50 paid audits this month include 30 day Risk Protection.
+            </div>
+
+            <div className="mt-8 max-w-2xl rounded-3xl border border-zinc-800 bg-zinc-950/90 p-4 shadow-2xl shadow-red-950/30">
               <div className="flex flex-col gap-3 md:flex-row">
                 <input
                   value={storeUrl}
                   onChange={(e) => setStoreUrl(e.target.value)}
                   className="flex-1 rounded-2xl border border-zinc-800 bg-black px-5 py-4 text-white outline-none placeholder:text-zinc-600 focus:border-red-500"
-                  placeholder="Paste eBay, Amazon, Walmart, SHEIN or TikTok Shop URL"
+                  placeholder="Paste store URL or seller username"
                 />
                 <button
+                  type="button"
                   onClick={() => setScanOpen(true)}
                   className="rounded-2xl bg-red-600 px-7 py-4 text-center font-black transition hover:bg-red-500 hover:shadow-[0_0_35px_rgba(220,38,38,0.45)]"
                 >
@@ -64,30 +75,31 @@ export default function Home() {
               </div>
 
               <div className="mt-3 text-xs text-zinc-500">
-                First audit includes 30 day Risk Protection. Early access audits are reviewed manually.
+                No password required. Early access audits use store URLs, screenshots and marketplace exports.
               </div>
             </div>
 
             <div className="mt-7 flex flex-wrap gap-4">
               <a
-                href={mailHref}
+                href={whatsappHref}
+                target="_blank"
+                rel="noreferrer"
                 className="rounded-2xl bg-red-600 px-7 py-4 font-black transition hover:bg-red-500 hover:shadow-[0_0_35px_rgba(220,38,38,0.45)]"
               >
                 Request Private Audit
               </a>
 
               <a
-                href={WHATSAPP_AUDIT_URL}
-                target="_blank"
+                href="#pricing"
                 className="rounded-2xl border border-zinc-700 bg-zinc-950/70 px-7 py-4 font-semibold transition hover:border-red-500 hover:text-white"
               >
-                Talk To Risk Agent
+                View Pricing
               </a>
             </div>
 
             <div className="mt-8 grid max-w-2xl grid-cols-3 gap-3">
               <MiniProof value="30 Days" label="Risk Protection" />
-              <MiniProof value="$299" label="First Audit" />
+              <MiniProof value="$199" label="First Audit" />
               <MiniProof value="5+" label="Marketplaces" />
             </div>
           </div>
@@ -95,7 +107,7 @@ export default function Home() {
           <RiskTerminal />
         </section>
 
-        <LiveIntelligence />
+        <PilotMetrics />
 
         <section id="agent" className="border-t border-zinc-900 bg-zinc-950/90 px-5 py-20">
           <div className="mx-auto max-w-7xl">
@@ -138,10 +150,10 @@ export default function Home() {
               First Audit Protected For 30 Days
             </h2>
             <p className="mt-6 max-w-4xl text-lg leading-relaxed text-zinc-300">
-              If a new marketplace restriction or payout review occurs within 30 days of your first audit, and ShadowScore failed to identify elevated exposure signals, we refund the audit fee.
+              If a new marketplace restriction or payout review occurs within 30 days of your first paid audit, and ShadowScore failed to identify elevated exposure signals, we refund the audit fee.
             </p>
             <p className="mt-4 text-sm text-zinc-500">
-              Applies to first-time audits only. Existing warnings must be disclosed. Not valid if recommended actions are ignored.
+              Applies to first-time audits only. Existing warnings must be disclosed. Not valid if recommended actions are ignored. Future scans do not include the first audit guarantee.
             </p>
           </div>
         </section>
@@ -153,41 +165,53 @@ export default function Home() {
               Built For Sellers Who Cannot Afford To Lose The Account
             </h2>
 
+            <p className="mt-5 max-w-3xl text-zinc-400">
+              Choose a plan. The selected plan gets a red security frame and is included automatically in the WhatsApp audit request.
+            </p>
+
             <div className="mt-12 grid gap-6 md:grid-cols-3">
               <Plan
+                planKey="audit"
+                selectedPlan={selectedPlan}
+                onSelect={setSelectedPlan}
                 name="Risk Audit"
-                price="$299"
+                price="$199"
                 note="one time"
                 text="Private risk review for one marketplace account."
                 features={["Store URL review", "Risk signal breakdown", "30 day outlook", "Action plan", "30 day protection"]}
                 cta="Request Audit"
-                href={mailHref}
+                href={whatsappHref}
               />
               <Plan
+                planKey="pro"
+                selectedPlan={selectedPlan}
+                onSelect={setSelectedPlan}
                 name="Pro Monitor"
-                price="$499"
+                price="$299"
                 note="per month"
-                text="Monthly monitoring for active operators."
+                text="Monthly monitoring for active marketplace operators."
                 features={["Weekly risk review", "Tracking exposure analysis", "Velocity watch", "Priority alerts", "Monthly action plan"]}
                 cta="Start Pro"
                 highlighted
-                href={mailHref}
+                href={whatsappHref}
               />
               <Plan
+                planKey="agency"
+                selectedPlan={selectedPlan}
+                onSelect={setSelectedPlan}
                 name="Agency"
-                price="$1,500+"
+                price="$1,499"
                 note="per month"
                 text="For agencies and multi-store operators."
                 features={["Multi-account coverage", "Private playbooks", "Cross-marketplace radar", "Founder access", "Custom reporting"]}
                 cta="Talk To Us"
-                href={mailHref}
+                href={whatsappHref}
               />
             </div>
           </div>
         </section>
 
         <MarketplaceLogos />
-
         <FAQ />
 
         <section id="contact" className="border-t border-red-950/30 bg-gradient-to-b from-black to-zinc-950 px-5 py-24 text-center">
@@ -206,18 +230,19 @@ export default function Home() {
 
             <div className="mt-12 flex flex-col items-center justify-center gap-5 sm:flex-row">
               <a
-                href={WHATSAPP_AUDIT_URL}
+                href={whatsappHref}
                 target="_blank"
+                rel="noreferrer"
                 className="rounded-2xl bg-red-600 px-10 py-5 text-lg font-bold text-white transition hover:bg-red-500 hover:shadow-[0_0_40px_rgba(255,0,0,0.45)]"
               >
-                Open WhatsApp Audit Call
+                Open WhatsApp Chat
               </a>
 
               <a
-                href={mailHref}
+                href={`mailto:${SUPPORT_EMAIL}`}
                 className="rounded-2xl border border-zinc-800 bg-zinc-950 px-10 py-5 text-lg font-semibold text-zinc-300 transition hover:border-red-500/40 hover:text-white"
               >
-                intel@shadowscore.io
+                {SUPPORT_EMAIL}
               </a>
             </div>
 
@@ -228,12 +253,16 @@ export default function Home() {
         </section>
       </div>
 
-      {scanOpen && <ScanModal storeUrl={storeUrl} onClose={() => setScanOpen(false)} href={mailHref} />}
+      <MobileCTA href={whatsappHref} />
+
+      {scanOpen && (
+        <ScanModal storeUrl={storeUrl} onClose={() => setScanOpen(false)} href={whatsappHref} />
+      )}
     </main>
   );
 }
 
-function Header({ mailHref }: { mailHref: string }) {
+function Header({ whatsappHref }: { whatsappHref: string }) {
   return (
     <header className="sticky top-0 z-50 border-b border-red-950/40 bg-black/80 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
@@ -257,23 +286,26 @@ function Header({ mailHref }: { mailHref: string }) {
           <a href="#contact" className="hover:text-white">Contact</a>
         </nav>
 
-        <div className="flex items-center gap-2">
-          <a
-            href={WHATSAPP_AUDIT_URL}
-            target="_blank"
-            className="hidden rounded-2xl border border-zinc-700 px-5 py-3 text-sm font-bold text-white transition hover:border-red-500 md:block"
-          >
-            WhatsApp
-          </a>
-          <a
-            href={mailHref}
-            className="rounded-2xl bg-red-600 px-4 py-3 text-sm font-black text-white transition hover:bg-red-500 hover:shadow-[0_0_30px_rgba(255,0,0,0.45)] md:px-6"
-          >
-            Get Audit
-          </a>
-        </div>
+        <a
+          href={whatsappHref}
+          target="_blank"
+          rel="noreferrer"
+          className="rounded-2xl bg-red-600 px-4 py-3 text-sm font-black text-white transition hover:bg-red-500 hover:shadow-[0_0_30px_rgba(255,0,0,0.45)] md:px-6"
+        >
+          Get Audit
+        </a>
       </div>
     </header>
+  );
+}
+
+function MobileCTA({ href }: { href: string }) {
+  return (
+    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-800 bg-black/90 p-3 backdrop-blur-xl md:hidden">
+      <a href={href} target="_blank" rel="noreferrer" className="block rounded-2xl bg-red-600 px-5 py-4 text-center font-black">
+        Request Private Audit
+      </a>
+    </div>
   );
 }
 
@@ -289,6 +321,13 @@ function LogoMark() {
 }
 
 function RiskTerminal() {
+  const feed = [
+    "Tracking upload delay increased",
+    "Velocity drift detected",
+    "Payout exposure watchlist",
+    "Buyer signal volatility rising",
+  ];
+
   return (
     <div className="rounded-[32px] border border-zinc-800 bg-zinc-950/95 p-5 shadow-2xl shadow-red-950/30 md:p-6">
       <div className="flex items-center justify-between border-b border-zinc-800 pb-5">
@@ -296,9 +335,7 @@ function RiskTerminal() {
           <div className="text-sm text-zinc-500">Live Risk Terminal</div>
           <div className="mt-1 text-2xl font-black">ShadowScore Monitor</div>
         </div>
-        <div className="rounded-full border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm text-red-300">
-          Elevated
-        </div>
+        <div className="rounded-full border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm text-red-300">Elevated</div>
       </div>
 
       <div className="mt-6 grid grid-cols-2 gap-4">
@@ -308,31 +345,43 @@ function RiskTerminal() {
         <Metric title="Enforcement Risk" value="HIGH" status="30 Day Window" color="text-red-400" />
       </div>
 
+      <div className="mt-6 rounded-2xl border border-zinc-800 bg-black p-5">
+        <div className="mb-3 text-xs font-black uppercase tracking-[0.25em] text-red-400">Live Signal Feed</div>
+        <div className="space-y-3">
+          {feed.map((item) => (
+            <div key={item} className="flex items-center gap-3 text-sm text-zinc-400">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
+              {item}
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div className="mt-6 space-y-4">
-        <Alert title="Tracking Validation Decline" text="Upload delays increased 43% during the last 7 days." />
+        <Alert title="Tracking Validation Decline" text="Upload delays increased during the last 7 days." />
         <Alert title="Behavioral Drift Detected" text="Current behavior resembles accounts reviewed within 30 days." />
-        <Alert title="Fulfillment Exposure" text="Elevated TBA dependency and inconsistent scan quality detected." />
+        <Alert title="Fulfillment Exposure" text="Elevated dependency and inconsistent scan quality detected." />
       </div>
     </div>
   );
 }
 
-function LiveIntelligence() {
+function PilotMetrics() {
   const stats = [
-    ["12,842", "Stores Scanned", "+18.6% today"],
-    ["2,471", "High Risk Detected", "+23.4% today"],
-    ["1,358", "Alerts Sent", "+21.7% today"],
-    ["972", "Sellers Protected", "+19.2% today"],
-    ["5,683", "Payouts Protected", "+16.8% today"],
-    ["$3.27M", "Revenue Protected", "+22.1% today"],
+    ["37", "Stores Reviewed", "pilot"],
+    ["12", "High Risk Patterns", "found"],
+    ["9", "Risk Alerts Sent", "manual"],
+    ["4", "Sellers Stabilized", "pilot"],
+    ["$184K", "Estimated Revenue", "reviewed"],
+    ["5", "Markets Covered", "active"],
   ];
 
   return (
     <section className="px-5 pb-20">
       <div className="mx-auto max-w-7xl rounded-[32px] border border-zinc-800 bg-zinc-950/80 p-5 shadow-2xl shadow-red-950/20 md:p-6">
         <div className="text-center">
-          <Kicker text="ShadowScore Live Intelligence" />
-          <div className="mt-2 text-sm text-zinc-500">Network metrics shown for early access demonstration</div>
+          <Kicker text="Early Access Pilot Metrics" />
+          <div className="mt-2 text-sm text-zinc-500">Internal pilot reviews and manual audits. Not automated global marketplace coverage.</div>
         </div>
 
         <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-6">
@@ -340,7 +389,7 @@ function LiveIntelligence() {
             <div key={label} className="rounded-3xl border border-zinc-800 bg-black p-5">
               <div className="text-2xl font-black md:text-3xl">{value}</div>
               <div className="mt-2 text-sm text-zinc-400">{label}</div>
-              <div className="mt-3 text-xs text-green-400">{delta}</div>
+              <div className="mt-3 text-xs text-red-400">{delta}</div>
               <div className="mt-4 h-10 rounded-xl bg-[linear-gradient(90deg,transparent,rgba(220,38,38,0.35),transparent)]" />
             </div>
           ))}
@@ -352,11 +401,11 @@ function LiveIntelligence() {
 
 function MarketplaceLogos() {
   const platforms = [
-    { name: "eBay", style: "text-white" },
-    { name: "Amazon", style: "text-white" },
-    { name: "Walmart", style: "text-white" },
-    { name: "SHEIN", style: "text-white tracking-[0.18em]" },
-    { name: "TikTok Shop", style: "text-white" },
+    { name: "eBay", className: "text-white", accent: "group-hover:text-[#86b817]" },
+    { name: "amazon", className: "lowercase text-white", accent: "group-hover:text-[#ff9900]" },
+    { name: "Walmart", className: "text-white", accent: "group-hover:text-[#fdbb30]" },
+    { name: "SHEIN", className: "tracking-[0.22em] text-white", accent: "group-hover:text-zinc-200" },
+    { name: "TikTok Shop", className: "text-white", accent: "group-hover:text-[#25f4ee]" },
   ];
 
   return (
@@ -370,11 +419,15 @@ function MarketplaceLogos() {
               key={platform.name}
               className="group rounded-3xl border border-zinc-800 bg-gradient-to-b from-zinc-950 to-black p-8 text-center transition hover:border-red-500/30 hover:shadow-[0_0_40px_rgba(255,0,0,0.15)]"
             >
-              <div className={`text-2xl font-black tracking-tight transition group-hover:text-red-400 md:text-3xl ${platform.style}`}>
+              <div className={`text-2xl font-black tracking-tight transition md:text-3xl ${platform.className} ${platform.accent}`}>
                 {platform.name}
               </div>
             </div>
           ))}
+        </div>
+
+        <div className="mt-5 text-xs text-zinc-600">
+          Marketplace names are shown for monitoring coverage. ShadowScore is independent and not affiliated with these marketplaces.
         </div>
       </div>
     </section>
@@ -382,16 +435,18 @@ function MarketplaceLogos() {
 }
 
 function ScanModal({ storeUrl, onClose, href }: { storeUrl: string; onClose: () => void; href: string }) {
+  const [step, setStep] = useState(0);
+
   const scanSteps = useMemo(
-    () => [
-      "Reading marketplace signals",
-      "Checking tracking exposure",
-      "Analyzing velocity drift",
-      "Comparing enforcement similarity",
-      "Preparing private audit request",
-    ],
+    () => ["Reading marketplace signals", "Checking tracking exposure", "Analyzing velocity drift", "Comparing enforcement similarity", "Preparing private audit request"],
     []
   );
+
+  useEffect(() => {
+    if (step >= scanSteps.length) return;
+    const timer = setTimeout(() => setStep((current) => current + 1), 650);
+    return () => clearTimeout(timer);
+  }, [step, scanSteps.length]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-5 backdrop-blur-sm">
@@ -399,9 +454,9 @@ function ScanModal({ storeUrl, onClose, href }: { storeUrl: string; onClose: () 
         <div className="flex items-start justify-between">
           <div>
             <div className="text-sm font-black uppercase tracking-[0.25em] text-red-400">ShadowScore Scan</div>
-            <h3 className="mt-3 text-3xl font-black">Private Audit Required</h3>
+            <h3 className="mt-3 text-3xl font-black">{step >= scanSteps.length ? "Elevated Exposure Detected" : "Scanning Behavioral Signals"}</h3>
           </div>
-          <button onClick={onClose} className="text-zinc-500 hover:text-white">✕</button>
+          <button type="button" onClick={onClose} className="text-zinc-500 hover:text-white">✕</button>
         </div>
 
         <div className="mt-6 rounded-2xl border border-zinc-800 bg-black p-5">
@@ -410,26 +465,34 @@ function ScanModal({ storeUrl, onClose, href }: { storeUrl: string; onClose: () 
         </div>
 
         <div className="mt-6 space-y-3">
-          {scanSteps.map((step) => (
-            <div key={step} className="flex items-center gap-3 text-sm text-zinc-400">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
-              {step}
+          {scanSteps.map((scanStep, index) => (
+            <div key={scanStep} className="flex items-center gap-3 text-sm text-zinc-400">
+              <span className={`h-2 w-2 rounded-full ${index < step ? "bg-red-500" : "bg-zinc-700"}`} />
+              {scanStep}
             </div>
           ))}
         </div>
 
-        <div className="mt-6 space-y-3">
-          <Progress label="Tracking Exposure" value="78%" />
-          <Progress label="Marketplace Trust Drift" value="64%" />
-          <Progress label="Enforcement Similarity" value="71%" />
-        </div>
+        {step >= scanSteps.length && (
+          <>
+            <div className="mt-6 rounded-3xl border border-red-500/30 bg-red-950/20 p-5">
+              <div className="text-6xl font-black text-red-500">72</div>
+              <div className="mt-2 text-xl font-black">Elevated Risk Similarity</div>
+              <p className="mt-3 text-sm leading-relaxed text-zinc-400">
+                This public scan is limited. A full private audit requires store context, screenshots and exports.
+              </p>
+            </div>
 
-        <p className="mt-6 leading-relaxed text-zinc-400">
-          Automated public scanning is limited during early access. Send the store URL and receive a private risk review.
-        </p>
+            <div className="mt-6 space-y-3">
+              <Progress label="Tracking Exposure" value="78%" />
+              <Progress label="Marketplace Trust Drift" value="64%" />
+              <Progress label="Enforcement Similarity" value="71%" />
+            </div>
+          </>
+        )}
 
-        <a href={href} className="mt-6 block rounded-2xl bg-red-600 px-7 py-4 text-center font-black hover:bg-red-500">
-          Send Store For Review
+        <a href={href} target="_blank" rel="noreferrer" className="mt-6 block rounded-2xl bg-red-600 px-7 py-4 text-center font-black hover:bg-red-500">
+          Continue On WhatsApp
         </a>
       </div>
     </div>
@@ -522,21 +585,51 @@ function Stage({ number, title, text }: { number: string; title: string; text: s
   );
 }
 
-function Plan({ name, price, note, text, features, cta, href, highlighted = false }: PlanProps) {
+function Plan({ planKey, selectedPlan, onSelect, name, price, note, text, features, cta, href, highlighted = false }: PlanProps) {
+  const active = selectedPlan === planKey;
+
   return (
-    <div className={`rounded-[32px] border p-8 ${highlighted ? "border-red-500 bg-red-950/20 shadow-2xl shadow-red-950/30" : "border-zinc-800 bg-black"}`}>
-      <div className="text-2xl font-black">{name}</div>
+    <div
+      onClick={() => onSelect(planKey)}
+      className={`cursor-pointer rounded-[32px] border p-8 transition ${
+        active
+          ? "border-red-500 bg-red-950/20 shadow-2xl shadow-red-950/40"
+          : highlighted
+          ? "border-red-500/40 bg-red-950/10"
+          : "border-zinc-800 bg-black hover:border-red-500/40"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div className="text-2xl font-black">{name}</div>
+        {active && (
+          <div className="rounded-full border border-red-500/40 bg-red-500/10 px-3 py-1 text-xs font-bold text-red-300">
+            Selected
+          </div>
+        )}
+      </div>
+
       <div className="mt-6 flex items-end gap-2">
         <div className="text-5xl font-black">{price}</div>
         <div className="mb-2 text-zinc-500">{note}</div>
       </div>
+
       <p className="mt-5 leading-relaxed text-zinc-400">{text}</p>
+
       <div className="mt-7 space-y-3">
         {features.map((f) => (
           <div key={f} className="text-zinc-300">✓ {f}</div>
         ))}
       </div>
-      <a href={href} className={`mt-8 block rounded-2xl px-6 py-4 text-center font-black ${highlighted ? "bg-red-600 hover:bg-red-500" : "border border-zinc-700 hover:border-red-500"}`}>
+
+      <a
+        href={href}
+        target="_blank"
+        rel="noreferrer"
+        onClick={(e) => e.stopPropagation()}
+        className={`mt-8 block rounded-2xl px-6 py-4 text-center font-black ${
+          active ? "bg-red-600 hover:bg-red-500" : "border border-zinc-700 hover:border-red-500"
+        }`}
+      >
         {cta}
       </a>
     </div>
