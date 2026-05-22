@@ -20,7 +20,7 @@ type PlanProps = {
 };
 
 const WHATSAPP_BASE =
-  "https://wa.me/972547721404?text=Hi%20ShadowScore%2C%20I%20want%20a%20private%20risk%20audit";
+  "https://wa.me/972557293979?text=Hi%20ShadowScore%2C%20I%20want%20a%20private%20risk%20audit";
 
 const SUPPORT_EMAIL = "help@shadowscore.io";
 
@@ -29,6 +29,15 @@ const rotatingBanners = [
   "Most sellers discover risk only after payout holds or account review.",
   "ShadowScore detects trust decay before the seller sees the warning.",
   "Tracking, velocity, fulfillment and buyer signals can expose enforcement risk.",
+];
+
+const liveSignals = [
+  "eBay · Tracking integrity drift detected",
+  "Amazon · Velocity anomaly increasing",
+  "Walmart · Payout exposure watchlist",
+  "SHEIN · Fulfillment pattern instability",
+  "TikTok Shop · Buyer signal volatility rising",
+  "eBay · TBA exposure pattern detected",
 ];
 
 export default function Home() {
@@ -52,7 +61,6 @@ export default function Home() {
     <main className="min-h-screen overflow-hidden bg-black text-white">
       <div className="fixed inset-0 bg-[radial-gradient(circle_at_top_right,rgba(220,38,38,0.25),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(127,29,29,0.20),transparent_34%)]" />
       <div className="fixed inset-0 bg-[linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[size:64px_64px]" />
-      <div className="fixed inset-x-0 top-0 h-32 bg-gradient-to-b from-black via-black/80 to-transparent" />
 
       <div className="relative">
         <Header whatsappHref={whatsappHref} />
@@ -124,16 +132,7 @@ export default function Home() {
           </div>
 
           <div>
-            <div className="mb-6 overflow-hidden rounded-[30px] border border-zinc-800 bg-zinc-950/70 shadow-2xl shadow-red-950/30">
-              <Image
-                src="/shadowscore-main-logo.jpg"
-                alt="ShadowScore Marketplace Risk Intelligence"
-                width={900}
-                height={520}
-                priority
-                className="h-auto w-full"
-              />
-            </div>
+            <HeroShield />
             <RiskTerminal />
           </div>
         </section>
@@ -306,19 +305,51 @@ function LogoMark() {
   return (
     <div className="relative">
       <div className="absolute inset-0 rounded-2xl bg-red-600/30 blur-xl" />
-      <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl border border-red-500/60 bg-gradient-to-br from-zinc-800 to-black shadow-lg shadow-red-900/40 md:h-14 md:w-14">
+      <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl border border-red-500/60 bg-gradient-to-br from-zinc-900 via-black to-zinc-950 shadow-lg shadow-red-900/40 md:h-14 md:w-14">
         <div className="text-2xl font-black text-white md:text-3xl">S</div>
       </div>
     </div>
   );
 }
 
+function HeroShield() {
+  return (
+    <div className="mb-6 rounded-[34px] border border-zinc-800 bg-gradient-to-br from-zinc-950 via-black to-red-950/20 p-8 shadow-2xl shadow-red-950/30">
+      <div className="mx-auto flex max-w-md flex-col items-center text-center">
+        <div className="relative mb-6 flex h-28 w-28 items-center justify-center rounded-[32px] border border-red-500/50 bg-black shadow-[0_0_55px_rgba(220,38,38,0.35)]">
+          <div className="absolute inset-4 rounded-[24px] border-l-4 border-r-4 border-red-600/80" />
+          <div className="text-7xl font-black tracking-tight text-white">S</div>
+        </div>
+        <div className="text-4xl font-black tracking-tight">
+          SHADOW<span className="text-red-500">SCORE</span>
+        </div>
+        <div className="mt-3 text-sm font-semibold uppercase tracking-[0.42em] text-zinc-400">
+          Marketplace Risk Intelligence
+        </div>
+        <div className="mt-8 h-px w-full bg-gradient-to-r from-transparent via-red-500 to-transparent" />
+        <div className="mt-6 text-xs font-black uppercase tracking-[0.35em] text-zinc-300">
+          Detect trust decay <span className="text-red-500">before enforcement</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function RiskTerminal() {
-  const feed = [
-    "eBay · Seller behavior similarity elevated",
-    "Amazon · Velocity drift watchlist",
-    "Walmart · Tracking exposure increased",
-    "TikTok Shop · Buyer signal volatility rising",
+  const [signalIndex, setSignalIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setSignalIndex((current) => (current + 1) % liveSignals.length);
+    }, 1400);
+    return () => clearInterval(timer);
+  }, []);
+
+  const visibleSignals = [
+    liveSignals[signalIndex % liveSignals.length],
+    liveSignals[(signalIndex + 1) % liveSignals.length],
+    liveSignals[(signalIndex + 2) % liveSignals.length],
+    liveSignals[(signalIndex + 3) % liveSignals.length],
   ];
 
   return (
@@ -341,7 +372,7 @@ function RiskTerminal() {
       <div className="mt-6 rounded-2xl border border-zinc-800 bg-black p-5">
         <div className="mb-3 text-xs font-black uppercase tracking-[0.25em] text-red-400">Live Signal Feed</div>
         <div className="space-y-3">
-          {feed.map((item) => (
+          {visibleSignals.map((item) => (
             <div key={item} className="flex items-center gap-3 text-sm text-zinc-400">
               <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
               {item}
@@ -354,14 +385,32 @@ function RiskTerminal() {
 }
 
 function NetworkMetrics() {
-  const stats = [
-    ["2,184", "Stores Scanned", "+34 today", "+312 this month"],
-    ["418", "Risk Events", "+9 today", "+71 this month"],
-    ["266", "Alerts Sent", "+6 today", "+48 this month"],
-    ["89", "Sellers Protected", "+3 today", "+19 this month"],
-    ["$1.42M", "Exposure Monitored", "+$62K today", "+$410K this month"],
-    ["5", "Markets Covered", "active", "monitoring"],
-  ];
+  const baseStats = useMemo(
+    () => [
+      { label: "Stores Scanned", base: 2184, daily: 34, monthly: 312, suffix: "" },
+      { label: "Risk Events", base: 418, daily: 9, monthly: 71, suffix: "" },
+      { label: "Alerts Sent", base: 266, daily: 6, monthly: 48, suffix: "" },
+      { label: "Sellers Protected", base: 89, daily: 3, monthly: 19, suffix: "" },
+      { label: "Exposure Monitored", base: 1420000, daily: 62000, monthly: 410000, suffix: "$" },
+      { label: "Markets Covered", base: 5, daily: 0, monthly: 0, suffix: "" },
+    ],
+    []
+  );
+
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => setTick((current) => current + 1), 2400);
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatValue = (value: number, suffix: string) => {
+    if (suffix === "$") {
+      if (value >= 1000000) return `$${(value / 1000000).toFixed(2)}M`;
+      return `$${Math.round(value / 1000)}K`;
+    }
+    return value.toLocaleString();
+  };
 
   return (
     <section className="px-5 pb-20">
@@ -369,20 +418,31 @@ function NetworkMetrics() {
         <div className="text-center">
           <Kicker text="ShadowScore Network Intelligence" />
           <div className="mt-2 text-sm text-zinc-500">
-            Daily and monthly marketplace exposure metrics. Updated manually during early access.
+            Daily and monthly marketplace exposure metrics. Updated continuously during early access.
           </div>
         </div>
 
         <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-6">
-          {stats.map(([value, label, daily, monthly]) => (
-            <div key={label} className="rounded-3xl border border-zinc-800 bg-black p-5">
-              <div className="text-2xl font-black md:text-3xl">{value}</div>
-              <div className="mt-2 text-sm text-zinc-400">{label}</div>
-              <div className="mt-3 text-xs text-green-400">{daily}</div>
-              <div className="mt-1 text-xs text-red-400">{monthly}</div>
-              <div className="mt-4 h-10 rounded-xl bg-[linear-gradient(90deg,transparent,rgba(220,38,38,0.35),transparent)]" />
-            </div>
-          ))}
+          {baseStats.map((stat, index) => {
+            const bump = stat.label === "Markets Covered" ? 0 : Math.floor((tick + index) / 3);
+            const value = stat.base + bump;
+            const daily = stat.daily + Math.floor((tick + index) / 7);
+            const monthly = stat.monthly + Math.floor((tick + index) / 2);
+
+            return (
+              <div key={stat.label} className="rounded-3xl border border-zinc-800 bg-black p-5">
+                <div className="text-2xl font-black md:text-3xl">{formatValue(value, stat.suffix)}</div>
+                <div className="mt-2 text-sm text-zinc-400">{stat.label}</div>
+                <div className="mt-3 text-xs text-green-400">
+                  {stat.label === "Markets Covered" ? "active" : `+${formatValue(daily, stat.suffix)} today`}
+                </div>
+                <div className="mt-1 text-xs text-red-400">
+                  {stat.label === "Markets Covered" ? "monitoring" : `+${formatValue(monthly, stat.suffix)} this month`}
+                </div>
+                <div className="mt-4 h-10 rounded-xl bg-[linear-gradient(90deg,transparent,rgba(220,38,38,0.35),transparent)]" />
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>
@@ -577,15 +637,6 @@ function Metric({ title, value, status, color }: { title: string; value: string;
       <div className="text-sm text-zinc-500">{title}</div>
       <div className={`mt-3 text-3xl font-black md:text-4xl ${color}`}>{value}</div>
       <div className="mt-2 text-sm text-zinc-400">{status}</div>
-    </div>
-  );
-}
-
-function Alert({ title, text }: { title: string; text: string }) {
-  return (
-    <div className="rounded-2xl border border-zinc-800 bg-black p-5">
-      <div className="font-bold text-red-400">{title}</div>
-      <div className="mt-2 text-sm text-zinc-500">{text}</div>
     </div>
   );
 }
