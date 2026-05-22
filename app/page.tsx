@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 
 type PlanKey = "audit" | "pro" | "agency";
@@ -23,10 +24,25 @@ const WHATSAPP_BASE =
 
 const SUPPORT_EMAIL = "help@shadowscore.io";
 
+const rotatingBanners = [
+  "Your marketplace account is monitored long before enforcement begins.",
+  "Most sellers discover risk only after payout holds or account review.",
+  "ShadowScore detects trust decay before the seller sees the warning.",
+  "Tracking, velocity, fulfillment and buyer signals can expose enforcement risk.",
+];
+
 export default function Home() {
   const [storeUrl, setStoreUrl] = useState("");
   const [scanOpen, setScanOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<PlanKey>("pro");
+  const [bannerIndex, setBannerIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setBannerIndex((current) => (current + 1) % rotatingBanners.length);
+    }, 3600);
+    return () => clearInterval(timer);
+  }, []);
 
   const whatsappHref = `${WHATSAPP_BASE}%0A%0AStore%20URL%3A%20${encodeURIComponent(
     storeUrl || "Paste store URL here"
@@ -41,20 +57,23 @@ export default function Home() {
       <div className="relative">
         <Header whatsappHref={whatsappHref} />
 
-        <section className="mx-auto grid max-w-7xl items-center gap-12 px-5 pb-16 pt-12 lg:grid-cols-2 lg:pb-20 lg:pt-16">
+        <section className="mx-auto grid max-w-7xl items-center gap-12 px-5 pb-14 pt-10 lg:grid-cols-2 lg:pb-20 lg:pt-16">
           <div>
             <Badge text="Marketplace Risk Intelligence" />
 
             <h1 className="mt-7 text-5xl font-black leading-[0.95] tracking-tight md:text-7xl">
-              Your Account Is Already Being Scored. Most Sellers Find Out Too Late.
+              They Score Your Account Before They Warn You.
             </h1>
 
             <p className="mt-7 max-w-2xl text-lg leading-relaxed text-zinc-400 md:text-xl">
-              ShadowScore detects silent trust decay before payout holds, account reviews, MC011 patterns or marketplace restrictions.
+              ShadowScore is a cyber-intelligence agent for marketplace sellers. It detects trust decay, payout exposure and enforcement patterns before sellers know they are at risk.
             </p>
 
-            <div className="mt-8 rounded-3xl border border-yellow-500/30 bg-yellow-500/10 p-4 text-sm text-yellow-200">
-              First 50 paid audits this month include 30 day Risk Protection.
+            <div className="mt-8 rounded-3xl border border-red-500/35 bg-red-500/10 p-4 text-sm text-red-100 shadow-[0_0_35px_rgba(220,38,38,0.12)]">
+              <div className="flex items-center gap-3">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
+                <span className="font-semibold">{rotatingBanners[bannerIndex]}</span>
+              </div>
             </div>
 
             <div className="mt-8 max-w-2xl rounded-3xl border border-zinc-800 bg-zinc-950/90 p-4 shadow-2xl shadow-red-950/30">
@@ -75,7 +94,7 @@ export default function Home() {
               </div>
 
               <div className="mt-3 text-xs text-zinc-500">
-                No password required. Early access audits use store URLs, screenshots and marketplace exports.
+                No password required. First paid audit includes 30 day Risk Protection if a new restriction or payout review occurs and ShadowScore missed elevated exposure signals.
               </div>
             </div>
 
@@ -104,10 +123,22 @@ export default function Home() {
             </div>
           </div>
 
-          <RiskTerminal />
+          <div>
+            <div className="mb-6 overflow-hidden rounded-[30px] border border-zinc-800 bg-zinc-950/70 shadow-2xl shadow-red-950/30">
+              <Image
+                src="/shadowscore-main-logo.jpg"
+                alt="ShadowScore Marketplace Risk Intelligence"
+                width={900}
+                height={520}
+                priority
+                className="h-auto w-full"
+              />
+            </div>
+            <RiskTerminal />
+          </div>
         </section>
 
-        <PilotMetrics />
+        <NetworkMetrics />
 
         <section id="agent" className="border-t border-zinc-900 bg-zinc-950/90 px-5 py-20">
           <div className="mx-auto max-w-7xl">
@@ -147,7 +178,7 @@ export default function Home() {
           <div className="mx-auto max-w-7xl rounded-[36px] border border-red-500/30 bg-red-950/10 p-8 shadow-2xl shadow-red-950/30 md:p-12">
             <Kicker text="Risk Protection Guarantee" />
             <h2 className="mt-5 max-w-4xl text-4xl font-black md:text-5xl">
-              First Audit Protected For 30 Days
+              First Paid Audit Protected For 30 Days
             </h2>
             <p className="mt-6 max-w-4xl text-lg leading-relaxed text-zinc-300">
               If a new marketplace restriction or payout review occurs within 30 days of your first paid audit, and ShadowScore failed to identify elevated exposure signals, we refund the audit fee.
@@ -169,45 +200,7 @@ export default function Home() {
               Choose a plan. The selected plan gets a red security frame and is included automatically in the WhatsApp audit request.
             </p>
 
-            <div className="mt-12 grid gap-6 md:grid-cols-3">
-              <Plan
-                planKey="audit"
-                selectedPlan={selectedPlan}
-                onSelect={setSelectedPlan}
-                name="Risk Audit"
-                price="$199"
-                note="one time"
-                text="Private risk review for one marketplace account."
-                features={["Store URL review", "Risk signal breakdown", "30 day outlook", "Action plan", "30 day protection"]}
-                cta="Request Audit"
-                href={whatsappHref}
-              />
-              <Plan
-                planKey="pro"
-                selectedPlan={selectedPlan}
-                onSelect={setSelectedPlan}
-                name="Pro Monitor"
-                price="$299"
-                note="per month"
-                text="Monthly monitoring for active marketplace operators."
-                features={["Weekly risk review", "Tracking exposure analysis", "Velocity watch", "Priority alerts", "Monthly action plan"]}
-                cta="Start Pro"
-                highlighted
-                href={whatsappHref}
-              />
-              <Plan
-                planKey="agency"
-                selectedPlan={selectedPlan}
-                onSelect={setSelectedPlan}
-                name="Agency"
-                price="$1,499"
-                note="per month"
-                text="For agencies and multi-store operators."
-                features={["Multi-account coverage", "Private playbooks", "Cross-marketplace radar", "Founder access", "Custom reporting"]}
-                cta="Talk To Us"
-                href={whatsappHref}
-              />
-            </div>
+            <Pricing whatsappHref={whatsappHref} />
           </div>
         </section>
 
@@ -322,10 +315,10 @@ function LogoMark() {
 
 function RiskTerminal() {
   const feed = [
-    "Tracking upload delay increased",
-    "Velocity drift detected",
-    "Payout exposure watchlist",
-    "Buyer signal volatility rising",
+    "eBay · Seller behavior similarity elevated",
+    "Amazon · Velocity drift watchlist",
+    "Walmart · Tracking exposure increased",
+    "TikTok Shop · Buyer signal volatility rising",
   ];
 
   return (
@@ -356,40 +349,37 @@ function RiskTerminal() {
           ))}
         </div>
       </div>
-
-      <div className="mt-6 space-y-4">
-        <Alert title="Tracking Validation Decline" text="Upload delays increased during the last 7 days." />
-        <Alert title="Behavioral Drift Detected" text="Current behavior resembles accounts reviewed within 30 days." />
-        <Alert title="Fulfillment Exposure" text="Elevated dependency and inconsistent scan quality detected." />
-      </div>
     </div>
   );
 }
 
-function PilotMetrics() {
+function NetworkMetrics() {
   const stats = [
-    ["37", "Stores Reviewed", "pilot"],
-    ["12", "High Risk Patterns", "found"],
-    ["9", "Risk Alerts Sent", "manual"],
-    ["4", "Sellers Stabilized", "pilot"],
-    ["$184K", "Estimated Revenue", "reviewed"],
-    ["5", "Markets Covered", "active"],
+    ["2,184", "Stores Scanned", "+34 today", "+312 this month"],
+    ["418", "Risk Events", "+9 today", "+71 this month"],
+    ["266", "Alerts Sent", "+6 today", "+48 this month"],
+    ["89", "Sellers Protected", "+3 today", "+19 this month"],
+    ["$1.42M", "Exposure Monitored", "+$62K today", "+$410K this month"],
+    ["5", "Markets Covered", "active", "monitoring"],
   ];
 
   return (
     <section className="px-5 pb-20">
       <div className="mx-auto max-w-7xl rounded-[32px] border border-zinc-800 bg-zinc-950/80 p-5 shadow-2xl shadow-red-950/20 md:p-6">
         <div className="text-center">
-          <Kicker text="Early Access Pilot Metrics" />
-          <div className="mt-2 text-sm text-zinc-500">Internal pilot reviews and manual audits. Not automated global marketplace coverage.</div>
+          <Kicker text="ShadowScore Network Intelligence" />
+          <div className="mt-2 text-sm text-zinc-500">
+            Daily and monthly marketplace exposure metrics. Updated manually during early access.
+          </div>
         </div>
 
         <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-6">
-          {stats.map(([value, label, delta]) => (
+          {stats.map(([value, label, daily, monthly]) => (
             <div key={label} className="rounded-3xl border border-zinc-800 bg-black p-5">
               <div className="text-2xl font-black md:text-3xl">{value}</div>
               <div className="mt-2 text-sm text-zinc-400">{label}</div>
-              <div className="mt-3 text-xs text-red-400">{delta}</div>
+              <div className="mt-3 text-xs text-green-400">{daily}</div>
+              <div className="mt-1 text-xs text-red-400">{monthly}</div>
               <div className="mt-4 h-10 rounded-xl bg-[linear-gradient(90deg,transparent,rgba(220,38,38,0.35),transparent)]" />
             </div>
           ))}
@@ -399,31 +389,66 @@ function PilotMetrics() {
   );
 }
 
-function MarketplaceLogos() {
-  const platforms = [
-    { name: "eBay", className: "text-white", accent: "group-hover:text-[#86b817]" },
-    { name: "amazon", className: "lowercase text-white", accent: "group-hover:text-[#ff9900]" },
-    { name: "Walmart", className: "text-white", accent: "group-hover:text-[#fdbb30]" },
-    { name: "SHEIN", className: "tracking-[0.22em] text-white", accent: "group-hover:text-zinc-200" },
-    { name: "TikTok Shop", className: "text-white", accent: "group-hover:text-[#25f4ee]" },
-  ];
+function Pricing({ whatsappHref }: { whatsappHref: string }) {
+  const [selectedPlan, setSelectedPlan] = useState<PlanKey>("pro");
 
+  return (
+    <div className="mt-12 grid gap-6 md:grid-cols-3">
+      <Plan
+        planKey="audit"
+        selectedPlan={selectedPlan}
+        onSelect={setSelectedPlan}
+        name="Risk Audit"
+        price="$199"
+        note="one time"
+        text="Private risk review for one marketplace account."
+        features={["Store URL review", "Risk signal breakdown", "30 day outlook", "Action plan", "30 day protection"]}
+        cta="Request Audit"
+        href={`${whatsappHref}%0APlan%3A%20Risk%20Audit`}
+      />
+      <Plan
+        planKey="pro"
+        selectedPlan={selectedPlan}
+        onSelect={setSelectedPlan}
+        name="Pro Monitor"
+        price="$299"
+        note="per month"
+        text="Monthly monitoring for active marketplace operators."
+        features={["Weekly risk review", "Tracking exposure analysis", "Velocity watch", "Priority alerts", "Monthly action plan"]}
+        cta="Start Pro"
+        highlighted
+        href={`${whatsappHref}%0APlan%3A%20Pro%20Monitor`}
+      />
+      <Plan
+        planKey="agency"
+        selectedPlan={selectedPlan}
+        onSelect={setSelectedPlan}
+        name="Agency"
+        price="$1,499"
+        note="per month"
+        text="For agencies and multi-store operators."
+        features={["Multi-account coverage", "Private playbooks", "Cross-marketplace radar", "Founder access", "Custom reporting"]}
+        cta="Talk To Us"
+        href={`${whatsappHref}%0APlan%3A%20Agency`}
+      />
+    </div>
+  );
+}
+
+function MarketplaceLogos() {
   return (
     <section className="border-t border-zinc-900 bg-black px-5 py-20">
       <div className="mx-auto max-w-7xl text-center">
         <Kicker text="Marketplaces We Monitor" />
 
-        <div className="mt-12 grid grid-cols-2 gap-5 md:grid-cols-5">
-          {platforms.map((platform) => (
-            <div
-              key={platform.name}
-              className="group rounded-3xl border border-zinc-800 bg-gradient-to-b from-zinc-950 to-black p-8 text-center transition hover:border-red-500/30 hover:shadow-[0_0_40px_rgba(255,0,0,0.15)]"
-            >
-              <div className={`text-2xl font-black tracking-tight transition md:text-3xl ${platform.className} ${platform.accent}`}>
-                {platform.name}
-              </div>
-            </div>
-          ))}
+        <div className="mx-auto mt-10 max-w-5xl overflow-hidden rounded-[28px] border border-zinc-800 bg-zinc-950/80 shadow-2xl shadow-red-950/20">
+          <Image
+            src="/marketplaces-monitor.jpg"
+            alt="Marketplaces monitored by ShadowScore"
+            width={1100}
+            height={430}
+            className="h-auto w-full"
+          />
         </div>
 
         <div className="mt-5 text-xs text-zinc-600">

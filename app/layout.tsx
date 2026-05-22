@@ -2,40 +2,38 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ShadowScore",
+  title: "ShadowScore | Marketplace Risk Intelligence",
   description:
-    "Marketplace Risk Intelligence Platform for eBay, Amazon, Walmart, SHEIN and TikTok Shop sellers.",
-
+    "Cyber-intelligence for marketplace sellers. Detect trust decay, payout exposure and enforcement patterns before sellers know they are at risk.",
   metadataBase: new URL("https://shadowscore.io"),
-
   openGraph: {
-    title: "ShadowScore",
+    title: "ShadowScore | Marketplace Risk Intelligence",
     description:
-      "Detect trust decay before enforcement.",
+      "They score your account before they warn you. ShadowScore helps sellers detect trust decay before enforcement.",
     url: "https://shadowscore.io",
     siteName: "ShadowScore",
     images: [
       {
-        url: "/og-image.png",
+        url: "/shadowscore-og.jpg",
         width: 1200,
         height: 630,
-        alt: "ShadowScore",
+        alt: "ShadowScore Marketplace Risk Intelligence",
       },
     ],
     locale: "en_US",
     type: "website",
   },
-
   twitter: {
     card: "summary_large_image",
-    title: "ShadowScore",
+    title: "ShadowScore | Marketplace Risk Intelligence",
     description:
-      "Marketplace Risk Intelligence",
-    images: ["/og-image.png"],
+      "Detect marketplace trust decay before payout holds, account reviews and enforcement.",
+    images: ["/shadowscore-og.jpg"],
   },
-
   icons: {
-    icon: "/favicon.ico",
+    icon: "/shadowscore-main-logo.jpg",
+    shortcut: "/shadowscore-main-logo.jpg",
+    apple: "/shadowscore-main-logo.jpg",
   },
 };
 
