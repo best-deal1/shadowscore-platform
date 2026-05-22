@@ -26,10 +26,10 @@ const WHATSAPP_BASE =
 const SUPPORT_EMAIL = "help@shadowscore.io";
 
 const rotatingBanners = [
-  "Behavioral risk monitoring is active before marketplace warnings appear.",
-  "Most sellers discover enforcement risk only after the marketplace already acted.",
-  "Silent trust decay can start weeks before MC011, payout holds or restrictions.",
-  "Tracking, velocity, fulfillment and buyer signals can expose hidden account risk.",
+  "Marketplace monitoring starts before visible seller warnings appear.",
+  "Most sellers discover account risk only after marketplace action begins.",
+  "Silent trust decay can start weeks before payout holds, account reviews or restrictions.",
+  "Tracking, fulfillment, payout and buyer signals can expose hidden account risk.",
 ];
 
 const liveSignals = [
@@ -73,12 +73,12 @@ export default function Home() {
             <Badge text="Marketplace Behavioral Intelligence Active" />
 
             <h1 className="mt-7 text-5xl font-black leading-[0.93] tracking-tight md:text-7xl">
-              Your Marketplace Is Scoring You Right Now.
-              <span className="block text-red-500">And You Do Not Even Know It.</span>
+              Your Marketplace Is Scoring You Before It Warns You.
+              <span className="block text-red-500">Most Sellers Find Out Too Late.</span>
             </h1>
 
             <p className="mt-7 max-w-2xl text-lg leading-relaxed text-zinc-400 md:text-xl">
-              ShadowScore is a cyber-intelligence agent for marketplace sellers. It detects silent trust decay, tracking anomalies, payout instability and enforcement exposure before MC011 reviews, payout holds or account restrictions happen.
+              ShadowScore detects hidden seller risk signals before marketplace reviews, payout holds and account restrictions happen.
             </p>
 
             <div className="mt-8 rounded-3xl border border-red-500/35 bg-red-500/10 p-4 text-sm text-red-100 shadow-[0_0_35px_rgba(220,38,38,0.12)]">
@@ -163,15 +163,15 @@ export default function Home() {
           <div className="mx-auto max-w-7xl">
             <Kicker text="Signal Engine" />
             <h2 className="mt-5 max-w-4xl text-4xl font-black md:text-5xl">
-              Marketplace Risk Is Not One Event. It Is A Pattern.
+              Marketplace Enforcement Starts Before The Warning
             </h2>
 
             <div className="mt-12 grid gap-6 md:grid-cols-3">
               <Card title="Tracking Integrity" text="Late uploads, TBA exposure, invalid scans, carrier mismatch and weak proof of delivery." icon="01" />
               <Card title="Velocity Risk" text="Sudden sales growth, category spikes, new account pressure and fulfillment instability." icon="02" />
               <Card title="Trust Decay" text="Buyer sentiment, INR activity, refund drift, payout friction and support routing changes." icon="03" />
-              <Card title="Operational Fingerprint" text="SKU churn, source dependency, fulfillment gaps and marketplace pattern similarity." icon="04" />
-              <Card title="Enforcement Similarity" text="Compares behavior to known pre-review and pre-restriction patterns." icon="05" />
+              <Card title="Operational Exposure" text="SKU churn, source dependency, fulfillment gaps and account stability signals." icon="04" />
+              <Card title="Review Exposure" text="Identifies elevated similarity to accounts that later entered review or restriction." icon="05" />
               <Card title="Action Layer" text="Direct actions before damage reaches account health or payout systems." icon="06" />
             </div>
           </div>
@@ -582,7 +582,7 @@ function ScanModal({ storeUrl, onClose, href }: { storeUrl: string; onClose: () 
             <div className="mt-6 space-y-3">
               <Progress label="Tracking Exposure" value="78%" />
               <Progress label="Marketplace Trust Drift" value="64%" />
-              <Progress label="Enforcement Similarity" value="71%" />
+              <Progress label="Review Exposure" value="71%" />
             </div>
           </>
         )}
@@ -596,26 +596,121 @@ function ScanModal({ storeUrl, onClose, href }: { storeUrl: string; onClose: () 
 }
 
 function FAQ() {
+  const [expanded, setExpanded] = useState(false);
+
+  const faqs = [
+    {
+      q: "Is ShadowScore a reinstatement service?",
+      a: "No. ShadowScore is built to detect risk before enforcement. If you already received MC011, a payout hold or a major restriction, you may already be late.",
+    },
+    {
+      q: "Do you need my marketplace password?",
+      a: "No. The first audit can start with a store URL, screenshots and exports. No marketplace password is required.",
+    },
+    {
+      q: "Is the 30 day protection available forever?",
+      a: "No. It applies only to the first paid audit. Future scans do not include the first-audit guarantee.",
+    },
+    {
+      q: "Which sellers is this for?",
+      a: "High-volume sellers, dropshippers, agencies, Walmart sellers, eBay sellers, Amazon sellers and operators who cannot afford sudden restrictions.",
+    },
+    {
+      q: "What does ShadowScore actually look for?",
+      a: "We look for tracking degradation, fulfillment inconsistencies, velocity spikes, refund drift, buyer signal changes, payout friction and behavior patterns that resemble accounts entering review.",
+    },
+    {
+      q: "Can ShadowScore guarantee my account will not be suspended?",
+      a: "No. No outside service can control marketplace enforcement. ShadowScore helps identify elevated exposure early so sellers can strengthen proof, fulfillment and operational behavior before risk escalates.",
+    },
+    {
+      q: "What do I receive after a private audit?",
+      a: "You receive a risk breakdown, key exposure signals, a 30 day outlook and a practical action plan focused on reducing marketplace risk.",
+    },
+    {
+      q: "Can you scan Amazon, eBay, Walmart, SHEIN and TikTok Shop?",
+      a: "Yes. ShadowScore is designed around cross-marketplace behavioral signals, with the strongest early focus on sellers exposed to tracking, fulfillment and payout risk.",
+    },
+    {
+      q: "Do you access private customer data?",
+      a: "No. The early audit can be performed from store context, screenshots, exports and operational details that the seller chooses to share.",
+    },
+    {
+      q: "How fast do I get results?",
+      a: "During early access, most private audits are reviewed manually. Response time depends on volume and the quality of the information provided.",
+    },
+    {
+      q: "Is this only for dropshippers?",
+      a: "No. Dropshippers are highly exposed, but the same risk patterns can affect any seller with fulfillment delays, tracking weakness, sudden sales velocity or account health pressure.",
+    },
+    {
+      q: "Why is marketplace risk hard to see?",
+      a: "Marketplaces do not show sellers the full trust model. Sellers often see the visible warning only after hidden risk signals have already accumulated.",
+    },
+    {
+      q: "What makes ShadowScore hard to copy?",
+      a: "The value is not the landing page. The value is the private signal framework, accumulated seller outcomes and action playbooks built from repeated audits.",
+    },
+    {
+      q: "Can agencies use ShadowScore for multiple stores?",
+      a: "Yes. The Agency plan is built for multi-store operators, consultants and teams managing several seller accounts.",
+    },
+    {
+      q: "What should I prepare before requesting an audit?",
+      a: "Prepare your store URL, recent tracking examples, account health screenshots, payout or review notices if any, fulfillment workflow details and any recent change in sales velocity.",
+    },
+  ];
+
+  const visibleFaqs = expanded ? faqs : faqs.slice(0, 4);
+
   return (
     <section className="border-t border-zinc-900 bg-zinc-950 px-5 py-20">
       <div className="mx-auto max-w-5xl">
         <Kicker text="FAQ" />
+        <h2 className="mt-5 text-4xl font-black md:text-5xl">
+          Questions Sellers Ask Before They Realize The Risk Is Already Building
+        </h2>
+
         <div className="mt-8 grid gap-4">
-          <FAQItem q="Is ShadowScore a reinstatement service?" a="No. ShadowScore is built to detect risk before enforcement. If you already received MC011 or a major restriction, you may already be late." />
-          <FAQItem q="Do you need my password?" a="No. The first audit can start with a store URL, screenshots and exports. No marketplace password is required." />
-          <FAQItem q="Is the 30 day protection available forever?" a="No. It applies only to the first paid audit. Future scans do not include the first audit guarantee." />
-          <FAQItem q="Which sellers is this for?" a="High-volume sellers, dropshippers, agencies, Walmart sellers, eBay sellers, Amazon sellers and operators who cannot afford sudden restrictions." />
+          {visibleFaqs.map((item) => (
+            <FAQItem key={item.q} q={item.q} a={item.a} />
+          ))}
         </div>
+
+        <button
+          type="button"
+          onClick={() => setExpanded((current) => !current)}
+          className="mx-auto mt-8 flex items-center gap-3 rounded-2xl border border-zinc-800 bg-black px-7 py-4 font-black text-zinc-200 transition hover:border-red-500/50 hover:text-white"
+        >
+          {expanded ? "Show Less Questions" : "Show More Questions"}
+          <span className={`text-red-500 transition ${expanded ? "rotate-180" : ""}`}>⌄</span>
+        </button>
       </div>
     </section>
   );
 }
 
 function FAQItem({ q, a }: { q: string; a: string }) {
+  const [open, setOpen] = useState(false);
+
   return (
-    <div className="rounded-3xl border border-zinc-800 bg-black p-6">
-      <div className="text-xl font-black">{q}</div>
-      <div className="mt-3 leading-relaxed text-zinc-400">{a}</div>
+    <div className="rounded-3xl border border-zinc-800 bg-black transition hover:border-red-500/30">
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        className="flex w-full items-center justify-between gap-5 p-6 text-left"
+      >
+        <span className="text-xl font-black">{q}</span>
+        <span className={`shrink-0 text-2xl text-red-500 transition ${open ? "rotate-180" : ""}`}>
+          ⌄
+        </span>
+      </button>
+
+      {open && (
+        <div className="border-t border-zinc-900 px-6 pb-6 pt-1 leading-relaxed text-zinc-400">
+          {a}
+        </div>
+      )}
     </div>
   );
 }
