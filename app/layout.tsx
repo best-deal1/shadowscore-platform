@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "ShadowScore | Marketplace Risk Intelligence",
     description:
-      "They score your account before they warn you. ShadowScore helps sellers detect trust decay before enforcement.",
+      "Your marketplace is scoring you right now. ShadowScore detects trust decay before enforcement.",
     url: "https://shadowscore.io",
     siteName: "ShadowScore",
     images: [
