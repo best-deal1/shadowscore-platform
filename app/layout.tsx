@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "ShadowScore | Marketplace Risk Intelligence",
     description:
-      "Your marketplace is scoring you before it warns you. ShadowScore detects hidden risk before enforcement.",
+      "Your marketplace is scoring you before it warns you. ShadowScore detects silent marketplace exposure before enforcement systems react.",
     url: "https://shadowscore.io",
     siteName: "ShadowScore",
     images: [
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "ShadowScore | Marketplace Risk Intelligence",
     description:
-      "Detect marketplace trust decay before payout holds, account reviews and enforcement.",
+      "Detect silent marketplace exposure before payout holds, account reviews and enforcement.",
     images: ["/shadowscore-og.jpg"],
   },
   icons: {
