@@ -532,64 +532,140 @@ function MarketplaceLogos() {
 
 function ScanModal({ storeUrl, onClose, href }: { storeUrl: string; onClose: () => void; href: string }) {
   const [step, setStep] = useState(0);
+  const [finished, setFinished] = useState(false);
 
   const scanSteps = useMemo(
-    () => ["Reading marketplace signals", "Checking tracking exposure", "Analyzing velocity drift", "Comparing enforcement similarity", "Preparing private audit request"],
+    () => [
+      "Connecting to marketplace risk layer",
+      "Reading public seller signals",
+      "Checking tracking exposure",
+      "Analyzing account review exposure",
+      "Preparing private audit path",
+    ],
     []
   );
 
   useEffect(() => {
-    if (step >= scanSteps.length) return;
-    const timer = setTimeout(() => setStep((current) => current + 1), 650);
+    if (step >= scanSteps.length) {
+      setFinished(true);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setStep((current) => current + 1);
+    }, 520);
+
     return () => clearTimeout(timer);
   }, [step, scanSteps.length]);
 
+  const progress = Math.min(100, Math.round((step / scanSteps.length) * 100));
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-5 backdrop-blur-sm">
-      <div className="w-full max-w-xl rounded-[32px] border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-red-950/40">
-        <div className="flex items-start justify-between">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/85 p-4 backdrop-blur-md">
+      <div className="mx-auto my-8 w-full max-w-2xl rounded-[32px] border border-zinc-800 bg-zinc-950 shadow-2xl shadow-red-950/50">
+        <div className="sticky top-0 z-10 flex items-start justify-between rounded-t-[32px] border-b border-zinc-800 bg-zinc-950/95 p-6 backdrop-blur-xl">
           <div>
-            <div className="text-sm font-black uppercase tracking-[0.25em] text-red-400">ShadowScore Scan</div>
-            <h3 className="mt-3 text-3xl font-black">{step >= scanSteps.length ? "Elevated Exposure Detected" : "Scanning Behavioral Signals"}</h3>
-          </div>
-          <button type="button" onClick={onClose} className="text-zinc-500 hover:text-white">✕</button>
-        </div>
-
-        <div className="mt-6 rounded-2xl border border-zinc-800 bg-black p-5">
-          <div className="text-sm text-zinc-500">Store URL</div>
-          <div className="mt-2 break-all text-zinc-200">{storeUrl || "No URL entered yet"}</div>
-        </div>
-
-        <div className="mt-6 space-y-3">
-          {scanSteps.map((scanStep, index) => (
-            <div key={scanStep} className="flex items-center gap-3 text-sm text-zinc-400">
-              <span className={`h-2 w-2 rounded-full ${index < step ? "bg-red-500" : "bg-zinc-700"}`} />
-              {scanStep}
+            <div className="text-xs font-black uppercase tracking-[0.28em] text-red-400">
+              ShadowScore Private Scan
             </div>
-          ))}
+            <h3 className="mt-3 text-3xl font-black">
+              {finished ? "Initial Exposure Preview Ready" : "Scanning Marketplace Signals"}
+            </h3>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl border border-zinc-800 px-3 py-2 text-zinc-400 transition hover:border-red-500/40 hover:text-white"
+          >
+            ✕
+          </button>
         </div>
 
-        {step >= scanSteps.length && (
-          <>
-            <div className="mt-6 rounded-3xl border border-red-500/30 bg-red-950/20 p-5">
-              <div className="text-6xl font-black text-red-500">72</div>
-              <div className="mt-2 text-xl font-black">Elevated Risk Similarity</div>
-              <p className="mt-3 text-sm leading-relaxed text-zinc-400">
-                This public scan is limited. A full private audit requires store context, screenshots and exports.
+        <div className="p-6">
+          <div className="rounded-2xl border border-zinc-800 bg-black p-5">
+            <div className="text-sm text-zinc-500">Store URL</div>
+            <div className="mt-2 break-all text-zinc-200">
+              {storeUrl || "No URL entered yet"}
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <div className="mb-2 flex items-center justify-between text-xs text-zinc-500">
+              <span>Scan progress</span>
+              <span>{progress}%</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-zinc-900">
+              <div
+                className="h-full rounded-full bg-red-600 transition-all duration-500"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </div>
+
+          <div className="mt-6 space-y-3">
+            {scanSteps.map((scanStep, index) => (
+              <div key={scanStep} className="flex items-center gap-3 text-sm text-zinc-400">
+                <span
+                  className={`h-2 w-2 rounded-full ${
+                    index < step ? "bg-red-500 shadow-[0_0_14px_rgba(239,68,68,0.8)]" : "bg-zinc-700"
+                  }`}
+                />
+                {scanStep}
+              </div>
+            ))}
+          </div>
+
+          {finished && (
+            <div className="mt-7 rounded-3xl border border-red-500/30 bg-red-950/20 p-5">
+              <div className="flex items-end justify-between gap-4">
+                <div>
+                  <div className="text-6xl font-black text-red-500">72</div>
+                  <div className="mt-2 text-xl font-black">Elevated Exposure Preview</div>
+                </div>
+                <div className="rounded-full border border-red-500/30 bg-black px-4 py-2 text-sm text-red-300">
+                  Private audit recommended
+                </div>
+              </div>
+
+              <p className="mt-4 text-sm leading-relaxed text-zinc-400">
+                This is not a full automated report. ShadowScore requires seller context,
+                screenshots or exports before providing a final risk assessment.
               </p>
             </div>
+          )}
 
+          {finished && (
             <div className="mt-6 space-y-3">
               <Progress label="Tracking Exposure" value="78%" />
               <Progress label="Marketplace Trust Drift" value="64%" />
               <Progress label="Review Exposure" value="71%" />
             </div>
-          </>
-        )}
+          )}
 
-        <a href={href} target="_blank" rel="noreferrer" className="mt-6 block rounded-2xl bg-red-600 px-7 py-4 text-center font-black hover:bg-red-500">
-          Continue On WhatsApp
-        </a>
+          <div className="mt-7 grid gap-3 sm:grid-cols-2">
+            <a
+              href={href}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-2xl bg-red-600 px-7 py-4 text-center font-black hover:bg-red-500"
+            >
+              Continue On WhatsApp
+            </a>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-2xl border border-zinc-800 px-7 py-4 text-center font-black text-zinc-300 transition hover:border-red-500/40 hover:text-white"
+            >
+              Back To Site
+            </button>
+          </div>
+
+          <div className="mt-4 text-center text-xs text-zinc-600">
+            No password required. First paid audit includes 30-Day Risk Protection.
+          </div>
+        </div>
       </div>
     </div>
   );
