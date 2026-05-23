@@ -31,53 +31,6 @@ export default function Home() {
     return () => window.clearInterval(timer);
   }, [signals.length]);
 
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setMetricsTick((current) => current + 1);
-    }, 3800);
-
-    return () => window.clearInterval(timer);
-  }, []);
-
-  const metrics = [
-    {
-      label: "Stores Reviewed",
-      value: 496 + (metricsTick % 7),
-      daily: `+${11 + (metricsTick % 3)} today`,
-      monthly: `+${76 + (metricsTick % 9)} this month`,
-    },
-    {
-      label: "Risk Events",
-      value: 72 + (metricsTick % 4),
-      daily: `+${7 + (metricsTick % 2)} today`,
-      monthly: `+${32 + (metricsTick % 6)} this month`,
-    },
-    {
-      label: "Alerts Sent",
-      value: 50 + (metricsTick % 5),
-      daily: `+${6 + (metricsTick % 2)} today`,
-      monthly: `+${27 + (metricsTick % 6)} this month`,
-    },
-    {
-      label: "Sellers Stabilized",
-      value: 29 + (metricsTick % 3),
-      daily: `+${5 + (metricsTick % 2)} today`,
-      monthly: `+${22 + (metricsTick % 5)} this month`,
-    },
-    {
-      label: "Exposure Monitored",
-      value: "$184K",
-      daily: `+$${9 + (metricsTick % 3)}K today`,
-      monthly: `+$${41 + (metricsTick % 8)}K this month`,
-    },
-    {
-      label: "Markets Covered",
-      value: 6,
-      daily: "active",
-      monthly: "monitoring",
-    },
-  ];
-
   const faqItems = [
     {
       q: "Is ShadowScore a reinstatement service?",
@@ -127,6 +80,16 @@ export default function Home() {
       q: "Do you store marketplace credentials?",
       a: "No marketplace credentials are requested during initial reviews.",
     },
+  ];
+
+
+  const networkMetrics = [
+    ["Stores Reviewed", 496 + (metricsTick % 9), `+${11 + (metricsTick % 4)} today`, `+${76 + (metricsTick % 11)} this month`],
+    ["Risk Events", 72 + (metricsTick % 5), `+${7 + (metricsTick % 3)} today`, `+${32 + (metricsTick % 7)} this month`],
+    ["Alerts Sent", 50 + (metricsTick % 6), `+${6 + (metricsTick % 3)} today`, `+${27 + (metricsTick % 8)} this month`],
+    ["Sellers Stabilized", 29 + (metricsTick % 4), `+${5 + (metricsTick % 2)} today`, `+${22 + (metricsTick % 6)} this month`],
+    ["Exposure Monitored", "$184K", `+$${9 + (metricsTick % 4)}K today`, `+$${41 + (metricsTick % 9)}K this month`],
+    ["Markets Covered", 6, "active", "monitoring"],
   ];
 
   const visibleFaq = showMoreFaq ? faqItems : faqItems.slice(0, 4);
@@ -182,7 +145,7 @@ I would like a private marketplace exposure audit.`;
           </div>
 
           <nav className="hidden items-center gap-10 text-zinc-400 md:flex">
-            <a href="#signals" className="transition hover:text-white">Signals</a>
+            <a href="#signals" className="transition hover:text-white">Signals</button>
             <a href="#agent" className="transition hover:text-white">Agent</a>
             <a href="#guarantee" className="transition hover:text-white">Guarantee</a>
             <a href="#pricing" className="transition hover:text-white">Pricing</a>
@@ -264,9 +227,9 @@ I would like a private marketplace exposure audit.`;
                 ["$199", "First Audit"],
                 ["No Login", "Password Needed"],
               ].map(([value, label]) => (
-                <div key={metric.label} className="rounded-2xl border border-white/10 bg-black/60 p-4">
-                  <div className="text-2xl font-black text-red-400 md:text-3xl">{metric.value}</div>
-                  <div className="mt-2 text-sm text-zinc-400">{metric.label}</div>
+                <div key={label} className="rounded-2xl border border-white/10 bg-black/60 p-4">
+                  <div className="text-2xl font-black text-red-400 md:text-3xl">{value}</div>
+                  <div className="mt-2 text-sm text-zinc-400">{label}</div>
                 </div>
               ))}
             </div>
@@ -323,8 +286,8 @@ I would like a private marketplace exposure audit.`;
                 ].map(([title, value, label]) => (
                   <div key={title} className="rounded-2xl border border-white/10 bg-black/50 p-5">
                     <div className="text-sm text-zinc-500">{title}</div>
-                    <div className="mt-3 text-3xl font-bold">{metric.value}</div>
-                    <div className="mt-2 text-sm text-red-400">{metric.label}</div>
+                    <div className="mt-3 text-3xl font-bold">{value}</div>
+                    <div className="mt-2 text-sm text-red-400">{label}</div>
                   </div>
                 ))}
               </div>
@@ -341,7 +304,7 @@ I would like a private marketplace exposure audit.`;
                 </div>
 
                 <div className="mt-5 space-y-3">
-                  {signals.map((signal, index) => (
+                  {signals.slice(0, 5).map((signal, index) => (
                     <div
                       key={signal}
                       className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-sm transition ${
@@ -378,12 +341,12 @@ I would like a private marketplace exposure audit.`;
           </div>
 
           <div className="mt-10 grid gap-6 md:grid-cols-3 lg:grid-cols-6">
-            {metrics.map((metric) => (
-              <div key={metric.label} className="rounded-3xl border border-white/10 bg-black/70 p-7 transition hover:border-red-400/25">
-                <div className="text-5xl font-extrabold">{metric.value}</div>
-                <div className="mt-3 text-zinc-400">{metric.label}</div>
-                <div className="mt-6 text-emerald-400">{metric.daily}</div>
-                <div className="mt-2 text-red-400">{metric.monthly}</div>
+            {networkMetrics.map(([label, value, daily, monthly]) => (
+              <div key={label} className="rounded-3xl border border-white/10 bg-black/70 p-7 transition hover:border-red-400/25">
+                <div className="text-5xl font-extrabold">{value}</div>
+                <div className="mt-3 text-zinc-400">{label}</div>
+                <div className="mt-6 text-emerald-400">{daily}</div>
+                <div className="mt-2 text-red-400">{monthly}</div>
                 <div className="mt-6 h-14 rounded-xl bg-gradient-to-r from-black via-red-900 to-black opacity-80" />
               </div>
             ))}
@@ -518,7 +481,7 @@ I would like a private marketplace exposure audit.`;
                 ))}
               </div>
 
-              <button className="mt-10 w-full rounded-2xl bg-red-600 py-4 font-black transition hover:bg-red-500">
+              <button onClick={(event) => { event.stopPropagation(); setSelectedPlan(plan.name); openWhatsApp(); }} className="mt-10 w-full rounded-2xl bg-red-600 py-4 font-black transition hover:bg-red-500">
                 {plan.button}
               </button>
             </div>
@@ -593,7 +556,7 @@ I would like a private marketplace exposure audit.`;
 
           <div className="mt-12 flex flex-col items-center justify-center gap-5 md:flex-row">
             <a
-              href={`https://wa.me/${WHATSAPP_NUMBER}`}
+              href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("Hi ShadowScore, I would like to request a private marketplace exposure audit.")}`}
               target="_blank"
               className="rounded-2xl bg-red-600 px-10 py-5 font-black shadow-[0_0_40px_rgba(255,0,0,0.25)] transition hover:bg-red-500"
             >
