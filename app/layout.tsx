@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "ShadowScore | Marketplace Risk Intelligence",
   description:
-    "The marketplace already decided you're risky. ShadowScore tells you first.",
+    "The marketplace already formed an opinion about your account. ShadowScore lets you see it before enforcement begins.",
   metadataBase: new URL("https://shadowscore.io"),
   openGraph: {
     title: "ShadowScore | Marketplace Risk Intelligence",
@@ -30,9 +30,9 @@ export const metadata: Metadata = {
     images: ["/shadowscore-og.jpg"],
   },
   icons: {
-    icon: "/shadowscore-shield-final-v4.png",
-    shortcut: "/shadowscore-shield-final-v4.png",
-    apple: "/shadowscore-shield-final-v4.png",
+    icon: "/shadowscore-shield-enterprise-v5.png",
+    shortcut: "/shadowscore-shield-enterprise-v5.png",
+    apple: "/shadowscore-shield-enterprise-v5.png",
   },
 };
 
