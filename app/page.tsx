@@ -14,11 +14,22 @@ export default function Home() {
 
   const liveSignals = useMemo(
     () => [
-      "eBay · Tracking integrity drift detected",
-      "Amazon · Payout exposure watchlist",
-      "Walmart · Fulfillment proof instability",
-      "TikTok Shop · Buyer signal volatility rising",
-      "Etsy · Seller safety exposure detected",
+      "eBay · Tracking validation drift detected",
+      "Amazon · Payout reserve exposure elevated",
+      "Walmart · Fulfillment verification inconsistencies observed",
+      "TikTok Shop · Behavioral velocity anomaly detected",
+      "Etsy · Marketplace trust posture weakening",
+    ],
+    []
+  );
+
+  const signalStates = useMemo(
+    () => [
+      "monitoring",
+      "active",
+      "recently updated",
+      "refreshed 4m ago",
+      "live telemetry",
     ],
     []
   );
@@ -393,13 +404,13 @@ I would like a private marketplace exposure audit.`;
                   key={signal}
                   className={`flex items-center justify-between rounded-xl border px-4 py-3 text-sm transition ${
                     index === activeSignal
-                      ? "border-red-400/25 bg-red-500/10 text-white"
+                      ? "border-red-400/35 bg-red-950/10 text-white shadow-[0_0_18px_rgba(255,0,0,0.08)]"
                       : "border-white/10 bg-black/40 text-zinc-500"
                   }`}
                 >
                   <span>{signal}</span>
-                  <span className="text-xs text-zinc-600">
-                    {index === activeSignal ? "now" : `${(index + 1) * 17}s`}
+                  <span className="text-xs text-zinc-500 tracking-wide">
+                    {signalStates[index % signalStates.length]}
                   </span>
                 </div>
               ))}
