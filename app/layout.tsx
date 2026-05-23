@@ -4,12 +4,12 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "ShadowScore | Marketplace Risk Intelligence",
   description:
-    "Cyber-intelligence for marketplace sellers. Detect trust decay, payout exposure and enforcement patterns before sellers know they are at risk.",
+    "The marketplace already decided you're risky. ShadowScore tells you first.",
   metadataBase: new URL("https://shadowscore.io"),
   openGraph: {
     title: "ShadowScore | Marketplace Risk Intelligence",
     description:
-      "Your marketplace is scoring you before it warns you. ShadowScore detects silent marketplace exposure before enforcement systems react.",
+      "Cyber-intelligence for marketplace sellers. Detect hidden risk before payout holds, reviews and restrictions.",
     url: "https://shadowscore.io",
     siteName: "ShadowScore",
     images: [
@@ -26,14 +26,13 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "ShadowScore | Marketplace Risk Intelligence",
-    description:
-      "Detect silent marketplace exposure before payout holds, account reviews and enforcement.",
+    description: "Cyber-intelligence for marketplace sellers.",
     images: ["/shadowscore-og.jpg"],
   },
   icons: {
-    icon: "/shadowscore-shield-pro-v3.png",
-    shortcut: "/shadowscore-shield-pro-v3.png",
-    apple: "/shadowscore-shield-pro-v3.png",
+    icon: "/shadowscore-shield-final-v4.png",
+    shortcut: "/shadowscore-shield-final-v4.png",
+    apple: "/shadowscore-shield-final-v4.png",
   },
 };
 
