@@ -31,9 +31,9 @@ export const metadata: Metadata = {
     images: ["/shadowscore-og.jpg"],
   },
   icons: {
-    icon: "/shadowscore-main-logo.jpg",
-    shortcut: "/shadowscore-main-logo.jpg",
-    apple: "/shadowscore-main-logo.jpg",
+    icon: "/shadowscore-super-shield-v2.png",
+    shortcut: "/shadowscore-super-shield-v2.png",
+    apple: "/shadowscore-super-shield-v2.png",
   },
 };
 
