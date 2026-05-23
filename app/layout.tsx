@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "ShadowScore | Marketplace Risk Intelligence",
     description:
-      "Cyber-intelligence for marketplace sellers. Detect hidden risk before payout holds, reviews and restrictions.",
+      "Enterprise marketplace exposure intelligence for sellers, agencies and multi-store operators.",
     url: "https://shadowscore.io",
     siteName: "ShadowScore",
     images: [
@@ -26,13 +26,13 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "ShadowScore | Marketplace Risk Intelligence",
-    description: "Cyber-intelligence for marketplace sellers.",
+    description: "Marketplace exposure intelligence before enforcement begins.",
     images: ["/shadowscore-og.jpg"],
   },
   icons: {
-    icon: "/shadowscore-shield-enterprise-v5.png",
-    shortcut: "/shadowscore-shield-enterprise-v5.png",
-    apple: "/shadowscore-shield-enterprise-v5.png",
+    icon: "/shadowscore-shield-v8.png",
+    shortcut: "/shadowscore-shield-v8.png",
+    apple: "/shadowscore-shield-v8.png",
   },
 };
 
