@@ -37,8 +37,6 @@ const liveSignals = [
   "Amazon · Velocity anomaly increasing",
   "Walmart · Payout exposure watchlist",
   "SHEIN · Fulfillment pattern instability",
-      "TikTok Shop · Buyer signal volatility rising",
-      "Etsy · Seller safety exposure detected",
   "TikTok Shop · Buyer signal volatility rising",
   "eBay · Seller behavior similarity elevated",
   "Amazon · Tracking upload delay increased",
@@ -522,8 +520,8 @@ function MarketplaceLogos() {
 
         <div className="mx-auto mt-10 max-w-5xl overflow-hidden rounded-[28px] border border-zinc-800 bg-zinc-950/80 shadow-2xl shadow-red-950/20 transition hover:border-red-500/30">
           <Image
-            src="/marketplaces-monitor-v2.png"
-            alt="Marketplaces monitored by ShadowScore"
+            src="/marketplaces-monitor-pro-v3.png?v=market-v3"
+            alt="Marketplaces monitored by ShadowScore: eBay, Amazon, Walmart, SHEIN, TikTok Shop and Etsy"
             width={1100}
             height={430}
             className="h-auto w-full grayscale transition duration-700 hover:grayscale-0 hover:saturate-125"
