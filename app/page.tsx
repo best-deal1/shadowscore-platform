@@ -37,6 +37,8 @@ const liveSignals = [
   "Amazon · Velocity anomaly increasing",
   "Walmart · Payout exposure watchlist",
   "SHEIN · Fulfillment pattern instability",
+      "TikTok Shop · Seller velocity anomaly detected",
+      "Etsy · Seller safety exposure detected",
   "TikTok Shop · Buyer signal volatility rising",
   "eBay · Seller behavior similarity elevated",
   "Amazon · Tracking upload delay increased",
@@ -524,7 +526,7 @@ function MarketplaceLogos() {
             alt="Marketplaces monitored by ShadowScore"
             width={1100}
             height={430}
-            className="h-auto w-full grayscale transition duration-500 hover:grayscale-0"
+            className="h-auto w-full grayscale transition duration-700 hover:grayscale-0 hover:saturate-125"
           />
         </div>
 
