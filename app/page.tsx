@@ -26,11 +26,11 @@ export default function Home() {
   useEffect(() => {
     const signalTimer = window.setInterval(() => {
       setActiveSignal((current) => (current + 1) % liveSignals.length);
-    }, 2600);
+    }, 18000);
 
     const metricsTimer = window.setInterval(() => {
       setMetricsTick((current) => current + 1);
-    }, 2200);
+    }, 26000);
 
     return () => {
       window.clearInterval(signalTimer);
@@ -41,33 +41,33 @@ export default function Home() {
   const networkMetrics = [
     {
       label: "Stores Reviewed",
-      value: 496 + (metricsTick % 11),
-      daily: `+${11 + (metricsTick % 4)} today`,
-      monthly: `+${76 + (metricsTick % 12)} this month`,
+      value: 496 + (metricsTick % 3),
+      daily: `+${11 + (metricsTick % 2)} today`,
+      monthly: `+${76 + (metricsTick % 4)} this month`,
     },
     {
       label: "Risk Events",
-      value: 72 + (metricsTick % 6),
-      daily: `+${7 + (metricsTick % 3)} today`,
-      monthly: `+${32 + (metricsTick % 8)} this month`,
+      value: 72 + (metricsTick % 2),
+      daily: `+${7 + (metricsTick % 2)} today`,
+      monthly: `+${32 + (metricsTick % 3)} this month`,
     },
     {
       label: "Alerts Sent",
-      value: 50 + (metricsTick % 7),
-      daily: `+${6 + (metricsTick % 3)} today`,
-      monthly: `+${27 + (metricsTick % 9)} this month`,
+      value: 50 + (metricsTick % 2),
+      daily: `+${6 + (metricsTick % 2)} today`,
+      monthly: `+${27 + (metricsTick % 3)} this month`,
     },
     {
       label: "Sellers Stabilized",
-      value: 29 + (metricsTick % 5),
-      daily: `+${5 + (metricsTick % 2)} today`,
-      monthly: `+${22 + (metricsTick % 7)} this month`,
+      value: 29 + (metricsTick % 2),
+      daily: `+${5 + (metricsTick % 1)} today`,
+      monthly: `+${22 + (metricsTick % 3)} this month`,
     },
     {
       label: "Exposure Monitored",
-      value: `$${184 + (metricsTick % 4)}K`,
-      daily: `+$${9 + (metricsTick % 4)}K today`,
-      monthly: `+$${41 + (metricsTick % 10)}K this month`,
+      value: `$${184 + (metricsTick % 2)}K`,
+      daily: `+$${9 + (metricsTick % 2)}K today`,
+      monthly: `+$${41 + (metricsTick % 3)}K this month`,
     },
     {
       label: "Markets Covered",
@@ -79,52 +79,52 @@ export default function Home() {
 
   const faqItems = [
     {
+      q: "What is ShadowScore?",
+      a: "ShadowScore is a private marketplace exposure intelligence service for sellers, agencies and multi-store operators. It helps identify elevated account risk before visible enforcement actions begin.",
+    },
+    {
       q: "Is ShadowScore a reinstatement service?",
-      a: "No. ShadowScore is built to identify elevated marketplace exposure before visible enforcement actions happen.",
+      a: "No. ShadowScore is designed for pre-enforcement visibility. If an account is already restricted, the review can still help organize the situation, but the primary value is early detection and prevention.",
     },
     {
       q: "Do you need my marketplace password?",
-      a: "No. Initial reviews can begin with store URLs, exports, screenshots and operational context.",
-    },
-    {
-      q: "Is the 30-day protection available forever?",
-      a: "No. Protection applies only to the first paid audit.",
-    },
-    {
-      q: "Which sellers is this for?",
-      a: "Marketplace operators, agencies, dropshippers and sellers who depend heavily on account continuity.",
-    },
-    {
-      q: "Does ShadowScore connect directly to marketplaces?",
-      a: "No direct marketplace integration is required during early access.",
-    },
-    {
-      q: "Can ShadowScore guarantee no restriction will happen?",
-      a: "No platform can guarantee that. ShadowScore helps identify elevated exposure before visible action occurs.",
+      a: "No. Initial reviews do not require marketplace credentials. A first audit can begin with a store URL, screenshots, exports and operational context.",
     },
     {
       q: "What marketplaces are supported?",
-      a: "eBay, Amazon, Walmart, SHEIN, TikTok Shop and Etsy during early access.",
+      a: "Early access coverage includes eBay, Amazon, Walmart, SHEIN, TikTok Shop and Etsy.",
     },
     {
-      q: "What makes ShadowScore different?",
-      a: "A landing page can be copied. Marketplace intelligence, outcome memory and operating playbooks cannot.",
+      q: "What does the first audit include?",
+      a: "The first audit includes a private exposure review, risk posture summary, tracking integrity review, 30-day outlook and recommended stabilization actions.",
+    },
+    {
+      q: "Does ShadowScore reveal marketplace enforcement logic?",
+      a: "No. ShadowScore does not claim access to marketplace internal systems and does not expose proprietary analysis logic. The review is based on external account posture, operational context and risk indicators.",
+    },
+    {
+      q: "Can ShadowScore guarantee that my account will not be restricted?",
+      a: "No platform can guarantee that. ShadowScore helps sellers identify elevated exposure early and take stronger operational action before risk becomes visible enforcement.",
+    },
+    {
+      q: "How does the 30-day protection work?",
+      a: "If a first-time paid audit fails to identify elevated exposure and a new restriction or payout review occurs within 30 days, ShadowScore refunds the audit fee, subject to the stated audit terms.",
+    },
+    {
+      q: "Who should use ShadowScore?",
+      a: "Sellers with meaningful marketplace revenue, dropshippers, agencies, high-volume operators and anyone who cannot afford sudden payout holds or account reviews.",
     },
     {
       q: "How long does an audit take?",
-      a: "Most first audits are reviewed within 24 to 72 hours.",
+      a: "Most first audits are reviewed within 24 to 72 hours, depending on the quality of the submitted context and exports.",
     },
     {
-      q: "What does ShadowScore actually analyze?",
-      a: "ShadowScore analyzes hidden marketplace trust and enforcement signals linked to elevated account exposure.",
+      q: "Is ShadowScore affiliated with the marketplaces shown?",
+      a: "No. Marketplace names are shown for coverage reference only. ShadowScore is independent and is not affiliated with eBay, Amazon, Walmart, SHEIN, TikTok Shop or Etsy.",
     },
     {
-      q: "Can agencies use ShadowScore?",
-      a: "Yes. Agency plans support multi-account operational monitoring.",
-    },
-    {
-      q: "Do you store marketplace credentials?",
-      a: "No marketplace credentials are requested during initial reviews.",
+      q: "Can agencies use ShadowScore for multiple clients?",
+      a: "Yes. The Agency Intelligence plan is built for multi-account review, operational monitoring and private reporting workflows.",
     },
   ];
 
@@ -415,7 +415,7 @@ I would like a private marketplace exposure audit.`;
               ShadowScore Network Intelligence
             </div>
             <p className="mt-3 text-zinc-500">
-              Early Access Network Metrics. Metrics shown for demonstration during early access.
+              Early Access Network Metrics. Demonstration values refresh slowly to simulate a live monitoring environment.
             </p>
           </div>
 
@@ -593,7 +593,7 @@ I would like a private marketplace exposure audit.`;
         <div className="text-center">
           <div className="text-sm uppercase tracking-[0.28em] text-red-300">FAQ</div>
           <h2 className="mt-4 text-4xl font-bold">
-            Questions Sellers Ask Before They Realize The Risk Is Already Building
+            Questions Marketplace Operators Ask Before Enforcement Begins
           </h2>
         </div>
 
