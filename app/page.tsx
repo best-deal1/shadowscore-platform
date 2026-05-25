@@ -265,7 +265,12 @@ I would like a private marketplace exposure audit.`;
             </h1>
 
             <p className="mt-7 max-w-xl text-lg leading-8 text-zinc-400">
-              ShadowScore detects silent marketplace exposure before payout holds, seller reviews and account restrictions begin.
+              ShadowScore reveals silent behavioral signals and hidden exposure before payout holds,
+              account reviews or restrictions begin.
+            </p>
+
+            <p className="mt-5 max-w-xl text-base leading-7 text-zinc-500">
+              Most sellers only see the warning after the decision has already been made.
             </p>
 
             <div className="mt-9 rounded-3xl border border-white/10 bg-black/55 p-5 backdrop-blur-xl">
@@ -282,7 +287,7 @@ I would like a private marketplace exposure audit.`;
                   onClick={handleScan}
                   className="rounded-2xl bg-red-600 px-8 py-4 font-bold transition hover:bg-red-500"
                 >
-                  Scan My Store
+                  Request Private Intelligence Review
                 </button>
               </div>
 
@@ -418,7 +423,7 @@ I would like a private marketplace exposure audit.`;
               ShadowScore Intelligence Layers
             </div>
             <p className="mt-3 max-w-3xl text-zinc-500">
-              Instead of showing vanity metrics, ShadowScore focuses on the operational signals serious sellers usually cannot see until enforcement begins.
+              ShadowScore focuses on the operational signals serious sellers usually cannot see until enforcement begins.
             </p>
           </div>
 
@@ -474,24 +479,46 @@ I would like a private marketplace exposure audit.`;
         </div>
       </section>
 
-      <section id="signals" className="mx-auto max-w-7xl px-6 py-20">
+      <section id="signals" className="mx-auto max-w-7xl px-6 py-16">
         <div className="text-center">
-          <div className="text-sm uppercase tracking-[0.28em] text-red-300">Signal Engine</div>
-          <h2 className="mt-4 text-4xl font-bold">Marketplace Enforcement Starts Before The Warning</h2>
+          <div className="text-sm uppercase tracking-[0.28em] text-red-300">
+            Signal Engine
+          </div>
+
+          <h2 className="mt-4 text-4xl font-bold">
+            Marketplace Enforcement Starts Before The Warning
+          </h2>
+
+          <p className="mx-auto mt-4 max-w-3xl leading-7 text-zinc-500">
+            ShadowScore focuses on operational exposure signals most sellers never monitor until restrictions begin.
+          </p>
         </div>
 
-        <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
           {[
-            ["Tracking Integrity", "Late uploads, TBA exposure, invalid scans, carrier mismatch and weak proof of delivery."],
-            ["Velocity Risk", "Sudden sales growth, category spikes, new account pressure and fulfillment instability."],
-            ["Trust Decay", "Buyer sentiment, INR activity, refund drift, payout friction and support routing changes."],
-            ["Operational Exposure", "SKU churn, source dependency, fulfillment gaps and account stability signals."],
-            ["Review Exposure", "Identifies elevated similarity to accounts that later entered review or restriction."],
-            ["Action Layer", "Direct actions before damage reaches account health or payout systems."],
+            [
+              "Tracking Integrity",
+              "Delivery proof quality, carrier consistency and scan reliability.",
+            ],
+            [
+              "Operational Drift",
+              "Velocity spikes, fulfillment instability and behavioral deviation.",
+            ],
+            [
+              "Trust Decay",
+              "Buyer sentiment shifts, payout friction and operational instability.",
+            ],
+            [
+              "Enforcement Correlation",
+              "Pattern similarity to accounts later reviewed or restricted.",
+            ],
           ].map(([title, text]) => (
-            <div key={title} className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+            <div
+              key={title}
+              className="rounded-2xl border border-white/10 bg-white/[0.03] p-6"
+            >
               <div className="text-xl font-semibold">{title}</div>
-              <p className="mt-3 leading-7 text-zinc-400">{text}</p>
+              <p className="mt-4 leading-7 text-zinc-400">{text}</p>
             </div>
           ))}
         </div>
@@ -541,6 +568,51 @@ I would like a private marketplace exposure audit.`;
           <p className="mt-4 text-zinc-500">
             Applies to first-time audits only. Existing warnings must be disclosed. Recommended actions must be followed. Future scans do not include first-audit protection.
           </p>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-6 py-20">
+        <div className="text-center">
+          <div className="text-sm uppercase tracking-[0.28em] text-red-300">
+            What You Receive
+          </div>
+
+          <h2 className="mt-4 text-4xl font-bold">
+            Private Marketplace Exposure Intelligence
+          </h2>
+
+          <p className="mx-auto mt-4 max-w-3xl leading-7 text-zinc-500">
+            Every ShadowScore review is designed to help marketplace operators understand hidden operational exposure before visible enforcement begins.
+          </p>
+        </div>
+
+        <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+          {[
+            {
+              title: "Exposure Summary",
+              text: "Private operational risk overview and marketplace posture analysis.",
+            },
+            {
+              title: "Tracking Integrity Review",
+              text: "Behavioral delivery trust evaluation and scan consistency analysis.",
+            },
+            {
+              title: "Enforcement Vulnerability",
+              text: "Hidden exposure interpretation and operational weakness detection.",
+            },
+            {
+              title: "Stabilization Actions",
+              text: "Recommended operational adjustments before enforcement escalation.",
+            },
+          ].map((item) => (
+            <div
+              key={item.title}
+              className="rounded-2xl border border-white/10 bg-black/40 p-6"
+            >
+              <div className="text-xl font-semibold text-white">{item.title}</div>
+              <p className="mt-4 leading-7 text-zinc-400">{item.text}</p>
+            </div>
+          ))}
         </div>
       </section>
 
