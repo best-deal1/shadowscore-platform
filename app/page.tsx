@@ -110,13 +110,13 @@ I would like a private marketplace exposure audit.`;
       price: "$299",
       tag: "",
       sub: "per month",
-      desc: "Continuous monitoring for active marketplace operators.",
+      desc: "Ongoing exposure monitoring for active marketplace operators.",
       items: [
-        "Weekly monitoring",
+        "Ongoing exposure monitoring",
         "Behavioral drift tracking",
         "Tracking integrity analysis",
-        "Priority alerts",
-        "Monthly recommendations",
+        "Priority exposure alerts",
+        "Monthly operational review",
       ],
       button: "Start Monitoring",
     },
@@ -307,15 +307,17 @@ I would like a private marketplace exposure audit.`;
 
             <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-4">
               {[
-                ["Marketplace Trust", "72", "Elevated"],
-                ["Tracking Integrity", "61", "Degrading"],
-                ["Payout Stability", "54", "Watchlist"],
-                ["Enforcement Exposure", "HIGH", "30 Day Window"],
-              ].map(([title, value, label]) => (
+                ["Marketplace Trust", "Elevated"],
+                ["Tracking Integrity", "Degrading"],
+                ["Payout Stability", "Watchlist"],
+                ["Enforcement Exposure", "High Visibility"],
+              ].map(([title, status]) => (
                 <div key={title} className="rounded-2xl border border-white/10 bg-black/55 p-5">
                   <div className="text-xs text-zinc-500">{title}</div>
-                  <div className="mt-4 text-3xl font-bold">{value}</div>
-                  <div className="mt-2 text-xs text-red-300">{label}</div>
+                  <div className="mt-4 text-2xl font-bold text-white">{status}</div>
+                  <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/5">
+                    <div className="h-full w-2/3 rounded-full bg-gradient-to-r from-red-700 via-red-500 to-red-400" />
+                  </div>
                 </div>
               ))}
             </div>
@@ -327,7 +329,7 @@ I would like a private marketplace exposure audit.`;
         <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
           <div>
             <div className="text-sm uppercase tracking-[0.28em] text-red-300">The Agent</div>
-            <h2 className="mt-4 text-4xl font-bold">A Marketplace Intelligence Layer, Not Another Dashboard</h2>
+            <h2 className="mt-4 text-4xl font-bold">A Seller Defense Intelligence Layer</h2>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
@@ -447,7 +449,7 @@ I would like a private marketplace exposure audit.`;
               What A Private Review Looks Like
             </h2>
             <p className="mt-5 max-w-xl leading-7 text-zinc-400">
-              Every paid review is designed to produce clear exposure visibility, not generic advice. The final output is a structured risk report with findings, interpretation and stabilization actions.
+              Every review includes exposure findings, operational risk interpretation and stabilization recommendations.
             </p>
           </div>
 
@@ -464,10 +466,10 @@ I would like a private marketplace exposure audit.`;
 
             <div className="mt-5 grid gap-3">
               {[
-                ["Overall Exposure", "Elevated marketplace review visibility"],
-                ["Primary Finding", "Tracking integrity and operational drift signals"],
+                ["Overall Exposure", "Elevated review visibility"],
+                ["Primary Finding", "Tracking and operational drift"],
                 ["Risk Window", "30-day monitoring window"],
-                ["Recommended Action", "Stabilize fulfillment and reduce velocity variance"],
+                ["Recommended Action", "Stabilize fulfillment and velocity"],
               ].map(([label, value]) => (
                 <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                   <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">{label}</div>
