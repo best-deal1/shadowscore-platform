@@ -257,23 +257,27 @@ I would like a private marketplace exposure audit.`;
         </div>
       </header>
 
-      <section className="relative mx-auto max-w-7xl px-6 pb-14 pt-12 md:pt-16">
-        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-20">
-          <div className="max-w-2xl">
-            <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-red-400/25 bg-red-500/8 px-4 py-2 text-sm text-red-200">
+      <section className="relative overflow-hidden border-b border-white/10">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(220,38,38,0.16),transparent_42%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.03),transparent_28%)]" />
+
+        <div className="relative mx-auto grid max-w-7xl items-center gap-14 px-6 py-24 lg:grid-cols-[1.05fr_0.95fr] lg:gap-20 lg:py-28">
+          <div className="max-w-3xl">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-red-400/25 bg-red-500/8 px-4 py-2 text-sm text-red-200">
               <span className="h-2 w-2 rounded-full bg-red-400" />
-              Enterprise Marketplace Exposure Intelligence
+              Marketplace Behavioral Intelligence
             </div>
 
-            <h1 className="text-5xl font-extrabold leading-[1.02] tracking-tight md:text-6xl">
-              The Marketplace Already Formed An Opinion About Your Account.
+            <h1 className="max-w-4xl text-5xl font-semibold leading-[1.05] tracking-tight text-white md:text-6xl">
+              The Marketplace Already Decided You're Risky.
               <span className="mt-3 block text-red-400">
-                ShadowScore Lets You See It Before Enforcement Begins.
+                ShadowScore Lets You See It First.
               </span>
             </h1>
 
-            <p className="mt-7 max-w-xl text-lg leading-8 text-zinc-400">
-              ShadowScore detects silent marketplace exposure before payout holds, seller reviews and account restrictions begin.
+            <p className="mt-8 max-w-2xl text-lg leading-8 text-zinc-400">
+              Marketplace platforms evaluate seller behavior long before reviews, payout holds or restrictions become visible.
+              ShadowScore helps operators identify hidden exposure signals before enforcement begins.
             </p>
 
             <div className="mt-9 rounded-3xl border border-white/10 bg-black/55 p-5 backdrop-blur-xl">
@@ -288,14 +292,16 @@ I would like a private marketplace exposure audit.`;
                 <button
                   type="button"
                   onClick={handleScan}
-                  className="rounded-2xl bg-red-600 px-8 py-4 font-bold transition hover:bg-red-500"
+                  className="rounded-2xl bg-red-600 px-8 py-4 font-semibold transition hover:bg-red-500"
                 >
-                  Scan My Store
+                  Request Intelligence Review
                 </button>
               </div>
 
-              <div className="mt-4 text-sm text-zinc-500">
-                No password required • First paid audit includes 30-day Risk Protection
+              <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-zinc-500">
+                <span>No marketplace password required</span>
+                <span>Private review process</span>
+                <span>30-day Risk Protection</span>
               </div>
             </div>
 
@@ -312,7 +318,7 @@ I would like a private marketplace exposure audit.`;
                 href="#pricing"
                 className="rounded-xl border border-white/10 px-7 py-3.5 font-semibold text-zinc-300 transition hover:border-white/25 hover:text-white"
               >
-                View Pricing
+                View Plans
               </a>
             </div>
 
@@ -330,93 +336,60 @@ I would like a private marketplace exposure audit.`;
             </div>
           </div>
 
-          <div className="relative lg:pl-4">
+          <div className="relative">
             <div className="absolute inset-0 rounded-full bg-red-500/10 blur-3xl" />
 
-            <div className="relative min-h-[520px] overflow-hidden rounded-[36px] border border-white/10 bg-gradient-to-br from-red-950/20 via-black to-black p-10 shadow-[0_0_60px_rgba(180,20,35,0.12)]">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,40,60,0.14),transparent_55%)]" />
-
-              <div className="relative flex h-full min-h-[440px] flex-col items-center justify-center text-center">
-                <img
-                  src="/shadowscore-shield-v8.png?v=hero-v8"
-                  alt="ShadowScore cyber shield"
-                  className="h-auto w-[260px] max-w-full object-contain drop-shadow-[0_0_34px_rgba(220,38,38,0.22)] md:w-[300px]"
-                />
-
-                <div className="mt-8 text-4xl font-extrabold tracking-tight md:text-5xl">
-                  SHADOW<span className="text-red-400">SCORE</span>
+            <div className="relative overflow-hidden rounded-[34px] border border-white/10 bg-black/45 shadow-2xl shadow-red-950/10 backdrop-blur">
+              <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+                <div>
+                  <div className="text-sm font-medium text-white">ShadowScore Exposure Terminal</div>
+                  <div className="mt-1 text-xs text-zinc-500">Live marketplace behavioral telemetry</div>
                 </div>
 
-                <div className="mt-4 text-xs font-semibold uppercase tracking-[0.42em] text-zinc-500">
-                  Marketplace Risk Intelligence
-                </div>
-
-                <div className="mt-8 h-px w-full max-w-md bg-gradient-to-r from-transparent via-red-500/70 to-transparent" />
-
-                <div className="mt-6 text-xs font-semibold uppercase tracking-[0.35em] text-zinc-400">
-                  Exposure visibility before enforcement
+                <div className="flex items-center gap-2 text-xs text-red-300">
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-red-400" />
+                  Monitoring Active
                 </div>
               </div>
+
+              <div className="space-y-5 p-5">
+                {[
+                  ["Marketplace Trust", 72, "Elevated"],
+                  ["Tracking Integrity", 61, "Degrading"],
+                  ["Operational Stability", 58, "Watchlist"],
+                  ["Enforcement Exposure", 81, "High"],
+                ].map(([label, score, status]) => (
+                  <div key={label as string}>
+                    <div className="mb-2 flex items-center justify-between">
+                      <span className="text-sm text-zinc-300">{label}</span>
+                      <span className="text-sm text-red-300">{status}</span>
+                    </div>
+
+                    <div className="h-2 overflow-hidden rounded-full bg-white/5">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-red-700 via-red-500 to-red-400 transition-all duration-1000"
+                        style={{ width: `${score as number}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="border-t border-white/10 bg-white/[0.02] px-5 py-4 text-xs leading-6 text-zinc-500">
+                ShadowScore does not guarantee suspension prevention and is not affiliated with any marketplace platform.
+                The service provides operational exposure interpretation based on behavioral risk indicators.
+              </div>
+            </div>
+
+            <div className="mt-5 overflow-hidden rounded-[28px] border border-white/10 bg-black/70">
+              <img
+                src="/shadowscore-shield-v8.png?v=hero-terminal-v12"
+                alt="ShadowScore shield"
+                className="mx-auto h-auto w-[210px] object-contain p-8 opacity-95 drop-shadow-[0_0_30px_rgba(220,38,38,0.18)]"
+              />
             </div>
           </div>
         </div>
-
-        <section className="mt-12 grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-          <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-7">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm text-red-300">Live Risk Terminal</div>
-                <h2 className="mt-2 text-3xl font-bold">ShadowScore Monitor</h2>
-              </div>
-              <div className="rounded-full border border-red-400/25 bg-red-500/10 px-4 py-2 text-sm text-red-200">
-                Elevated
-              </div>
-            </div>
-
-            <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-4">
-              {[
-                ["Marketplace Trust", "72", "Elevated"],
-                ["Tracking Integrity", "61", "Degrading"],
-                ["Payout Stability", "54", "Watchlist"],
-                ["Enforcement Risk", "HIGH", "30 Day Window"],
-              ].map(([title, value, label]) => (
-                <div key={title} className="rounded-2xl border border-white/10 bg-black/55 p-5">
-                  <div className="text-xs text-zinc-500">{title}</div>
-                  <div className="mt-4 text-3xl font-bold">{value}</div>
-                  <div className="mt-2 text-xs text-red-300">{label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-7">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xl font-semibold">Live Signal Feed</h3>
-              <div className="flex items-center gap-2 text-xs text-emerald-400">
-                <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
-                Active
-              </div>
-            </div>
-
-            <div className="mt-6 space-y-3">
-              {liveSignals.map((signal, index) => (
-                <div
-                  key={signal}
-                  className={`flex items-center justify-between rounded-xl border px-4 py-3 text-sm transition ${
-                    index === activeSignal
-                      ? "border-red-400/35 bg-red-950/10 text-white shadow-[0_0_18px_rgba(255,0,0,0.08)]"
-                      : "border-white/10 bg-black/40 text-zinc-500"
-                  }`}
-                >
-                  <span>{signal}</span>
-                  <span className="text-xs text-zinc-500 tracking-wide">
-                    {signalStates[index % signalStates.length]}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
       </section>
 
       <section className="mx-auto max-w-7xl px-6 py-12">
