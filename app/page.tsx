@@ -125,7 +125,7 @@ I would like a private marketplace exposure audit.`;
       price: "$1,499",
       tag: "",
       sub: "per month",
-      desc: "Private operational intelligence for agencies and multi-store marketplace operators.",
+      desc: "Private marketplace exposure intelligence for agencies and multi-store operators.",
       items: [
         "Multi-account monitoring",
         "Cross-marketplace exposure mapping",
@@ -185,7 +185,7 @@ I would like a private marketplace exposure audit.`;
           <div className="max-w-2xl">
             <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-red-400/25 bg-red-500/8 px-4 py-2 text-sm text-red-200">
               <span className="h-2 w-2 rounded-full bg-red-400" />
-              Enterprise Marketplace Exposure Intelligence
+              Marketplace Exposure Intelligence
             </div>
 
             <h1 className="text-5xl font-extrabold leading-[1.02] tracking-tight md:text-6xl">
@@ -329,7 +329,7 @@ I would like a private marketplace exposure audit.`;
         <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
           <div>
             <div className="text-sm uppercase tracking-[0.28em] text-red-300">The Agent</div>
-            <h2 className="mt-4 text-4xl font-bold">A Seller Defense Intelligence Layer</h2>
+            <h2 className="mt-4 text-4xl font-bold">A Seller Defense Agent, Not Another Dashboard</h2>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
@@ -349,51 +349,6 @@ I would like a private marketplace exposure audit.`;
         </div>
       </section>
 
-      <section id="signals" className="mx-auto max-w-6xl px-6 py-16">
-        <div className="text-center">
-          <div className="text-sm uppercase tracking-[0.28em] text-red-300">
-            Signal Engine
-          </div>
-
-          <h2 className="mt-4 text-4xl font-bold">
-            Marketplace Enforcement Starts Before The Warning
-          </h2>
-
-          <p className="mx-auto mt-4 max-w-2xl leading-7 text-zinc-500">
-            ShadowScore identifies operational exposure signals most sellers never monitor until restrictions begin.
-          </p>
-        </div>
-
-        <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-          {[
-            [
-              "Tracking Integrity",
-              "Delivery trust, scan consistency and proof reliability.",
-            ],
-            [
-              "Operational Drift",
-              "Velocity spikes and fulfillment instability.",
-            ],
-            [
-              "Trust Decay",
-              "Buyer sentiment and payout friction signals.",
-            ],
-            [
-              "Enforcement Correlation",
-              "Behavioral similarity to reviewed accounts.",
-            ],
-          ].map(([title, text]) => (
-            <div
-              key={title}
-              className="rounded-2xl border border-white/10 bg-white/[0.03] p-6"
-            >
-              <div className="text-xl font-semibold">{title}</div>
-              <p className="mt-4 leading-7 text-zinc-400">{text}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
       <section className="mx-auto max-w-7xl px-6 py-20">
         <div className="text-center">
           <div className="text-sm uppercase tracking-[0.28em] text-red-300">
@@ -405,7 +360,7 @@ I would like a private marketplace exposure audit.`;
           </h2>
 
           <p className="mx-auto mt-4 max-w-3xl leading-7 text-zinc-500">
-            Every ShadowScore review is designed to help marketplace operators understand hidden operational exposure before visible enforcement begins.
+            Every ShadowScore review is designed to surface hidden operational exposure before visible enforcement begins.
           </p>
         </div>
 
