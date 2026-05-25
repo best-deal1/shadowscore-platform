@@ -94,7 +94,7 @@ I would like a private marketplace exposure audit.`;
       price: "$199",
       tag: "Most Popular",
       sub: "one time",
-      desc: "Private exposure review for one marketplace account.",
+      desc: "Designed for sellers who cannot afford invisible marketplace exposure.",
       items: [
         "Hidden exposure review",
         "Marketplace risk summary",
@@ -296,7 +296,7 @@ I would like a private marketplace exposure audit.`;
                 <div className="text-sm text-red-300">Exposure Terminal</div>
                 <h2 className="mt-2 text-3xl font-bold">ShadowScore Risk View</h2>
                 <p className="mt-3 max-w-2xl leading-7 text-zinc-500">
-                  A private intelligence layer designed to surface operational exposure before visible marketplace action begins.
+                  Private exposure visibility before marketplace enforcement becomes visible.
                 </p>
               </div>
 
@@ -307,16 +307,26 @@ I would like a private marketplace exposure audit.`;
 
             <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-4">
               {[
-                ["Marketplace Trust", "Elevated"],
-                ["Tracking Integrity", "Degrading"],
-                ["Payout Stability", "Watchlist"],
-                ["Enforcement Exposure", "High Visibility"],
-              ].map(([title, status]) => (
-                <div key={title} className="rounded-2xl border border-white/10 bg-black/55 p-5">
-                  <div className="text-xs text-zinc-500">{title}</div>
-                  <div className="mt-4 text-2xl font-bold text-white">{status}</div>
-                  <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/5">
-                    <div className="h-full w-2/3 rounded-full bg-gradient-to-r from-red-700 via-red-500 to-red-400" />
+                ["Marketplace Trust", "Elevated", "w-4/5"],
+                ["Tracking Integrity", "Degrading", "w-3/5"],
+                ["Payout Stability", "Watchlist", "w-2/5"],
+                ["Enforcement Exposure", "High Visibility", "w-full"],
+              ].map(([title, status, width]) => (
+                <div key={title} className="rounded-2xl border border-white/10 bg-black/55 p-5 backdrop-blur-sm">
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs uppercase tracking-[0.18em] text-zinc-500">
+                      {title}
+                    </div>
+
+                    <div className="h-2 w-2 rounded-full bg-red-400 shadow-[0_0_10px_rgba(248,113,113,0.8)]" />
+                  </div>
+
+                  <div className="mt-5 text-2xl font-semibold text-white">
+                    {status}
+                  </div>
+
+                  <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/5">
+                    <div className={`h-full ${width} rounded-full bg-gradient-to-r from-red-700 via-red-500 to-red-400`} />
                   </div>
                 </div>
               ))}
@@ -568,7 +578,7 @@ I would like a private marketplace exposure audit.`;
           <div className="text-sm uppercase tracking-[0.28em] text-red-300">Contact ShadowScore</div>
           <h2 className="mt-4 text-4xl font-bold">Request A Private Review</h2>
           <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-zinc-400">
-            Private early-access reviews for marketplace sellers, agencies and multi-store operators.
+            Private exposure reviews for serious marketplace operators.
           </p>
 
           <div className="mt-10 flex flex-col items-center justify-center gap-4 md:flex-row">
