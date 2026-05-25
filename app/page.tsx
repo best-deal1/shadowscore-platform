@@ -164,6 +164,7 @@ I would like a private marketplace exposure audit.`;
 
           <nav className="hidden items-center gap-10 text-sm text-zinc-400 md:flex">
             <a href="#agent" className="transition hover:text-white">Agent</a>
+            <a href="#guarantee" className="transition hover:text-white">Guarantee</a>
             <a href="#pricing" className="transition hover:text-white">Pricing</a>
             <a href="#contact" className="transition hover:text-white">Contact</a>
           </nav>
