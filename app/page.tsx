@@ -12,6 +12,10 @@ export default function Home() {
 
   const faqItems = [
     {
+      q: "What information does ShadowScore reveal?",
+      a: "ShadowScore shows where marketplace exposure may already be building: tracking reliability, payout exposure, operational drift and the actions that should be stabilized first. It does not reveal marketplace internal logic or proprietary detection methods.",
+    },
+    {
       q: "What is ShadowScore?",
       a: "ShadowScore is a private marketplace exposure intelligence service for sellers, agencies and multi-store operators. It helps identify elevated account risk before visible enforcement actions begin.",
     },
@@ -164,7 +168,7 @@ I would like a private marketplace exposure audit.`;
 
           <nav className="hidden items-center gap-10 text-sm text-zinc-400 md:flex">
             <a href="#agent" className="transition hover:text-white">Agent</a>
-            <a href="#guarantee" className="transition hover:text-white">Guarantee</a>
+            <a href="#receive" className="transition hover:text-white">Guarantee</a>
             <a href="#pricing" className="transition hover:text-white">Pricing</a>
             <a href="#contact" className="transition hover:text-white">Contact</a>
           </nav>
@@ -202,6 +206,10 @@ I would like a private marketplace exposure audit.`;
             <p className="mt-5 max-w-xl text-base leading-7 text-zinc-500">
               Most sellers only see the warning after the decision has already been made.
             </p>
+
+            <div className="mt-6 max-w-2xl rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-sm leading-7 text-zinc-400">
+              ShadowScore turns store context, submitted screenshots and operational signals into a private exposure report showing where marketplace risk may already be building.
+            </div>
 
             <div className="mt-9 rounded-3xl border border-white/10 bg-black/55 p-5 backdrop-blur-xl">
               <div className="flex flex-col gap-3 md:flex-row">
@@ -334,6 +342,48 @@ I would like a private marketplace exposure audit.`;
         </section>
       </section>
 
+      <section className="mx-auto max-w-7xl px-6 py-16">
+        <div className="rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
+          <div className="max-w-3xl">
+            <div className="text-sm uppercase tracking-[0.28em] text-red-300">
+              What ShadowScore Reveals
+            </div>
+            <h2 className="mt-4 text-4xl font-bold">
+              Clear Exposure Visibility Without Revealing The Detection Method
+            </h2>
+            <p className="mt-5 leading-7 text-zinc-400">
+              ShadowScore does not expose marketplace secrets or internal platform logic. It gives sellers a private interpretation of where operational risk may already be forming.
+            </p>
+          </div>
+
+          <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+            {[
+              {
+                title: "Tracking Reliability",
+                text: "Where delivery proof, scan consistency or carrier behavior may weaken trust.",
+              },
+              {
+                title: "Payout Exposure",
+                text: "Signals that may increase the probability of review, reserve or payout friction.",
+              },
+              {
+                title: "Operational Drift",
+                text: "Changes in fulfillment, velocity or account behavior that create instability.",
+              },
+              {
+                title: "Action Priorities",
+                text: "A focused list of what to stabilize before exposure escalates.",
+              },
+            ].map((item) => (
+              <div key={item.title} className="rounded-2xl border border-white/10 bg-black/45 p-6">
+                <div className="text-xl font-semibold text-white">{item.title}</div>
+                <p className="mt-4 leading-7 text-zinc-400">{item.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section id="agent" className="mx-auto max-w-7xl px-6 py-20">
         <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
           <div>
@@ -358,7 +408,7 @@ I would like a private marketplace exposure audit.`;
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-6 py-20">
+      <section id="receive" className="mx-auto max-w-7xl px-6 py-20">
         <div className="text-center">
           <div className="text-sm uppercase tracking-[0.28em] text-red-300">
             What You Receive
@@ -369,7 +419,7 @@ I would like a private marketplace exposure audit.`;
           </h2>
 
           <p className="mx-auto mt-4 max-w-3xl leading-7 text-zinc-500">
-            Every ShadowScore review is designed to surface hidden operational exposure before visible enforcement begins.
+            A ShadowScore review converts submitted store context into a clear risk picture: what looks exposed, why it matters and what should be stabilized first.
           </p>
         </div>
 
@@ -377,19 +427,19 @@ I would like a private marketplace exposure audit.`;
           {[
             {
               title: "Exposure Summary",
-              text: "Private operational risk overview and marketplace posture analysis.",
+              text: "A plain-English overview of the store's current marketplace risk posture.",
             },
             {
               title: "Tracking Integrity Review",
-              text: "Behavioral delivery trust evaluation and scan consistency analysis.",
+              text: "Delivery proof, scan consistency and tracking trust interpretation.",
             },
             {
               title: "Enforcement Vulnerability",
-              text: "Hidden exposure interpretation and operational weakness detection.",
+              text: "Operational signals that may contribute to payout, review or restriction exposure.",
             },
             {
               title: "Stabilization Actions",
-              text: "Recommended operational adjustments before enforcement escalation.",
+              text: "Recommended operational adjustments before exposure escalates.",
             },
           ].map((item) => (
             <div
@@ -413,7 +463,7 @@ I would like a private marketplace exposure audit.`;
               What A Private Review Looks Like
             </h2>
             <p className="mt-5 max-w-xl leading-7 text-zinc-400">
-              Every review includes exposure findings, operational risk interpretation and stabilization recommendations.
+              Every review includes a concise exposure summary, prioritized findings and stabilization actions.
             </p>
           </div>
 
