@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 const WHATSAPP_NUMBER = "9720557293979";
 
@@ -8,46 +8,18 @@ export default function Home() {
   const [selectedPlan, setSelectedPlan] = useState("Exposure Intelligence");
   const [scanText, setScanText] = useState("");
   const [showScanner, setShowScanner] = useState(false);
-  const [activeSignal, setActiveSignal] = useState(0);
   const [metricsTick, setMetricsTick] = useState(0);
   const [showMoreFaq, setShowMoreFaq] = useState(false);
 
-  const liveSignals = useMemo(
-    () => [
-      "eBay · Tracking validation drift detected",
-      "Amazon · Payout reserve exposure elevated",
-      "Walmart · Fulfillment verification inconsistencies observed",
-      "TikTok Shop · Behavioral velocity anomaly detected",
-      "Etsy · Marketplace trust posture weakening",
-    ],
-    []
-  );
-
-  const signalStates = useMemo(
-    () => [
-      "monitoring",
-      "active",
-      "recently updated",
-      "refreshed 4m ago",
-      "live telemetry",
-    ],
-    []
-  );
-
   useEffect(() => {
-    const signalTimer = window.setInterval(() => {
-      setActiveSignal((current) => (current + 1) % liveSignals.length);
-    }, 18000);
-
     const metricsTimer = window.setInterval(() => {
       setMetricsTick((current) => current + 1);
     }, 26000);
 
     return () => {
-      window.clearInterval(signalTimer);
       window.clearInterval(metricsTimer);
     };
-  }, [liveSignals.length]);
+  }, []);
 
   const networkMetrics = [
     {
@@ -90,44 +62,52 @@ export default function Home() {
 
   const faqItems = [
     {
-      q: "Can a healthy account still develop hidden exposure?",
-      a: "Yes. Marketplace enforcement signals often develop before visible warnings or account health changes appear.",
-    },
-    {
-      q: "Does valid tracking always reduce marketplace risk?",
-      a: "Not always. Platforms also evaluate delivery consistency, proof quality and behavioral trust signals.",
-    },
-    {
-      q: "Why do some sellers get reviewed without visible warnings?",
-      a: "Because marketplace risk can build through behavioral patterns, operational instability and trust decay before public account-health indicators change.",
+      q: "What is ShadowScore?",
+      a: "ShadowScore is a private marketplace exposure intelligence service for sellers, agencies and multi-store operators. It helps identify elevated account risk before visible enforcement actions begin.",
     },
     {
       q: "Is ShadowScore a reinstatement service?",
-      a: "No. ShadowScore focuses on identifying operational exposure before enforcement actions begin.",
+      a: "No. ShadowScore is designed for pre-enforcement visibility. If an account is already restricted, the review can still help organize the situation, but the primary value is early detection and prevention.",
     },
     {
-      q: "Do you require marketplace passwords?",
-      a: "No. ShadowScore does not require marketplace login credentials for exposure reviews.",
+      q: "Do you need my marketplace password?",
+      a: "No. Initial reviews do not require marketplace credentials. A first audit can begin with a store URL, screenshots, exports and operational context.",
     },
     {
-      q: "What does ShadowScore review?",
-      a: "ShadowScore reviews external account posture, operational context, tracking consistency, fulfillment signals and behavioral exposure indicators.",
+      q: "What marketplaces are supported?",
+      a: "Early access coverage includes eBay, Amazon, Walmart, SHEIN, TikTok Shop and Etsy.",
+    },
+    {
+      q: "What does the first audit include?",
+      a: "The first audit includes a private exposure review, risk posture summary, tracking integrity review, 30-day outlook and recommended stabilization actions.",
     },
     {
       q: "Does ShadowScore reveal marketplace enforcement logic?",
-      a: "No. ShadowScore does not claim access to internal marketplace systems and does not expose proprietary analysis logic.",
+      a: "No. ShadowScore does not claim access to marketplace internal systems and does not expose proprietary analysis logic. The review is based on external account posture, operational context and risk indicators.",
     },
     {
-      q: "Can ShadowScore guarantee that an account will not be restricted?",
-      a: "No. ShadowScore helps identify exposure early, but no service can guarantee marketplace decisions.",
+      q: "Can ShadowScore guarantee that my account will not be restricted?",
+      a: "No platform can guarantee that. ShadowScore helps sellers identify elevated exposure early and take stronger operational action before risk becomes visible enforcement.",
+    },
+    {
+      q: "How does the 30-day protection work?",
+      a: "If a first-time paid audit fails to identify elevated exposure and a new restriction or payout review occurs within 30 days, ShadowScore refunds the audit fee, subject to the stated audit terms.",
     },
     {
       q: "Who should use ShadowScore?",
-      a: "Marketplace sellers, agencies, dropshippers, private-label operators and multi-store businesses that cannot afford sudden payout holds or account reviews.",
+      a: "Sellers with meaningful marketplace revenue, dropshippers, agencies, high-volume operators and anyone who cannot afford sudden payout holds or account reviews.",
     },
     {
-      q: "Is ShadowScore affiliated with marketplace platforms?",
-      a: "No. ShadowScore is independent and is not affiliated with eBay, Amazon, Walmart, SHEIN, TikTok Shop or Etsy.",
+      q: "How long does an audit take?",
+      a: "Most first audits are reviewed within 24 to 72 hours, depending on the quality of the submitted context and exports.",
+    },
+    {
+      q: "Is ShadowScore affiliated with the marketplaces shown?",
+      a: "No. Marketplace names are shown for coverage reference only. ShadowScore is independent and is not affiliated with eBay, Amazon, Walmart, SHEIN, TikTok Shop or Etsy.",
+    },
+    {
+      q: "Can agencies use ShadowScore for multiple clients?",
+      a: "Yes. The Agency Intelligence plan is built for multi-account review, operational monitoring and private reporting workflows.",
     },
   ];
 
@@ -195,13 +175,14 @@ I would like a private marketplace exposure audit.`;
       price: "$1,499",
       tag: "",
       sub: "per month",
-      desc: "For agencies and multi-store operators.",
+      desc: "Private operational intelligence for agencies and multi-store marketplace operators.",
       items: [
         "Multi-account monitoring",
-        "Cross-marketplace exposure tracking",
-        "Founder access",
-        "Private intelligence playbooks",
-        "Custom reporting",
+        "Cross-marketplace exposure mapping",
+        "Private analyst access",
+        "Marketplace escalation review",
+        "Behavioral exposure monitoring",
+        "Custom intelligence reporting",
       ],
       button: "Talk To Us",
     },
@@ -265,7 +246,7 @@ I would like a private marketplace exposure audit.`;
             </h1>
 
             <p className="mt-7 max-w-xl text-lg leading-8 text-zinc-400">
-              ShadowScore reveals silent behavioral signals and hidden exposure before payout holds,
+              ShadowScore reveals silent behavioral signals and hidden exposure weeks before payout holds,
               account reviews or restrictions begin.
             </p>
 
@@ -358,15 +339,19 @@ I would like a private marketplace exposure audit.`;
           </div>
         </div>
 
-        <section className="mt-12 grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+        <section className="mt-12">
           <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-7">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
               <div>
-                <div className="text-sm text-red-300">Live Risk Terminal</div>
-                <h2 className="mt-2 text-3xl font-bold">ShadowScore Monitor</h2>
+                <div className="text-sm text-red-300">Exposure Terminal</div>
+                <h2 className="mt-2 text-3xl font-bold">ShadowScore Risk View</h2>
+                <p className="mt-3 max-w-2xl leading-7 text-zinc-500">
+                  A private intelligence layer designed to surface operational exposure before visible marketplace action begins.
+                </p>
               </div>
+
               <div className="rounded-full border border-red-400/25 bg-red-500/10 px-4 py-2 text-sm text-red-200">
-                Elevated
+                Elevated Visibility
               </div>
             </div>
 
@@ -375,40 +360,12 @@ I would like a private marketplace exposure audit.`;
                 ["Marketplace Trust", "72", "Elevated"],
                 ["Tracking Integrity", "61", "Degrading"],
                 ["Payout Stability", "54", "Watchlist"],
-                ["Enforcement Risk", "HIGH", "30 Day Window"],
+                ["Enforcement Exposure", "HIGH", "30 Day Window"],
               ].map(([title, value, label]) => (
                 <div key={title} className="rounded-2xl border border-white/10 bg-black/55 p-5">
                   <div className="text-xs text-zinc-500">{title}</div>
                   <div className="mt-4 text-3xl font-bold">{value}</div>
                   <div className="mt-2 text-xs text-red-300">{label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-7">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xl font-semibold">Live Signal Feed</h3>
-              <div className="flex items-center gap-2 text-xs text-emerald-400">
-                <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
-                Active
-              </div>
-            </div>
-
-            <div className="mt-6 space-y-3">
-              {liveSignals.map((signal, index) => (
-                <div
-                  key={signal}
-                  className={`flex items-center justify-between rounded-xl border px-4 py-3 text-sm transition ${
-                    index === activeSignal
-                      ? "border-red-400/35 bg-red-950/10 text-white shadow-[0_0_18px_rgba(255,0,0,0.08)]"
-                      : "border-white/10 bg-black/40 text-zinc-500"
-                  }`}
-                >
-                  <span>{signal}</span>
-                  <span className="text-xs text-zinc-500 tracking-wide">
-                    {signalStates[index % signalStates.length]}
-                  </span>
                 </div>
               ))}
             </div>
@@ -420,35 +377,20 @@ I would like a private marketplace exposure audit.`;
         <div className="rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
           <div>
             <div className="text-sm uppercase tracking-[0.28em] text-red-300">
-              ShadowScore Intelligence Layers
+              ShadowScore Network Intelligence
             </div>
-            <p className="mt-3 max-w-3xl text-zinc-500">
-              ShadowScore focuses on the operational signals serious sellers usually cannot see until enforcement begins.
+            <p className="mt-3 text-zinc-500">
+              Early Access Network Metrics. Demonstration values refresh slowly to simulate a live monitoring environment.
             </p>
           </div>
 
-          <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {[
-              {
-                title: "Behavioral Exposure",
-                text: "Hidden marketplace trust and operational instability signals.",
-              },
-              {
-                title: "Tracking Integrity",
-                text: "Delivery proof quality, carrier consistency and scan reliability.",
-              },
-              {
-                title: "Operational Drift",
-                text: "Velocity spikes, fulfillment instability and behavioral deviation.",
-              },
-              {
-                title: "Enforcement Correlation",
-                text: "Pattern similarity to accounts later reviewed or restricted.",
-              },
-            ].map((layer) => (
-              <div key={layer.title} className="rounded-2xl border border-white/10 bg-black/50 p-6">
-                <div className="text-xl font-semibold text-white">{layer.title}</div>
-                <p className="mt-4 leading-7 text-zinc-400">{layer.text}</p>
+          <div className="mt-8 grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+            {networkMetrics.map((metric) => (
+              <div key={metric.label} className="rounded-2xl border border-white/10 bg-black/50 p-5 transition duration-500">
+                <div className="text-3xl font-bold">{metric.value}</div>
+                <div className="mt-2 text-sm text-zinc-400">{metric.label}</div>
+                <div className="mt-5 text-sm text-emerald-400">{metric.daily}</div>
+                <div className="mt-1 text-sm text-red-300">{metric.monthly}</div>
               </div>
             ))}
           </div>
@@ -479,7 +421,7 @@ I would like a private marketplace exposure audit.`;
         </div>
       </section>
 
-      <section id="signals" className="mx-auto max-w-7xl px-6 py-16">
+      <section id="signals" className="mx-auto max-w-6xl px-6 py-16">
         <div className="text-center">
           <div className="text-sm uppercase tracking-[0.28em] text-red-300">
             Signal Engine
@@ -489,8 +431,8 @@ I would like a private marketplace exposure audit.`;
             Marketplace Enforcement Starts Before The Warning
           </h2>
 
-          <p className="mx-auto mt-4 max-w-3xl leading-7 text-zinc-500">
-            ShadowScore focuses on operational exposure signals most sellers never monitor until restrictions begin.
+          <p className="mx-auto mt-4 max-w-2xl leading-7 text-zinc-500">
+            ShadowScore identifies operational exposure signals most sellers never monitor until restrictions begin.
           </p>
         </div>
 
@@ -498,19 +440,19 @@ I would like a private marketplace exposure audit.`;
           {[
             [
               "Tracking Integrity",
-              "Delivery proof quality, carrier consistency and scan reliability.",
+              "Delivery trust, scan consistency and proof reliability.",
             ],
             [
               "Operational Drift",
-              "Velocity spikes, fulfillment instability and behavioral deviation.",
+              "Velocity spikes and fulfillment instability.",
             ],
             [
               "Trust Decay",
-              "Buyer sentiment shifts, payout friction and operational instability.",
+              "Buyer sentiment and payout friction signals.",
             ],
             [
               "Enforcement Correlation",
-              "Pattern similarity to accounts later reviewed or restricted.",
+              "Behavioral similarity to reviewed accounts.",
             ],
           ].map(([title, text]) => (
             <div
@@ -519,40 +461,6 @@ I would like a private marketplace exposure audit.`;
             >
               <div className="text-xl font-semibold">{title}</div>
               <p className="mt-4 leading-7 text-zinc-400">{text}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-6 py-20">
-        <div className="text-center">
-          <div className="text-sm uppercase tracking-[0.28em] text-red-300">
-            Operational Exposure Examples
-          </div>
-          <h2 className="mt-4 text-4xl font-bold">What ShadowScore Looks For Before Enforcement</h2>
-          <p className="mx-auto mt-4 max-w-3xl leading-7 text-zinc-500">
-            These examples are anonymized and simplified. They show the type of exposure patterns sellers often miss while account health still appears normal.
-          </p>
-        </div>
-
-        <div className="mt-12 grid gap-5 md:grid-cols-3">
-          {[
-            {
-              title: "Tracking Drift Before Review",
-              text: "Delivery scans appeared valid, but upload timing and carrier consistency showed weakening marketplace trust signals.",
-            },
-            {
-              title: "Velocity Spike Before Exposure",
-              text: "Sales growth looked positive externally, while behavioral acceleration created elevated review probability.",
-            },
-            {
-              title: "Brand Risk Despite Invoices",
-              text: "The seller held documentation, but distribution-rights exposure and enforcement correlation created hidden vulnerability.",
-            },
-          ].map((example) => (
-            <div key={example.title} className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
-              <div className="text-xl font-semibold">{example.title}</div>
-              <p className="mt-4 leading-7 text-zinc-400">{example.text}</p>
             </div>
           ))}
         </div>
