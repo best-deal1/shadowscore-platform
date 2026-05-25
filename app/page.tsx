@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 const WHATSAPP_NUMBER = "9720557293979";
 
@@ -8,57 +8,7 @@ export default function Home() {
   const [selectedPlan, setSelectedPlan] = useState("Exposure Intelligence");
   const [scanText, setScanText] = useState("");
   const [showScanner, setShowScanner] = useState(false);
-  const [metricsTick, setMetricsTick] = useState(0);
   const [showMoreFaq, setShowMoreFaq] = useState(false);
-
-  useEffect(() => {
-    const metricsTimer = window.setInterval(() => {
-      setMetricsTick((current) => current + 1);
-    }, 26000);
-
-    return () => {
-      window.clearInterval(metricsTimer);
-    };
-  }, []);
-
-  const networkMetrics = [
-    {
-      label: "Stores Reviewed",
-      value: 496 + (metricsTick % 3),
-      daily: `+${11 + (metricsTick % 2)} today`,
-      monthly: `+${76 + (metricsTick % 4)} this month`,
-    },
-    {
-      label: "Risk Events",
-      value: 72 + (metricsTick % 2),
-      daily: `+${7 + (metricsTick % 2)} today`,
-      monthly: `+${32 + (metricsTick % 3)} this month`,
-    },
-    {
-      label: "Alerts Sent",
-      value: 50 + (metricsTick % 2),
-      daily: `+${6 + (metricsTick % 2)} today`,
-      monthly: `+${27 + (metricsTick % 3)} this month`,
-    },
-    {
-      label: "Sellers Stabilized",
-      value: 29 + (metricsTick % 2),
-      daily: `+${5 + (metricsTick % 1)} today`,
-      monthly: `+${22 + (metricsTick % 3)} this month`,
-    },
-    {
-      label: "Exposure Monitored",
-      value: `$${184 + (metricsTick % 2)}K`,
-      daily: `+$${9 + (metricsTick % 2)}K today`,
-      monthly: `+$${41 + (metricsTick % 3)}K this month`,
-    },
-    {
-      label: "Markets Covered",
-      value: 6,
-      daily: "active",
-      monthly: "monitoring",
-    },
-  ];
 
   const faqItems = [
     {
@@ -371,30 +321,6 @@ I would like a private marketplace exposure audit.`;
             </div>
           </div>
         </section>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-6 py-12">
-        <div className="rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
-          <div>
-            <div className="text-sm uppercase tracking-[0.28em] text-red-300">
-              ShadowScore Network Intelligence
-            </div>
-            <p className="mt-3 text-zinc-500">
-              Early Access Network Metrics. Demonstration values refresh slowly to simulate a live monitoring environment.
-            </p>
-          </div>
-
-          <div className="mt-8 grid gap-4 md:grid-cols-3 lg:grid-cols-6">
-            {networkMetrics.map((metric) => (
-              <div key={metric.label} className="rounded-2xl border border-white/10 bg-black/50 p-5 transition duration-500">
-                <div className="text-3xl font-bold">{metric.value}</div>
-                <div className="mt-2 text-sm text-zinc-400">{metric.label}</div>
-                <div className="mt-5 text-sm text-emerald-400">{metric.daily}</div>
-                <div className="mt-1 text-sm text-red-300">{metric.monthly}</div>
-              </div>
-            ))}
-          </div>
-        </div>
       </section>
 
       <section id="agent" className="mx-auto max-w-7xl px-6 py-20">
