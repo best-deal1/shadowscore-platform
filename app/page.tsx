@@ -171,6 +171,7 @@ I would like a private marketplace exposure audit.`;
             <a href="#receive" className="transition hover:text-white">Guarantee</a>
             <a href="#pricing" className="transition hover:text-white">Pricing</a>
             <a href="#contact" className="transition hover:text-white">Contact</a>
+            <button type="button" onClick={() => openWhatsApp("Private Intelligence Demo")} className="text-red-300 transition hover:text-red-200">Private Demo</button>
           </nav>
 
           <button
@@ -242,6 +243,8 @@ I would like a private marketplace exposure audit.`;
               >
                 Request Private Audit
               </button>
+
+              <button type="button" onClick={() => openWhatsApp("Private Intelligence Demo")} className="rounded-2xl border border-red-400/30 bg-red-500/10 px-6 py-4 font-semibold text-red-100 transition hover:border-red-300/60 hover:bg-red-500/15">Request Private Demo</button>
 
               <a
                 href="#pricing"
@@ -620,6 +623,26 @@ I would like a private marketplace exposure audit.`;
             </button>
           </div>
         )}
+      </section>
+
+      <section className="mx-auto max-w-7xl px-6 py-16">
+        <div className="rounded-[32px] border border-red-400/20 bg-red-500/[0.06] p-8">
+          <div className="grid items-center gap-8 lg:grid-cols-[1fr_auto]">
+            <div>
+              <div className="text-sm uppercase tracking-[0.28em] text-red-300">
+                Intelligence Intake Console
+              </div>
+              <h2 className="mt-4 text-3xl font-bold">
+                Upload Evidence And See The Analysis Flow
+              </h2>
+              <p className="mt-4 max-w-2xl leading-7 text-zinc-400">
+                Private access only. Sellers submit screenshots, tracking exports and marketplace notices after approval. The analysis method, scoring weights and correlation logic are not publicly exposed.
+              </p>
+            </div>
+
+            <button type="button" onClick={() => openWhatsApp("Private Intelligence Demo")} className="rounded-2xl bg-red-600 px-7 py-4 text-center font-semibold transition hover:bg-red-500">Request Private Demo</button>
+          </div>
+        </div>
       </section>
 
       <section id="contact" className="mx-auto max-w-5xl px-6 py-20 text-center">
