@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "ShadowScore Pain Collector",
+  "version": "0.2.0",
+  "description": "Collects visible marketplace seller pain signals from pages you can access.",
+  "permissions": ["activeTab", "scripting", "downloads"],
+  "host_permissions": ["<all_urls>"],
+  "action": {
+    "default_title": "ShadowScore Collector",
+    "default_popup": "popup.html"
+  }
+}

@@ -1,0 +1,161 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>ShadowScore Collector</title>
+    <style>
+      body {
+        width: 390px;
+        margin: 0;
+        padding: 18px;
+        background: #050505;
+        color: white;
+        font-family: Arial, sans-serif;
+      }
+
+      h1 {
+        font-size: 18px;
+        margin: 0 0 8px;
+      }
+
+      p {
+        color: #a1a1aa;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      button {
+        width: 100%;
+        border: 1px solid rgba(248,113,113,.35);
+        background: rgba(220,38,38,.18);
+        color: #fff;
+        padding: 12px;
+        border-radius: 12px;
+        cursor: pointer;
+        margin-top: 10px;
+        font-weight: 700;
+      }
+
+      button:hover {
+        background: rgba(220,38,38,.28);
+      }
+
+      .secondary {
+        background: rgba(255,255,255,.04);
+        border-color: rgba(255,255,255,.12);
+      }
+
+      .secondary:hover {
+        background: rgba(255,255,255,.08);
+      }
+
+      .danger {
+        background: rgba(127,29,29,.35);
+      }
+
+      .row {
+        display: flex;
+        gap: 10px;
+      }
+
+      .row button {
+        flex: 1;
+      }
+
+      .small {
+        font-size: 12px;
+        color: #71717a;
+        margin-top: 12px;
+      }
+
+      #status {
+        margin-top: 12px;
+        font-size: 13px;
+        color: #fca5a5;
+        min-height: 18px;
+      }
+
+      .box {
+        margin-top: 12px;
+        border: 1px solid rgba(255,255,255,.08);
+        border-radius: 14px;
+        padding: 12px;
+        background: rgba(255,255,255,.03);
+      }
+
+      .metric {
+        display: flex;
+        justify-content: space-between;
+        color: #d4d4d8;
+        font-size: 13px;
+        margin: 7px 0;
+      }
+
+      .toggle {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 14px;
+        padding: 12px;
+        border-radius: 14px;
+        border: 1px solid rgba(248,113,113,.25);
+        background: rgba(220,38,38,.08);
+      }
+
+      .toggle span {
+        font-size: 13px;
+        color: #fecaca;
+        font-weight: 700;
+      }
+
+      input[type="checkbox"] {
+        transform: scale(1.25);
+      }
+
+      .path {
+        color: #a1a1aa;
+        font-size: 12px;
+        line-height: 1.5;
+        word-break: break-word;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>ShadowScore Pain Collector</h1>
+
+    <p>
+      Collects visible marketplace seller pain signals from the current page.
+      No login bypass. No background crawling. It only reads what is visible in your current browser tab.
+    </p>
+
+    <div class="toggle">
+      <span>Auto Monitor Visible Feed</span>
+      <input id="autoMonitor" type="checkbox" />
+    </div>
+
+    <div class="row">
+      <button id="collectJson">Collect JSON</button>
+      <button id="collectCsv">Collect CSV</button>
+    </div>
+
+    <button id="downloadMaster" class="secondary">Download Master Dataset JSON</button>
+    <button id="downloadMasterCsv" class="secondary">Download Master Dataset CSV</button>
+    <button id="clearMaster" class="danger">Clear Local Dataset</button>
+
+    <div class="box">
+      <div class="metric"><span>Session status</span><strong id="mode">Manual</strong></div>
+      <div class="metric"><span>Local dataset</span><strong id="total">0</strong></div>
+      <div class="metric"><span>Last collect</span><strong id="last">Never</strong></div>
+    </div>
+
+    <div id="status"></div>
+
+    <div class="small">
+      Saves exported files to:
+      <div class="path">Downloads/ShadowScoreCollector</div>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
