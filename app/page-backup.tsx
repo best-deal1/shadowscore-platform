@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 
 const WHATSAPP_NUMBER = "9720557293979";
 
@@ -8,87 +8,13 @@ export default function Home() {
   const [selectedPlan, setSelectedPlan] = useState("Exposure Intelligence");
   const [scanText, setScanText] = useState("");
   const [showScanner, setShowScanner] = useState(false);
-  const [activeSignal, setActiveSignal] = useState(0);
-  const [metricsTick, setMetricsTick] = useState(0);
   const [showMoreFaq, setShowMoreFaq] = useState(false);
 
-  const liveSignals = useMemo(
-    () => [
-      "eBay · Tracking validation drift detected",
-      "Amazon · Payout reserve exposure elevated",
-      "Walmart · Fulfillment verification inconsistencies observed",
-      "TikTok Shop · Behavioral velocity anomaly detected",
-      "Etsy · Marketplace trust posture weakening",
-    ],
-    []
-  );
-
-  const signalStates = useMemo(
-    () => [
-      "monitoring",
-      "active",
-      "recently updated",
-      "refreshed 4m ago",
-      "live telemetry",
-    ],
-    []
-  );
-
-  useEffect(() => {
-    const signalTimer = window.setInterval(() => {
-      setActiveSignal((current) => (current + 1) % liveSignals.length);
-    }, 18000);
-
-    const metricsTimer = window.setInterval(() => {
-      setMetricsTick((current) => current + 1);
-    }, 26000);
-
-    return () => {
-      window.clearInterval(signalTimer);
-      window.clearInterval(metricsTimer);
-    };
-  }, [liveSignals.length]);
-
-  const networkMetrics = [
-    {
-      label: "Stores Reviewed",
-      value: 496 + (metricsTick % 3),
-      daily: `+${11 + (metricsTick % 2)} today`,
-      monthly: `+${76 + (metricsTick % 4)} this month`,
-    },
-    {
-      label: "Risk Events",
-      value: 72 + (metricsTick % 2),
-      daily: `+${7 + (metricsTick % 2)} today`,
-      monthly: `+${32 + (metricsTick % 3)} this month`,
-    },
-    {
-      label: "Alerts Sent",
-      value: 50 + (metricsTick % 2),
-      daily: `+${6 + (metricsTick % 2)} today`,
-      monthly: `+${27 + (metricsTick % 3)} this month`,
-    },
-    {
-      label: "Sellers Stabilized",
-      value: 29 + (metricsTick % 2),
-      daily: `+${5 + (metricsTick % 1)} today`,
-      monthly: `+${22 + (metricsTick % 3)} this month`,
-    },
-    {
-      label: "Exposure Monitored",
-      value: `$${184 + (metricsTick % 2)}K`,
-      daily: `+$${9 + (metricsTick % 2)}K today`,
-      monthly: `+$${41 + (metricsTick % 3)}K this month`,
-    },
-    {
-      label: "Markets Covered",
-      value: 6,
-      daily: "active",
-      monthly: "monitoring",
-    },
-  ];
-
   const faqItems = [
+    {
+      q: "What information does ShadowScore reveal?",
+      a: "ShadowScore shows where marketplace exposure may already be building: tracking reliability, payout exposure, operational drift and the actions that should be stabilized first. It does not reveal marketplace internal logic or proprietary detection methods.",
+    },
     {
       q: "What is ShadowScore?",
       a: "ShadowScore is a private marketplace exposure intelligence service for sellers, agencies and multi-store operators. It helps identify elevated account risk before visible enforcement actions begin.",
@@ -172,7 +98,7 @@ I would like a private marketplace exposure audit.`;
       price: "$199",
       tag: "Most Popular",
       sub: "one time",
-      desc: "Private exposure review for one marketplace account.",
+      desc: "Designed for sellers who cannot afford invisible marketplace exposure.",
       items: [
         "Hidden exposure review",
         "Marketplace risk summary",
@@ -188,13 +114,13 @@ I would like a private marketplace exposure audit.`;
       price: "$299",
       tag: "",
       sub: "per month",
-      desc: "Continuous monitoring for active marketplace operators.",
+      desc: "Ongoing exposure monitoring for active marketplace operators.",
       items: [
-        "Weekly monitoring",
+        "Ongoing exposure monitoring",
         "Behavioral drift tracking",
         "Tracking integrity analysis",
-        "Priority alerts",
-        "Monthly recommendations",
+        "Priority exposure alerts",
+        "Monthly operational review",
       ],
       button: "Start Monitoring",
     },
@@ -203,13 +129,14 @@ I would like a private marketplace exposure audit.`;
       price: "$1,499",
       tag: "",
       sub: "per month",
-      desc: "For agencies and multi-store operators.",
+      desc: "Private marketplace exposure intelligence for agencies and multi-store operators.",
       items: [
         "Multi-account monitoring",
-        "Cross-marketplace exposure tracking",
-        "Founder access",
-        "Private intelligence playbooks",
-        "Custom reporting",
+        "Cross-marketplace exposure mapping",
+        "Private analyst access",
+        "Marketplace escalation review",
+        "Behavioral exposure monitoring",
+        "Custom intelligence reporting",
       ],
       button: "Talk To Us",
     },
@@ -239,12 +166,12 @@ I would like a private marketplace exposure audit.`;
             </div>
           </div>
 
-          <nav className="hidden items-center gap-9 text-sm text-zinc-400 md:flex">
-            <a href="#signals" className="transition hover:text-white">Signals</a>
+          <nav className="hidden items-center gap-10 text-sm text-zinc-400 md:flex">
             <a href="#agent" className="transition hover:text-white">Agent</a>
-            <a href="#guarantee" className="transition hover:text-white">Guarantee</a>
+            <a href="#receive" className="transition hover:text-white">Guarantee</a>
             <a href="#pricing" className="transition hover:text-white">Pricing</a>
             <a href="#contact" className="transition hover:text-white">Contact</a>
+            <a href="/intake" className="text-red-300 transition hover:text-red-200">Console</a>
           </nav>
 
           <button
@@ -262,19 +189,28 @@ I would like a private marketplace exposure audit.`;
           <div className="max-w-2xl">
             <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-red-400/25 bg-red-500/8 px-4 py-2 text-sm text-red-200">
               <span className="h-2 w-2 rounded-full bg-red-400" />
-              Enterprise Marketplace Exposure Intelligence
+              Marketplace Exposure Intelligence
             </div>
 
             <h1 className="text-5xl font-extrabold leading-[1.02] tracking-tight md:text-6xl">
-              The Marketplace Already Formed An Opinion About Your Account.
-              <span className="mt-3 block text-red-400">
-                ShadowScore Lets You See It Before Enforcement Begins.
+              The Marketplace Already Decided You're Risky.
+              <span className="mt-4 block text-red-400">
+                ShadowScore Lets You See It First.
               </span>
             </h1>
 
             <p className="mt-7 max-w-xl text-lg leading-8 text-zinc-400">
-              ShadowScore detects silent marketplace exposure before payout holds, seller reviews and account restrictions begin.
+              ShadowScore reveals silent behavioral signals and hidden exposure weeks before payout holds,
+              account reviews or restrictions begin.
             </p>
+
+            <p className="mt-5 max-w-xl text-base leading-7 text-zinc-500">
+              Most sellers only see the warning after the decision has already been made.
+            </p>
+
+            <div className="mt-6 max-w-2xl rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-sm leading-7 text-zinc-400">
+              ShadowScore turns store context, submitted screenshots and operational signals into a private exposure report showing where marketplace risk may already be building.
+            </div>
 
             <div className="mt-9 rounded-3xl border border-white/10 bg-black/55 p-5 backdrop-blur-xl">
               <div className="flex flex-col gap-3 md:flex-row">
@@ -290,7 +226,7 @@ I would like a private marketplace exposure audit.`;
                   onClick={handleScan}
                   className="rounded-2xl bg-red-600 px-8 py-4 font-bold transition hover:bg-red-500"
                 >
-                  Scan My Store
+                  Request Private Intelligence Review
                 </button>
               </div>
 
@@ -361,57 +297,45 @@ I would like a private marketplace exposure audit.`;
           </div>
         </div>
 
-        <section className="mt-12 grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+        <section className="mt-12">
           <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-7">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
               <div>
-                <div className="text-sm text-red-300">Live Risk Terminal</div>
-                <h2 className="mt-2 text-3xl font-bold">ShadowScore Monitor</h2>
+                <div className="text-sm text-red-300">Exposure Terminal</div>
+                <h2 className="mt-2 text-3xl font-bold">ShadowScore Risk View</h2>
+                <p className="mt-3 max-w-2xl leading-7 text-zinc-500">
+                  Private exposure visibility before marketplace enforcement becomes visible.
+                </p>
               </div>
+
               <div className="rounded-full border border-red-400/25 bg-red-500/10 px-4 py-2 text-sm text-red-200">
-                Elevated
+                Elevated Visibility
               </div>
             </div>
 
             <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-4">
               {[
-                ["Marketplace Trust", "72", "Elevated"],
-                ["Tracking Integrity", "61", "Degrading"],
-                ["Payout Stability", "54", "Watchlist"],
-                ["Enforcement Risk", "HIGH", "30 Day Window"],
-              ].map(([title, value, label]) => (
-                <div key={title} className="rounded-2xl border border-white/10 bg-black/55 p-5">
-                  <div className="text-xs text-zinc-500">{title}</div>
-                  <div className="mt-4 text-3xl font-bold">{value}</div>
-                  <div className="mt-2 text-xs text-red-300">{label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
+                ["Marketplace Trust", "Elevated", "w-4/5"],
+                ["Tracking Integrity", "Degrading", "w-3/5"],
+                ["Payout Stability", "Watchlist", "w-2/5"],
+                ["Enforcement Exposure", "High Visibility", "w-full"],
+              ].map(([title, status, width]) => (
+                <div key={title} className="rounded-2xl border border-white/10 bg-black/55 p-5 backdrop-blur-sm">
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs uppercase tracking-[0.18em] text-zinc-500">
+                      {title}
+                    </div>
 
-          <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-7">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xl font-semibold">Live Signal Feed</h3>
-              <div className="flex items-center gap-2 text-xs text-emerald-400">
-                <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
-                Active
-              </div>
-            </div>
+                    <div className="h-2 w-2 rounded-full bg-red-400 shadow-[0_0_10px_rgba(248,113,113,0.8)]" />
+                  </div>
 
-            <div className="mt-6 space-y-3">
-              {liveSignals.map((signal, index) => (
-                <div
-                  key={signal}
-                  className={`flex items-center justify-between rounded-xl border px-4 py-3 text-sm transition ${
-                    index === activeSignal
-                      ? "border-red-400/35 bg-red-950/10 text-white shadow-[0_0_18px_rgba(255,0,0,0.08)]"
-                      : "border-white/10 bg-black/40 text-zinc-500"
-                  }`}
-                >
-                  <span>{signal}</span>
-                  <span className="text-xs text-zinc-500 tracking-wide">
-                    {signalStates[index % signalStates.length]}
-                  </span>
+                  <div className="mt-5 text-2xl font-semibold text-white">
+                    {status}
+                  </div>
+
+                  <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/5">
+                    <div className={`h-full ${width} rounded-full bg-gradient-to-r from-red-700 via-red-500 to-red-400`} />
+                  </div>
                 </div>
               ))}
             </div>
@@ -419,24 +343,42 @@ I would like a private marketplace exposure audit.`;
         </section>
       </section>
 
-      <section className="mx-auto max-w-7xl px-6 py-12">
+      <section className="mx-auto max-w-7xl px-6 py-16">
         <div className="rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
-          <div>
+          <div className="max-w-3xl">
             <div className="text-sm uppercase tracking-[0.28em] text-red-300">
-              ShadowScore Network Intelligence
+              What ShadowScore Reveals
             </div>
-            <p className="mt-3 text-zinc-500">
-              Early Access Network Metrics. Demonstration values refresh slowly to simulate a live monitoring environment.
+            <h2 className="mt-4 text-4xl font-bold">
+              Clear Exposure Visibility Without Revealing The Detection Method
+            </h2>
+            <p className="mt-5 leading-7 text-zinc-400">
+              ShadowScore does not expose marketplace secrets or internal platform logic. It gives sellers a private interpretation of where operational risk may already be forming.
             </p>
           </div>
 
-          <div className="mt-8 grid gap-4 md:grid-cols-3 lg:grid-cols-6">
-            {networkMetrics.map((metric) => (
-              <div key={metric.label} className="rounded-2xl border border-white/10 bg-black/50 p-5 transition duration-500">
-                <div className="text-3xl font-bold">{metric.value}</div>
-                <div className="mt-2 text-sm text-zinc-400">{metric.label}</div>
-                <div className="mt-5 text-sm text-emerald-400">{metric.daily}</div>
-                <div className="mt-1 text-sm text-red-300">{metric.monthly}</div>
+          <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+            {[
+              {
+                title: "Tracking Reliability",
+                text: "Where delivery proof, scan consistency or carrier behavior may weaken trust.",
+              },
+              {
+                title: "Payout Exposure",
+                text: "Signals that may increase the probability of review, reserve or payout friction.",
+              },
+              {
+                title: "Operational Drift",
+                text: "Changes in fulfillment, velocity or account behavior that create instability.",
+              },
+              {
+                title: "Action Priorities",
+                text: "A focused list of what to stabilize before exposure escalates.",
+              },
+            ].map((item) => (
+              <div key={item.title} className="rounded-2xl border border-white/10 bg-black/45 p-6">
+                <div className="text-xl font-semibold text-white">{item.title}</div>
+                <p className="mt-4 leading-7 text-zinc-400">{item.text}</p>
               </div>
             ))}
           </div>
@@ -452,10 +394,10 @@ I would like a private marketplace exposure audit.`;
 
           <div className="grid gap-4 md:grid-cols-2">
             {[
-              ["01", "Observe", "Detects marketplace exposure across operational behavior, trust signals and fulfillment consistency."],
-              ["02", "Score", "Translates invisible marketplace signals into a private risk view."],
-              ["03", "Warn", "Warns before exposure becomes a payout hold, account review or restriction."],
-              ["04", "Prepare", "Shows what to stabilize before the marketplace acts."],
+              ["01", "Exposure Detection", "Identifies hidden marketplace instability signals before they become visible account events."],
+              ["02", "Behavioral Correlation", "Maps operational patterns linked to elevated enforcement exposure."],
+              ["03", "Risk Interpretation", "Transforms weak operational signals into actionable exposure visibility."],
+              ["04", "Stabilization Actions", "Highlights operational adjustments before marketplace escalation begins."],
             ].map(([num, title, text]) => (
               <div key={title} className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
                 <div className="text-sm font-bold text-red-300">{num}</div>
@@ -467,39 +409,90 @@ I would like a private marketplace exposure audit.`;
         </div>
       </section>
 
-      <section id="signals" className="mx-auto max-w-7xl px-6 py-20">
+      <section id="receive" className="mx-auto max-w-7xl px-6 py-20">
         <div className="text-center">
-          <div className="text-sm uppercase tracking-[0.28em] text-red-300">Signal Engine</div>
-          <h2 className="mt-4 text-4xl font-bold">Marketplace Enforcement Starts Before The Warning</h2>
+          <div className="text-sm uppercase tracking-[0.28em] text-red-300">
+            What You Receive
+          </div>
+
+          <h2 className="mt-4 text-4xl font-bold">
+            Private Marketplace Exposure Intelligence
+          </h2>
+
+          <p className="mx-auto mt-4 max-w-3xl leading-7 text-zinc-500">
+            A ShadowScore review converts submitted store context into a clear risk picture: what looks exposed, why it matters and what should be stabilized first.
+          </p>
         </div>
 
-        <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
           {[
-            ["Tracking Integrity", "Late uploads, TBA exposure, invalid scans, carrier mismatch and weak proof of delivery."],
-            ["Velocity Risk", "Sudden sales growth, category spikes, new account pressure and fulfillment instability."],
-            ["Trust Decay", "Buyer sentiment, INR activity, refund drift, payout friction and support routing changes."],
-            ["Operational Exposure", "SKU churn, source dependency, fulfillment gaps and account stability signals."],
-            ["Review Exposure", "Identifies elevated similarity to accounts that later entered review or restriction."],
-            ["Action Layer", "Direct actions before damage reaches account health or payout systems."],
-          ].map(([title, text]) => (
-            <div key={title} className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
-              <div className="text-xl font-semibold">{title}</div>
-              <p className="mt-3 leading-7 text-zinc-400">{text}</p>
+            {
+              title: "Exposure Summary",
+              text: "A plain-English overview of the store's current marketplace risk posture.",
+            },
+            {
+              title: "Tracking Integrity Review",
+              text: "Delivery proof, scan consistency and tracking trust interpretation.",
+            },
+            {
+              title: "Enforcement Vulnerability",
+              text: "Operational signals that may contribute to payout, review or restriction exposure.",
+            },
+            {
+              title: "Stabilization Actions",
+              text: "Recommended operational adjustments before exposure escalates.",
+            },
+          ].map((item) => (
+            <div
+              key={item.title}
+              className="rounded-2xl border border-white/10 bg-black/40 p-6"
+            >
+              <div className="text-xl font-semibold text-white">{item.title}</div>
+              <p className="mt-4 leading-7 text-zinc-400">{item.text}</p>
             </div>
           ))}
         </div>
       </section>
 
-      <section id="guarantee" className="mx-auto max-w-7xl px-6 py-16">
-        <div className="rounded-[32px] border border-red-400/20 bg-red-500/8 p-8">
-          <div className="text-sm uppercase tracking-[0.28em] text-red-300">30-Day Risk Protection</div>
-          <h2 className="mt-4 text-4xl font-bold">First Paid Audit Protected For 30 Days</h2>
-          <p className="mt-5 max-w-4xl text-lg leading-8 text-zinc-300">
-            If a first-time paid audit fails to identify elevated marketplace exposure signals and a new restriction or payout review occurs within 30 days, ShadowScore refunds the audit fee.
-          </p>
-          <p className="mt-4 text-zinc-500">
-            Applies to first-time audits only. Existing warnings must be disclosed. Recommended actions must be followed. Future scans do not include first-audit protection.
-          </p>
+      <section className="mx-auto max-w-7xl px-6 py-20">
+        <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr]">
+          <div>
+            <div className="text-sm uppercase tracking-[0.28em] text-red-300">
+              Report Preview
+            </div>
+            <h2 className="mt-4 text-4xl font-bold">
+              What A Private Review Looks Like
+            </h2>
+            <p className="mt-5 max-w-xl leading-7 text-zinc-400">
+              Every review includes a concise exposure summary, prioritized findings and stabilization actions.
+            </p>
+          </div>
+
+          <div className="rounded-[28px] border border-white/10 bg-black/55 p-6">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <div>
+                <div className="text-sm font-semibold text-white">Sample Exposure Report</div>
+                <div className="mt-1 text-xs text-zinc-500">Anonymized marketplace risk summary</div>
+              </div>
+              <div className="rounded-full border border-red-400/25 bg-red-500/10 px-3 py-1 text-xs text-red-200">
+                Elevated
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-3">
+              {[
+                ["Overall Exposure", "Elevated review visibility"],
+                ["Primary Finding", "Tracking and operational drift"],
+                ["Risk Window", "30-day monitoring window"],
+                ["Recommended Action", "Stabilize fulfillment and velocity"],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                  <div className="text-xs uppercase tracking-[0.2em] text-zinc-600">{label}</div>
+                  <div className="mt-2 text-sm text-zinc-300">{value}</div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
@@ -630,12 +623,37 @@ I would like a private marketplace exposure audit.`;
         )}
       </section>
 
+      <section className="mx-auto max-w-7xl px-6 py-16">
+        <div className="rounded-[32px] border border-red-400/20 bg-red-500/[0.06] p-8">
+          <div className="grid items-center gap-8 lg:grid-cols-[1fr_auto]">
+            <div>
+              <div className="text-sm uppercase tracking-[0.28em] text-red-300">
+                Private Intelligence Console
+              </div>
+              <h2 className="mt-4 text-3xl font-bold">
+                Submit Evidence. Review Exposure. Generate A Private Report.
+              </h2>
+              <p className="mt-4 max-w-2xl leading-7 text-zinc-400">
+                The console shows how approved sellers submit screenshots, tracking exports and marketplace notices before receiving exposure analysis.
+              </p>
+            </div>
+
+            <a
+              href="/intake"
+              className="rounded-2xl bg-red-600 px-7 py-4 text-center font-semibold transition hover:bg-red-500"
+            >
+              Enter Console
+            </a>
+          </div>
+        </div>
+      </section>
+
       <section id="contact" className="mx-auto max-w-5xl px-6 py-20 text-center">
         <div className="rounded-[34px] border border-white/10 bg-white/[0.03] p-10">
           <div className="text-sm uppercase tracking-[0.28em] text-red-300">Contact ShadowScore</div>
-          <h2 className="mt-4 text-4xl font-bold">Speak With The Risk Agent</h2>
+          <h2 className="mt-4 text-4xl font-bold">Request A Private Review</h2>
           <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-zinc-400">
-            Private early-access reviews for marketplace sellers, agencies and multi-store operators.
+            Private exposure reviews for serious marketplace operators.
           </p>
 
           <div className="mt-10 flex flex-col items-center justify-center gap-4 md:flex-row">

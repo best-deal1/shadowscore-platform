@@ -1,122 +1,26 @@
-"use client";
+import Link from "next/link";
+import ShadowScoreLayout from "@/components/ShadowScoreLayout";
 
-const signals = [
-  {
-    name: "Tracking Integrity",
-    severity: "Elevated",
-    confidence: "84%",
-    finding: "Delayed label creation and weak delivery proof patterns detected.",
-  },
-  {
-    name: "Operational Drift",
-    severity: "Watchlist",
-    confidence: "71%",
-    finding: "Fulfillment timing and order handling show inconsistent behavior.",
-  },
-  {
-    name: "Payout Exposure",
-    severity: "Moderate",
-    confidence: "66%",
-    finding: "Patterns may increase probability of payout review or reserve friction.",
-  },
-  {
-    name: "Trust Decay",
-    severity: "Elevated",
-    confidence: "79%",
-    finding: "Refund, cancellation or tracking inconsistency may weaken account posture.",
-  },
-  {
-    name: "Enforcement Similarity",
-    severity: "Watchlist",
-    confidence: "63%",
-    finding: "Some activity resembles accounts that later entered marketplace review.",
-  },
+const causes = [
+  ["Tracking Integrity", 71, "TBA usage, late tracking updates, missing carrier scan evidence"],
+  ["Verification / KYC", 14, "Business or identity documentation may require review"],
+  ["Payment Risk", 9, "Payout hold or managed payments review correlation"],
+  ["Supplier Documentation", 6, "Invoice, LOA or authenticity questions less likely in this sample"],
 ];
+
+const timeline = [["Day -30", "Hidden trust signal appears"], ["Day -21", "Tracking anomalies accumulate"], ["Day -14", "Payout review risk increases"], ["Day -7", "Account review probability rises"], ["Day 0", "Warning email becomes visible"]];
 
 export default function AnalysisPage() {
   return (
-    <main className="min-h-screen bg-black px-6 py-10 text-white">
-      <div className="mx-auto max-w-7xl">
-        <div className="flex items-center justify-between">
-          <a href="/intake" className="text-sm text-zinc-500 transition hover:text-white">
-            ← Back to Intake
-          </a>
-
-          <a
-            href="/report"
-            className="rounded-2xl bg-red-600 px-5 py-3 text-sm font-semibold transition hover:bg-red-500"
-          >
-            Generate Intelligence Report
-          </a>
+    <ShadowScoreLayout>
+      <section className="mx-auto max-w-7xl px-6 py-16">
+        <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end"><div><div className="text-sm uppercase tracking-[0.35em] text-red-300">Risk Operating System</div><h1 className="mt-4 text-5xl font-black">Marketplace Exposure Analysis</h1><p className="mt-4 max-w-2xl text-zinc-400">A structured view of the likely root cause, risk categories and recovery readiness.</p></div><Link href="/report" className="rounded-2xl bg-red-600 px-6 py-4 font-black hover:bg-red-500">Generate Report</Link></div>
+        <div className="mt-10 grid gap-6 lg:grid-cols-[.75fr_1.25fr]">
+          <div className="rounded-[2rem] border border-white/10 bg-white/[0.03] p-8"><div className="text-xs uppercase tracking-[0.35em] text-zinc-500">Overall ShadowScore</div><div className="mt-5 text-7xl font-black text-red-400">72</div><div className="mt-3 rounded-full border border-orange-400/30 bg-orange-500/10 px-4 py-2 text-center font-black text-orange-200">Elevated Review Exposure</div><div className="mt-8 space-y-4">{["Delivery Confidence 92%", "Appeal Readiness 77%", "Recovery Complexity Medium"].map((x) => <div key={x} className="rounded-2xl border border-white/10 bg-black/40 p-4 text-sm font-bold text-zinc-300">{x}</div>)}</div></div>
+          <div className="rounded-[2rem] border border-white/10 bg-white/[0.03] p-8"><div className="text-xs uppercase tracking-[0.35em] text-zinc-500">Root Cause Engine</div><h2 className="mt-3 text-3xl font-black">Most Likely Causes</h2><div className="mt-6 space-y-5">{causes.map(([name, pct, desc]) => <div key={String(name)} className="rounded-3xl border border-white/10 bg-black/40 p-5"><div className="flex justify-between gap-4"><div><div className="font-black">{name}</div><div className="mt-2 text-sm text-zinc-500">{desc}</div></div><div className="text-2xl font-black text-red-300">{pct}%</div></div><div className="mt-4 h-2 rounded-full bg-white/10"><div className="h-2 rounded-full bg-red-500" style={{ width: `${pct}%` }} /></div></div>)}</div></div>
         </div>
-
-        <section className="mt-12">
-          <div className="text-sm uppercase tracking-[0.34em] text-red-400">
-            ShadowScore Analysis
-          </div>
-          <h1 className="mt-6 text-5xl font-bold leading-tight">
-            Marketplace Exposure Analysis Console
-          </h1>
-          <p className="mt-5 max-w-3xl leading-8 text-zinc-400">
-            This console translates submitted evidence into operational exposure signals, confidence levels and recommended stabilization priorities.
-          </p>
-        </section>
-
-        <section className="mt-10 grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
-          <div className="rounded-[32px] border border-white/10 bg-white/[0.03] p-7">
-            <div className="text-sm uppercase tracking-[0.28em] text-red-300">
-              Exposure Score
-            </div>
-            <div className="mt-6 text-7xl font-bold">78</div>
-            <div className="mt-3 text-xl text-red-300">Elevated</div>
-            <p className="mt-6 leading-7 text-zinc-400">
-              The account shows elevated operational exposure. The strongest signals are tracking integrity and trust posture drift.
-            </p>
-
-            <div className="mt-8 space-y-4">
-              {["Tracking", "Trust", "Payout", "Operations"].map((item, index) => (
-                <div key={item}>
-                  <div className="mb-2 flex justify-between text-sm">
-                    <span className="text-zinc-500">{item}</span>
-                    <span className="text-red-300">{["High", "Elevated", "Moderate", "Watchlist"][index]}</span>
-                  </div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-white/5">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-red-800 via-red-500 to-red-300"
-                      style={{ width: ["86%", "78%", "62%", "55%"][index] }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-[32px] border border-white/10 bg-white/[0.03] p-7">
-            <div className="text-sm uppercase tracking-[0.28em] text-red-300">
-              Signal Findings
-            </div>
-
-            <div className="mt-6 space-y-4">
-              {signals.map((signal) => (
-                <div key={signal.name} className="rounded-2xl border border-white/10 bg-black/45 p-5">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="text-xl font-semibold">{signal.name}</div>
-                    <div className="flex gap-2">
-                      <span className="rounded-full border border-red-400/20 bg-red-500/10 px-3 py-1 text-xs text-red-200">
-                        {signal.severity}
-                      </span>
-                      <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs text-zinc-400">
-                        {signal.confidence}
-                      </span>
-                    </div>
-                  </div>
-                  <p className="mt-4 leading-7 text-zinc-400">{signal.finding}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      </div>
-    </main>
+        <div className="mt-6 grid gap-6 lg:grid-cols-2"><div className="rounded-[2rem] border border-white/10 bg-white/[0.03] p-8"><div className="text-xs uppercase tracking-[0.35em] text-zinc-500">Trust Timeline</div><h2 className="mt-3 text-3xl font-black">The review did not start today.</h2><div className="mt-6 space-y-4">{timeline.map(([day, event]) => <div key={day} className="flex gap-4 rounded-2xl border border-white/10 bg-black/40 p-4"><div className="w-24 font-black text-red-300">{day}</div><div className="text-zinc-300">{event}</div></div>)}</div></div><div className="rounded-[2rem] border border-white/10 bg-white/[0.03] p-8"><div className="text-xs uppercase tracking-[0.35em] text-zinc-500">Recommended Actions</div><h2 className="mt-3 text-3xl font-black">Appeal Readiness Checklist</h2><div className="mt-6 space-y-3 text-zinc-300">{["Submit proof of delivery package", "Include buyer feedback where available", "Do not add artificial tracking data", "Keep the appeal focused on requested evidence", "Avoid unrelated supplier or brand explanations unless requested"].map((x) => <div key={x} className="rounded-2xl border border-white/10 bg-black/40 p-4">✓ {x}</div>)}</div></div></div>
+      </section>
+    </ShadowScoreLayout>
   );
 }
