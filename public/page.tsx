@@ -5,12 +5,12 @@ import { useMemo, useState } from "react";
 const WHATSAPP_NUMBER = "972557293979";
 
 const marketplaceLogos = [
-  { name: "eBay", mark: "eBay", color: "text-[#E53238]" },
-  { name: "Amazon", mark: "amazon", color: "text-[#FF9900]" },
-  { name: "Walmart", mark: "Walmart✶", color: "text-[#2E7BEF]" },
-  { name: "SHEIN", mark: "SHEIN", color: "text-white" },
-  { name: "TikTok Shop", mark: "TikTok", color: "text-white" },
-  { name: "Etsy", mark: "Etsy", color: "text-[#F1641E]" },
+  ["eBay", "eBay"],
+  ["Amazon", "Amazon"],
+  ["Walmart", "Walmart"],
+  ["Etsy", "Etsy"],
+  ["TikTok Shop", "TikTok"],
+  ["SHEIN", "SHEIN"],
 ];
 
 const feeds = [
@@ -91,30 +91,13 @@ function Panel({ children, className = "" }: { children: React.ReactNode; classN
 
 function LogoRail() {
   return (
-    <div className="mt-12 overflow-hidden rounded-[30px] border border-white/10 bg-black/75 p-5 shadow-[0_0_42px_rgba(220,38,38,0.10)]">
-      <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        <div>
-          <div className="text-xs uppercase tracking-[0.32em] text-red-300">Marketplace Coverage</div>
-          <div className="mt-2 text-sm text-zinc-500">Signals monitored across seller ecosystems</div>
-        </div>
-        <div className="rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-xs font-bold text-zinc-400">
-          Hover to reveal active coverage
-        </div>
-      </div>
-
+    <div className="mt-12 rounded-[28px] border border-white/10 bg-white/[0.025] p-5">
+      <div className="mb-4 text-center text-xs uppercase tracking-[0.32em] text-zinc-600">Marketplace coverage intelligence</div>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-6">
-        {marketplaceLogos.map((logo) => (
-          <div
-            key={logo.name}
-            className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.025] px-4 py-6 text-center grayscale transition duration-500 hover:border-red-400/40 hover:bg-red-500/[0.06] hover:grayscale-0"
-          >
-            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-400/0 to-transparent transition duration-500 group-hover:via-red-400/80" />
-            <div className={`text-2xl font-black tracking-tight ${logo.color} opacity-55 transition duration-500 group-hover:scale-105 group-hover:opacity-100`}>
-              {logo.mark}
-            </div>
-            <div className="mt-3 text-[10px] uppercase tracking-[0.22em] text-zinc-600 transition group-hover:text-zinc-300">
-              {logo.name}
-            </div>
+        {marketplaceLogos.map(([name, short]) => (
+          <div key={name} className="rounded-2xl border border-white/10 bg-black/50 px-4 py-5 text-center">
+            <div className="text-lg font-black text-white">{short}</div>
+            <div className="mt-2 text-[10px] uppercase tracking-[0.22em] text-zinc-600">{name}</div>
           </div>
         ))}
       </div>
@@ -169,7 +152,7 @@ I would like to begin a private ShadowScore review.`;
       <header className="sticky top-0 z-50 border-b border-white/10 bg-black/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 md:px-6">
           <div className="flex items-center gap-3">
-            <img src="/shadowscore-shield-v8.png?v=v33" alt="ShadowScore shield" className="h-11 w-11 rounded-xl object-contain bg-black p-1" />
+            <img src="/shadowscore-shield-v8.png?v=v32" alt="ShadowScore shield" className="h-11 w-11 rounded-xl object-contain bg-black p-1" />
             <div className="leading-none">
               <div className="text-2xl font-extrabold tracking-tight">Shadow<span className="text-red-400">Score</span></div>
               <div className="mt-1.5 text-[10px] uppercase tracking-[0.34em] text-zinc-500">Marketplace Risk Intelligence</div>
@@ -324,6 +307,38 @@ I would like to begin a private ShadowScore review.`;
         </div>
       </section>
 
+      <section className="mx-auto max-w-7xl px-6 py-16">
+        <div className="grid gap-6 lg:grid-cols-3">
+          {[
+            ["Built From Real Cases", "Based on actual marketplace investigations, payout holds, MC011 reviews, tracking disputes and account risk events."],
+            ["Not A Recovery Shortcut", "ShadowScore does not claim internal platform access and does not promise reinstatement."],
+            ["Designed For Decision Clarity", "We help sellers understand what the platform may be reacting to and what evidence should be stabilized first."],
+          ].map(([title, body]) => (
+            <div key={title} className="rounded-[28px] border border-white/10 bg-black/55 p-7">
+              <div className="text-2xl font-bold">{title}</div>
+              <p className="mt-4 leading-8 text-zinc-400">{body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-6 py-16">
+        <div className="rounded-[34px] border border-red-400/25 bg-red-500/[0.07] p-8 md:p-10">
+          <div className="grid items-center gap-8 lg:grid-cols-[1fr_auto]">
+            <div>
+              <div className="text-sm uppercase tracking-[0.28em] text-red-300">Rapid Assessment</div>
+              <h2 className="mt-4 text-4xl font-bold">Received An MC011, MC999, Payout Hold Or Account Review?</h2>
+              <p className="mt-5 max-w-3xl leading-8 text-zinc-300">
+                Get a rapid intelligence review of the likely risk drivers, evidence quality and recommended next actions.
+              </p>
+            </div>
+            <button onClick={() => openWhatsApp("Intelligence Review")} className="rounded-2xl bg-red-600 px-8 py-5 text-lg font-black shadow-[0_0_30px_rgba(220,38,38,0.35)] hover:bg-red-500">
+              Start Review - $99
+            </button>
+          </div>
+        </div>
+      </section>
+
       <section id="pricing" className="mx-auto max-w-7xl px-6 py-20">
         <div className="text-center">
           <div className="text-sm uppercase tracking-[0.28em] text-red-300">Pricing</div>
@@ -333,39 +348,39 @@ I would like to begin a private ShadowScore review.`;
           </p>
         </div>
 
-        <div className="mt-12 grid items-stretch gap-6 lg:grid-cols-4">
+        <div className="mt-12 grid gap-6 lg:grid-cols-4">
           {plans.map((plan) => (
             <div
               key={plan.name}
               onClick={() => setSelectedPlan(plan.name)}
-              className={`relative flex h-full min-h-[640px] cursor-pointer flex-col rounded-[30px] border p-6 transition-all duration-300 ${
+              className={`relative flex min-h-[600px] cursor-pointer flex-col justify-between rounded-[30px] border p-6 transition-all duration-300 ${
                 selectedPlan === plan.name
                   ? "border-red-400/65 bg-red-500/8 shadow-[0_0_38px_rgba(220,38,38,0.13)]"
                   : "border-white/10 bg-white/[0.025] hover:border-white/20"
               }`}
             >
               {plan.tag && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-red-400/40 bg-red-600 px-5 py-2 text-xs font-black uppercase tracking-[0.18em] text-white shadow-[0_0_28px_rgba(220,38,38,0.45)]">
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 rounded-full border border-red-400/40 bg-red-600 px-5 py-2 text-xs font-black uppercase tracking-[0.18em] text-white shadow-[0_0_28px_rgba(220,38,38,0.45)]">
                   {plan.tag}
                 </div>
               )}
 
-              <div className="flex min-h-[180px] flex-col">
+              <div>
                 <div className="text-xl font-bold">{plan.name}</div>
                 <div className="mt-7 flex items-end gap-3">
                   <div className="text-4xl font-bold tracking-tight text-white">{plan.price}</div>
                 </div>
                 <div className="mt-2 text-sm text-zinc-500">{plan.sub}</div>
-                <p className="mt-6 leading-7 text-zinc-400">{plan.desc}</p>
-              </div>
+                <p className="mt-6 min-h-[96px] leading-7 text-zinc-400">{plan.desc}</p>
 
-              <div className="mt-8 flex-1 space-y-4">
-                {plan.items.map((item) => (
-                  <div key={item} className="flex items-start gap-3 text-zinc-300">
-                    <div className="mt-1 text-red-300">✓</div>
-                    <div>{item}</div>
-                  </div>
-                ))}
+                <div className="mt-8 space-y-4">
+                  {plan.items.map((item) => (
+                    <div key={item} className="flex items-start gap-3 text-zinc-300">
+                      <div className="mt-1 text-red-300">✓</div>
+                      <div>{item}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <button
