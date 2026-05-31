@@ -84,13 +84,6 @@ export default function IntakePage() {
               </div>
             </div>
 
-            <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-              <div className="text-xs uppercase tracking-[0.28em] text-red-300">Evidence Queue</div>
-              <div className="mt-4 space-y-2 text-sm text-zinc-400">
-                {files.length ? files.map((file) => <div key={file.name}>• {file.name}</div>) : <div>No evidence uploaded yet.</div>}
-              </div>
-            </div>
-
             <a href="/analysis" className="mt-6 block rounded-2xl bg-red-600 px-7 py-5 text-center text-sm font-black uppercase tracking-[0.16em] shadow-[0_0_28px_rgba(220,38,38,0.28)] hover:bg-red-500">
               Start Analysis
             </a>
