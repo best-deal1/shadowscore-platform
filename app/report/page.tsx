@@ -1,17 +1,47 @@
-import ShadowScoreLayout from "@/components/ShadowScoreLayout";
+"use client";
 
 export default function ReportPage() {
   return (
-    <ShadowScoreLayout>
-      <section className="mx-auto max-w-5xl px-6 py-16">
-        <div className="rounded-[2rem] border border-white/10 bg-white/[0.03] p-8 md:p-12">
-          <div className="text-sm uppercase tracking-[0.35em] text-red-300">Private Intelligence Report</div>
-          <h1 className="mt-4 text-5xl font-black">ShadowScore Account Audit</h1>
-          <p className="mt-5 text-zinc-400">This is a sample report format designed for sellers under review, restriction, payout hold or verification pressure.</p>
-          <div className="mt-10 grid gap-5 md:grid-cols-3">{[["Overall Exposure", "Elevated"], ["Primary Root Cause", "Tracking Integrity"], ["Recovery Readiness", "Medium-High"]].map(([k, v]) => <div key={k} className="rounded-3xl border border-white/10 bg-black/40 p-6"><div className="text-xs uppercase tracking-[0.25em] text-zinc-500">{k}</div><div className="mt-3 text-2xl font-black text-red-300">{v}</div></div>)}</div>
-          <div className="mt-10 space-y-6">{[["Executive Summary", "The account shows elevated exposure linked primarily to tracking integrity and delivery verification gaps. Evidence package should focus only on proof of delivery and buyer confirmation."], ["Evidence Assessment", "Delivery photos, delivery maps and buyer feedback increase confidence. Artificial or third-party tracking reconstruction should be avoided."], ["Recommended Appeal Strategy", "Reply directly to the Trust & Safety request. Attach one consolidated document. Do not introduce unrelated supplier or brand topics unless requested."], ["Missing Evidence", "Any order without buyer feedback should include delivery screenshot, photo, address/map evidence and order ID cross-reference."]].map(([title, body]) => <div key={title} className="rounded-3xl border border-white/10 bg-black/40 p-6"><h2 className="text-2xl font-black">{title}</h2><p className="mt-3 leading-8 text-zinc-400">{body}</p></div>)}</div>
+    <main className="min-h-screen overflow-hidden bg-black text-white">
+      <div className="fixed inset-0 pointer-events-none opacity-[0.06] bg-[linear-gradient(to_right,#ffffff12_1px,transparent_1px),linear-gradient(to_bottom,#ffffff10_1px,transparent_1px)] bg-[size:76px_76px]" />
+
+      <header className="relative z-10 border-b border-white/10 bg-black/85 px-6 py-5 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl justify-between">
+          <a href="/" className="text-sm text-zinc-500 hover:text-white">← Back to ShadowScore</a>
+          <a href="/intake" className="text-sm font-bold text-red-300 hover:text-red-200">New Intake</a>
+        </div>
+      </header>
+
+      <section className="relative z-10 mx-auto max-w-5xl px-6 py-14">
+        <div className="text-xs uppercase tracking-[0.45em] text-red-300">Private Intelligence Report</div>
+        <h1 className="mt-6 text-5xl font-extrabold">ShadowScore Exposure Report</h1>
+        <p className="mt-5 max-w-3xl text-lg leading-8 text-zinc-400">
+          A private operational risk interpretation designed to identify which trust signals may be increasing marketplace exposure.
+        </p>
+
+        <div className="mt-10 rounded-[32px] border border-white/10 bg-black/55 p-8 shadow-[0_0_60px_rgba(120,0,20,0.16)]">
+          <div className="grid gap-4">
+            {[
+              ["Overall Exposure", "Elevated"],
+              ["Primary Driver", "Tracking Integrity"],
+              ["Evidence Quality", "Moderate"],
+              ["Recommended Window", "30-day stabilization"],
+            ].map(([label, value]) => (
+              <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+                <div className="text-xs uppercase tracking-[0.28em] text-zinc-500">{label}</div>
+                <div className="mt-3 text-2xl font-bold">{value}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-8 rounded-[28px] border border-red-400/20 bg-red-500/[0.06] p-7">
+          <div className="text-2xl font-bold text-red-100">Recommended action</div>
+          <p className="mt-4 leading-8 text-zinc-400">
+            Preserve original delivery evidence, avoid artificial tracking manipulation, reduce operational noise and submit only the documentation requested by the marketplace review team.
+          </p>
         </div>
       </section>
-    </ShadowScoreLayout>
+    </main>
   );
 }
