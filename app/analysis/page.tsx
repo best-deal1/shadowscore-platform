@@ -1,18 +1,3 @@
 "use client";
-
-const findings = [
-  ["Tracking Integrity", "Elevated", "Late or non-standard tracking signals can increase marketplace review probability."],
-  ["Payout Exposure", "High", "Payout review risk increases when proof of delivery is weak or delayed."],
-  ["Operational Drift", "Moderate", "Recent account behavior may differ from expected marketplace norms."],
-  ["Enforcement Similarity", "High", "Signal pattern resembles public MC011, payout hold and tracking review cases."],
-];
-
-export default function AnalysisPage() {
-  return (
-    <main className="min-h-screen overflow-hidden bg-black text-white">
-      <div className="fixed inset-0 pointer-events-none opacity-[0.06] bg-[linear-gradient(to_right,#ffffff12_1px,transparent_1px),linear-gradient(to_bottom,#ffffff10_1px,transparent_1px)] bg-[size:76px_76px]" />
-      <header className="relative z-10 border-b border-white/10 bg-black/85 px-6 py-5 backdrop-blur-xl"><div className="mx-auto flex max-w-7xl justify-between"><a href="/" className="text-sm text-zinc-500 hover:text-white">← Back to ShadowScore</a><a href="/report" className="text-sm font-bold text-red-300 hover:text-red-200">Generate Report</a></div></header>
-      <section className="relative z-10 mx-auto max-w-7xl px-6 py-14"><div className="text-xs uppercase tracking-[0.45em] text-red-300">Exposure Analysis</div><h1 className="mt-6 text-5xl font-extrabold">Marketplace Risk Intelligence Center</h1><p className="mt-5 max-w-3xl text-lg leading-8 text-zinc-400">A professional intelligence view that turns weak operational evidence into a structured risk picture.</p><div className="mt-10 grid gap-5 md:grid-cols-2">{findings.map(([title, level, body]) => <div key={title} className="rounded-[28px] border border-white/10 bg-white/[0.03] p-7"><div className="flex items-center justify-between"><div className="text-2xl font-bold">{title}</div><div className="rounded-full border border-red-400/30 bg-red-500/10 px-4 py-2 text-sm font-bold text-red-200">{level}</div></div><p className="mt-5 leading-8 text-zinc-400">{body}</p></div>)}</div></section>
-    </main>
-  );
-}
+const findings=[["Tracking Integrity","Elevated","Late or non-standard tracking signals can increase marketplace review probability."],["Payout Exposure","High","Payout review risk increases when proof of delivery is weak or delayed."],["Operational Drift","Moderate","Recent account behavior may differ from expected marketplace norms."],["Enforcement Similarity","High","Signal pattern resembles public MC011, payout hold and tracking review cases."]];
+export default function AnalysisPage(){return <main className="min-h-screen overflow-hidden bg-black text-white"><div className="fixed inset-0 pointer-events-none opacity-[0.06] bg-[linear-gradient(to_right,#ffffff12_1px,transparent_1px),linear-gradient(to_bottom,#ffffff10_1px,transparent_1px)] bg-[size:76px_76px]"/><header className="relative z-10 border-b border-white/10 bg-black/85 px-6 py-5 backdrop-blur-xl"><div className="mx-auto flex max-w-7xl justify-between"><a href="/" className="text-sm text-zinc-500 hover:text-white">← Back to ShadowScore</a><a href="/report" className="text-sm font-bold text-red-300 hover:text-red-200">Generate Report</a></div></header><section className="relative z-10 mx-auto max-w-7xl px-6 py-14"><div className="text-xs uppercase tracking-[0.45em] text-red-300">Exposure Analysis</div><h1 className="mt-6 text-5xl font-extrabold">Marketplace Risk Intelligence Center</h1><p className="mt-5 max-w-3xl text-lg leading-8 text-zinc-400">A professional intelligence view that turns weak operational evidence into a structured risk picture.</p><div className="mt-10 grid gap-5 md:grid-cols-2">{findings.map(([title,level,body])=><div key={title} className="rounded-[28px] border border-white/10 bg-white/[0.03] p-7"><div className="flex items-center justify-between"><div className="text-2xl font-bold">{title}</div><div className="rounded-full border border-red-400/30 bg-red-500/10 px-4 py-2 text-sm font-bold text-red-200">{level}</div></div><p className="mt-5 leading-8 text-zinc-400">{body}</p></div>)}</div></section></main>}
