@@ -1,7 +1,7 @@
 export default function Head() {
   const title = "ShadowScore | Marketplace Risk Intelligence";
   const description =
-    "Detect trust decay before enforcement. Marketplace risk intelligence for sellers on eBay, Amazon, Walmart, SHEIN, TikTok Shop and Etsy.";
+    "Independent marketplace risk assessments for sellers facing MC011, MC999, payout holds, tracking issues and marketplace reviews.";
   const image = "https://shadowscore.io/marketplaces-monitor-v8.png";
 
   return (

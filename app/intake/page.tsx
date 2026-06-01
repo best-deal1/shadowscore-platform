@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 export default function IntakePage() {
   const [files, setFiles] = useState<File[]>([]);
@@ -13,9 +14,9 @@ export default function IntakePage() {
 
       <header className="relative z-10 border-b border-white/10 bg-black/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
-          <a href="/" className="text-sm text-zinc-500 hover:text-white">← Back to ShadowScore</a>
+          <Link href="/" className="text-sm text-zinc-500 hover:text-white">← Back to ShadowScore</Link>
           <div className="rounded-full border border-red-400/25 bg-red-500/10 px-4 py-2 text-sm font-bold text-red-200">
-            Marketplace Risk Intelligence
+            Independent Marketplace Risk Assessment
           </div>
         </div>
       </header>
@@ -24,15 +25,15 @@ export default function IntakePage() {
         <div className="grid gap-10 lg:grid-cols-[.95fr_1.05fr]">
           <div>
             <div className="text-xs uppercase tracking-[0.45em] text-red-300">ShadowScore Intake</div>
-            <h1 className="mt-6 text-5xl font-extrabold leading-tight">Marketplace Intelligence Intake Console</h1>
+            <h1 className="mt-6 text-5xl font-extrabold leading-tight">Marketplace Post-Mortem Console</h1>
             <p className="mt-6 max-w-xl text-lg leading-8 text-zinc-400">
-              Upload marketplace emails, screenshots, tracking exports, payout notices and operational evidence for private exposure analysis.
+              Upload marketplace emails, screenshots, tracking exports, payout notices, policy warnings and operational evidence for private exposure analysis.
             </p>
 
             <div className="mt-10 rounded-3xl border border-white/10 bg-white/[0.035] p-6">
               <div className="font-bold">What this console produces</div>
               <p className="mt-4 leading-7 text-zinc-400">
-                A structured intelligence report showing where marketplace exposure may already be building, without exposing the detection method.
+                A structured risk assessment showing operational weaknesses, marketplace exposure indicators and enforcement readiness findings.
               </p>
             </div>
 
@@ -42,6 +43,18 @@ export default function IntakePage() {
                 All uploaded evidence is reviewed manually by our risk intelligence team and deleted after analysis.
               </p>
             </div>
+
+            <div className="mt-6 rounded-3xl border border-white/10 bg-black/55 p-6">
+              <div className="font-bold text-white">Recommended upload package</div>
+              <div className="mt-4 grid gap-3 text-sm text-zinc-400">
+                <div>• Restriction or review emails</div>
+                <div>• Tracking screenshots and exports</div>
+                <div>• Payout hold messages</div>
+                <div>• Buyer feedback and delivery confirmations</div>
+                <div>• Policy issue screenshots</div>
+              </div>
+            </div>
+
           </div>
 
           <div className="rounded-[32px] border border-white/10 bg-black/55 p-6 shadow-[0_0_60px_rgba(120,0,20,0.16)] backdrop-blur-xl">
