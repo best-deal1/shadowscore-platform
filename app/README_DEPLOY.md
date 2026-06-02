@@ -1,33 +1,34 @@
-# ShadowScore V3.4 Premium Backup-Based
+# ShadowScore V6 Trust Engine Update
 
-Built from the backup design the user uploaded and upgraded with:
+Copy these files into the matching paths in your Next.js project.
 
-- Preserved premium backup atmosphere
-- Restored hero marketplace logo strip inside the hero visual
-- Restored marketplace-monitor-v8 image section for real logo preview and social sharing
-- Added app/head.tsx for WhatsApp, Facebook, X and LinkedIn preview
-- Pricing cards aligned with equal height and CTA alignment
-- Added $49, $99, $199, $299 pricing ladder
-- Added MC011 / MC999 / Payout Hold / Verification case intelligence
-- Preserved FAQ and marketplace disclaimer
-- Kept the Cyber / Palo Alto / Check Point direction
-
-Copy:
+Included:
 - app/page.tsx
-- app/head.tsx
 - app/intake/page.tsx
-
-Required public assets:
+- app/layout.tsx
+- app/about/page.tsx
+- app/privacy/page.tsx
+- app/terms/page.tsx
+- app/security/page.tsx
+- components/ShadowScoreLayout.tsx
+- components/PaymentButtons.tsx
 - public/shadowscore-shield-v8.png
-- public/marketplaces-monitor-v8.png
 
-Test:
+Main upgrades:
+- Multi-marketplace intake requirements for eBay, Amazon, Walmart, Etsy, TikTok Shop and SHEIN
+- Preliminary score engine based on uploaded file names, selected marketplace, case type and missing evidence
+- Clear error when no evidence is uploaded
+- Evidence completeness checklist
+- Safer positioning: Marketplace Trust Intelligence
+- Legal / trust pages to help with enterprise filtering and customer confidence
+- PayPal and Credit Card placeholder buttons
+- Improved OpenGraph metadata
+
+Important:
+The intake score is preliminary. It does not read full file contents yet. Full content parsing should be added later through a backend API with PDF/text extraction.
+
+Deploy:
 npm run build
-
-Push:
 git add .
-git commit -m "Upgrade ShadowScore V3.4 premium backup based"
+git commit -m "ShadowScore V6 trust engine update"
 git push origin main
-
-After deploy:
-Refresh preview cache using Facebook Sharing Debugger or LinkedIn Post Inspector.
