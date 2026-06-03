@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import PaymentButtons from "../components/PaymentButtons";
 
 const WHATSAPP_NUMBER = "972557293979";
 const TIKTOK_URL = "https://www.tiktok.com/@shadowscore8";
@@ -65,8 +66,12 @@ const plans = [
 
 const faqItems = [
   {
-    q: "What information does ShadowScore reveal?",
-    a: "ShadowScore shows where marketplace exposure may already be building: tracking reliability, payout exposure, operational drift and the actions that should be stabilized first. It does not reveal marketplace internal logic or proprietary detection methods.",
+    q: "What does \"poor selling activity\" mean?",
+    a: "It is a broad marketplace phrase. It may include late delivery, tracking inconsistency, weak evidence, document gaps, policy issues, fulfillment instability or other seller activity that creates risk. ShadowScore treats it as a risk category, not as one single cause.",
+  },
+  {
+    q: "What does ShadowScore assess?",
+    a: "ShadowScore assesses seller-supplied evidence, operational risk indicators, evidence completeness, tracking quality, policy exposure and marketplace review readiness. It does not reveal internal marketplace logic or proprietary platform scores.",
   },
   {
     q: "Is ShadowScore a reinstatement service?",
@@ -183,6 +188,7 @@ I would like to begin a private ShadowScore review.`;
             <a href="#pricing" className="transition hover:text-white">Pricing</a>
             <a href={TIKTOK_URL} target="_blank" rel="noreferrer" className="transition hover:text-white">TikTok</a>
             <a href="/intake" className="text-red-300 transition hover:text-red-200">Console</a>
+            <a href="/leads" className="transition hover:text-white">Leads</a>
           </nav>
 
           <button
@@ -480,6 +486,8 @@ I would like to begin a private ShadowScore review.`;
               >
                 {plan.button}
               </button>
+
+              <PaymentButtons planName={plan.name} price={plan.price} />
             </div>
           ))}
         </div>
