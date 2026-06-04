@@ -1,15 +1,29 @@
-# ShadowScore V10.1 Navigation Patch
+# ShadowScore V10.2 Professional Checkout + Referral Links
 
 Updated:
-- Console stays visible in the public navigation.
-- Console keeps the existing dark pink/red accent style, not a loud red button.
-- Recovery is replaced with Exposure.
-- Leads is removed from the public navigation.
+- Pricing checkout upgraded to a professional checkout card.
+- One primary button remains: Start Assessment.
+- Payment options appear after click:
+  - PayPal
+  - Credit Card
+  - Payoneer
+  - Bank Transfer
+- Credit card text is now professional:
+  - Secure card payment is processed through an encrypted payment link.
+- Referral tracking added:
+  - Use links like https://shadowscore.io/?ref=partnername
+  - Also supports ?partner=, ?affiliate=, ?utm_source=
+  - Referral is stored in localStorage and included in payment requests.
+- Partner Tracking Links section added to the homepage.
 - Existing OG / WhatsApp preview is preserved.
-- Existing V10 messaging and checkout cleanup is preserved.
+
+Important:
+- Referral tracking is currently browser-side and suitable for MVP.
+- For production, connect referrals and leads to Supabase/Firebase/backend API.
+- Payoneer is request-based through WhatsApp until real Payoneer checkout is connected.
 
 Deploy:
 npm run build
 git add .
-git commit -m "ShadowScore V10.1 navigation console exposure patch"
+git commit -m "ShadowScore V10.2 professional checkout and referrals"
 git push origin main

@@ -707,6 +707,24 @@ I would like to begin a private ShadowScore review.`;
         </div>
       </section>
 
+      
+      <section className="mx-auto max-w-7xl px-6 py-16">
+        <div className="rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
+          <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
+            <div>
+              <div className="text-sm uppercase tracking-[0.28em] text-red-300">Partner Tracking Links</div>
+              <h2 className="mt-4 text-3xl font-bold">Promote ShadowScore With A Signed Link</h2>
+              <p className="mt-4 max-w-3xl leading-7 text-zinc-400">
+                Partners can share a personal referral link such as <span className="text-zinc-200">shadowscore.io/?ref=partnername</span>. The referral code is stored during checkout and included in payment requests.
+              </p>
+            </div>
+            <a href="/intake?ref=partner" className="rounded-2xl border border-white/10 px-7 py-4 text-center font-bold text-zinc-300 transition hover:border-red-400/30 hover:text-white">
+              Test Referral Flow
+            </a>
+          </div>
+        </div>
+      </section>
+
       <section id="contact" className="mx-auto max-w-5xl px-6 py-20 text-center">
         <div className="rounded-[34px] border border-white/10 bg-white/[0.03] p-10">
           <div className="text-sm uppercase tracking-[0.28em] text-red-300">Contact ShadowScore</div>
