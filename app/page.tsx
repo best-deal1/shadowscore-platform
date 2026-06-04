@@ -27,44 +27,62 @@ const threatFeed = [
 
 const plans = [
   {
-    name: "Marketplace Audit",
+    name: "Trust Exposure Assessment",
     price: "$49",
     sub: "24-hour exposure snapshot",
     desc: "Fast first read for sellers who need a quick signal check before deciding what to do next.",
     tag: "",
     items: ["ShadowScore rating", "Top 3 risk findings", "Executive PDF snapshot", "Recommended next actions"],
-    button: "Get Marketplace Audit",
+    button: "Start Assessment",
   },
   {
-    name: "Intelligence Review",
+    name: "Compliance & Enforcement Review",
     price: "$99",
     sub: "rapid manual review",
     desc: "For sellers facing MC011, MC999, payout hold, account review or sudden marketplace friction.",
     tag: "Most Popular",
     items: ["Manual case review", "Tracking integrity analysis", "Payout exposure review", "WhatsApp consultation", "Risk action plan"],
-    button: "Request Review",
+    button: "Start Review",
   },
   {
-    name: "Real Marketplace Cases",
+    name: "Deep Risk Investigation",
     price: "$199",
     sub: "full case investigation",
     desc: "A deeper private investigation for serious operators who need a full evidence and exposure timeline.",
     tag: "",
     items: ["Evidence timeline", "Root cause analysis", "Appeal readiness check", "Executive report", "30-day protection"],
-    button: "Open Investigation",
+    button: "Start Investigation",
   },
   {
-    name: "Continuous Monitoring",
+    name: "Continuous Trust Monitoring",
     price: "$299",
     sub: "per month",
     desc: "Ongoing operational risk monitoring for active sellers who cannot afford surprise enforcement.",
     tag: "",
     items: ["Monthly trust review", "Risk feed access", "Operational intelligence", "Early warning detection", "WhatsApp support"],
-    button: "Monitor My Store",
+    button: "Start Monitoring",
   },
 ];
 
 const faqItems = [
+
+  {
+    q: "What evidence is required?",
+    a: "Required evidence depends on the marketplace. Examples include restriction notices, payout hold messages, tracking exports, account health screenshots, supplier documents, policy warnings, buyer cases and delivery proof.",
+  },
+  {
+    q: "What causes payout holds?",
+    a: "Payout holds may be connected to delivery confidence, claims exposure, account reviews, sudden activity changes, verification issues or marketplace reserve policies. ShadowScore helps organize the visible evidence around those risks.",
+  },
+  {
+    q: "Can a healthy store still be restricted?",
+    a: "Yes. Visible metrics such as feedback, sales or seller level do not always reflect marketplace trust exposure. Platforms may also evaluate documentation, sourcing, policy compliance, identity and fulfillment behavior.",
+  },
+  {
+    q: "Does ShadowScore expose marketplace secrets?",
+    a: "No. ShadowScore does not expose internal platform models or proprietary marketplace logic. It provides independent assessment from seller-provided evidence and observable operational signals.",
+  },
+
 
   {
     q: "Why was my account suspended despite good feedback?",
@@ -205,9 +223,10 @@ I would like to begin a private ShadowScore review.`;
             <a href="#cases" className="transition hover:text-white">Cases</a>
             <a href="#pricing" className="transition hover:text-white">Pricing</a>
             <a href={TIKTOK_URL} target="_blank" rel="noreferrer" className="transition hover:text-white">TikTok</a>
-            <a href="#recovery" className="transition hover:text-white">Recovery</a>
+            <a href="#exposure" className="transition hover:text-white">Exposure</a>
             <a href="/intake" className="text-red-300 transition hover:text-red-200">Console</a>
-            <a href="/leads" className="transition hover:text-white">Leads</a>
+            
+            
           </nav>
 
           <button
@@ -495,23 +514,51 @@ I would like to begin a private ShadowScore review.`;
         </div>
       </section>
 
-      <section id="recovery" className="mx-auto max-w-7xl px-6 py-16">
+      <section id="exposure" className="mx-auto max-w-7xl px-6 py-16">
         <div className="rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
           <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>
-              <div className="text-sm uppercase tracking-[0.28em] text-red-300">Recovery Assistance Network</div>
-              <h2 className="mt-4 text-3xl font-bold">Already Restricted? Start With Evidence Readiness.</h2>
+              <div className="text-sm uppercase tracking-[0.28em] text-red-300">Exposure & Readiness Assistance</div>
+              <h2 className="mt-4 text-3xl font-bold">Facing A Review? Start With Evidence Readiness.</h2>
               <p className="mt-4 max-w-3xl leading-7 text-zinc-400">
-                ShadowScore may connect qualified sellers with independent marketplace consultants for appeal preparation, documentation review and recovery assistance. Results are never guaranteed.
+                ShadowScore can help sellers assess evidence readiness, organize marketplace documentation and understand likely exposure areas. Where relevant, qualified sellers may be introduced to independent consultants. Results are never guaranteed.
               </p>
             </div>
             <a href="/intake" className="rounded-2xl bg-red-600 px-7 py-4 text-center font-bold hover:bg-red-500">
-              Check Recovery Readiness
+              Check Exposure Readiness
             </a>
           </div>
         </div>
       </section>
 
+
+      
+      <section className="mx-auto max-w-7xl px-6 py-16">
+        <div className="rounded-[34px] border border-red-400/20 bg-red-500/[0.06] p-8 shadow-[0_0_70px_rgba(120,0,20,0.16)]">
+          <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
+            <div>
+              <div className="text-sm uppercase tracking-[0.28em] text-red-300">Marketplace Trust</div>
+              <h2 className="mt-4 text-4xl font-bold">Revenue Problems Usually Start As Trust Problems</h2>
+              <p className="mt-5 leading-8 text-zinc-400">
+                Most marketplace restrictions, payout holds and compliance reviews are preceded by measurable risk signals. ShadowScore helps identify those signals before they affect your business.
+              </p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              {[
+                ["Operational Risk", "Fulfillment consistency, tracking quality and evidence gaps."],
+                ["Compliance Risk", "Policy exposure, IP complaints, restricted products and document issues."],
+                ["Cashflow Risk", "Payout holds, reserves and delayed funds release."],
+                ["Trust Drift", "Healthy-looking accounts can still accumulate hidden marketplace exposure."],
+              ].map(([title, body]) => (
+                <div key={title} className="rounded-2xl border border-white/10 bg-black/55 p-5">
+                  <div className="font-bold text-white">{title}</div>
+                  <p className="mt-3 leading-7 text-zinc-500">{body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
 
       <section id="pricing" className="mx-auto max-w-7xl px-6 py-20">
         <div className="text-center">
