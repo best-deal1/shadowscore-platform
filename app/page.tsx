@@ -574,7 +574,7 @@ I would like to begin a private ShadowScore review.`;
             <div
               key={plan.name}
               onClick={() => setSelectedPlan(plan.name)}
-              className={`relative flex h-full min-h-[640px] cursor-pointer flex-col rounded-[30px] border p-6 transition-all duration-300 ${
+              className={`relative flex h-full min-h-[560px] cursor-pointer flex-col rounded-[30px] border p-6 transition-all duration-300 ${
                 selectedPlan === plan.name
                   ? "border-red-400/65 bg-red-500/8 shadow-[0_0_38px_rgba(220,38,38,0.13)]"
                   : "border-white/10 bg-white/[0.025] hover:border-white/20"
@@ -703,7 +703,7 @@ I would like to begin a private ShadowScore review.`;
               <div className="text-sm uppercase tracking-[0.28em] text-red-300">Partner Tracking Links</div>
               <h2 className="mt-4 text-3xl font-bold">Promote ShadowScore With A Signed Link</h2>
               <p className="mt-4 max-w-3xl leading-7 text-zinc-400">
-                Partners can share a signed link such as <span className="text-zinc-200">shadowscore.io/?ref=partnername</span>. The referral code is preserved during the visit and included in checkout requests so promoted leads can be attributed.
+                Partners can share a personal referral link such as <span className="text-zinc-200">shadowscore.io/?ref=partnername</span>. The referral code is stored during checkout and included in payment requests.
               </p>
             </div>
             <a href="/intake?ref=partner" className="rounded-2xl border border-white/10 px-7 py-4 text-center font-bold text-zinc-300 transition hover:border-red-400/30 hover:text-white">
@@ -742,7 +742,7 @@ I would like to begin a private ShadowScore review.`;
         </div>
 
         <div className="mt-10 text-sm text-zinc-600">
-          ShadowScore © 2026 · Independent Marketplace Trust Intelligence
+          © 2026 ShadowScore. Marketplace Trust Intelligence. All rights reserved.
         </div>
       </section>
 

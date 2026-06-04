@@ -53,24 +53,6 @@ export default function PaymentButtons({ planName, price }: PaymentButtonsProps)
     `ShadowScore bank transfer request\nPlan: ${planName}\nPrice: ${price}${referralLine}\nPlease send me bank transfer details and invoice instructions.`
   );
 
-  if (!checkoutOpen) {
-    return (
-      <div className="mt-6">
-        <button
-          type="button"
-          onClick={() => setCheckoutOpen(true)}
-          className="w-full rounded-xl border border-red-400/25 bg-red-600 px-4 py-3 text-center text-sm font-black text-white shadow-[0_0_22px_rgba(220,38,38,0.22)] transition hover:bg-red-500"
-        >
-          Start Assessment
-        </button>
-
-        <div className="mt-3 text-center text-[11px] leading-5 text-zinc-600">
-          Secure checkout: PayPal, Credit Card, Payoneer or Bank Transfer
-        </div>
-      </div>
-    );
-  }
-
   const actionHref =
     paymentMethod === "paypal"
       ? paypalUrl
@@ -89,111 +71,124 @@ export default function PaymentButtons({ planName, price }: PaymentButtonsProps)
           ? "Request Payoneer Details"
           : "Request Bank Transfer Details";
 
+  const methodTitle =
+    paymentMethod === "paypal"
+      ? "Pay with PayPal"
+      : paymentMethod === "card"
+        ? "Pay by Credit Card"
+        : paymentMethod === "payoneer"
+          ? "Pay with Payoneer"
+          : "Bank Transfer";
+
+  const methodDescription =
+    paymentMethod === "paypal"
+      ? "Protected checkout through PayPal."
+      : paymentMethod === "card"
+        ? "Secure card payment is processed through an encrypted payment link."
+        : paymentMethod === "payoneer"
+          ? "Payoneer details are provided privately after request."
+          : "Bank transfer details and invoice instructions are provided privately.";
+
   return (
-    <div className="mt-6 rounded-3xl border border-white/10 bg-black/70 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div>
-          <div className="text-lg font-black text-white">Checkout</div>
-          <div className="mt-1 text-xs text-zinc-500">
-            {planName} · {price}
+    <>
+      <div className="mt-10">
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            setCheckoutOpen(true);
+          }}
+          className="w-full rounded-2xl border border-red-400/25 bg-red-600 px-5 py-4 text-center text-sm font-black text-white shadow-[0_0_24px_rgba(220,38,38,0.24)] transition hover:bg-red-500"
+        >
+          Open Checkout
+        </button>
+
+        <div className="mt-3 text-center text-[11px] leading-5 text-zinc-600">
+          Pay securely with PayPal, Credit Card, Payoneer or Bank Transfer
+        </div>
+      </div>
+
+      {checkoutOpen && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 px-4 py-8 backdrop-blur-xl"
+          onClick={(event) => {
+            event.stopPropagation();
+            setCheckoutOpen(false);
+          }}
+        >
+          <div
+            className="max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-[32px] border border-white/10 bg-black p-6 shadow-[0_0_80px_rgba(220,38,38,0.20)]"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mb-6 flex items-start justify-between gap-4">
+              <div>
+                <div className="text-3xl font-black text-white">Checkout</div>
+                <div className="mt-2 text-sm leading-6 text-zinc-500">
+                  {planName} · {price}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setCheckoutOpen(false)}
+                className="rounded-xl border border-white/10 px-3 py-2 text-sm text-zinc-400 transition hover:border-red-400/30 hover:text-white"
+              >
+                Close
+              </button>
+            </div>
+
+            {referralCode && (
+              <div className="mb-5 rounded-2xl border border-red-400/25 bg-red-500/10 px-4 py-3 text-sm font-bold text-red-100">
+                Referral detected: {referralCode}
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                ["paypal", "PayPal"],
+                ["card", "Card"],
+                ["payoneer", "Payoneer"],
+                ["bank", "Bank Transfer"],
+              ].map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setPaymentMethod(id as "paypal" | "card" | "payoneer" | "bank")}
+                  className={`rounded-2xl border px-4 py-4 text-sm font-black transition ${
+                    paymentMethod === id
+                      ? "border-white bg-white text-black"
+                      : "border-white/10 bg-white/[0.04] text-zinc-300 hover:border-red-400/30"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-6 rounded-[28px] border border-white/10 bg-white/[0.035] p-7 text-center">
+              <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-white text-2xl font-black text-black">
+                {paymentMethod === "paypal" ? "P" : paymentMethod === "card" ? "💳" : paymentMethod === "payoneer" ? "P" : "🏦"}
+              </div>
+
+              <div className="mt-5 text-2xl font-black text-white">{methodTitle}</div>
+              <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-zinc-500">{methodDescription}</p>
+
+              <a
+                href={actionHref}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-6 block rounded-2xl bg-red-600 px-5 py-4 text-center text-sm font-black text-white transition hover:bg-red-500"
+              >
+                {actionLabel}
+              </a>
+            </div>
+
+            <div className="mt-5 text-center text-[11px] leading-5 text-zinc-600">
+              Payment request includes plan, amount and referral code when available.
+            </div>
           </div>
         </div>
-
-        {referralCode && (
-          <div className="rounded-full border border-red-400/25 bg-red-500/10 px-3 py-1 text-[11px] font-bold text-red-200">
-            Ref: {referralCode}
-          </div>
-        )}
-      </div>
-
-      <div className="grid grid-cols-2 gap-2">
-        <button
-          type="button"
-          onClick={() => setPaymentMethod("paypal")}
-          className={`rounded-xl border px-3 py-3 text-sm font-black transition ${
-            paymentMethod === "paypal"
-              ? "border-white bg-white text-black"
-              : "border-white/10 bg-white/[0.04] text-zinc-300 hover:border-red-400/30"
-          }`}
-        >
-          PayPal
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setPaymentMethod("card")}
-          className={`rounded-xl border px-3 py-3 text-sm font-black transition ${
-            paymentMethod === "card"
-              ? "border-white bg-white text-black"
-              : "border-white/10 bg-white/[0.04] text-zinc-300 hover:border-red-400/30"
-          }`}
-        >
-          Credit Card
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setPaymentMethod("payoneer")}
-          className={`rounded-xl border px-3 py-3 text-sm font-black transition ${
-            paymentMethod === "payoneer"
-              ? "border-white bg-white text-black"
-              : "border-white/10 bg-white/[0.04] text-zinc-300 hover:border-red-400/30"
-          }`}
-        >
-          Payoneer
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setPaymentMethod("bank")}
-          className={`rounded-xl border px-3 py-3 text-sm font-black transition ${
-            paymentMethod === "bank"
-              ? "border-white bg-white text-black"
-              : "border-white/10 bg-white/[0.04] text-zinc-300 hover:border-red-400/30"
-          }`}
-        >
-          Bank Transfer
-        </button>
-      </div>
-
-      <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center">
-        <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-white text-2xl font-black text-black">
-          {paymentMethod === "paypal" ? "P" : paymentMethod === "card" ? "💳" : paymentMethod === "payoneer" ? "P" : "🏦"}
-        </div>
-
-        <div className="mt-4 text-xl font-black text-white">
-          {paymentMethod === "paypal"
-            ? "Pay with PayPal"
-            : paymentMethod === "card"
-              ? "Pay by Credit Card"
-              : paymentMethod === "payoneer"
-                ? "Pay with Payoneer"
-                : "Bank Transfer"}
-        </div>
-
-        <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-zinc-500">
-          {paymentMethod === "paypal"
-            ? "Protected checkout through PayPal."
-            : paymentMethod === "card"
-              ? "Secure card payment is processed through an encrypted payment link."
-              : paymentMethod === "payoneer"
-                ? "Payoneer details are provided privately after request."
-                : "Bank transfer details and invoice instructions are provided privately."}
-        </p>
-
-        <a
-          href={actionHref}
-          target="_blank"
-          rel="noreferrer"
-          className="mt-5 block rounded-xl bg-red-600 px-4 py-3 text-center text-sm font-black text-white transition hover:bg-red-500"
-        >
-          {actionLabel}
-        </a>
-      </div>
-
-      <div className="mt-4 text-center text-[11px] leading-5 text-zinc-600">
-        Payment requests include the selected plan, amount and referral code when available.
-      </div>
-    </div>
+      )}
+    </>
   );
 }
