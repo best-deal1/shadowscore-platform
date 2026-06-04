@@ -27,37 +27,37 @@ const threatFeed = [
 
 const plans = [
   {
-    name: "Trust Exposure Assessment",
+    name: "Store Risk Check",
     price: "$49",
     sub: "24-hour exposure snapshot",
-    desc: "Fast first read for sellers who need a quick signal check before deciding what to do next.",
+    desc: "Fast risk assessment for sellers who want to understand their current marketplace exposure before taking action.",
     tag: "",
     items: ["ShadowScore rating", "Top 3 risk findings", "Executive PDF snapshot", "Recommended next actions"],
     button: "Start Assessment",
   },
   {
-    name: "Compliance & Enforcement Review",
+    name: "Account Review Analysis",
     price: "$99",
     sub: "rapid manual review",
-    desc: "For sellers facing MC011, MC999, payout hold, account review or sudden marketplace friction.",
+    desc: "Detailed review for sellers facing account reviews, payout holds, verification requests or policy concerns.",
     tag: "Most Popular",
     items: ["Manual case review", "Tracking integrity analysis", "Payout exposure review", "WhatsApp consultation", "Risk action plan"],
     button: "Start Review",
   },
   {
-    name: "Deep Risk Investigation",
+    name: "Suspension Investigation",
     price: "$199",
     sub: "full case investigation",
-    desc: "A deeper private investigation for serious operators who need a full evidence and exposure timeline.",
+    desc: "Full investigation of marketplace events, evidence gaps and likely root causes.",
     tag: "",
     items: ["Evidence timeline", "Root cause analysis", "Appeal readiness check", "Executive report", "30-day protection"],
     button: "Start Investigation",
   },
   {
-    name: "Continuous Trust Monitoring",
+    name: "Continuous Store Monitoring",
     price: "$299",
     sub: "per month",
-    desc: "Ongoing operational risk monitoring for active sellers who cannot afford surprise enforcement.",
+    desc: "Continuous monitoring designed for sellers who cannot afford unexpected enforcement actions.",
     tag: "",
     items: ["Monthly trust review", "Risk feed access", "Operational intelligence", "Early warning detection", "WhatsApp support"],
     button: "Start Monitoring",
@@ -65,6 +65,15 @@ const plans = [
 ];
 
 const faqItems = [
+  {
+    q: "Can ShadowScore guarantee account recovery?",
+    a: "No. ShadowScore provides independent risk assessments and evidence reviews. No marketplace outcome can be guaranteed.",
+  },
+  {
+    q: "Can a store with good feedback still be restricted?",
+    a: "Yes. Marketplace enforcement decisions often involve factors that are not visible in seller performance metrics, including verification, sourcing, fulfillment consistency, policy exposure and trust signals.",
+  },
+
 
   {
     q: "What evidence is required?",
@@ -248,18 +257,18 @@ I would like to begin a private ShadowScore review.`;
             </div>
 
             <h1 className="text-5xl font-extrabold leading-[1.02] tracking-tight md:text-6xl">
-              Marketplace Problems
+              Most Marketplace Suspensions
               <span className="mt-4 block text-red-400">
-                Rarely Start Overnight.
+                Leave Warning Signs.
               </span>
             </h1>
 
             <p className="mt-7 max-w-xl text-lg leading-8 text-zinc-400">
-              ShadowScore helps detect operational, compliance and trust signals before they become restrictions, payout holds or account reviews across major marketplaces.
+              ShadowScore helps sellers identify marketplace risk before it becomes a payout hold, account review, verification request or restriction.
             </p>
 
             <div className="mt-6 max-w-2xl rounded-2xl border border-red-400/20 bg-red-500/[0.06] p-5 text-sm leading-7 text-red-100">
-              Built for sellers, brands, agencies and multi-channel operators who need to understand marketplace exposure before revenue, payouts or account health are impacted.
+              ShadowScore helps sellers assess exposure signals before a problem becomes a visible restriction, hold or review.
             </div>
 
             <div className="mt-9 rounded-3xl border border-white/10 bg-black/55 p-5 backdrop-blur-xl">
@@ -276,7 +285,7 @@ I would like to begin a private ShadowScore review.`;
                   onClick={handleScan}
                   className="rounded-2xl bg-red-600 px-8 py-4 font-bold transition hover:bg-red-500"
                 >
-                  Request Intelligence Review
+                  Check My Store Risk
                 </button>
               </div>
 
@@ -563,9 +572,9 @@ I would like to begin a private ShadowScore review.`;
       <section id="pricing" className="mx-auto max-w-7xl px-6 py-20">
         <div className="text-center">
           <div className="text-sm uppercase tracking-[0.28em] text-red-300">Pricing</div>
-          <h2 className="mt-4 text-4xl font-bold">Choose The Right Trust Intelligence Level.</h2>
+          <h2 className="mt-4 text-4xl font-bold">Start With A Marketplace Audit. Upgrade Into Intelligence.</h2>
           <p className="mx-auto mt-4 max-w-3xl text-zinc-500">
-            Start with a fast exposure assessment, then upgrade into deeper investigation or continuous monitoring when the risk profile requires it.
+            A low-friction entry point for sellers under pressure, with deeper intelligence for serious operators.
           </p>
         </div>
 
@@ -696,23 +705,6 @@ I would like to begin a private ShadowScore review.`;
       </section>
 
       
-      <section className="mx-auto max-w-7xl px-6 py-16">
-        <div className="rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
-          <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
-            <div>
-              <div className="text-sm uppercase tracking-[0.28em] text-red-300">Partner Tracking Links</div>
-              <h2 className="mt-4 text-3xl font-bold">Promote ShadowScore With A Signed Link</h2>
-              <p className="mt-4 max-w-3xl leading-7 text-zinc-400">
-                Partners can share a personal referral link such as <span className="text-zinc-200">shadowscore.io/?ref=partnername</span>. The referral code is stored during checkout and included in payment requests.
-              </p>
-            </div>
-            <a href="/intake?ref=partner" className="rounded-2xl border border-white/10 px-7 py-4 text-center font-bold text-zinc-300 transition hover:border-red-400/30 hover:text-white">
-              Test Referral Flow
-            </a>
-          </div>
-        </div>
-      </section>
-
       <section id="contact" className="mx-auto max-w-5xl px-6 py-20 text-center">
         <div className="rounded-[34px] border border-white/10 bg-white/[0.03] p-10">
           <div className="text-sm uppercase tracking-[0.28em] text-red-300">Contact ShadowScore</div>
@@ -742,7 +734,7 @@ I would like to begin a private ShadowScore review.`;
         </div>
 
         <div className="mt-10 text-sm text-zinc-600">
-          © 2026 ShadowScore. Marketplace Trust Intelligence. All rights reserved.
+          © 2026 ShadowScore. Marketplace Trust Intelligence. All rights reserved.<br />Independent Marketplace Risk Intelligence Platform.
         </div>
       </section>
 

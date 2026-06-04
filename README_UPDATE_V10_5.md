@@ -1,0 +1,1 @@
+Copy app/page.tsx, components/PaymentButtons.tsx, and components/ShadowScoreLayout.tsx into your project. Then run: npm run build && git add . && git commit -m "ShadowScore V10.5 messaging and conversion update" && git push origin main
