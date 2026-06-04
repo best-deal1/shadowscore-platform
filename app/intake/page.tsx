@@ -74,70 +74,67 @@ const CASE_TYPES = [
 const SIGNALS = [
   { term: "mc999", title: "MC999 or permanent restriction reference", severity: "Critical" as Severity, points: 24, recommendation: "Prepare a full post-mortem, not only a tracking response." },
   { term: "indefinite", title: "Indefinite restriction language detected", severity: "Critical" as Severity, points: 22, recommendation: "Document the full sequence of events and avoid repeated unsupported appeals." },
-  { term: "poor selling", title: "Poor selling activity language detected", severity: "High" as Severity, points: 18, recommendation: "Map delivery timing, tracking consistency, evidence quality and seller activity flow." },
-  { term: "mc011", title: "MC011 proof-of-delivery review reference", severity: "High" as Severity, points: 18, recommendation: "Strengthen proof of delivery and buyer-facing delivery confirmation evidence." },
-  { term: "payout", title: "Payout review or hold reference", severity: "Medium" as Severity, points: 12, recommendation: "Review cashflow exposure and unresolved claim window." },
-  { term: "hold", title: "Funds hold reference", severity: "Medium" as Severity, points: 10, recommendation: "Add payout messages and order fulfillment proof to the evidence package." },
-  { term: "amazon", title: "Amazon reference detected", severity: "High" as Severity, points: 16, recommendation: "Review supplier documentation and avoid submitting marketplace-branded retail invoices when supplier proof is required." },
-  { term: "tba", title: "Amazon Logistics / TBA tracking reference", severity: "High" as Severity, points: 16, recommendation: "Check whether tracking is externally verifiable and aligned with marketplace expectations." },
-  { term: "vero", title: "VeRO or IP complaint reference", severity: "High" as Severity, points: 18, recommendation: "Remove or review brand-sensitive listings and prepare policy compliance evidence." },
-  { term: "policy", title: "Policy issue reference detected", severity: "Medium" as Severity, points: 12, recommendation: "Attach policy issue screenshots and document corrective action." },
-  { term: "military", title: "Restricted item policy reference detected", severity: "Critical" as Severity, points: 22, recommendation: "Immediately review restricted categories and remove high-risk inventory." },
-  { term: "section 3", title: "Amazon Section 3 reference detected", severity: "Critical" as Severity, points: 24, recommendation: "Prepare identity, supply chain and account health evidence." },
-  { term: "inauthentic", title: "Inauthentic or supplier document issue", severity: "High" as Severity, points: 18, recommendation: "Prepare supplier chain, invoices and product authenticity documentation." },
+  { term: "poor selling", title: "Poor selling activity language detected", severity: "High" as Severity, points: 18, recommendation: "Review account-level operational patterns, not only visible seller metrics." },
+  { term: "tba", title: "Amazon Logistics / TBA tracking reference", severity: "High" as Severity, points: 16, recommendation: "Replace weak marketplace-only tracking with carrier-verifiable proof wherever possible." },
+  { term: "amazon", title: "Amazon reference detected", severity: "High" as Severity, points: 14, recommendation: "Review whether supplier or fulfillment documents reveal retail arbitrage dependency." },
+  { term: "vero", title: "VeRO or brand complaint reference", severity: "High" as Severity, points: 18, recommendation: "Remove brand-risk listings and document rights-owner complaint history." },
+  { term: "policy", title: "Policy issue reference detected", severity: "Medium" as Severity, points: 12, recommendation: "Map every policy issue into the account risk timeline." },
+  { term: "military", title: "Restricted item policy reference", severity: "High" as Severity, points: 18, recommendation: "Review restricted item exposure and remove similar listings." },
+  { term: "payout", title: "Payout hold reference", severity: "Medium" as Severity, points: 12, recommendation: "Review unresolved buyer, delivery and reserve-period exposure." },
+  { term: "section 3", title: "Amazon Section 3 reference", severity: "Critical" as Severity, points: 24, recommendation: "Prepare supplier, authenticity and account health documentation." },
+  { term: "inauthentic", title: "Inauthentic or authenticity risk", severity: "High" as Severity, points: 18, recommendation: "Strengthen supplier invoices and authenticity evidence." },
+  { term: "counterfeit", title: "Counterfeit risk language", severity: "Critical" as Severity, points: 25, recommendation: "Escalate to manual review before submitting additional documents." },
 ];
 
 function normalize(value: string) {
   return value.toLowerCase().replace(/[_-]+/g, " ");
 }
 
+function hasHint(fileNames: string[], hints: string[]) {
+  return fileNames.some((name) => hints.some((hint) => name.includes(hint)));
+}
+
 function scoreLabel(score: number) {
   if (score >= 82) return "Critical Exposure";
-  if (score >= 66) return "High Exposure";
-  if (score >= 46) return "Elevated Exposure";
+  if (score >= 65) return "High Exposure";
+  if (score >= 45) return "Elevated Exposure";
   if (score >= 25) return "Moderate Exposure";
   return "Low Exposure";
 }
 
 function scoreColor(score: number) {
-  if (score >= 82) return "text-red-100";
-  if (score >= 66) return "text-red-300";
-  if (score >= 46) return "text-orange-200";
+  if (score >= 82) return "text-red-200";
+  if (score >= 65) return "text-red-300";
+  if (score >= 45) return "text-orange-200";
   if (score >= 25) return "text-yellow-200";
   return "text-emerald-200";
 }
 
-function severityBadge(severity: Severity) {
+function severityClass(severity: Severity) {
   if (severity === "Critical") return "border-red-300/40 bg-red-500/15 text-red-100";
   if (severity === "High") return "border-red-400/30 bg-red-500/10 text-red-200";
   if (severity === "Medium") return "border-yellow-400/30 bg-yellow-500/10 text-yellow-200";
-  return "border-zinc-400/30 bg-white/[0.04] text-zinc-300";
-}
-
-function saveLead(record: Record<string, unknown>) {
-  if (typeof window === "undefined") return;
-  const existing = JSON.parse(localStorage.getItem(LEADS_KEY) || "[]");
-  const next = [{ id: crypto.randomUUID(), createdAt: new Date().toISOString(), ...record }, ...existing].slice(0, 200);
-  localStorage.setItem(LEADS_KEY, JSON.stringify(next));
+  return "border-emerald-400/30 bg-emerald-500/10 text-emerald-200";
 }
 
 export default function IntakePage() {
   const [files, setFiles] = useState<File[]>([]);
   const [marketplace, setMarketplace] = useState("eBay");
   const [store, setStore] = useState("");
+  const [email, setEmail] = useState("");
   const [caseType, setCaseType] = useState("MC011 / proof of delivery");
   const [submitted, setSubmitted] = useState(false);
   const [leadSaved, setLeadSaved] = useState(false);
 
-  const fileNames = useMemo(() => files.map((file) => normalize(file.name)), [files]);
   const requirements = MARKETPLACE_REQUIREMENTS[marketplace] || MARKETPLACE_REQUIREMENTS.eBay;
+  const fileNames = useMemo(() => files.map((file) => normalize(file.name)), [files]);
 
   const evidenceStatus = useMemo(() => {
     return requirements.map((item) => ({
       ...item,
-      present: fileNames.some((name) => item.hints.some((hint) => name.includes(hint))),
+      present: hasHint(fileNames, item.hints),
     }));
-  }, [requirements, fileNames]);
+  }, [fileNames, requirements]);
 
   const findings = useMemo<Finding[]>(() => {
     const result: Finding[] = [];
@@ -146,41 +143,43 @@ export default function IntakePage() {
       result.push({
         title: "Missing store URL or seller name",
         severity: "Medium",
-        points: 8,
+        points: 10,
         detail: "A store URL or seller name helps connect the evidence to a specific marketplace profile.",
-        recommendation: "Add the store URL or seller username before submitting a paid review.",
+        recommendation: "Add the store URL or seller handle before requesting manual review.",
       });
     }
 
-    if (!files.length) {
+    if (files.length === 0) {
       result.push({
         title: "No evidence uploaded",
         severity: "High",
         points: 35,
-        detail: "A real assessment requires notices, tracking records, screenshots, payout messages or policy warnings.",
-        recommendation: "Upload at least one file before running the assessment.",
+        detail: "A real assessment requires notices, tracking records, seller hub screenshots or payout messages.",
+        recommendation: "Upload at least one restriction notice, tracking report or account-health screenshot.",
       });
       return result;
     }
 
-    evidenceStatus.filter((item) => !item.present).forEach((item) => {
+    const missing = evidenceStatus.filter((item) => !item.present);
+
+    missing.forEach((item) => {
       result.push({
         title: `${item.label} missing`,
         severity: "Medium",
-        points: 10,
-        detail: `The uploaded package does not appear to include ${item.label.toLowerCase()}.`,
-        recommendation: `Add evidence related to ${item.label.toLowerCase()} to improve review quality.`,
+        points: 11,
+        detail: `The uploaded file names do not indicate ${item.label.toLowerCase()}.`,
+        recommendation: `Add evidence related to ${item.label.toLowerCase()} to strengthen the assessment.`,
       });
     });
 
-    SIGNALS.forEach((signal) => {
-      if (fileNames.some((name) => name.includes(signal.term)) || normalize(caseType).includes(signal.term)) {
+    SIGNALS.forEach((item) => {
+      if (fileNames.some((name) => name.includes(item.term))) {
         result.push({
-          title: signal.title,
-          severity: signal.severity,
-          points: signal.points,
-          detail: "This signal can increase marketplace exposure and should be reviewed in the full report.",
-          recommendation: signal.recommendation,
+          title: item.title,
+          severity: item.severity,
+          points: item.points,
+          detail: "This signal may increase marketplace exposure and should be reviewed in the full report.",
+          recommendation: item.recommendation,
         });
       }
     });
@@ -189,59 +188,54 @@ export default function IntakePage() {
       result.push({
         title: "Evidence package is thin",
         severity: "Medium",
-        points: 8,
-        detail: "A stronger case usually includes the notice, tracking evidence, order screenshots and policy or payout context.",
-        recommendation: "Upload a complete evidence pack before paying for deeper analysis.",
+        points: 10,
+        detail: "A stronger case usually includes notice, tracking, delivery proof and account screenshots.",
+        recommendation: "Upload a complete package before paying for a full investigation.",
+      });
+    }
+
+    if (caseType.includes("MC999") || caseType.includes("Section 3")) {
+      result.push({
+        title: "High severity case type",
+        severity: "High",
+        points: 18,
+        detail: "This case type usually involves account-level trust concerns, not only one order or one metric.",
+        recommendation: "Use post-mortem analysis and avoid repeated unsupported appeals.",
       });
     }
 
     return result;
-  }, [files.length, store, evidenceStatus, fileNames, caseType]);
+  }, [files, store, evidenceStatus, fileNames, caseType]);
 
   const score = useMemo(() => {
-    const base = files.length ? 18 : 0;
+    const base = files.length ? 16 : 0;
     const total = findings.reduce((sum, item) => sum + item.points, base);
     return Math.min(96, Math.max(files.length ? 18 : 0, total));
   }, [files.length, findings]);
 
-  const progress = files.length === 0 ? 0 : Math.min(100, 25 + files.length * 12 + evidenceStatus.filter((item) => item.present).length * 10);
+  const progress = files.length === 0 ? 0 : Math.min(100, 25 + files.length * 12 + evidenceStatus.filter((item) => item.present).length * 12);
   const canAnalyze = files.length > 0;
-  const topFindings = findings.filter((finding) => finding.title !== "No evidence uploaded").slice(0, 5);
 
-  const runAssessment = () => {
-    setSubmitted(true);
-    if (!canAnalyze) return;
-
-    saveLead({
+  const saveLead = () => {
+    const lead = {
+      createdAt: new Date().toISOString(),
       marketplace,
-      store: store || "Not provided",
       caseType,
+      store,
+      email,
+      files: files.map((file) => ({ name: file.name, size: file.size, type: file.type })),
       score,
-      scoreLabel: scoreLabel(score),
-      files: files.map((file) => ({ name: file.name, size: file.size, type: file.type || "unknown" })),
-      findings: topFindings.map((finding) => ({ title: finding.title, severity: finding.severity, points: finding.points })),
-      clickedWhatsApp: false,
-    });
-    setLeadSaved(true);
-  };
+      label: scoreLabel(score),
+      findings: findings.map((item) => item.title),
+    };
 
-  const openWhatsApp = () => {
-    const message = encodeURIComponent(
-      `ShadowScore paid review request\nMarketplace: ${marketplace}\nStore: ${store || "Not provided"}\nCase type: ${caseType}\nPreliminary score: ${score} - ${scoreLabel(score)}\nTop findings: ${topFindings.map((f) => f.title).join(", ")}`
-    );
-
-    saveLead({
-      marketplace,
-      store: store || "Not provided",
-      caseType,
-      score,
-      scoreLabel: scoreLabel(score),
-      files: files.map((file) => ({ name: file.name, size: file.size, type: file.type || "unknown" })),
-      findings: topFindings.map((finding) => ({ title: finding.title, severity: finding.severity, points: finding.points })),
-      clickedWhatsApp: true,
-    });
-
-    window.open(`https://wa.me/972557293979?text=${message}`, "_blank", "noopener,noreferrer");
+    try {
+      const existing = JSON.parse(localStorage.getItem(LEADS_KEY) || "[]");
+      localStorage.setItem(LEADS_KEY, JSON.stringify([lead, ...existing].slice(0, 100)));
+      setLeadSaved(true);
+    } catch {
+      setLeadSaved(false);
+    }
   };
 
   return (
@@ -251,63 +245,68 @@ export default function IntakePage() {
 
       <header className="relative z-10 border-b border-white/10 bg-black/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
-          <Link href="/" className="text-sm text-zinc-500 hover:text-white">← Back to ShadowScore</Link>
-          <div className="flex items-center gap-4">
-            <Link href="/leads" className="hidden text-sm text-zinc-500 hover:text-white md:block">View Leads</Link>
-            <div className="rounded-full border border-red-400/25 bg-red-500/10 px-4 py-2 text-sm font-bold text-red-200">
-              Real Preliminary Assessment
-            </div>
+          <Link href="/" className="flex items-center gap-3 text-sm text-zinc-500 hover:text-white">
+            <img src="/shadowscore-shield-v8.png" alt="ShadowScore" className="h-8 w-8 object-contain" />
+            Back to ShadowScore
+          </Link>
+          <div className="rounded-full border border-red-400/25 bg-red-500/10 px-4 py-2 text-sm font-bold text-red-200">
+            Evidence-Based Trust Engine
           </div>
         </div>
       </header>
 
       <section className="relative z-10 mx-auto max-w-7xl px-6 py-14">
-        <div className="grid gap-10 lg:grid-cols-[.85fr_1.15fr]">
+        <div className="grid gap-10 lg:grid-cols-[.82fr_1.18fr]">
           <div>
-            <div className="text-xs uppercase tracking-[0.45em] text-red-300">ShadowScore Intake</div>
-            <h1 className="mt-6 text-5xl font-extrabold leading-tight">Marketplace Post-Mortem Console</h1>
+            <div className="text-xs uppercase tracking-[0.45em] text-red-300">ShadowScore V9 Engine</div>
+            <h1 className="mt-6 text-5xl font-extrabold leading-tight">Marketplace Trust Assessment Console</h1>
             <p className="mt-6 max-w-xl text-lg leading-8 text-zinc-400">
-              Upload evidence and receive an instant preliminary assessment. If key evidence is missing, ShadowScore explains what is missing instead of showing a fake score.
+              Upload real evidence and receive an instant preliminary score. Missing documents are flagged clearly instead of showing a fake result.
             </p>
 
             <div className="mt-10 rounded-3xl border border-white/10 bg-white/[0.035] p-6">
-              <div className="font-bold">Marketplace-specific evidence</div>
+              <div className="font-bold">Multi-marketplace evidence requirements</div>
               <p className="mt-4 leading-7 text-zinc-400">
-                Each marketplace requires different evidence. Selecting eBay, Amazon, Walmart, Etsy, TikTok Shop or SHEIN changes the checklist and the risk model.
+                The required evidence changes by platform. eBay, Amazon, Walmart, Etsy, TikTok Shop and SHEIN all evaluate different trust and compliance signals.
               </p>
             </div>
 
             <div className="mt-6 rounded-3xl border border-red-400/20 bg-red-500/[0.06] p-6">
-              <div className="font-bold text-red-200">No internal marketplace data</div>
+              <div className="font-bold text-red-200">Safe positioning</div>
               <p className="mt-3 leading-7 text-zinc-400">
-                This score is an independent assessment based on seller-supplied information, file names, selected case type and evidence completeness.
+                ShadowScore does not access marketplace internal systems and does not expose proprietary platform logic. The score is based on seller-supplied evidence and observable operational indicators.
               </p>
             </div>
           </div>
 
           <div className="rounded-[32px] border border-white/10 bg-black/55 p-6 shadow-[0_0_60px_rgba(120,0,20,0.16)] backdrop-blur-xl">
-            <div className="grid gap-5 md:grid-cols-3">
+            <div className="grid gap-5 md:grid-cols-2">
               <label>
                 <div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">Marketplace</div>
-                <select value={marketplace} onChange={(e) => { setMarketplace(e.target.value); setSubmitted(false); setLeadSaved(false); }} className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white">
-                  {Object.keys(MARKETPLACE_REQUIREMENTS).map((name) => <option key={name}>{name}</option>)}
+                <select value={marketplace} onChange={(e) => setMarketplace(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white">
+                  {Object.keys(MARKETPLACE_REQUIREMENTS).map((item) => <option key={item}>{item}</option>)}
                 </select>
               </label>
 
               <label>
                 <div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">Case type</div>
-                <select value={caseType} onChange={(e) => { setCaseType(e.target.value); setSubmitted(false); setLeadSaved(false); }} className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white">
-                  {CASE_TYPES.map((name) => <option key={name}>{name}</option>)}
+                <select value={caseType} onChange={(e) => setCaseType(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white">
+                  {CASE_TYPES.map((item) => <option key={item}>{item}</option>)}
                 </select>
               </label>
 
               <label>
                 <div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">Store URL or seller name</div>
-                <input value={store} onChange={(e) => { setStore(e.target.value); setLeadSaved(false); }} className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white" placeholder="https://..." />
+                <input value={store} onChange={(e) => setStore(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white" placeholder="https://..." />
+              </label>
+
+              <label>
+                <div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">Email for report</div>
+                <input value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white" placeholder="you@example.com" />
               </label>
             </div>
 
-            <label className="mt-6 grid cursor-pointer place-items-center rounded-3xl border-2 border-dashed border-white/10 bg-white/[0.02] p-16 text-center hover:border-red-500/40">
+            <label className="mt-6 grid cursor-pointer place-items-center rounded-3xl border-2 border-dashed border-white/10 bg-white/[0.02] p-14 text-center hover:border-red-500/40">
               <input type="file" multiple className="hidden" onChange={(e) => {
                 setSubmitted(false);
                 setLeadSaved(false);
@@ -357,38 +356,29 @@ export default function IntakePage() {
 
             <button
               type="button"
-              onClick={runAssessment}
+              onClick={() => setSubmitted(true)}
               className="mt-6 block w-full rounded-2xl bg-red-600 px-7 py-5 text-center text-sm font-black uppercase tracking-[0.16em] shadow-[0_0_28px_rgba(220,38,38,0.28)] hover:bg-red-500"
             >
               Run Preliminary Assessment
             </button>
 
-            {leadSaved && (
-              <div className="mt-4 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 p-4 text-sm text-emerald-100">
-                Scan saved locally. You can review it in the Leads page.
-              </div>
-            )}
-
             {submitted && canAnalyze && (
               <div className="mt-8 rounded-[28px] border border-red-400/20 bg-red-500/[0.06] p-6">
-                <div className="grid gap-6 md:grid-cols-[190px_1fr]">
+                <div className="grid gap-6 md:grid-cols-[180px_1fr]">
                   <div>
                     <div className={`text-6xl font-black ${scoreColor(score)}`}>{score}</div>
                     <div className="mt-3 text-sm font-bold text-white">{scoreLabel(score)}</div>
                     <div className="mt-2 text-xs text-zinc-500">{marketplace} · {caseType}</div>
-                    <button onClick={openWhatsApp} className="mt-6 rounded-xl bg-red-600 px-5 py-3 text-sm font-bold hover:bg-red-500">
-                      Request Paid Review
-                    </button>
                   </div>
 
                   <div>
-                    <div className="text-xl font-bold">Why this score?</div>
+                    <div className="text-xl font-bold">Preliminary findings</div>
                     <div className="mt-4 space-y-3">
-                      {topFindings.length ? topFindings.map((finding) => (
+                      {findings.length ? findings.map((finding) => (
                         <div key={finding.title} className="rounded-2xl border border-white/10 bg-black/45 p-4">
                           <div className="flex items-center justify-between gap-4">
                             <div className="font-bold">{finding.title}</div>
-                            <div className={`rounded-full border px-3 py-1 text-xs ${severityBadge(finding.severity)}`}>
+                            <div className={`rounded-full border px-3 py-1 text-xs ${severityClass(finding.severity)}`}>
                               {finding.severity}
                             </div>
                           </div>
@@ -404,9 +394,38 @@ export default function IntakePage() {
                   </div>
                 </div>
 
-                <div className="mt-6 rounded-2xl border border-white/10 bg-black/50 p-5 text-sm leading-7 text-zinc-400">
-                  This preliminary score creates direction, not certainty. It does not guarantee marketplace outcomes and does not represent internal marketplace data.
+                <div className="mt-6 grid gap-3 md:grid-cols-3">
+                  <div className="rounded-2xl border border-white/10 bg-black/50 p-4">
+                    <div className="text-xs uppercase tracking-[0.25em] text-zinc-500">Evidence</div>
+                    <div className="mt-2 text-2xl font-bold">{Math.round(progress)}%</div>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-black/50 p-4">
+                    <div className="text-xs uppercase tracking-[0.25em] text-zinc-500">Findings</div>
+                    <div className="mt-2 text-2xl font-bold">{findings.length}</div>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-black/50 p-4">
+                    <div className="text-xs uppercase tracking-[0.25em] text-zinc-500">Next Step</div>
+                    <div className="mt-2 text-lg font-bold">Manual Review</div>
+                  </div>
                 </div>
+
+                <div className="mt-6 rounded-2xl border border-white/10 bg-black/50 p-5 text-sm leading-7 text-zinc-400">
+                  This preliminary score does not represent internal marketplace data and does not guarantee any marketplace outcome. It is designed to identify visible operational exposure and missing evidence.
+                </div>
+
+                <button
+                  type="button"
+                  onClick={saveLead}
+                  className="mt-6 block w-full rounded-2xl border border-white/10 bg-white/[0.04] px-7 py-4 text-center text-sm font-black uppercase tracking-[0.16em] hover:border-red-400/30"
+                >
+                  Save Lead Locally
+                </button>
+
+                {leadSaved && (
+                  <div className="mt-4 rounded-2xl border border-emerald-400/25 bg-emerald-500/10 p-4 text-center text-sm text-emerald-100">
+                    Lead saved in this browser. Open Leads from the header to review it.
+                  </div>
+                )}
               </div>
             )}
           </div>

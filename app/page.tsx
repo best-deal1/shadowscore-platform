@@ -65,6 +65,24 @@ const plans = [
 ];
 
 const faqItems = [
+
+  {
+    q: "Why was my account suspended despite good feedback?",
+    a: "Visible seller metrics do not always equal account safety. Marketplaces may also evaluate fulfillment model, supplier documents, tracking integrity, policy exposure, verification and account behavior.",
+  },
+  {
+    q: "Can TBA tracking create marketplace risk?",
+    a: "TBA tracking can be difficult for some marketplaces to verify externally. Even when the order was delivered, weak carrier-verifiable evidence may increase delivery verification risk.",
+  },
+  {
+    q: "Does ShadowScore know the marketplace internal score?",
+    a: "No. ShadowScore does not access internal marketplace systems. It provides an independent assessment based on seller-supplied evidence and observable operational indicators.",
+  },
+  {
+    q: "Can ShadowScore help after a restriction?",
+    a: "ShadowScore can help organize evidence, map likely risk drivers and assess appeal readiness. It may also introduce independent consultants, but no recovery outcome is guaranteed.",
+  },
+
   {
     q: "What does \"poor selling activity\" mean?",
     a: "It is a broad marketplace phrase. It may include late delivery, tracking inconsistency, weak evidence, document gaps, policy issues, fulfillment instability or other seller activity that creates risk. ShadowScore treats it as a risk category, not as one single cause.",
@@ -169,7 +187,7 @@ I would like to begin a private ShadowScore review.`;
             <img
               src="/shadowscore-shield-v8.png?v=v40"
               alt="ShadowScore shield"
-              className="h-11 w-11 rounded-xl object-contain bg-black p-1"
+              className="h-10 w-10 rounded-xl object-contain bg-black p-1"
             />
             <div className="leading-none">
               <div className="text-2xl font-extrabold tracking-tight">
@@ -187,6 +205,7 @@ I would like to begin a private ShadowScore review.`;
             <a href="#cases" className="transition hover:text-white">Cases</a>
             <a href="#pricing" className="transition hover:text-white">Pricing</a>
             <a href={TIKTOK_URL} target="_blank" rel="noreferrer" className="transition hover:text-white">TikTok</a>
+            <a href="#recovery" className="transition hover:text-white">Recovery</a>
             <a href="/intake" className="text-red-300 transition hover:text-red-200">Console</a>
             <a href="/leads" className="transition hover:text-white">Leads</a>
           </nav>
@@ -206,7 +225,7 @@ I would like to begin a private ShadowScore review.`;
           <div className="max-w-2xl">
             <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-red-400/25 bg-red-500/8 px-4 py-2 text-sm text-red-200">
               <span className="h-2 w-2 rounded-full bg-red-400 shadow-[0_0_12px_rgba(248,113,113,0.8)]" />
-              Marketplace Trust Assessment
+              Marketplace Trust Intelligence
             </div>
 
             <h1 className="text-5xl font-extrabold leading-[1.02] tracking-tight md:text-6xl">
@@ -271,7 +290,7 @@ I would like to begin a private ShadowScore review.`;
                 <img
                   src="/shadowscore-shield-v8.png?v=hero-v34"
                   alt="ShadowScore cyber shield"
-                  className="h-auto w-[210px] max-w-full object-contain drop-shadow-[0_0_34px_rgba(220,38,38,0.22)] md:w-[250px]"
+                  className="h-auto w-[230px] max-w-full object-contain drop-shadow-[0_0_34px_rgba(220,38,38,0.22)] md:w-[270px]"
                 />
 
                 <div className="mt-8 text-4xl font-extrabold tracking-tight md:text-5xl">
@@ -279,7 +298,7 @@ I would like to begin a private ShadowScore review.`;
                 </div>
 
                 <div className="mt-4 text-xs font-semibold uppercase tracking-[0.42em] text-zinc-500">
-                  Independent Marketplace Trust Assessment
+                  Independent Marketplace Trust Intelligence
                 </div>
 
                 <div className="mt-8 h-px w-full max-w-md bg-gradient-to-r from-transparent via-red-500/70 to-transparent" />
@@ -430,6 +449,69 @@ I would like to begin a private ShadowScore review.`;
           </div>
         </Panel>
       </section>
+
+      
+      <section id="blindspot" className="mx-auto max-w-7xl px-6 py-16">
+        <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+          <Panel className="p-8">
+            <div className="text-sm uppercase tracking-[0.28em] text-red-300">The Marketplace Blind Spot</div>
+            <h2 className="mt-4 text-4xl font-bold">Sellers See Orders. Marketplaces See Risk.</h2>
+            <p className="mt-5 leading-8 text-zinc-400">
+              Good feedback, delivered orders and Above Standard status do not always mean low account risk. Marketplaces also evaluate trust, consistency, verification, policy exposure and fulfillment behavior.
+            </p>
+            <div className="mt-8 grid gap-4 md:grid-cols-2">
+              {[
+                ["Seller View", "Sales, feedback, orders, revenue and visible performance metrics."],
+                ["Marketplace View", "Trust signals, document quality, sourcing consistency and operational risk."],
+                ["The Gap", "Most sellers discover the gap only after MC011, MC999, payout hold or restriction."],
+                ["ShadowScore", "We map seller evidence into a practical trust-exposure picture."],
+              ].map(([title, body]) => (
+                <div key={title} className="rounded-2xl border border-white/10 bg-black/55 p-5">
+                  <div className="font-bold text-white">{title}</div>
+                  <p className="mt-3 leading-7 text-zinc-500">{body}</p>
+                </div>
+              ))}
+            </div>
+          </Panel>
+
+          <Panel className="p-8">
+            <div className="text-sm uppercase tracking-[0.28em] text-red-300">ShadowScore Engine</div>
+            <h2 className="mt-4 text-4xl font-bold">Risk Factors We Assess</h2>
+            <div className="mt-8 grid gap-4">
+              {[
+                ["Fulfillment Risk", "TBA, weak carrier verification, late evidence and delivery proof gaps."],
+                ["Policy Exposure", "VeRO, restricted items, IP complaints and policy violation accumulation."],
+                ["Payout Hold Risk", "Reserve exposure, unresolved claims and delivery confidence issues."],
+                ["Supplier Risk", "Marketplace-branded invoices, authenticity gaps and retail-arbitrage signals."],
+                ["Account Health Risk", "Visible metrics that do not always explain hidden enforcement exposure."],
+              ].map(([title, body]) => (
+                <div key={title} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+                  <div className="font-bold text-red-100">{title}</div>
+                  <p className="mt-2 leading-7 text-zinc-500">{body}</p>
+                </div>
+              ))}
+            </div>
+          </Panel>
+        </div>
+      </section>
+
+      <section id="recovery" className="mx-auto max-w-7xl px-6 py-16">
+        <div className="rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
+          <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
+            <div>
+              <div className="text-sm uppercase tracking-[0.28em] text-red-300">Recovery Assistance Network</div>
+              <h2 className="mt-4 text-3xl font-bold">Already Restricted? Start With Evidence Readiness.</h2>
+              <p className="mt-4 max-w-3xl leading-7 text-zinc-400">
+                ShadowScore may connect qualified sellers with independent marketplace consultants for appeal preparation, documentation review and recovery assistance. Results are never guaranteed.
+              </p>
+            </div>
+            <a href="/intake" className="rounded-2xl bg-red-600 px-7 py-4 text-center font-bold hover:bg-red-500">
+              Check Recovery Readiness
+            </a>
+          </div>
+        </div>
+      </section>
+
 
       <section id="pricing" className="mx-auto max-w-7xl px-6 py-20">
         <div className="text-center">
@@ -607,7 +689,7 @@ I would like to begin a private ShadowScore review.`;
         </div>
 
         <div className="mt-10 text-sm text-zinc-600">
-          ShadowScore © 2026 · Independent Marketplace Trust Assessment
+          ShadowScore © 2026 · Independent Marketplace Trust Intelligence
         </div>
       </section>
 

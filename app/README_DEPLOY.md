@@ -1,42 +1,45 @@
-# ShadowScore V7 Marketplace Trust Engine
+# ShadowScore V9 Marketplace Trust Engine
 
-This update preserves the existing cyber design and adds the functional upgrades discussed today.
+This package is a stable V9 upgrade based on the current project.
 
-Included:
-- app/page.tsx
-- app/intake/page.tsx
-- app/leads/page.tsx
-- app/layout.tsx
-- app/about/page.tsx
-- app/privacy/page.tsx
-- app/terms/page.tsx
-- app/security/page.tsx
-- components/ShadowScoreLayout.tsx
-- components/PaymentButtons.tsx
-- public/shadowscore-shield-v8.png
-
-Main upgrades:
-- Real preliminary intake engine based on marketplace, case type, uploaded file names and missing evidence
-- Multi-marketplace requirements for eBay, Amazon, Walmart, Etsy, TikTok Shop and SHEIN
-- "Why this score?" breakdown with risk drivers and recommended actions
-- No score when no evidence is uploaded
-- Leads dashboard at /leads using localStorage
-- Tracks whether the user clicked WhatsApp after the scan
-- Export leads to CSV
-- PayPal and manual credit card payment CTAs
-- Marketplace Blind Spot section
-- "Seller Performance is not Account Safety" positioning
-- Poor Selling Activity explanation
-- Safer language: independent assessment, no internal marketplace access claims
-- FAQ and legal trust pages kept
-- OpenGraph metadata kept in app/layout.tsx
+What changed:
+- New cyber mystery shield is added as the main ShadowScore logo.
+- Existing WhatsApp / social preview is preserved. Do not replace the current `shadowscore-og.jpg` in production.
+- Header logo sizing is reduced to avoid text cropping.
+- PayPal and Credit Card CTAs are preserved and made clearer.
+- Intake page upgraded into a real preliminary assessment engine.
+- Multi-marketplace evidence requirements added:
+  - eBay
+  - Amazon
+  - Walmart
+  - Etsy
+  - TikTok Shop
+  - SHEIN
+- Missing files now show real errors.
+- Score is calculated from evidence completeness, marketplace, case type and filename-based risk signals.
+- Risk findings include severity and recommended action.
+- Leads can be saved locally in browser storage.
+- Marketplace Blind Spot section added.
+- ShadowScore Engine risk factor section added.
+- Recovery Assistance Network added carefully, without guarantees.
+- FAQ expanded with good feedback, TBA tracking, internal score and recovery disclaimers.
 
 Important:
-The /leads page currently stores scans locally in the browser. This is good for MVP testing.
-For production, replace localStorage with Supabase/Firebase/Postgres/API storage.
+- Do not delete your existing production `public/shadowscore-og.jpg` if you like the current WhatsApp preview.
+- This ZIP intentionally does not include a new OG image that would replace the current preview.
+- The engine is preliminary. It reads filenames and evidence completeness, not document contents yet.
+
+Files changed:
+- app/page.tsx
+- app/intake/page.tsx
+- app/layout.tsx
+- components/PaymentButtons.tsx
+- public/shadowscore-shield-v8.png
+- public/shadowscore-super-shield-v2.png
+- public/marketplaces-monitor-v8.png
 
 Deploy:
 npm run build
 git add .
-git commit -m "ShadowScore V7 marketplace trust engine"
+git commit -m "ShadowScore V9 marketplace trust engine"
 git push origin main

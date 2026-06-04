@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import PaymentButtons from "../components/PaymentButtons";
 
 const WHATSAPP_NUMBER = "972557293979";
 const TIKTOK_URL = "https://www.tiktok.com/@shadowscore8";
@@ -65,8 +66,12 @@ const plans = [
 
 const faqItems = [
   {
-    q: "What information does ShadowScore reveal?",
-    a: "ShadowScore shows where marketplace exposure may already be building: tracking reliability, payout exposure, operational drift and the actions that should be stabilized first. It does not reveal marketplace internal logic or proprietary detection methods.",
+    q: "What does \"poor selling activity\" mean?",
+    a: "It is a broad marketplace phrase. It may include late delivery, tracking inconsistency, weak evidence, document gaps, policy issues, fulfillment instability or other seller activity that creates risk. ShadowScore treats it as a risk category, not as one single cause.",
+  },
+  {
+    q: "What does ShadowScore assess?",
+    a: "ShadowScore assesses seller-supplied evidence, operational risk indicators, evidence completeness, tracking quality, policy exposure and marketplace review readiness. It does not reveal internal marketplace logic or proprietary platform scores.",
   },
   {
     q: "Is ShadowScore a reinstatement service?",
@@ -171,7 +176,7 @@ I would like to begin a private ShadowScore review.`;
                 Shadow<span className="text-red-400">Score</span>
               </div>
               <div className="mt-1.5 text-[10px] uppercase tracking-[0.34em] text-zinc-500">
-                Marketplace Risk Intelligence
+                Marketplace Trust Intelligence
               </div>
             </div>
           </Link>
@@ -183,6 +188,7 @@ I would like to begin a private ShadowScore review.`;
             <a href="#pricing" className="transition hover:text-white">Pricing</a>
             <a href={TIKTOK_URL} target="_blank" rel="noreferrer" className="transition hover:text-white">TikTok</a>
             <a href="/intake" className="text-red-300 transition hover:text-red-200">Console</a>
+            <a href="/leads" className="transition hover:text-white">Leads</a>
           </nav>
 
           <button
@@ -200,7 +206,7 @@ I would like to begin a private ShadowScore review.`;
           <div className="max-w-2xl">
             <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-red-400/25 bg-red-500/8 px-4 py-2 text-sm text-red-200">
               <span className="h-2 w-2 rounded-full bg-red-400 shadow-[0_0_12px_rgba(248,113,113,0.8)]" />
-              Marketplace Risk Assessment
+              Marketplace Trust Assessment
             </div>
 
             <h1 className="text-5xl font-extrabold leading-[1.02] tracking-tight md:text-6xl">
@@ -273,7 +279,7 @@ I would like to begin a private ShadowScore review.`;
                 </div>
 
                 <div className="mt-4 text-xs font-semibold uppercase tracking-[0.42em] text-zinc-500">
-                  Independent Marketplace Risk Assessment
+                  Independent Marketplace Trust Assessment
                 </div>
 
                 <div className="mt-8 h-px w-full max-w-md bg-gradient-to-r from-transparent via-red-500/70 to-transparent" />
@@ -480,6 +486,8 @@ I would like to begin a private ShadowScore review.`;
               >
                 {plan.button}
               </button>
+
+              <PaymentButtons planName={plan.name} price={plan.price} />
             </div>
           ))}
         </div>
@@ -599,7 +607,7 @@ I would like to begin a private ShadowScore review.`;
         </div>
 
         <div className="mt-10 text-sm text-zinc-600">
-          ShadowScore © 2026 · Independent Marketplace Risk Assessment
+          ShadowScore © 2026 · Independent Marketplace Trust Assessment
         </div>
       </section>
 
@@ -657,6 +665,23 @@ I would like to begin a private ShadowScore review.`;
           </div>
         </div>
       )}
+
+      <section className="mx-auto max-w-7xl px-6 py-12">
+        <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-6">
+          <div className="text-sm uppercase tracking-[0.28em] text-red-300">Legal & Trust</div>
+          <div className="mt-5 flex flex-wrap gap-5 text-sm text-zinc-400">
+            <a href="/about" className="hover:text-white">About</a>
+            <a href="/privacy" className="hover:text-white">Privacy Policy</a>
+            <a href="/terms" className="hover:text-white">Terms of Service</a>
+            <a href="/security" className="hover:text-white">Security & Data Handling</a>
+            <a href="https://www.tiktok.com/@shadowscore8" target="_blank" rel="noreferrer" className="hover:text-white">TikTok</a>
+          </div>
+          <p className="mt-5 max-w-4xl text-sm leading-7 text-zinc-500">
+            ShadowScore provides independent marketplace trust assessments based on seller-supplied information and publicly observable marketplace behavior. ShadowScore does not have access to internal marketplace systems and is not affiliated with eBay, Amazon, Walmart, Etsy, SHEIN or TikTok Shop.
+          </p>
+        </div>
+      </section>
+
     </main>
   );
 }

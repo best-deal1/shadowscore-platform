@@ -14,7 +14,6 @@ export const metadata: Metadata = {
     siteName: "ShadowScore",
     images: [
       { url: "/shadowscore-og.jpg", width: 1200, height: 630, alt: "ShadowScore Marketplace Trust Intelligence" },
-      { url: "/shadowscore-shield-v8.png", width: 1024, height: 1024, alt: "ShadowScore shield" },
     ],
     locale: "en_US",
     type: "website",
