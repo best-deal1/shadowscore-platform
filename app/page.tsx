@@ -248,18 +248,18 @@ I would like to begin a private ShadowScore review.`;
             </div>
 
             <h1 className="text-5xl font-extrabold leading-[1.02] tracking-tight md:text-6xl">
-              Understand Marketplace Risk
+              Marketplace Problems
               <span className="mt-4 block text-red-400">
-                Before Enforcement Happens.
+                Rarely Start Overnight.
               </span>
             </h1>
 
             <p className="mt-7 max-w-xl text-lg leading-8 text-zinc-400">
-              Built from real seller investigations, payout holds, account restrictions, appeals, tracking issues and marketplace reviews.
+              ShadowScore helps detect operational, compliance and trust signals before they become restrictions, payout holds or account reviews across major marketplaces.
             </p>
 
             <div className="mt-6 max-w-2xl rounded-2xl border border-red-400/20 bg-red-500/[0.06] p-5 text-sm leading-7 text-red-100">
-              ShadowScore helps sellers assess exposure signals before a problem becomes a visible restriction, hold or review.
+              Built for sellers, brands, agencies and multi-channel operators who need to understand marketplace exposure before revenue, payouts or account health are impacted.
             </div>
 
             <div className="mt-9 rounded-3xl border border-white/10 bg-black/55 p-5 backdrop-blur-xl">
@@ -563,9 +563,9 @@ I would like to begin a private ShadowScore review.`;
       <section id="pricing" className="mx-auto max-w-7xl px-6 py-20">
         <div className="text-center">
           <div className="text-sm uppercase tracking-[0.28em] text-red-300">Pricing</div>
-          <h2 className="mt-4 text-4xl font-bold">Start With A Marketplace Audit. Upgrade Into Intelligence.</h2>
+          <h2 className="mt-4 text-4xl font-bold">Choose The Right Trust Intelligence Level.</h2>
           <p className="mx-auto mt-4 max-w-3xl text-zinc-500">
-            A low-friction entry point for sellers under pressure, with deeper intelligence for serious operators.
+            Start with a fast exposure assessment, then upgrade into deeper investigation or continuous monitoring when the risk profile requires it.
           </p>
         </div>
 
@@ -603,18 +603,6 @@ I would like to begin a private ShadowScore review.`;
                   </div>
                 ))}
               </div>
-
-              <button
-                type="button"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  setSelectedPlan(plan.name);
-                  openWhatsApp(plan.name);
-                }}
-                className="mt-10 rounded-2xl border border-white/10 bg-red-600 px-6 py-4 font-bold transition hover:bg-red-500"
-              >
-                {plan.button}
-              </button>
 
               <PaymentButtons planName={plan.name} price={plan.price} />
             </div>
@@ -715,7 +703,7 @@ I would like to begin a private ShadowScore review.`;
               <div className="text-sm uppercase tracking-[0.28em] text-red-300">Partner Tracking Links</div>
               <h2 className="mt-4 text-3xl font-bold">Promote ShadowScore With A Signed Link</h2>
               <p className="mt-4 max-w-3xl leading-7 text-zinc-400">
-                Partners can share a personal referral link such as <span className="text-zinc-200">shadowscore.io/?ref=partnername</span>. The referral code is stored during checkout and included in payment requests.
+                Partners can share a signed link such as <span className="text-zinc-200">shadowscore.io/?ref=partnername</span>. The referral code is preserved during the visit and included in checkout requests so promoted leads can be attributed.
               </p>
             </div>
             <a href="/intake?ref=partner" className="rounded-2xl border border-white/10 px-7 py-4 text-center font-bold text-zinc-300 transition hover:border-red-400/30 hover:text-white">
