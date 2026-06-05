@@ -1,29 +1,28 @@
-# ShadowScore V10.2 Professional Checkout + Referral Links
+# ShadowScore V6 Trust Security Update
 
-Updated:
-- Pricing checkout upgraded to a professional checkout card.
-- One primary button remains: Start Assessment.
-- Payment options appear after click:
-  - PayPal
-  - Credit Card
-  - Payoneer
-  - Bank Transfer
-- Credit card text is now professional:
-  - Secure card payment is processed through an encrypted payment link.
-- Referral tracking added:
-  - Use links like https://shadowscore.io/?ref=partnername
-  - Also supports ?partner=, ?affiliate=, ?utm_source=
-  - Referral is stored in localStorage and included in payment requests.
-- Partner Tracking Links section added to the homepage.
-- Existing OG / WhatsApp preview is preserved.
+Files included:
+- app/page.tsx
+- app/layout.tsx
+- app/intake/page.tsx
+- components/PaymentButtons.tsx
+- components/ShadowScoreLayout.tsx
+- app/about/page.tsx
+- app/privacy/page.tsx
+- app/terms/page.tsx
+- app/security/page.tsx
 
-Important:
-- Referral tracking is currently browser-side and suitable for MVP.
-- For production, connect referrals and leads to Supabase/Firebase/backend API.
-- Payoneer is request-based through WhatsApp until real Payoneer checkout is connected.
+Main updates:
+- Reduced public exposure of detailed risk methodology.
+- Replaced overly specific public risk labels with safer category-level wording.
+- Kept multi-marketplace intake.
+- Kept PayPal, Card, Payoneer and Bank Transfer checkout.
+- Added About, Privacy, Terms and Security pages.
+- Preserved logo, cyber design, marketplace logos, WhatsApp workflow and OpenGraph metadata.
+- Kept the engine useful while making clear it is an independent assessment, not internal marketplace data.
 
 Deploy:
 npm run build
+npm run lint
 git add .
-git commit -m "ShadowScore V10.2 professional checkout and referrals"
+git commit -m "ShadowScore V6 trust and security update"
 git push origin main

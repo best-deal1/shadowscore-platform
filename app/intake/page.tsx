@@ -72,18 +72,18 @@ const CASE_TYPES = [
 ];
 
 const SIGNALS = [
-  { term: "mc999", title: "MC999 or permanent restriction reference", severity: "Critical" as Severity, points: 24, recommendation: "Prepare a full post-mortem, not only a tracking response." },
-  { term: "indefinite", title: "Indefinite restriction language detected", severity: "Critical" as Severity, points: 22, recommendation: "Document the full sequence of events and avoid repeated unsupported appeals." },
-  { term: "poor selling", title: "Poor selling activity language detected", severity: "High" as Severity, points: 18, recommendation: "Review account-level operational patterns, not only visible seller metrics." },
-  { term: "tba", title: "Amazon Logistics / TBA tracking reference", severity: "High" as Severity, points: 16, recommendation: "Replace weak marketplace-only tracking with carrier-verifiable proof wherever possible." },
-  { term: "amazon", title: "Amazon reference detected", severity: "High" as Severity, points: 14, recommendation: "Review whether supplier or fulfillment documents reveal retail arbitrage dependency." },
-  { term: "vero", title: "VeRO or brand complaint reference", severity: "High" as Severity, points: 18, recommendation: "Remove brand-risk listings and document rights-owner complaint history." },
-  { term: "policy", title: "Policy issue reference detected", severity: "Medium" as Severity, points: 12, recommendation: "Map every policy issue into the account risk timeline." },
-  { term: "military", title: "Restricted item policy reference", severity: "High" as Severity, points: 18, recommendation: "Review restricted item exposure and remove similar listings." },
-  { term: "payout", title: "Payout hold reference", severity: "Medium" as Severity, points: 12, recommendation: "Review unresolved buyer, delivery and reserve-period exposure." },
-  { term: "section 3", title: "Amazon Section 3 reference", severity: "Critical" as Severity, points: 24, recommendation: "Prepare supplier, authenticity and account health documentation." },
-  { term: "inauthentic", title: "Inauthentic or authenticity risk", severity: "High" as Severity, points: 18, recommendation: "Strengthen supplier invoices and authenticity evidence." },
-  { term: "counterfeit", title: "Counterfeit risk language", severity: "Critical" as Severity, points: 25, recommendation: "Escalate to manual review before submitting additional documents." },
+  { term: "mc999", title: "Account-level restriction language detected", severity: "Critical" as Severity, points: 24, recommendation: "Prepare a full post-mortem and organize the complete evidence timeline." },
+  { term: "indefinite", title: "Long-term restriction language detected", severity: "Critical" as Severity, points: 22, recommendation: "Document the full sequence of events and avoid repeated unsupported appeals." },
+  { term: "poor selling", title: "Broad marketplace risk language detected", severity: "High" as Severity, points: 18, recommendation: "Review account-level operational patterns, not only visible seller metrics." },
+  { term: "tba", title: "Carrier-verification risk indicator detected", severity: "High" as Severity, points: 16, recommendation: "Strengthen delivery evidence with carrier-verifiable documentation wherever possible." },
+  { term: "amazon", title: "Supplier documentation risk indicator detected", severity: "High" as Severity, points: 14, recommendation: "Review whether fulfillment or supplier documents create evidence consistency issues." },
+  { term: "vero", title: "Brand or rights-owner complaint indicator detected", severity: "High" as Severity, points: 18, recommendation: "Review compliance exposure and document policy history." },
+  { term: "policy", title: "Policy exposure indicator detected", severity: "Medium" as Severity, points: 12, recommendation: "Map every policy notice into the account risk timeline." },
+  { term: "military", title: "Restricted-category indicator detected", severity: "High" as Severity, points: 18, recommendation: "Review restricted-category exposure and remove similar listings." },
+  { term: "payout", title: "Payment review indicator detected", severity: "Medium" as Severity, points: 12, recommendation: "Review unresolved buyer, delivery and reserve-period exposure." },
+  { term: "section 3", title: "Marketplace verification risk indicator detected", severity: "Critical" as Severity, points: 24, recommendation: "Prepare supplier, authenticity and account health documentation." },
+  { term: "inauthentic", title: "Product authenticity risk indicator detected", severity: "High" as Severity, points: 18, recommendation: "Strengthen supplier invoices and authenticity evidence." },
+  { term: "counterfeit", title: "High-severity compliance language detected", severity: "Critical" as Severity, points: 25, recommendation: "Escalate to manual review before submitting additional documents." },
 ];
 
 function normalize(value: string) {
@@ -258,7 +258,7 @@ export default function IntakePage() {
       <section className="relative z-10 mx-auto max-w-7xl px-6 py-14">
         <div className="grid gap-10 lg:grid-cols-[.82fr_1.18fr]">
           <div>
-            <div className="text-xs uppercase tracking-[0.45em] text-red-300">ShadowScore V9 Engine</div>
+            <div className="text-xs uppercase tracking-[0.45em] text-red-300">ShadowScore Trust Engine</div>
             <h1 className="mt-6 text-5xl font-extrabold leading-tight">Marketplace Trust Assessment Console</h1>
             <p className="mt-6 max-w-xl text-lg leading-8 text-zinc-400">
               Upload real evidence and receive an instant preliminary score. Missing documents are flagged clearly instead of showing a fake result.
@@ -274,7 +274,7 @@ export default function IntakePage() {
             <div className="mt-6 rounded-3xl border border-red-400/20 bg-red-500/[0.06] p-6">
               <div className="font-bold text-red-200">Safe positioning</div>
               <p className="mt-3 leading-7 text-zinc-400">
-                ShadowScore does not access marketplace internal systems and does not expose proprietary platform logic. The score is based on seller-supplied evidence and observable operational indicators.
+                ShadowScore does not access marketplace internal systems and does not expose proprietary platform logic. The score is based on a private assessment framework using seller-supplied evidence and observable operational indicators.
               </p>
             </div>
           </div>

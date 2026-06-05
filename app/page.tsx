@@ -66,77 +66,52 @@ const plans = [
 
 const faqItems = [
   {
+    q: "What is ShadowScore?",
+    a: "ShadowScore is an independent Marketplace Trust Intelligence platform that helps sellers assess operational risk, evidence readiness and marketplace exposure across major marketplaces.",
+  },
+  {
+    q: "Is ShadowScore affiliated with eBay, Amazon, Walmart, Etsy, SHEIN or TikTok Shop?",
+    a: "No. ShadowScore is independent and is not affiliated with any marketplace. Marketplace names are displayed only to indicate supported coverage areas.",
+  },
+  {
+    q: "Does ShadowScore have access to internal marketplace systems?",
+    a: "No. ShadowScore does not access internal marketplace systems, algorithms or proprietary trust scores. Assessments are based on seller-provided evidence, public marketplace policies and observable operational indicators.",
+  },
+  {
     q: "Can ShadowScore guarantee account recovery?",
-    a: "No. ShadowScore provides independent risk assessments and evidence reviews. No marketplace outcome can be guaranteed.",
+    a: "No. ShadowScore provides independent assessments and evidence reviews. No marketplace outcome can be guaranteed.",
   },
   {
     q: "Can a store with good feedback still be restricted?",
-    a: "Yes. Marketplace enforcement decisions often involve factors that are not visible in seller performance metrics, including verification, sourcing, fulfillment consistency, policy exposure and trust signals.",
+    a: "Yes. Visible metrics such as feedback, sales or seller level do not always reflect marketplace trust exposure. Platforms may also evaluate documentation quality, compliance, verification and fulfillment behavior.",
   },
-
-
   {
     q: "What evidence is required?",
-    a: "Required evidence depends on the marketplace. Examples include restriction notices, payout hold messages, tracking exports, account health screenshots, supplier documents, policy warnings, buyer cases and delivery proof.",
+    a: "Required evidence depends on the marketplace. Examples include review notices, payout hold messages, tracking exports, account health screenshots, supplier documents, policy warnings, buyer cases and delivery proof.",
   },
   {
-    q: "What causes payout holds?",
-    a: "Payout holds may be connected to delivery confidence, claims exposure, account reviews, sudden activity changes, verification issues or marketplace reserve policies. ShadowScore helps organize the visible evidence around those risks.",
-  },
-  {
-    q: "Can a healthy store still be restricted?",
-    a: "Yes. Visible metrics such as feedback, sales or seller level do not always reflect marketplace trust exposure. Platforms may also evaluate documentation, sourcing, policy compliance, identity and fulfillment behavior.",
-  },
-  {
-    q: "Does ShadowScore expose marketplace secrets?",
-    a: "No. ShadowScore does not expose internal platform models or proprietary marketplace logic. It provides independent assessment from seller-provided evidence and observable operational signals.",
-  },
-
-
-  {
-    q: "Why was my account suspended despite good feedback?",
-    a: "Visible seller metrics do not always equal account safety. Marketplaces may also evaluate fulfillment model, supplier documents, tracking integrity, policy exposure, verification and account behavior.",
-  },
-  {
-    q: "Can TBA tracking create marketplace risk?",
-    a: "TBA tracking can be difficult for some marketplaces to verify externally. Even when the order was delivered, weak carrier-verifiable evidence may increase delivery verification risk.",
-  },
-  {
-    q: "Does ShadowScore know the marketplace internal score?",
-    a: "No. ShadowScore does not access internal marketplace systems. It provides an independent assessment based on seller-supplied evidence and observable operational indicators.",
-  },
-  {
-    q: "Can ShadowScore help after a restriction?",
-    a: "ShadowScore can help organize evidence, map likely risk drivers and assess appeal readiness. It may also introduce independent consultants, but no recovery outcome is guaranteed.",
-  },
-
-  {
-    q: "What does \"poor selling activity\" mean?",
-    a: "It is a broad marketplace phrase. It may include late delivery, tracking inconsistency, weak evidence, document gaps, policy issues, fulfillment instability or other seller activity that creates risk. ShadowScore treats it as a risk category, not as one single cause.",
-  },
-  {
-    q: "What does ShadowScore assess?",
-    a: "ShadowScore assesses seller-supplied evidence, operational risk indicators, evidence completeness, tracking quality, policy exposure and marketplace review readiness. It does not reveal internal marketplace logic or proprietary platform scores.",
-  },
-  {
-    q: "Is ShadowScore a reinstatement service?",
-    a: "No. ShadowScore is an exposure intelligence platform. If an account is already restricted, the review can help organize the situation, evidence and likely risk drivers, but ShadowScore does not promise reinstatement.",
-  },
-  {
-    q: "Do you need my marketplace password?",
-    a: "No. Initial reviews do not require marketplace credentials. A first audit can begin with a store URL, screenshots, exports and operational context.",
+    q: "How is the ShadowScore assessment calculated?",
+    a: "ShadowScore uses a proprietary marketplace risk assessment framework that evaluates evidence quality, operational consistency, compliance indicators and marketplace-specific factors. The detailed scoring logic is private.",
   },
   {
     q: "What marketplaces are supported?",
-    a: "Early access coverage includes eBay, Amazon, Walmart, SHEIN, TikTok Shop and Etsy.",
+    a: "Current coverage includes eBay, Amazon, Walmart, Etsy, TikTok Shop and SHEIN. Additional marketplaces may be added over time.",
   },
   {
-    q: "Can ShadowScore guarantee that my account will not be restricted?",
-    a: "No. ShadowScore helps sellers identify elevated exposure early and take stronger operational action before risk becomes visible enforcement.",
+    q: "Do you need my marketplace password?",
+    a: "No. Initial reviews do not require marketplace credentials. A first assessment can begin with a store URL, screenshots, exports and operational context.",
   },
   {
-    q: "Is ShadowScore affiliated with the marketplaces shown?",
-    a: "No. Marketplace names are shown for coverage reference only. ShadowScore is independent and is not affiliated with eBay, Amazon, Walmart, SHEIN, TikTok Shop or Etsy.",
+    q: "What happens after I upload evidence?",
+    a: "ShadowScore reviews the evidence package, identifies missing documents, maps visible risk areas and prepares recommendations for improving marketplace readiness.",
+  },
+  {
+    q: "Is my information secure?",
+    a: "Uploaded evidence is used only for assessment purposes. ShadowScore does not sell customer data and does not require marketplace login credentials.",
+  },
+  {
+    q: "What makes ShadowScore different?",
+    a: "Most services focus on recovery after enforcement. ShadowScore focuses on visibility, evidence readiness and operational trust before issues escalate.",
   },
 ];
 
@@ -402,13 +377,13 @@ I would like to begin a private ShadowScore review.`;
           <div className="flex flex-col gap-6 border-b border-white/10 pb-7 md:flex-row md:items-end md:justify-between">
             <div>
               <div className="text-sm uppercase tracking-[0.28em] text-red-300">Marketplace Intelligence Topics</div>
-              <h2 className="mt-4 text-4xl font-bold">Common Enforcement Events Sellers Face</h2>
+              <h2 className="mt-4 text-4xl font-bold">Common Marketplace Review Areas</h2>
               <p className="mt-4 max-w-3xl leading-7 text-zinc-500">
-                Public marketplace incidents and seller-reported cases converted into structured risk-assessment topics. The scoring model remains private.
+                Public marketplace incidents and seller-reported cases converted into structured risk-assessment topics. The assessment framework remains private.
               </p>
             </div>
             <div className="rounded-full border border-red-400/25 bg-red-500/10 px-4 py-2 text-sm font-bold text-red-200">
-              Community Intelligence
+              Public Signal Mapping
             </div>
           </div>
 
@@ -504,14 +479,14 @@ I would like to begin a private ShadowScore review.`;
 
           <Panel className="p-8">
             <div className="text-sm uppercase tracking-[0.28em] text-red-300">ShadowScore Engine</div>
-            <h2 className="mt-4 text-4xl font-bold">Risk Factors We Assess</h2>
+            <h2 className="mt-4 text-4xl font-bold">Risk Categories We Assess</h2>
             <div className="mt-8 grid gap-4">
               {[
-                ["Fulfillment Risk", "TBA, weak carrier verification, late evidence and delivery proof gaps."],
-                ["Policy Exposure", "VeRO, restricted items, IP complaints and policy violation accumulation."],
-                ["Payout Hold Risk", "Reserve exposure, unresolved claims and delivery confidence issues."],
-                ["Supplier Risk", "Marketplace-branded invoices, authenticity gaps and retail-arbitrage signals."],
-                ["Account Health Risk", "Visible metrics that do not always explain hidden enforcement exposure."],
+                ["Fulfillment Risk", "Carrier-verifiable delivery evidence, fulfillment consistency and delivery proof completeness."],
+                ["Policy Exposure", "Compliance history, listing quality, policy notices and product-category exposure."],
+                ["Payment Risk", "Payout readiness, reserve exposure, unresolved claims and marketplace payment review signals."],
+                ["Documentation Risk", "Supplier documentation quality, invoice consistency and evidence readiness."],
+                ["Account Health Risk", "Visible seller metrics that may not fully explain marketplace review exposure."],
               ].map(([title, body]) => (
                 <div key={title} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
                   <div className="font-bold text-red-100">{title}</div>
