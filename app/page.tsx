@@ -352,7 +352,7 @@ I would like to start a marketplace trust assessment.`;
           <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-zinc-400">No fake reviews. No recovery promises. Just a sharper way to understand marketplace risk before it hurts the business.</p>
           <div className="mt-10 flex flex-col items-center justify-center gap-4 md:flex-row">
             <Link href="/intake" className="rounded-xl bg-red-600 px-8 py-4 font-bold transition hover:bg-red-500">Start Free Risk Scan</Link>
-            <button type="button" onClick={() => openWhatsApp(selected.name)} className="rounded-xl border border-white/10 px-8 py-4 text-zinc-300 transition hover:border-red-400/30 hover:text-white">Talk To A Marketplace Risk Analyst</button>
+            <button type="button" onClick={() => openWhatsApp(selected.name)} className="rounded-xl border border-white/10 px-8 py-4 text-zinc-300 transition hover:border-red-400/30 hover:text-white">Need help? Talk on WhatsApp</button>
           </div>
         </div>
         <div className="mx-auto mt-8 max-w-4xl rounded-2xl border border-white/10 bg-black/35 p-4 text-center text-xs leading-6 text-zinc-500">

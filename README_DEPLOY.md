@@ -1,18 +1,17 @@
-# ShadowScore V8.4 Checkout + Legal Cleanup
+# ShadowScore V8.6 Payment UX Fix
 
 ## Fixed
-- Removed visible referral/debug language such as "Referral detected: partner".
-- Renamed checkout wording to "Secure Payment Request".
-- Made WhatsApp CTA more inviting: "Talk To A Marketplace Risk Analyst".
-- Rebuilt PaymentButtons with clear PayPal and Payoneer logo buttons.
-- Added clearer credit card payment button.
-- Added legal disclaimer: ShadowScore does not provide legal advice, does not guarantee reinstatement, payment release, marketplace approval or business outcomes.
-- Added user responsibility and limitation of liability language.
-- Added no-credentials and independent-assessment language to Security.
+- Pricing card buttons use inviting green CTA style.
+- Payment options stay hidden until the user clicks Open Checkout.
+- Checkout modal payment options are clearly clickable.
+- PayPal and Payoneer logos are larger and cleaner.
+- Credit card button is green and visually distinct.
+- WhatsApp remains green and positioned as a help option inside the modal.
+- Removed clutter from pricing cards.
 
 ## Deploy
 npm run build
 npm run lint
 git add .
-git commit -m "ShadowScore V8.4 checkout cleanup and legal disclaimer"
+git commit -m "Improve checkout payment UX"
 git push origin main
