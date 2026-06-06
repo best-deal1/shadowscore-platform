@@ -42,13 +42,13 @@ const intelligenceTopics = [
 
 const plans = [
   {
-    name: "Free Risk Scan",
-    price: "$0",
-    sub: "instant preliminary scan",
+    name: "Free Marketplace Risk Scan",
+    price: "",
+    sub: "complimentary assessment",
     desc: "Upload evidence and receive a basic risk map with missing documents and visible exposure areas.",
     tag: "Start Here",
     items: ["Basic ShadowScore", "Missing evidence flags", "Marketplace requirements", "Upgrade path to full report"],
-    button: "Start Free Scan",
+    button: "Start Risk Assessment",
   },
   {
     name: "Full Audit Report",

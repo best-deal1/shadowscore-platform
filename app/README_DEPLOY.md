@@ -1,35 +1,28 @@
-# ShadowScore V8 Marketplace Trust Intelligence
+# ShadowScore V8.1 Payment Patch
 
-What changed:
-- Stronger category: Marketplace Trust Intelligence.
-- New hero: See Marketplace Risk Before Marketplaces Do.
-- Free Risk Scan funnel added as the main CTA.
-- Payment options added: PayPal, Payoneer, Visa, Mastercard, Amex and bank transfer.
-- Risk framework expanded to 9 families:
-  1. Performance Risk
-  2. Policy Risk
-  3. Product Policy Risk
-  4. VeRO / IP Risk
-  5. Security Risk
-  6. Verification Risk
-  7. Supplier Risk
-  8. Payment Risk
-  9. Community Reporting Risk
-- Intake engine expanded to eBay, Amazon, Walmart, Etsy, TikTok Shop, Vinted, PayPal and Stripe.
-- Intake now validates missing evidence and produces preliminary findings.
-- FAQ expanded with BBE, VeRO, recovery and payment answers.
-- Case library added without fake testimonials.
-- About, Privacy, Terms and Security pages strengthened.
-- OpenGraph metadata updated.
+This patch fixes the payment section.
 
-Important:
-- This does not claim access to internal marketplace systems.
-- It does not promise account recovery.
-- It keeps scoring logic private while giving users useful findings.
+Included:
+- PayPal logo displayed inside the payment button
+- Payoneer logo displayed inside the payment button
+- Green WhatsApp CTA button
+- Credit card CTA
+- Manual payment request fallback via email
+- Public assets added under public/payments
+
+Files changed:
+- components/PaymentButtons.tsx
+- public/payments/paypal-logo.png
+- public/payments/payoneer-logo.png
 
 Deploy:
+```bash
 npm run build
 npm run lint
 git add .
-git commit -m "Upgrade ShadowScore V8 marketplace trust intelligence"
+git commit -m "Fix ShadowScore payment buttons and logos"
 git push origin main
+```
+
+Note:
+Until live PayPal Checkout / Stripe Checkout is connected, the PayPal, Payoneer and credit-card buttons create a payment request by email. The WhatsApp button opens a direct WhatsApp request.
