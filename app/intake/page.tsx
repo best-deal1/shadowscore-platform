@@ -57,6 +57,36 @@ const MARKETPLACE_REQUIREMENTS: Record<string, Requirement[]> = {
     { label: "Fulfillment and return evidence", hints: ["fulfillment", "return", "delivery", "tracking"] },
     { label: "Supplier documentation", hints: ["supplier", "invoice", "factory", "document"] },
   ],
+  Vinted: [
+    { label: "Commercial activity or seller-type notice", hints: ["commercial", "business", "pro", "restriction", "vinted"] },
+    { label: "Identity / business profile evidence", hints: ["identity", "business", "profile", "verification"] },
+    { label: "Order, shipment and buyer messages", hints: ["order", "shipment", "tracking", "buyer", "message"] },
+    { label: "Product authenticity or policy evidence", hints: ["authentic", "policy", "brand", "category"] },
+  ],
+  "Facebook Marketplace": [
+    { label: "Commerce restriction or review notice", hints: ["commerce", "restriction", "review", "marketplace", "facebook"] },
+    { label: "Identity and business verification", hints: ["identity", "business", "verification", "meta"] },
+    { label: "Buyer messages and order evidence", hints: ["buyer", "message", "order", "tracking"] },
+    { label: "Policy or product compliance notice", hints: ["policy", "product", "compliance", "violation"] },
+  ],
+  Shopify: [
+    { label: "Payment processor notice", hints: ["stripe", "paypal", "reserve", "hold", "chargeback"] },
+    { label: "Chargeback and dispute evidence", hints: ["chargeback", "dispute", "refund", "claim"] },
+    { label: "Fulfillment and tracking evidence", hints: ["fulfillment", "tracking", "delivery", "carrier"] },
+    { label: "Store policy and compliance evidence", hints: ["policy", "terms", "privacy", "compliance"] },
+  ],
+  PayPal: [
+    { label: "Limitation, reserve or hold notice", hints: ["limitation", "reserve", "hold", "paypal", "funds"] },
+    { label: "Transaction and delivery evidence", hints: ["transaction", "delivery", "tracking", "order"] },
+    { label: "Dispute and chargeback history", hints: ["dispute", "chargeback", "claim", "case"] },
+    { label: "Business and supplier documentation", hints: ["business", "supplier", "invoice", "document"] },
+  ],
+  Stripe: [
+    { label: "Risk review or account notice", hints: ["stripe", "risk", "review", "restricted"] },
+    { label: "Chargeback and dispute evidence", hints: ["chargeback", "dispute", "refund", "claim"] },
+    { label: "Fulfillment and delivery evidence", hints: ["fulfillment", "delivery", "tracking", "order"] },
+    { label: "Business model and compliance evidence", hints: ["business", "model", "policy", "compliance"] },
+  ],
 };
 
 const CASE_TYPES = [
@@ -68,6 +98,11 @@ const CASE_TYPES = [
   "Amazon Section 3",
   "Inauthentic / supplier documents",
   "Poor selling activity",
+  "Product policy risk",
+  "Adult / restricted category",
+  "VeRO / IP complaint",
+  "Payment processor hold",
+  "Chargeback / dispute risk",
   "General marketplace review",
 ];
 
@@ -84,6 +119,11 @@ const SIGNALS = [
   { term: "section 3", title: "Marketplace verification risk indicator detected", severity: "Critical" as Severity, points: 24, recommendation: "Prepare supplier, authenticity and account health documentation." },
   { term: "inauthentic", title: "Product authenticity risk indicator detected", severity: "High" as Severity, points: 18, recommendation: "Strengthen supplier invoices and authenticity evidence." },
   { term: "counterfeit", title: "High-severity compliance language detected", severity: "Critical" as Severity, points: 25, recommendation: "Escalate to manual review before submitting additional documents." },
+  { term: "adult", title: "Adult or restricted product category detected", severity: "High" as Severity, points: 18, recommendation: "Review product-category policy, images and listing setup before relisting similar items." },
+  { term: "weapon", title: "Weapons or restricted item keyword detected", severity: "High" as Severity, points: 20, recommendation: "Review restricted product policies and remove related category exposure." },
+  { term: "chargeback", title: "Chargeback exposure detected", severity: "High" as Severity, points: 18, recommendation: "Review dispute ratio, refund flow and payment processor reserve risk." },
+  { term: "reserve", title: "Payment reserve signal detected", severity: "Medium" as Severity, points: 14, recommendation: "Review cash-flow exposure and unresolved buyer or delivery issues." },
+  { term: "vinted", title: "Vinted marketplace restriction signal detected", severity: "Medium" as Severity, points: 12, recommendation: "Review commercial activity classification and seller verification readiness." },
 ];
 
 function normalize(value: string) {
@@ -267,7 +307,7 @@ export default function IntakePage() {
             <div className="mt-10 rounded-3xl border border-white/10 bg-white/[0.035] p-6">
               <div className="font-bold">Multi-marketplace evidence requirements</div>
               <p className="mt-4 leading-7 text-zinc-400">
-                The required evidence changes by platform. eBay, Amazon, Walmart, Etsy, TikTok Shop and SHEIN all evaluate different trust and compliance signals.
+                The required evidence changes by platform. eBay, Amazon, Walmart, Etsy, TikTok Shop, SHEIN, Vinted, Facebook Marketplace, Shopify, PayPal and Stripe all evaluate different trust and compliance signals.
               </p>
             </div>
 

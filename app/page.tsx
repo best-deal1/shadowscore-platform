@@ -10,10 +10,15 @@ const TIKTOK_URL = "https://www.tiktok.com/@shadowscore8";
 const marketplaceCoverage = [
   { name: "eBay", logo: "eBay", className: "text-[#E53238]" },
   { name: "Amazon", logo: "amazon", className: "text-[#FF9900]" },
-  { name: "Walmart", logo: "Walmart ✶", className: "text-[#2E7BEF]" },
-  { name: "SHEIN", logo: "SHEIN", className: "text-white" },
-  { name: "TikTok Shop", logo: "TikTok", className: "text-white" },
+  { name: "Walmart", logo: "Walmart", className: "text-[#2E7BEF]" },
   { name: "Etsy", logo: "Etsy", className: "text-[#F1641E]" },
+  { name: "TikTok Shop", logo: "TikTok", className: "text-white" },
+  { name: "SHEIN", logo: "SHEIN", className: "text-white" },
+  { name: "Vinted", logo: "Vinted", className: "text-[#00B894]" },
+  { name: "Facebook Marketplace", logo: "Meta", className: "text-[#1877F2]" },
+  { name: "Shopify", logo: "Shopify", className: "text-[#95BF47]" },
+  { name: "PayPal", logo: "PayPal", className: "text-[#0070BA]" },
+  { name: "Stripe", logo: "Stripe", className: "text-[#635BFF]" },
 ];
 
 const threatFeed = [
@@ -23,6 +28,9 @@ const threatFeed = [
   { platform: "Amazon", event: "Seller verification and document rejection signals", signal: "Identity posture", severity: "Elevated" },
   { platform: "Walmart", event: "Fulfillment consistency and seller review activity", signal: "Operational drift", severity: "Rising" },
   { platform: "TikTok Shop", event: "New seller identity and compliance checks", signal: "Access behavior", severity: "Watchlist" },
+  { platform: "Vinted", event: "Commercial activity and seller-type restrictions", signal: "Business authenticity", severity: "Elevated" },
+  { platform: "PayPal", event: "Reserve, limitation and payment-flow reviews", signal: "Payment risk", severity: "Elevated" },
+  { platform: "Stripe", event: "Chargeback, dispute and processing-risk review", signal: "Payment risk", severity: "Rising" },
 ];
 
 const plans = [
@@ -70,7 +78,7 @@ const faqItems = [
     a: "ShadowScore is an independent Marketplace Trust Intelligence platform that helps sellers assess operational risk, evidence readiness and marketplace exposure across major marketplaces.",
   },
   {
-    q: "Is ShadowScore affiliated with eBay, Amazon, Walmart, Etsy, SHEIN or TikTok Shop?",
+    q: "Is ShadowScore affiliated with eBay, Amazon, Walmart, Etsy, SHEIN, TikTok Shop, Vinted, Facebook Marketplace, Shopify, PayPal or Stripe?",
     a: "No. ShadowScore is independent and is not affiliated with any marketplace. Marketplace names are displayed only to indicate supported coverage areas.",
   },
   {
@@ -95,7 +103,7 @@ const faqItems = [
   },
   {
     q: "What marketplaces are supported?",
-    a: "Current coverage includes eBay, Amazon, Walmart, Etsy, TikTok Shop and SHEIN. Additional marketplaces may be added over time.",
+    a: "Current coverage includes eBay, Amazon, Walmart, Etsy, TikTok Shop, SHEIN, Vinted, Facebook Marketplace, Shopify, PayPal and Stripe. Additional marketplaces may be added over time.",
   },
   {
     q: "Do you need my marketplace password?",
@@ -216,9 +224,9 @@ I would like to begin a private ShadowScore review.`;
           <button
             type="button"
             onClick={() => openWhatsApp(selectedPlan)}
-            className="rounded-xl bg-red-600 px-5 py-3 text-sm font-bold shadow-[0_0_22px_rgba(220,38,38,0.28)] transition hover:bg-red-500 md:px-6"
+            className="rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold shadow-[0_0_22px_rgba(34,197,94,0.24)] transition hover:bg-emerald-500 md:px-6"
           >
-            Book A Briefing
+            Talk With An Expert
           </button>
         </div>
       </header>
@@ -273,7 +281,7 @@ I would like to begin a private ShadowScore review.`;
               {[
                 ["Live", "Community Signals"],
                 ["12+", "Intelligence Layers"],
-                ["6", "Marketplaces"],
+                ["11", "Platforms"],
               ].map(([value, label]) => (
                 <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                   <div className="text-xl font-bold text-white md:text-2xl">{value}</div>
@@ -482,11 +490,14 @@ I would like to begin a private ShadowScore review.`;
             <h2 className="mt-4 text-4xl font-bold">Risk Categories We Assess</h2>
             <div className="mt-8 grid gap-4">
               {[
-                ["Fulfillment Risk", "Carrier-verifiable delivery evidence, fulfillment consistency and delivery proof completeness."],
-                ["Policy Exposure", "Compliance history, listing quality, policy notices and product-category exposure."],
-                ["Payment Risk", "Payout readiness, reserve exposure, unresolved claims and marketplace payment review signals."],
-                ["Documentation Risk", "Supplier documentation quality, invoice consistency and evidence readiness."],
-                ["Account Health Risk", "Visible seller metrics that may not fully explain marketplace review exposure."],
+                ["Performance Risk", "INR, late shipment, feedback, defects and visible seller metrics."],
+                ["Policy Risk", "Marketplace policy notices, dropshipping rules and compliance history."],
+                ["Product Policy Risk", "Adult, weapons, medical claims, restricted products and category mapping."],
+                ["IP / VeRO Risk", "Copyright, trademark, brand complaints, copied images and product content."],
+                ["Security Risk", "Multiple accounts, VPN, device mismatch, identity and location consistency."],
+                ["Verification Risk", "Business license, utility bills, warehouse proof and identity verification."],
+                ["Supplier Risk", "Amazon sourcing, AliExpress, CJ, invoice quality and supplier dependency."],
+                ["Payment Risk", "PayPal, Stripe, chargebacks, reserves, payout holds and cash-flow exposure."],
               ].map(([title, body]) => (
                 <div key={title} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
                   <div className="font-bold text-red-100">{title}</div>
@@ -544,6 +555,32 @@ I would like to begin a private ShadowScore review.`;
         </div>
       </section>
 
+
+      <section id="myths" className="mx-auto max-w-7xl px-6 py-16">
+        <div className="text-center">
+          <div className="text-sm uppercase tracking-[0.28em] text-red-300">Marketplace Myth Busters</div>
+          <h2 className="mt-4 text-4xl font-bold">Visible Performance Does Not Always Mean Account Safety</h2>
+          <p className="mx-auto mt-4 max-w-3xl leading-7 text-zinc-500">
+            Most sellers only see sales, feedback and orders. Marketplaces may also evaluate trust, compliance, identity, payment, supplier and policy exposure.
+          </p>
+        </div>
+        <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+          {[
+            ["Positive feedback means I am safe", "False", "Accounts can still enter review when other trust or compliance indicators are weak."],
+            ["Delivered orders remove all risk", "False", "Delivery is only one signal. Tracking quality, evidence and sourcing may still matter."],
+            ["Above Standard protects my account", "False", "Seller level does not fully reflect security, supplier, payment or policy exposure."],
+            ["Recovery is the main product", "False", "ShadowScore focuses on visibility and risk assessment. Recovery help is secondary and never guaranteed."],
+          ].map(([myth, verdict, body]) => (
+            <div key={myth} className="rounded-[28px] border border-white/10 bg-white/[0.03] p-6">
+              <div className="text-sm uppercase tracking-[0.22em] text-zinc-500">Myth</div>
+              <div className="mt-3 text-xl font-bold text-white">{myth}</div>
+              <div className="mt-5 text-2xl font-black text-red-300">{verdict}</div>
+              <p className="mt-4 leading-7 text-zinc-500">{body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <section id="pricing" className="mx-auto max-w-7xl px-6 py-20">
         <div className="text-center">
           <div className="text-sm uppercase tracking-[0.28em] text-red-300">Pricing</div>
@@ -594,7 +631,7 @@ I would like to begin a private ShadowScore review.`;
         </div>
 
         <div className="mx-auto mt-8 max-w-4xl rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center text-sm leading-7 text-zinc-500">
-          ShadowScore provides independent marketplace risk assessments based on seller-supplied information and publicly observable marketplace behavior. ShadowScore does not have access to internal marketplace systems and is not affiliated with eBay, Amazon, Walmart, Etsy, SHEIN or TikTok Shop.
+          ShadowScore provides independent marketplace risk assessments based on seller-supplied information and publicly observable marketplace behavior. ShadowScore does not have access to internal marketplace systems and is not affiliated with eBay, Amazon, Walmart, Etsy, SHEIN, TikTok Shop, Vinted, Facebook Marketplace, Shopify, PayPal or Stripe.
         </div>
       </section>
 
@@ -692,9 +729,9 @@ I would like to begin a private ShadowScore review.`;
             <button
               type="button"
               onClick={() => openWhatsApp(selectedPlan)}
-              className="rounded-xl bg-red-600 px-8 py-4 font-bold transition hover:bg-red-500"
+              className="rounded-xl bg-emerald-600 px-8 py-4 font-bold text-white shadow-[0_0_26px_rgba(34,197,94,0.24)] transition hover:bg-emerald-500"
             >
-              Open WhatsApp Chat
+              Talk With An Expert on WhatsApp
             </button>
 
             <a
@@ -779,7 +816,7 @@ I would like to begin a private ShadowScore review.`;
             <a href="https://www.tiktok.com/@shadowscore8" target="_blank" rel="noreferrer" className="hover:text-white">TikTok</a>
           </div>
           <p className="mt-5 max-w-4xl text-sm leading-7 text-zinc-500">
-            ShadowScore provides independent marketplace trust assessments based on seller-supplied information and publicly observable marketplace behavior. ShadowScore does not have access to internal marketplace systems and is not affiliated with eBay, Amazon, Walmart, Etsy, SHEIN or TikTok Shop.
+            ShadowScore provides independent marketplace trust assessments based on seller-supplied information and publicly observable marketplace behavior. ShadowScore does not have access to internal marketplace systems and is not affiliated with eBay, Amazon, Walmart, Etsy, SHEIN, TikTok Shop, Vinted, Facebook Marketplace, Shopify, PayPal or Stripe.
           </p>
         </div>
       </section>

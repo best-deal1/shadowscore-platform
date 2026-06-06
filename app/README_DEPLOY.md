@@ -1,28 +1,33 @@
-# ShadowScore V6 Trust Security Update
+# ShadowScore V6.1 Risk Framework + Payments Update
 
-Files included:
+What was updated:
+- Green business-style WhatsApp CTA: "Talk With An Expert".
+- Payment selector upgraded to branded payment tiles: PayPal, Credit Card, Payoneer, Bank Transfer.
+- PayPal direct checkout remains active.
+- Credit Card, Payoneer and Bank Transfer open secure WhatsApp payment requests.
+- Marketplace coverage expanded beyond eBay: Amazon, Walmart, Etsy, TikTok Shop, SHEIN, Vinted, Facebook Marketplace, Shopify, PayPal and Stripe.
+- Risk framework expanded to 8 categories:
+  - Performance Risk
+  - Policy Risk
+  - Product Policy Risk
+  - IP / VeRO Risk
+  - Security Risk
+  - Verification Risk
+  - Supplier Risk
+  - Payment Risk
+- Added Marketplace Myth Busters section instead of fake testimonials.
+- Intake engine expanded with requirements for Vinted, Facebook Marketplace, Shopify, PayPal and Stripe.
+- Intake signals expanded for restricted products, adult categories, weapons, chargebacks, reserves and Vinted cases.
+- Kept safe positioning: no internal marketplace access claims, no recovery guarantees, scoring logic remains private.
+
+Files changed:
 - app/page.tsx
-- app/layout.tsx
 - app/intake/page.tsx
 - components/PaymentButtons.tsx
 - components/ShadowScoreLayout.tsx
-- app/about/page.tsx
-- app/privacy/page.tsx
-- app/terms/page.tsx
-- app/security/page.tsx
-
-Main updates:
-- Reduced public exposure of detailed risk methodology.
-- Replaced overly specific public risk labels with safer category-level wording.
-- Kept multi-marketplace intake.
-- Kept PayPal, Card, Payoneer and Bank Transfer checkout.
-- Added About, Privacy, Terms and Security pages.
-- Preserved logo, cyber design, marketplace logos, WhatsApp workflow and OpenGraph metadata.
-- Kept the engine useful while making clear it is an independent assessment, not internal marketplace data.
 
 Deploy:
 npm run build
-npm run lint
 git add .
-git commit -m "ShadowScore V6 trust and security update"
+git commit -m "Update ShadowScore V6.1 risk framework and payments"
 git push origin main
