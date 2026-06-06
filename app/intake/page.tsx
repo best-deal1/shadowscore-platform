@@ -2,160 +2,83 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import PaymentButtons from "../../components/PaymentButtons";
 
 type Severity = "Low" | "Medium" | "High" | "Critical";
+type Finding = { title: string; severity: Severity; points: number; detail: string; recommendation: string };
 
-type Finding = {
-  title: string;
-  severity: Severity;
-  points: number;
-  detail: string;
-  recommendation: string;
-};
-
-type Requirement = {
-  label: string;
-  hints: string[];
-};
-
-const LEADS_KEY = "shadowscore_leads_v1";
-
+type Requirement = { label: string; hints: string[] };
 const MARKETPLACE_REQUIREMENTS: Record<string, Requirement[]> = {
   eBay: [
-    { label: "MC011 / MC999 / restriction notice", hints: ["mc011", "mc999", "restriction", "suspension", "appeal", "review", "indefinite"] },
-    { label: "Tracking and delivery evidence", hints: ["tracking", "delivery", "delivered", "carrier", "ups", "usps", "fedex", "proof", "tba"] },
-    { label: "Seller Hub / order screenshots", hints: ["seller", "hub", "order", "buyer", "feedback", "defect"] },
-    { label: "Policy, VeRO or payout notices", hints: ["policy", "vero", "payout", "hold", "payment", "funds", "military"] },
+    { label: "Restriction or MC011 / MC999 notice", hints: ["mc011", "mc999", "restriction", "suspension", "review", "appeal"] },
+    { label: "Tracking or delivery evidence", hints: ["tracking", "delivery", "delivered", "carrier", "ups", "usps", "fedex", "proof"] },
+    { label: "Seller Hub or order screenshots", hints: ["seller", "hub", "order", "buyer", "feedback"] },
+    { label: "Policy, VeRO or payout notices", hints: ["policy", "vero", "payout", "hold", "payment", "funds"] },
   ],
   Amazon: [
     { label: "Performance notification", hints: ["performance", "notification", "section 3", "deactivation", "suspension"] },
     { label: "Account Health screenshot", hints: ["account health", "health", "ahr", "dashboard"] },
-    { label: "Supplier invoices / authenticity documents", hints: ["invoice", "supplier", "authenticity", "distributor", "receipt"] },
-    { label: "Order / tracking / A-to-Z evidence", hints: ["tracking", "order", "a-to-z", "claim", "delivery"] },
+    { label: "Supplier invoices or authenticity documents", hints: ["invoice", "supplier", "authenticity", "distributor", "receipt"] },
+    { label: "Order, tracking or A-to-Z evidence", hints: ["tracking", "order", "a-to-z", "claim", "delivery"] },
   ],
   Walmart: [
     { label: "Seller performance notice", hints: ["performance", "seller", "review", "suspension"] },
-    { label: "Order defect / cancellation evidence", hints: ["defect", "cancellation", "cancel", "odr"] },
-    { label: "Tracking / fulfillment report", hints: ["tracking", "fulfillment", "delivery", "carrier"] },
+    { label: "Order defect or cancellation evidence", hints: ["defect", "cancellation", "cancel", "odr"] },
+    { label: "Tracking and fulfillment report", hints: ["tracking", "fulfillment", "delivery", "carrier"] },
     { label: "Policy compliance notice", hints: ["policy", "compliance", "violation"] },
   ],
   Etsy: [
-    { label: "Shop notice / account review", hints: ["etsy", "shop", "review", "suspension", "reserve"] },
-    { label: "IP / policy complaint evidence", hints: ["ip", "intellectual", "property", "policy", "copyright", "trademark"] },
+    { label: "Shop notice or account review", hints: ["etsy", "shop", "review", "suspension", "reserve"] },
+    { label: "IP or policy complaint evidence", hints: ["ip", "intellectual", "property", "policy", "copyright", "trademark"] },
     { label: "Cases and buyer messages", hints: ["case", "buyer", "message", "dispute"] },
-    { label: "Tracking / delivery proof", hints: ["tracking", "delivery", "proof", "delivered"] },
+    { label: "Tracking and delivery proof", hints: ["tracking", "delivery", "proof", "delivered"] },
   ],
   "TikTok Shop": [
     { label: "Seller verification notice", hints: ["verification", "seller", "identity", "kyc"] },
-    { label: "Fulfillment SLA / late dispatch data", hints: ["fulfillment", "late", "dispatch", "sla", "tracking"] },
+    { label: "Fulfillment SLA or late dispatch data", hints: ["fulfillment", "late", "dispatch", "sla", "tracking"] },
     { label: "Product compliance notice", hints: ["compliance", "policy", "violation", "restricted"] },
-    { label: "Payout / settlement review", hints: ["payout", "settlement", "hold", "reserve"] },
-  ],
-  SHEIN: [
-    { label: "Seller onboarding or review notice", hints: ["onboarding", "seller", "review", "verification"] },
-    { label: "Product compliance documents", hints: ["product", "compliance", "quality", "certificate"] },
-    { label: "Fulfillment and return evidence", hints: ["fulfillment", "return", "delivery", "tracking"] },
-    { label: "Supplier documentation", hints: ["supplier", "invoice", "factory", "document"] },
+    { label: "Payout or settlement review", hints: ["payout", "settlement", "hold", "reserve"] },
   ],
   Vinted: [
-    { label: "Commercial activity or seller-type notice", hints: ["commercial", "business", "pro", "restriction", "vinted"] },
-    { label: "Identity / business profile evidence", hints: ["identity", "business", "profile", "verification"] },
-    { label: "Order, shipment and buyer messages", hints: ["order", "shipment", "tracking", "buyer", "message"] },
-    { label: "Product authenticity or policy evidence", hints: ["authentic", "policy", "brand", "category"] },
-  ],
-  "Facebook Marketplace": [
-    { label: "Commerce restriction or review notice", hints: ["commerce", "restriction", "review", "marketplace", "facebook"] },
-    { label: "Identity and business verification", hints: ["identity", "business", "verification", "meta"] },
-    { label: "Buyer messages and order evidence", hints: ["buyer", "message", "order", "tracking"] },
-    { label: "Policy or product compliance notice", hints: ["policy", "product", "compliance", "violation"] },
-  ],
-  Shopify: [
-    { label: "Payment processor notice", hints: ["stripe", "paypal", "reserve", "hold", "chargeback"] },
-    { label: "Chargeback and dispute evidence", hints: ["chargeback", "dispute", "refund", "claim"] },
-    { label: "Fulfillment and tracking evidence", hints: ["fulfillment", "tracking", "delivery", "carrier"] },
-    { label: "Store policy and compliance evidence", hints: ["policy", "terms", "privacy", "compliance"] },
+    { label: "Commercial activity or Pro account notice", hints: ["commercial", "pro", "vinted", "restriction", "review"] },
+    { label: "Identity or business verification", hints: ["identity", "business", "verification", "kyc"] },
+    { label: "Listing policy evidence", hints: ["listing", "policy", "item", "category"] },
+    { label: "Buyer case or delivery evidence", hints: ["buyer", "case", "delivery", "tracking"] },
   ],
   PayPal: [
-    { label: "Limitation, reserve or hold notice", hints: ["limitation", "reserve", "hold", "paypal", "funds"] },
-    { label: "Transaction and delivery evidence", hints: ["transaction", "delivery", "tracking", "order"] },
-    { label: "Dispute and chargeback history", hints: ["dispute", "chargeback", "claim", "case"] },
-    { label: "Business and supplier documentation", hints: ["business", "supplier", "invoice", "document"] },
+    { label: "Reserve or limitation notice", hints: ["reserve", "limitation", "hold", "paypal"] },
+    { label: "Chargeback or dispute evidence", hints: ["chargeback", "dispute", "claim", "refund"] },
+    { label: "Transaction and delivery proof", hints: ["transaction", "tracking", "delivery", "proof"] },
+    { label: "Business verification documents", hints: ["business", "verification", "utility", "invoice"] },
   ],
   Stripe: [
-    { label: "Risk review or account notice", hints: ["stripe", "risk", "review", "restricted"] },
-    { label: "Chargeback and dispute evidence", hints: ["chargeback", "dispute", "refund", "claim"] },
-    { label: "Fulfillment and delivery evidence", hints: ["fulfillment", "delivery", "tracking", "order"] },
-    { label: "Business model and compliance evidence", hints: ["business", "model", "policy", "compliance"] },
+    { label: "Reserve or account review notice", hints: ["reserve", "review", "stripe", "restricted"] },
+    { label: "Chargeback evidence", hints: ["chargeback", "dispute", "refund"] },
+    { label: "Fulfillment proof", hints: ["delivery", "tracking", "order", "proof"] },
+    { label: "Business and product documentation", hints: ["business", "product", "policy", "verification"] },
   ],
 };
 
-const CASE_TYPES = [
-  "MC011 / proof of delivery",
-  "MC999 / selling restriction",
-  "Payout hold",
-  "Verification review",
-  "Policy violation",
-  "Amazon Section 3",
-  "Inauthentic / supplier documents",
-  "Poor selling activity",
-  "Product policy risk",
-  "Adult / restricted category",
-  "VeRO / IP complaint",
-  "Payment processor hold",
-  "Chargeback / dispute risk",
-  "General marketplace review",
-];
-
+const CASE_TYPES = ["MC011 / proof of delivery", "MC999 / permanent restriction", "BBE / poor buying experience", "Payout hold", "Verification review", "Policy violation", "VeRO / IP complaint", "Security concern", "Supplier documentation", "General marketplace review"];
 const SIGNALS = [
-  { term: "mc999", title: "Account-level restriction language detected", severity: "Critical" as Severity, points: 24, recommendation: "Prepare a full post-mortem and organize the complete evidence timeline." },
-  { term: "indefinite", title: "Long-term restriction language detected", severity: "Critical" as Severity, points: 22, recommendation: "Document the full sequence of events and avoid repeated unsupported appeals." },
-  { term: "poor selling", title: "Broad marketplace risk language detected", severity: "High" as Severity, points: 18, recommendation: "Review account-level operational patterns, not only visible seller metrics." },
-  { term: "tba", title: "Carrier-verification risk indicator detected", severity: "High" as Severity, points: 16, recommendation: "Strengthen delivery evidence with carrier-verifiable documentation wherever possible." },
-  { term: "amazon", title: "Supplier documentation risk indicator detected", severity: "High" as Severity, points: 14, recommendation: "Review whether fulfillment or supplier documents create evidence consistency issues." },
-  { term: "vero", title: "Brand or rights-owner complaint indicator detected", severity: "High" as Severity, points: 18, recommendation: "Review compliance exposure and document policy history." },
-  { term: "policy", title: "Policy exposure indicator detected", severity: "Medium" as Severity, points: 12, recommendation: "Map every policy notice into the account risk timeline." },
-  { term: "military", title: "Restricted-category indicator detected", severity: "High" as Severity, points: 18, recommendation: "Review restricted-category exposure and remove similar listings." },
+  { term: "mc999", title: "Account-level restriction language detected", severity: "Critical" as Severity, points: 24, recommendation: "Build a full post-mortem and avoid repeated unsupported appeals." },
+  { term: "bbe", title: "Bad buying experience language detected", severity: "High" as Severity, points: 18, recommendation: "Compare visible seller metrics with broader trust and experience signals." },
+  { term: "tba", title: "Carrier verification risk detected", severity: "High" as Severity, points: 16, recommendation: "Strengthen proof with carrier-verifiable delivery evidence." },
+  { term: "amazon", title: "Supplier source exposure detected", severity: "High" as Severity, points: 14, recommendation: "Review supplier dependency and invoice consistency." },
+  { term: "vero", title: "VeRO or IP complaint detected", severity: "High" as Severity, points: 18, recommendation: "Review brand, image, description and rights-owner exposure." },
+  { term: "policy", title: "Policy exposure detected", severity: "Medium" as Severity, points: 12, recommendation: "Map every policy event into the account timeline." },
+  { term: "adult", title: "Adult item category risk detected", severity: "High" as Severity, points: 17, recommendation: "Review category, imagery and listing language before relisting." },
+  { term: "military", title: "Restricted-category risk detected", severity: "High" as Severity, points: 18, recommendation: "Review restricted category exposure and remove similar listings." },
+  { term: "security", title: "Security concern language detected", severity: "Critical" as Severity, points: 22, recommendation: "Review identity, access, device and linked account consistency." },
+  { term: "chargeback", title: "Chargeback exposure detected", severity: "High" as Severity, points: 18, recommendation: "Review payment processor risk and chargeback prevention controls." },
   { term: "payout", title: "Payment review indicator detected", severity: "Medium" as Severity, points: 12, recommendation: "Review unresolved buyer, delivery and reserve-period exposure." },
-  { term: "section 3", title: "Marketplace verification risk indicator detected", severity: "Critical" as Severity, points: 24, recommendation: "Prepare supplier, authenticity and account health documentation." },
-  { term: "inauthentic", title: "Product authenticity risk indicator detected", severity: "High" as Severity, points: 18, recommendation: "Strengthen supplier invoices and authenticity evidence." },
-  { term: "counterfeit", title: "High-severity compliance language detected", severity: "Critical" as Severity, points: 25, recommendation: "Escalate to manual review before submitting additional documents." },
-  { term: "adult", title: "Adult or restricted product category detected", severity: "High" as Severity, points: 18, recommendation: "Review product-category policy, images and listing setup before relisting similar items." },
-  { term: "weapon", title: "Weapons or restricted item keyword detected", severity: "High" as Severity, points: 20, recommendation: "Review restricted product policies and remove related category exposure." },
-  { term: "chargeback", title: "Chargeback exposure detected", severity: "High" as Severity, points: 18, recommendation: "Review dispute ratio, refund flow and payment processor reserve risk." },
-  { term: "reserve", title: "Payment reserve signal detected", severity: "Medium" as Severity, points: 14, recommendation: "Review cash-flow exposure and unresolved buyer or delivery issues." },
-  { term: "vinted", title: "Vinted marketplace restriction signal detected", severity: "Medium" as Severity, points: 12, recommendation: "Review commercial activity classification and seller verification readiness." },
+  { term: "verification", title: "Verification requirement detected", severity: "Medium" as Severity, points: 12, recommendation: "Prepare ID, business, utility, warehouse and supplier documentation." },
 ];
-
-function normalize(value: string) {
-  return value.toLowerCase().replace(/[_-]+/g, " ");
-}
-
-function hasHint(fileNames: string[], hints: string[]) {
-  return fileNames.some((name) => hints.some((hint) => name.includes(hint)));
-}
-
-function scoreLabel(score: number) {
-  if (score >= 82) return "Critical Exposure";
-  if (score >= 65) return "High Exposure";
-  if (score >= 45) return "Elevated Exposure";
-  if (score >= 25) return "Moderate Exposure";
-  return "Low Exposure";
-}
-
-function scoreColor(score: number) {
-  if (score >= 82) return "text-red-200";
-  if (score >= 65) return "text-red-300";
-  if (score >= 45) return "text-orange-200";
-  if (score >= 25) return "text-yellow-200";
-  return "text-emerald-200";
-}
-
-function severityClass(severity: Severity) {
-  if (severity === "Critical") return "border-red-300/40 bg-red-500/15 text-red-100";
-  if (severity === "High") return "border-red-400/30 bg-red-500/10 text-red-200";
-  if (severity === "Medium") return "border-yellow-400/30 bg-yellow-500/10 text-yellow-200";
-  return "border-emerald-400/30 bg-emerald-500/10 text-emerald-200";
-}
+function normalize(value: string) { return value.toLowerCase().replace(/[_-]+/g, " "); }
+function hasHint(fileNames: string[], hints: string[]) { return fileNames.some((name) => hints.some((hint) => name.includes(hint))); }
+function scoreLabel(score: number) { if (score >= 82) return "Critical Exposure"; if (score >= 65) return "High Exposure"; if (score >= 45) return "Elevated Exposure"; if (score >= 25) return "Moderate Exposure"; return "Low Exposure"; }
+function severityClass(severity: Severity) { if (severity === "Critical") return "border-red-300/40 bg-red-500/15 text-red-100"; if (severity === "High") return "border-red-400/30 bg-red-500/10 text-red-200"; if (severity === "Medium") return "border-yellow-400/30 bg-yellow-500/10 text-yellow-200"; return "border-emerald-400/30 bg-emerald-500/10 text-emerald-200"; }
+function scoreColor(score: number) { if (score >= 82) return "text-red-100"; if (score >= 65) return "text-red-300"; if (score >= 45) return "text-orange-200"; if (score >= 25) return "text-yellow-200"; return "text-emerald-200"; }
 
 export default function IntakePage() {
   const [files, setFiles] = useState<File[]>([]);
@@ -165,312 +88,40 @@ export default function IntakePage() {
   const [caseType, setCaseType] = useState("MC011 / proof of delivery");
   const [submitted, setSubmitted] = useState(false);
   const [leadSaved, setLeadSaved] = useState(false);
-
   const requirements = MARKETPLACE_REQUIREMENTS[marketplace] || MARKETPLACE_REQUIREMENTS.eBay;
   const fileNames = useMemo(() => files.map((file) => normalize(file.name)), [files]);
-
-  const evidenceStatus = useMemo(() => {
-    return requirements.map((item) => ({
-      ...item,
-      present: hasHint(fileNames, item.hints),
-    }));
-  }, [fileNames, requirements]);
-
+  const evidenceStatus = useMemo(() => requirements.map((item) => ({ ...item, present: hasHint(fileNames, item.hints) })), [fileNames, requirements]);
   const findings = useMemo<Finding[]>(() => {
     const result: Finding[] = [];
-
-    if (!store.trim()) {
-      result.push({
-        title: "Missing store URL or seller name",
-        severity: "Medium",
-        points: 10,
-        detail: "A store URL or seller name helps connect the evidence to a specific marketplace profile.",
-        recommendation: "Add the store URL or seller handle before requesting manual review.",
-      });
-    }
-
-    if (files.length === 0) {
-      result.push({
-        title: "No evidence uploaded",
-        severity: "High",
-        points: 35,
-        detail: "A real assessment requires notices, tracking records, seller hub screenshots or payout messages.",
-        recommendation: "Upload at least one restriction notice, tracking report or account-health screenshot.",
-      });
-      return result;
-    }
-
-    const missing = evidenceStatus.filter((item) => !item.present);
-
-    missing.forEach((item) => {
-      result.push({
-        title: `${item.label} missing`,
-        severity: "Medium",
-        points: 11,
-        detail: `The uploaded file names do not indicate ${item.label.toLowerCase()}.`,
-        recommendation: `Add evidence related to ${item.label.toLowerCase()} to strengthen the assessment.`,
-      });
-    });
-
-    SIGNALS.forEach((item) => {
-      if (fileNames.some((name) => name.includes(item.term))) {
-        result.push({
-          title: item.title,
-          severity: item.severity,
-          points: item.points,
-          detail: "This signal may increase marketplace exposure and should be reviewed in the full report.",
-          recommendation: item.recommendation,
-        });
-      }
-    });
-
-    if (files.length < 3) {
-      result.push({
-        title: "Evidence package is thin",
-        severity: "Medium",
-        points: 10,
-        detail: "A stronger case usually includes notice, tracking, delivery proof and account screenshots.",
-        recommendation: "Upload a complete package before paying for a full investigation.",
-      });
-    }
-
-    if (caseType.includes("MC999") || caseType.includes("Section 3")) {
-      result.push({
-        title: "High severity case type",
-        severity: "High",
-        points: 18,
-        detail: "This case type usually involves account-level trust concerns, not only one order or one metric.",
-        recommendation: "Use post-mortem analysis and avoid repeated unsupported appeals.",
-      });
-    }
-
+    if (!store.trim()) result.push({ title: "Missing store URL or seller name", severity: "Medium", points: 10, detail: "A store URL or seller name helps connect the evidence to a specific marketplace profile.", recommendation: "Add the store URL or seller handle before requesting manual review." });
+    if (files.length === 0) return [{ title: "No evidence uploaded", severity: "High", points: 35, detail: "A real assessment requires notices, tracking records, account screenshots or payout messages.", recommendation: "Upload at least one restriction notice, tracking report or account-health screenshot." }];
+    evidenceStatus.filter((item) => !item.present).forEach((item) => result.push({ title: `${item.label} missing`, severity: "Medium", points: 10, detail: `The uploaded file names do not indicate ${item.label.toLowerCase()}.`, recommendation: `Add evidence related to ${item.label.toLowerCase()} to strengthen the assessment.` }));
+    SIGNALS.forEach((item) => { if (fileNames.some((name) => name.includes(item.term)) || normalize(caseType).includes(item.term)) result.push({ title: item.title, severity: item.severity, points: item.points, detail: "This signal may increase marketplace exposure and should be reviewed in the full report.", recommendation: item.recommendation }); });
+    if (files.length < 3) result.push({ title: "Evidence package is thin", severity: "Medium", points: 10, detail: "A stronger case usually includes notice, tracking, delivery proof and account screenshots.", recommendation: "Upload a complete package before paying for a full investigation." });
     return result;
   }, [files, store, evidenceStatus, fileNames, caseType]);
-
-  const score = useMemo(() => {
-    const base = files.length ? 16 : 0;
-    const total = findings.reduce((sum, item) => sum + item.points, base);
-    return Math.min(96, Math.max(files.length ? 18 : 0, total));
-  }, [files.length, findings]);
-
+  const score = useMemo(() => Math.min(96, Math.max(files.length ? 18 : 0, findings.reduce((sum, item) => sum + item.points, files.length ? 16 : 0))), [files.length, findings]);
   const progress = files.length === 0 ? 0 : Math.min(100, 25 + files.length * 12 + evidenceStatus.filter((item) => item.present).length * 12);
   const canAnalyze = files.length > 0;
-
   const saveLead = () => {
-    const lead = {
-      createdAt: new Date().toISOString(),
-      marketplace,
-      caseType,
-      store,
-      email,
-      files: files.map((file) => ({ name: file.name, size: file.size, type: file.type })),
-      score,
-      label: scoreLabel(score),
-      findings: findings.map((item) => item.title),
-    };
-
-    try {
-      const existing = JSON.parse(localStorage.getItem(LEADS_KEY) || "[]");
-      localStorage.setItem(LEADS_KEY, JSON.stringify([lead, ...existing].slice(0, 100)));
-      setLeadSaved(true);
-    } catch {
-      setLeadSaved(false);
-    }
+    const lead = { createdAt: new Date().toISOString(), marketplace, caseType, store, email, files: files.map((file) => ({ name: file.name, size: file.size, type: file.type })), score, label: scoreLabel(score), findings: findings.map((item) => item.title) };
+    try { const existing = JSON.parse(localStorage.getItem("shadowscore_leads_v2") || "[]"); localStorage.setItem("shadowscore_leads_v2", JSON.stringify([lead, ...existing].slice(0, 100))); setLeadSaved(true); } catch { setLeadSaved(false); }
   };
-
   return (
     <main className="min-h-screen overflow-hidden bg-black text-white">
       <div className="fixed inset-0 pointer-events-none opacity-[0.06] bg-[linear-gradient(to_right,#ffffff12_1px,transparent_1px),linear-gradient(to_bottom,#ffffff10_1px,transparent_1px)] bg-[size:76px_76px]" />
       <div className="fixed inset-0 pointer-events-none bg-[radial-gradient(circle_at_80%_0%,rgba(220,38,38,0.16),transparent_42%)]" />
-
-      <header className="relative z-10 border-b border-white/10 bg-black/85 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
-          <Link href="/" className="flex items-center gap-3 text-sm text-zinc-500 hover:text-white">
-            <img src="/shadowscore-shield-v8.png" alt="ShadowScore" className="h-8 w-8 object-contain" />
-            Back to ShadowScore
-          </Link>
-          <div className="rounded-full border border-red-400/25 bg-red-500/10 px-4 py-2 text-sm font-bold text-red-200">
-            Evidence-Based Trust Engine
-          </div>
-        </div>
-      </header>
-
-      <section className="relative z-10 mx-auto max-w-7xl px-6 py-14">
-        <div className="grid gap-10 lg:grid-cols-[.82fr_1.18fr]">
-          <div>
-            <div className="text-xs uppercase tracking-[0.45em] text-red-300">ShadowScore Trust Engine</div>
-            <h1 className="mt-6 text-5xl font-extrabold leading-tight">Marketplace Trust Assessment Console</h1>
-            <p className="mt-6 max-w-xl text-lg leading-8 text-zinc-400">
-              Upload real evidence and receive an instant preliminary score. Missing documents are flagged clearly instead of showing a fake result.
-            </p>
-
-            <div className="mt-10 rounded-3xl border border-white/10 bg-white/[0.035] p-6">
-              <div className="font-bold">Multi-marketplace evidence requirements</div>
-              <p className="mt-4 leading-7 text-zinc-400">
-                The required evidence changes by platform. eBay, Amazon, Walmart, Etsy, TikTok Shop, SHEIN, Vinted, Facebook Marketplace, Shopify, PayPal and Stripe all evaluate different trust and compliance signals.
-              </p>
-            </div>
-
-            <div className="mt-6 rounded-3xl border border-red-400/20 bg-red-500/[0.06] p-6">
-              <div className="font-bold text-red-200">Safe positioning</div>
-              <p className="mt-3 leading-7 text-zinc-400">
-                ShadowScore does not access marketplace internal systems and does not expose proprietary platform logic. The score is based on a private assessment framework using seller-supplied evidence and observable operational indicators.
-              </p>
-            </div>
-          </div>
-
-          <div className="rounded-[32px] border border-white/10 bg-black/55 p-6 shadow-[0_0_60px_rgba(120,0,20,0.16)] backdrop-blur-xl">
-            <div className="grid gap-5 md:grid-cols-2">
-              <label>
-                <div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">Marketplace</div>
-                <select value={marketplace} onChange={(e) => setMarketplace(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white">
-                  {Object.keys(MARKETPLACE_REQUIREMENTS).map((item) => <option key={item}>{item}</option>)}
-                </select>
-              </label>
-
-              <label>
-                <div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">Case type</div>
-                <select value={caseType} onChange={(e) => setCaseType(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white">
-                  {CASE_TYPES.map((item) => <option key={item}>{item}</option>)}
-                </select>
-              </label>
-
-              <label>
-                <div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">Store URL or seller name</div>
-                <input value={store} onChange={(e) => setStore(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white" placeholder="https://..." />
-              </label>
-
-              <label>
-                <div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">Email for report</div>
-                <input value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white" placeholder="you@example.com" />
-              </label>
-            </div>
-
-            <label className="mt-6 grid cursor-pointer place-items-center rounded-3xl border-2 border-dashed border-white/10 bg-white/[0.02] p-14 text-center hover:border-red-500/40">
-              <input type="file" multiple className="hidden" onChange={(e) => {
-                setSubmitted(false);
-                setLeadSaved(false);
-                setFiles(Array.from(e.target.files || []));
-              }} />
-              <div className="text-2xl font-extrabold">Drop evidence files here</div>
-              <div className="mt-3 text-zinc-500">PNG, JPG, CSV, PDF, DOCX, XLSX, HTML</div>
-              <div className="mt-5 text-sm font-bold text-red-300">Click to select files</div>
-            </label>
-
-            <div className="mt-6 rounded-2xl border border-white/10 p-5">
-              <div className="mb-3 flex items-center justify-between">
-                <div>
-                  <div className="text-xs uppercase tracking-[0.28em] text-zinc-500">Evidence completeness</div>
-                  <div className="mt-2 font-bold">{files.length ? "Evidence loaded" : "Waiting for evidence"}</div>
-                </div>
-                <div className="rounded-full border border-red-400/30 bg-red-500/10 px-4 py-2 text-sm font-bold text-red-200">
-                  {files.length} files
-                </div>
-              </div>
-              <div className="h-2 overflow-hidden rounded-full bg-white/10">
-                <div className="h-2 rounded-full bg-gradient-to-r from-red-800 via-red-500 to-red-300 transition-all duration-500" style={{ width: `${progress}%` }} />
-              </div>
-            </div>
-
-            <div className="mt-6 grid gap-4 md:grid-cols-2">
-              {evidenceStatus.map((item) => (
-                <div key={item.label} className={`rounded-2xl border p-4 ${item.present ? "border-emerald-400/25 bg-emerald-500/10" : "border-yellow-400/25 bg-yellow-500/10"}`}>
-                  <div className="text-sm font-bold">{item.present ? "✓ Present" : "Missing"}</div>
-                  <div className="mt-2 text-xs leading-5 text-zinc-400">{item.label}</div>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-              <div className="text-xs uppercase tracking-[0.28em] text-red-300">Evidence Queue</div>
-              <div className="mt-4 space-y-2 text-sm text-zinc-400">
-                {files.length ? files.map((file) => <div key={`${file.name}-${file.size}`}>• {file.name}</div>) : <div>No evidence uploaded yet.</div>}
-              </div>
-            </div>
-
-            {!canAnalyze && submitted && (
-              <div className="mt-6 rounded-2xl border border-red-400/25 bg-red-500/10 p-5 text-sm leading-7 text-red-100">
-                Assessment cannot run yet. Please upload at least one evidence file.
-              </div>
-            )}
-
-            <button
-              type="button"
-              onClick={() => setSubmitted(true)}
-              className="mt-6 block w-full rounded-2xl bg-red-600 px-7 py-5 text-center text-sm font-black uppercase tracking-[0.16em] shadow-[0_0_28px_rgba(220,38,38,0.28)] hover:bg-red-500"
-            >
-              Run Preliminary Assessment
-            </button>
-
-            {submitted && canAnalyze && (
-              <div className="mt-8 rounded-[28px] border border-red-400/20 bg-red-500/[0.06] p-6">
-                <div className="grid gap-6 md:grid-cols-[180px_1fr]">
-                  <div>
-                    <div className={`text-6xl font-black ${scoreColor(score)}`}>{score}</div>
-                    <div className="mt-3 text-sm font-bold text-white">{scoreLabel(score)}</div>
-                    <div className="mt-2 text-xs text-zinc-500">{marketplace} · {caseType}</div>
-                  </div>
-
-                  <div>
-                    <div className="text-xl font-bold">Preliminary findings</div>
-                    <div className="mt-4 space-y-3">
-                      {findings.length ? findings.map((finding) => (
-                        <div key={finding.title} className="rounded-2xl border border-white/10 bg-black/45 p-4">
-                          <div className="flex items-center justify-between gap-4">
-                            <div className="font-bold">{finding.title}</div>
-                            <div className={`rounded-full border px-3 py-1 text-xs ${severityClass(finding.severity)}`}>
-                              {finding.severity}
-                            </div>
-                          </div>
-                          <p className="mt-2 text-sm leading-6 text-zinc-400">{finding.detail}</p>
-                          <p className="mt-3 text-sm leading-6 text-red-100">Recommended action: {finding.recommendation}</p>
-                        </div>
-                      )) : (
-                        <div className="rounded-2xl border border-emerald-400/25 bg-emerald-500/10 p-4 text-sm text-emerald-100">
-                          No major preliminary gaps detected from the uploaded evidence package.
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-6 grid gap-3 md:grid-cols-3">
-                  <div className="rounded-2xl border border-white/10 bg-black/50 p-4">
-                    <div className="text-xs uppercase tracking-[0.25em] text-zinc-500">Evidence</div>
-                    <div className="mt-2 text-2xl font-bold">{Math.round(progress)}%</div>
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-black/50 p-4">
-                    <div className="text-xs uppercase tracking-[0.25em] text-zinc-500">Findings</div>
-                    <div className="mt-2 text-2xl font-bold">{findings.length}</div>
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-black/50 p-4">
-                    <div className="text-xs uppercase tracking-[0.25em] text-zinc-500">Next Step</div>
-                    <div className="mt-2 text-lg font-bold">Manual Review</div>
-                  </div>
-                </div>
-
-                <div className="mt-6 rounded-2xl border border-white/10 bg-black/50 p-5 text-sm leading-7 text-zinc-400">
-                  This preliminary score does not represent internal marketplace data and does not guarantee any marketplace outcome. It is designed to identify visible operational exposure and missing evidence.
-                </div>
-
-                <button
-                  type="button"
-                  onClick={saveLead}
-                  className="mt-6 block w-full rounded-2xl border border-white/10 bg-white/[0.04] px-7 py-4 text-center text-sm font-black uppercase tracking-[0.16em] hover:border-red-400/30"
-                >
-                  Save Lead Locally
-                </button>
-
-                {leadSaved && (
-                  <div className="mt-4 rounded-2xl border border-emerald-400/25 bg-emerald-500/10 p-4 text-center text-sm text-emerald-100">
-                    Lead saved in this browser. Open Leads from the header to review it.
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
+      <header className="relative z-10 border-b border-white/10 bg-black/85 backdrop-blur-xl"><div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5"><Link href="/" className="flex items-center gap-3 text-sm text-zinc-500 hover:text-white"><img src="/shadowscore-shield-v8.png" alt="ShadowScore" className="h-8 w-8 object-contain" />Back to ShadowScore</Link><div className="rounded-full border border-red-400/25 bg-red-500/10 px-4 py-2 text-sm font-bold text-red-200">Free Evidence-Based Scan</div></div></header>
+      <section className="relative z-10 mx-auto max-w-7xl px-6 py-14"><div className="grid gap-10 lg:grid-cols-[.82fr_1.18fr]"><div><div className="text-xs uppercase tracking-[0.45em] text-red-300">ShadowScore Trust Engine</div><h1 className="mt-6 text-5xl font-extrabold leading-tight">Free Marketplace Risk Scan</h1><p className="mt-6 max-w-xl text-lg leading-8 text-zinc-400">Upload evidence and receive an instant preliminary score. Missing documents are flagged clearly, so the result feels real and useful.</p><div className="mt-10 rounded-3xl border border-white/10 bg-white/[0.035] p-6"><div className="font-bold">Multi-marketplace evidence requirements</div><p className="mt-4 leading-7 text-zinc-400">The required evidence changes by platform. eBay, Amazon, Walmart, Etsy, TikTok Shop, Vinted, PayPal and Stripe all evaluate different trust and compliance signals.</p></div><div className="mt-6 rounded-3xl border border-red-400/20 bg-red-500/[0.06] p-6"><div className="font-bold text-red-200">Safe positioning</div><p className="mt-3 leading-7 text-zinc-400">ShadowScore does not access internal marketplace systems. The score is based on seller-supplied evidence, public marketplace rules and observable operational indicators.</p></div></div>
+      <div className="rounded-[32px] border border-white/10 bg-black/55 p-6 shadow-[0_0_60px_rgba(120,0,20,0.16)] backdrop-blur-xl"><div className="grid gap-5 md:grid-cols-2"><label><div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">Marketplace</div><select value={marketplace} onChange={(e) => setMarketplace(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white">{Object.keys(MARKETPLACE_REQUIREMENTS).map((item) => <option key={item}>{item}</option>)}</select></label><label><div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">Case type</div><select value={caseType} onChange={(e) => setCaseType(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white">{CASE_TYPES.map((item) => <option key={item}>{item}</option>)}</select></label><label><div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">Store URL or seller name</div><input value={store} onChange={(e) => setStore(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white" placeholder="https://..." /></label><label><div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">Email for report</div><input value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white" placeholder="you@example.com" /></label></div>
+      <label className="mt-6 grid cursor-pointer place-items-center rounded-3xl border-2 border-dashed border-white/10 bg-white/[0.02] p-14 text-center hover:border-red-500/40"><input type="file" multiple className="hidden" onChange={(e) => { setSubmitted(false); setLeadSaved(false); setFiles(Array.from(e.target.files || [])); }} /><div className="text-2xl font-extrabold">Drop evidence files here</div><div className="mt-3 text-zinc-500">PNG, JPG, CSV, PDF, DOCX, XLSX, HTML</div><div className="mt-5 text-sm font-bold text-red-300">Click to select files</div></label>
+      <div className="mt-6 rounded-2xl border border-white/10 p-5"><div className="mb-3 flex items-center justify-between"><div><div className="text-xs uppercase tracking-[0.28em] text-zinc-500">Evidence completeness</div><div className="mt-2 font-bold">{files.length ? "Evidence loaded" : "Waiting for evidence"}</div></div><div className="rounded-full border border-red-400/30 bg-red-500/10 px-4 py-2 text-sm font-bold text-red-200">{files.length} files</div></div><div className="h-2 overflow-hidden rounded-full bg-white/10"><div className="h-2 rounded-full bg-gradient-to-r from-red-800 via-red-500 to-red-300 transition-all duration-500" style={{ width: `${progress}%` }} /></div></div>
+      <div className="mt-6 grid gap-4 md:grid-cols-2">{evidenceStatus.map((item) => <div key={item.label} className={`rounded-2xl border p-4 ${item.present ? "border-emerald-400/25 bg-emerald-500/10" : "border-yellow-400/25 bg-yellow-500/10"}`}><div className="text-sm font-bold">{item.present ? "✓ Present" : "Missing"}</div><div className="mt-2 text-xs leading-5 text-zinc-400">{item.label}</div></div>)}</div>
+      <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-5"><div className="text-xs uppercase tracking-[0.28em] text-red-300">Evidence Queue</div><div className="mt-4 space-y-2 text-sm text-zinc-400">{files.length ? files.map((file) => <div key={`${file.name}-${file.size}`}>• {file.name}</div>) : <div>No evidence uploaded yet.</div>}</div></div>
+      {!canAnalyze && submitted && <div className="mt-6 rounded-2xl border border-red-400/25 bg-red-500/10 p-5 text-sm leading-7 text-red-100">Assessment cannot run yet. Please upload at least one evidence file.</div>}
+      <button type="button" onClick={() => setSubmitted(true)} className="mt-6 block w-full rounded-2xl bg-red-600 px-7 py-5 text-center text-sm font-black uppercase tracking-[0.16em] shadow-[0_0_28px_rgba(220,38,38,0.28)] hover:bg-red-500">Run Preliminary Assessment</button>
+      {submitted && canAnalyze && <div className="mt-8 rounded-[28px] border border-red-400/20 bg-red-500/[0.06] p-6"><div className="grid gap-6 md:grid-cols-[180px_1fr]"><div><div className={`text-6xl font-black ${scoreColor(score)}`}>{score}</div><div className="mt-3 text-sm font-bold text-white">{scoreLabel(score)}</div><div className="mt-2 text-xs text-zinc-500">{marketplace} · {caseType}</div></div><div><div className="text-xl font-bold">Preliminary findings</div><div className="mt-4 space-y-3">{findings.map((finding) => <div key={finding.title} className="rounded-2xl border border-white/10 bg-black/45 p-4"><div className="flex items-center justify-between gap-4"><div className="font-bold">{finding.title}</div><div className={`rounded-full border px-3 py-1 text-xs ${severityClass(finding.severity)}`}>{finding.severity}</div></div><p className="mt-2 text-sm leading-6 text-zinc-400">{finding.detail}</p><p className="mt-3 text-sm leading-6 text-red-100">Recommended action: {finding.recommendation}</p></div>)}</div></div></div><div className="mt-6 rounded-2xl border border-white/10 bg-black/50 p-5 text-sm leading-7 text-zinc-400">This preliminary score is not internal marketplace data. It is a direction signal based on uploaded evidence and visible indicators.</div><div className="mt-6 grid gap-3 md:grid-cols-2"><button type="button" onClick={saveLead} className="rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-4 text-sm font-bold text-white hover:border-red-400/30">Save Lead Locally</button><Link href="/#pricing" className="rounded-2xl bg-red-600 px-5 py-4 text-center text-sm font-black text-white hover:bg-red-500">Unlock Full Report</Link></div>{leadSaved && <div className="mt-4 rounded-2xl border border-emerald-400/25 bg-emerald-500/10 p-4 text-sm text-emerald-100">Lead saved locally in this browser.</div>}<PaymentButtons planName="Full Audit Report" price="$49" /></div>}
+      </div></div></section>
     </main>
   );
 }

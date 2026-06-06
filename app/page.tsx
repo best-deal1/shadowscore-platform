@@ -7,120 +7,89 @@ import PaymentButtons from "../components/PaymentButtons";
 const WHATSAPP_NUMBER = "972557293979";
 const TIKTOK_URL = "https://www.tiktok.com/@shadowscore8";
 
-const marketplaceCoverage = [
+const marketplaces = [
   { name: "eBay", logo: "eBay", className: "text-[#E53238]" },
   { name: "Amazon", logo: "amazon", className: "text-[#FF9900]" },
   { name: "Walmart", logo: "Walmart", className: "text-[#2E7BEF]" },
   { name: "Etsy", logo: "Etsy", className: "text-[#F1641E]" },
   { name: "TikTok Shop", logo: "TikTok", className: "text-white" },
   { name: "SHEIN", logo: "SHEIN", className: "text-white" },
-  { name: "Vinted", logo: "Vinted", className: "text-[#00B894]" },
-  { name: "Facebook Marketplace", logo: "Meta", className: "text-[#1877F2]" },
-  { name: "Shopify", logo: "Shopify", className: "text-[#95BF47]" },
-  { name: "PayPal", logo: "PayPal", className: "text-[#0070BA]" },
-  { name: "Stripe", logo: "Stripe", className: "text-[#635BFF]" },
+  { name: "Vinted", logo: "Vinted", className: "text-emerald-300" },
+  { name: "PayPal", logo: "PayPal", className: "text-sky-300" },
+  { name: "Stripe", logo: "Stripe", className: "text-violet-300" },
 ];
 
-const threatFeed = [
-  { platform: "eBay", event: "MC011 proof-of-delivery review patterns", signal: "Tracking integrity", severity: "High" },
-  { platform: "eBay", event: "MC999 restriction and appeal activity", signal: "Account trust", severity: "Elevated" },
-  { platform: "eBay", event: "Payout hold reports and managed payments reviews", signal: "Payout exposure", severity: "Elevated" },
-  { platform: "Amazon", event: "Seller verification and document rejection signals", signal: "Identity posture", severity: "Elevated" },
-  { platform: "Walmart", event: "Fulfillment consistency and seller review activity", signal: "Operational drift", severity: "Rising" },
-  { platform: "TikTok Shop", event: "New seller identity and compliance checks", signal: "Access behavior", severity: "Watchlist" },
-  { platform: "Vinted", event: "Commercial activity and seller-type restrictions", signal: "Business authenticity", severity: "Elevated" },
-  { platform: "PayPal", event: "Reserve, limitation and payment-flow reviews", signal: "Payment risk", severity: "Elevated" },
-  { platform: "Stripe", event: "Chargeback, dispute and processing-risk review", signal: "Payment risk", severity: "Rising" },
+const riskCategories = [
+  ["Performance Risk", "INR, late shipment, defects, feedback patterns and account-health movement."],
+  ["Policy Risk", "Marketplace policies, restricted behavior, category rules and listing compliance."],
+  ["Product Policy Risk", "Adult items, weapon-related accessories, medical claims and restricted product groups."],
+  ["VeRO / IP Risk", "Brand complaints, copyrighted images, trademark usage and rights-owner reports."],
+  ["Security Risk", "Login patterns, device changes, identity mismatch and linked-account exposure."],
+  ["Verification Risk", "Business license, ID, utility bill, warehouse proof and supplier documentation gaps."],
+  ["Supplier Risk", "Amazon, retail arbitrage, invoice quality, unauthorized distribution and sourcing consistency."],
+  ["Payment Risk", "PayPal reserve, Stripe reserve, chargebacks, payout holds and cashflow exposure."],
+  ["Community Reporting Risk", "Competitor reports, high-complaint categories and repeated listing takedowns."],
+];
+
+const intelligenceTopics = [
+  { platform: "eBay", event: "MC011 proof-of-delivery review patterns", signal: "Fulfillment", severity: "High" },
+  { platform: "eBay", event: "BBE restriction despite healthy visible metrics", signal: "Trust", severity: "Elevated" },
+  { platform: "eBay", event: "VeRO and rights-owner complaints", signal: "IP", severity: "High" },
+  { platform: "TikTok Shop", event: "Business verification and warehouse proof requests", signal: "Verification", severity: "Elevated" },
+  { platform: "Vinted", event: "Commercial activity restriction on Pro accounts", signal: "Policy", severity: "Rising" },
+  { platform: "PayPal", event: "Reserve and chargeback exposure", signal: "Payment", severity: "Elevated" },
 ];
 
 const plans = [
   {
-    name: "Store Risk Check",
+    name: "Free Risk Scan",
+    price: "$0",
+    sub: "instant preliminary scan",
+    desc: "Upload evidence and receive a basic risk map with missing documents and visible exposure areas.",
+    tag: "Start Here",
+    items: ["Basic ShadowScore", "Missing evidence flags", "Marketplace requirements", "Upgrade path to full report"],
+    button: "Start Free Scan",
+  },
+  {
+    name: "Full Audit Report",
     price: "$49",
-    sub: "24-hour exposure snapshot",
-    desc: "Fast risk assessment for sellers who want to understand their current marketplace exposure before taking action.",
-    tag: "",
-    items: ["ShadowScore rating", "Top 3 risk findings", "Executive PDF snapshot", "Recommended next actions"],
-    button: "Start Assessment",
-  },
-  {
-    name: "Account Review Analysis",
-    price: "$99",
-    sub: "rapid manual review",
-    desc: "Detailed review for sellers facing account reviews, payout holds, verification requests or policy concerns.",
+    sub: "downloadable report",
+    desc: "A deeper assessment with risk categories, evidence readiness and recommended actions.",
     tag: "Most Popular",
-    items: ["Manual case review", "Tracking integrity analysis", "Payout exposure review", "WhatsApp consultation", "Risk action plan"],
-    button: "Start Review",
+    items: ["Full risk breakdown", "PDF-style findings", "Action recommendations", "PayPal or card payment"],
+    button: "Unlock Report",
   },
   {
-    name: "Suspension Investigation",
+    name: "Case Investigation",
     price: "$199",
-    sub: "full case investigation",
-    desc: "Full investigation of marketplace events, evidence gaps and likely root causes.",
+    sub: "manual review",
+    desc: "Manual post-mortem for sellers facing restrictions, payout holds, policy issues or verification failures.",
     tag: "",
-    items: ["Evidence timeline", "Root cause analysis", "Appeal readiness check", "Executive report", "30-day protection"],
-    button: "Start Investigation",
+    items: ["Evidence timeline", "Likely trigger areas", "Appeal readiness review", "Consultation handoff"],
+    button: "Open Investigation",
   },
   {
-    name: "Continuous Store Monitoring",
+    name: "Continuous Monitoring",
     price: "$299",
     sub: "per month",
-    desc: "Continuous monitoring designed for sellers who cannot afford unexpected enforcement actions.",
+    desc: "Ongoing trust and risk monitoring for sellers who depend on multiple marketplaces.",
     tag: "",
-    items: ["Monthly trust review", "Risk feed access", "Operational intelligence", "Early warning detection", "WhatsApp support"],
+    items: ["Monthly risk review", "Policy exposure tracking", "Payment risk review", "Early warning guidance"],
     button: "Start Monitoring",
   },
 ];
 
 const faqItems = [
-  {
-    q: "What is ShadowScore?",
-    a: "ShadowScore is an independent Marketplace Trust Intelligence platform that helps sellers assess operational risk, evidence readiness and marketplace exposure across major marketplaces.",
-  },
-  {
-    q: "Is ShadowScore affiliated with eBay, Amazon, Walmart, Etsy, SHEIN, TikTok Shop, Vinted, Facebook Marketplace, Shopify, PayPal or Stripe?",
-    a: "No. ShadowScore is independent and is not affiliated with any marketplace. Marketplace names are displayed only to indicate supported coverage areas.",
-  },
-  {
-    q: "Does ShadowScore have access to internal marketplace systems?",
-    a: "No. ShadowScore does not access internal marketplace systems, algorithms or proprietary trust scores. Assessments are based on seller-provided evidence, public marketplace policies and observable operational indicators.",
-  },
-  {
-    q: "Can ShadowScore guarantee account recovery?",
-    a: "No. ShadowScore provides independent assessments and evidence reviews. No marketplace outcome can be guaranteed.",
-  },
-  {
-    q: "Can a store with good feedback still be restricted?",
-    a: "Yes. Visible metrics such as feedback, sales or seller level do not always reflect marketplace trust exposure. Platforms may also evaluate documentation quality, compliance, verification and fulfillment behavior.",
-  },
-  {
-    q: "What evidence is required?",
-    a: "Required evidence depends on the marketplace. Examples include review notices, payout hold messages, tracking exports, account health screenshots, supplier documents, policy warnings, buyer cases and delivery proof.",
-  },
-  {
-    q: "How is the ShadowScore assessment calculated?",
-    a: "ShadowScore uses a proprietary marketplace risk assessment framework that evaluates evidence quality, operational consistency, compliance indicators and marketplace-specific factors. The detailed scoring logic is private.",
-  },
-  {
-    q: "What marketplaces are supported?",
-    a: "Current coverage includes eBay, Amazon, Walmart, Etsy, TikTok Shop, SHEIN, Vinted, Facebook Marketplace, Shopify, PayPal and Stripe. Additional marketplaces may be added over time.",
-  },
-  {
-    q: "Do you need my marketplace password?",
-    a: "No. Initial reviews do not require marketplace credentials. A first assessment can begin with a store URL, screenshots, exports and operational context.",
-  },
-  {
-    q: "What happens after I upload evidence?",
-    a: "ShadowScore reviews the evidence package, identifies missing documents, maps visible risk areas and prepares recommendations for improving marketplace readiness.",
-  },
-  {
-    q: "Is my information secure?",
-    a: "Uploaded evidence is used only for assessment purposes. ShadowScore does not sell customer data and does not require marketplace login credentials.",
-  },
-  {
-    q: "What makes ShadowScore different?",
-    a: "Most services focus on recovery after enforcement. ShadowScore focuses on visibility, evidence readiness and operational trust before issues escalate.",
-  },
+  ["What is ShadowScore?", "ShadowScore is an independent Marketplace Trust Intelligence platform that helps sellers assess operational risk, evidence readiness and marketplace exposure across major marketplaces."],
+  ["Is ShadowScore affiliated with eBay, Amazon, Walmart, Etsy, SHEIN, Vinted or TikTok Shop?", "No. ShadowScore is independent. Marketplace names are shown only to indicate supported coverage areas."],
+  ["Does ShadowScore access internal marketplace systems?", "No. ShadowScore does not access internal marketplace data, algorithms or proprietary trust scores. Assessments are based on seller-supplied evidence, public marketplace policies and observable operational indicators."],
+  ["Can ShadowScore guarantee account recovery?", "No. ShadowScore does not guarantee marketplace outcomes. It helps sellers understand risk categories, evidence gaps and likely exposure areas."],
+  ["Can a seller with positive feedback still be restricted?", "Yes. Visible seller metrics do not always equal account safety. Marketplaces can evaluate compliance, verification, supplier, payment, security and trust indicators."],
+  ["What is BBE?", "BBE usually refers to bad buying experience. It can appear even when a seller believes visible metrics are healthy, because marketplace evaluation can include broader trust and risk signals."],
+  ["What is VeRO risk?", "VeRO risk relates to rights-owner complaints, trademark usage, copied images, copyrighted descriptions and brand enforcement on marketplace listings."],
+  ["What documents should I upload?", "Upload review notices, payout hold messages, tracking exports, delivery proof, account health screenshots, policy warnings, verification requests and supplier documents."],
+  ["Is this a recovery service?", "Recovery is not the main product. ShadowScore focuses on intelligence, evidence readiness and prevention. In some cases, sellers may be introduced to independent recovery consultants."],
+  ["How do payments work?", "ShadowScore supports PayPal, Payoneer, credit card and bank transfer. Live checkout links can be connected to PayPal or Stripe."],
 ];
 
 function severityClass(severity: string) {
@@ -135,56 +104,27 @@ function Badge({ severity }: { severity: string }) {
 }
 
 function Panel({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return (
-    <div className={`rounded-[34px] border border-white/10 bg-black/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_0_70px_rgba(120,0,20,0.16)] backdrop-blur-xl ${className}`}>
-      {children}
-    </div>
-  );
+  return <div className={`rounded-[34px] border border-white/10 bg-black/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_0_70px_rgba(120,0,20,0.16)] backdrop-blur-xl ${className}`}>{children}</div>;
 }
 
 export default function Home() {
-  const [selectedPlan, setSelectedPlan] = useState("Intelligence Review");
+  const [selectedPlan, setSelectedPlan] = useState("Full Audit Report");
   const [scanText, setScanText] = useState("");
-  const [showScanner, setShowScanner] = useState(false);
   const [showMoreFaq, setShowMoreFaq] = useState(false);
-
+  const visibleFaq = showMoreFaq ? faqItems : faqItems.slice(0, 6);
   const selected = useMemo(() => plans.find((plan) => plan.name === selectedPlan) || plans[1], [selectedPlan]);
-  const visibleFaq = showMoreFaq ? faqItems : faqItems.slice(0, 4);
 
   const buildWhatsappUrl = (planName = selectedPlan, store = scanText) => {
-    const message = `ShadowScore Audit Request
+    const message = `ShadowScore request
 
-Store / Seller:
-${store || "Not provided yet"}
+Store / Seller: ${store || "Not provided yet"}
+Selected Plan: ${planName}
 
-Selected Plan:
-${planName}
-
-Requested Review:
-Marketplace exposure and enforcement risk review
-
-Context:
-- Tracking drift review
-- Payout exposure review
-- Trust decay analysis
-- MC011 / MC999 / payout hold readiness
-- Action plan
-
-I would like to begin a private ShadowScore review.`;
-
+I would like to start a marketplace trust assessment.`;
     return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
   };
 
-  const openWhatsApp = (planName = selectedPlan) => {
-    window.open(buildWhatsappUrl(planName), "_blank", "noopener,noreferrer");
-  };
-
-  const handleScan = () => {
-    setShowScanner(true);
-    if (scanText.trim()) {
-      window.setTimeout(() => openWhatsApp(selectedPlan), 1600);
-    }
-  };
+  const openWhatsApp = (planName = selectedPlan) => window.open(buildWhatsappUrl(planName), "_blank", "noopener,noreferrer");
 
   return (
     <main className="min-h-screen overflow-hidden bg-black text-white">
@@ -194,40 +134,20 @@ I would like to begin a private ShadowScore review.`;
       <header className="sticky top-0 z-50 border-b border-white/10 bg-black/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 md:px-6">
           <Link href="/" className="flex items-center gap-3">
-            <img
-              src="/shadowscore-shield-v8.png?v=v40"
-              alt="ShadowScore shield"
-              className="h-10 w-10 rounded-xl object-contain bg-black p-1"
-            />
+            <img src="/shadowscore-shield-v8.png?v=v8" alt="ShadowScore shield" className="h-10 w-10 rounded-xl object-contain bg-black p-1" />
             <div className="leading-none">
-              <div className="text-2xl font-extrabold tracking-tight">
-                Shadow<span className="text-red-400">Score</span>
-              </div>
-              <div className="mt-1.5 text-[10px] uppercase tracking-[0.34em] text-zinc-500">
-                Marketplace Trust Intelligence
-              </div>
+              <div className="text-2xl font-extrabold tracking-tight">Shadow<span className="text-red-400">Score</span></div>
+              <div className="mt-1.5 text-[10px] uppercase tracking-[0.34em] text-zinc-500">Marketplace Trust Intelligence</div>
             </div>
           </Link>
-
-          <nav className="hidden items-center gap-10 text-sm text-zinc-400 md:flex">
-            <a href="#topics" className="transition hover:text-white">Topics</a>
-            <a href="#coverage" className="transition hover:text-white">Coverage</a>
-            <a href="#cases" className="transition hover:text-white">Cases</a>
-            <a href="#pricing" className="transition hover:text-white">Pricing</a>
-            <a href={TIKTOK_URL} target="_blank" rel="noreferrer" className="transition hover:text-white">TikTok</a>
-            <a href="#exposure" className="transition hover:text-white">Exposure</a>
-            <a href="/intake" className="text-red-300 transition hover:text-red-200">Console</a>
-            
-            
+          <nav className="hidden items-center gap-8 text-sm text-zinc-400 md:flex">
+            <a href="#risk-categories" className="hover:text-white">Risk Categories</a>
+            <a href="#cases" className="hover:text-white">Cases</a>
+            <a href="#pricing" className="hover:text-white">Pricing</a>
+            <a href={TIKTOK_URL} target="_blank" rel="noreferrer" className="hover:text-white">TikTok</a>
+            <Link href="/intake" className="text-red-300 hover:text-red-200">Free Scan</Link>
           </nav>
-
-          <button
-            type="button"
-            onClick={() => openWhatsApp(selectedPlan)}
-            className="rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold shadow-[0_0_22px_rgba(34,197,94,0.24)] transition hover:bg-emerald-500 md:px-6"
-          >
-            Talk With An Expert
-          </button>
+          <Link href="/intake" className="rounded-xl bg-red-600 px-5 py-3 text-sm font-bold shadow-[0_0_22px_rgba(220,38,38,0.28)] transition hover:bg-red-500">Free Risk Scan</Link>
         </div>
       </header>
 
@@ -236,148 +156,93 @@ I would like to begin a private ShadowScore review.`;
           <div className="max-w-2xl">
             <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-red-400/25 bg-red-500/8 px-4 py-2 text-sm text-red-200">
               <span className="h-2 w-2 rounded-full bg-red-400 shadow-[0_0_12px_rgba(248,113,113,0.8)]" />
-              Marketplace Trust Intelligence
+              Credit Score For Digital Marketplace Sellers
             </div>
-
             <h1 className="text-5xl font-extrabold leading-[1.02] tracking-tight md:text-6xl">
-              Most Marketplace Suspensions
-              <span className="mt-4 block text-red-400">
-                Leave Warning Signs.
-              </span>
+              See Marketplace Risk
+              <span className="mt-4 block text-red-400">Before Marketplaces Do.</span>
             </h1>
-
             <p className="mt-7 max-w-xl text-lg leading-8 text-zinc-400">
-              ShadowScore helps sellers identify marketplace risk before it becomes a payout hold, account review, verification request or restriction.
+              ShadowScore helps sellers understand trust, compliance, verification, payment and supplier risk across eBay, Amazon, Etsy, Walmart, TikTok Shop and more.
             </p>
-
             <div className="mt-6 max-w-2xl rounded-2xl border border-red-400/20 bg-red-500/[0.06] p-5 text-sm leading-7 text-red-100">
-              ShadowScore helps sellers assess exposure signals before a problem becomes a visible restriction, hold or review.
+              Sellers see orders, feedback and revenue. Marketplaces see risk. ShadowScore maps the gap before it becomes a restriction, hold or review.
             </div>
-
             <div className="mt-9 rounded-3xl border border-white/10 bg-black/55 p-5 backdrop-blur-xl">
               <div className="flex flex-col gap-3 md:flex-row">
-                <input
-                  value={scanText}
-                  onChange={(event) => setScanText(event.target.value)}
-                  placeholder="Paste store URL or seller username"
-                  className="flex-1 rounded-2xl border border-white/10 bg-black px-5 py-4 text-base text-white outline-none transition placeholder:text-zinc-600 focus:border-red-400"
-                />
-
-                <button
-                  type="button"
-                  onClick={handleScan}
-                  className="rounded-2xl bg-red-600 px-8 py-4 font-bold transition hover:bg-red-500"
-                >
-                  Check My Store Risk
-                </button>
+                <input value={scanText} onChange={(event) => setScanText(event.target.value)} placeholder="Paste store URL or seller username" className="flex-1 rounded-2xl border border-white/10 bg-black px-5 py-4 text-base text-white outline-none transition placeholder:text-zinc-600 focus:border-red-400" />
+                <Link href="/intake" className="rounded-2xl bg-red-600 px-8 py-4 text-center font-bold transition hover:bg-red-500">Free Risk Scan</Link>
               </div>
-
-              <div className="mt-4 text-sm text-zinc-500">
-                No password required • Evidence-based review • Independent risk assessment
-              </div>
+              <div className="mt-4 text-sm text-zinc-500">No password required • Evidence-based • Independent assessment</div>
             </div>
+            <div className="mt-8 flex flex-wrap gap-2 text-xs text-zinc-500">
+              {marketplaces.slice(0, 6).map((item) => <span key={item.name} className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-2">{item.name}</span>)}
+            </div>
+          </div>
 
-            <div className="mt-9 grid max-w-xl grid-cols-3 gap-3">
+          <Panel className="p-8">
+            <div className="text-sm uppercase tracking-[0.28em] text-red-300">Marketplace Trust Dashboard</div>
+            <div className="mt-5 grid gap-4">
               {[
-                ["Live", "Community Signals"],
-                ["12+", "Intelligence Layers"],
-                ["11", "Platforms"],
-              ].map(([value, label]) => (
-                <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                  <div className="text-xl font-bold text-white md:text-2xl">{value}</div>
-                  <div className="mt-1 text-xs text-zinc-500">{label}</div>
+                ["Overall Trust Score", "74", "Elevated exposure"],
+                ["Policy Exposure", "82", "Restricted category and policy signals"],
+                ["Supplier Risk", "68", "Invoice and sourcing consistency"],
+                ["Payment Risk", "79", "Reserve, hold and chargeback exposure"],
+              ].map(([title, value, text]) => (
+                <div key={title} className="rounded-2xl border border-white/10 bg-black/55 p-5">
+                  <div className="flex items-end justify-between gap-4">
+                    <div>
+                      <div className="text-xs uppercase tracking-[0.2em] text-zinc-500">{title}</div>
+                      <div className="mt-2 text-sm text-zinc-500">{text}</div>
+                    </div>
+                    <div className="text-4xl font-black text-red-300">{value}</div>
+                  </div>
+                  <div className="mt-4 h-1.5 rounded-full bg-white/10"><div className="h-1.5 w-3/4 rounded-full bg-gradient-to-r from-red-700 via-red-500 to-red-300" /></div>
                 </div>
               ))}
             </div>
-          </div>
-
-          <div className="relative lg:pl-4">
-            <div className="absolute inset-0 rounded-full bg-red-500/10 blur-3xl" />
-
-            <div className="relative min-h-[520px] overflow-hidden rounded-[36px] border border-white/10 bg-gradient-to-br from-red-950/20 via-black to-black p-10 shadow-[0_0_60px_rgba(180,20,35,0.12)]">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,40,60,0.14),transparent_55%)]" />
-
-              <div className="relative flex h-full min-h-[440px] flex-col items-center justify-center text-center">
-                <img
-                  src="/shadowscore-shield-v8.png?v=hero-v34"
-                  alt="ShadowScore cyber shield"
-                  className="h-auto w-[230px] max-w-full object-contain drop-shadow-[0_0_34px_rgba(220,38,38,0.22)] md:w-[270px]"
-                />
-
-                <div className="mt-8 text-4xl font-extrabold tracking-tight md:text-5xl">
-                  SHADOW<span className="text-red-400">SCORE</span>
-                </div>
-
-                <div className="mt-4 text-xs font-semibold uppercase tracking-[0.42em] text-zinc-500">
-                  Independent Marketplace Trust Intelligence
-                </div>
-
-                <div className="mt-8 h-px w-full max-w-md bg-gradient-to-r from-transparent via-red-500/70 to-transparent" />
-
-                <div className="mt-6 text-xs font-semibold uppercase tracking-[0.35em] text-zinc-400">
-                  Analyze exposure before the review escalates
-                </div>
-
-                <div id="coverage" className="mt-8 grid w-full max-w-lg grid-cols-3 gap-2 md:grid-cols-6">
-                  {marketplaceCoverage.map((item) => (
-                    <div
-                      key={item.name}
-                      className="group rounded-xl border border-white/10 bg-black/60 px-2 py-3 grayscale transition duration-500 hover:border-red-400/40 hover:bg-red-500/[0.06] hover:grayscale-0"
-                    >
-                      <div className={`text-sm font-black ${item.className} opacity-55 transition duration-500 group-hover:opacity-100 md:text-base`}>
-                        {item.logo}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+            <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-sm leading-7 text-zinc-400">
+              This is an independent assessment view. It does not represent internal marketplace data.
             </div>
-          </div>
+          </Panel>
         </div>
+      </section>
 
-        <section className="mt-12">
-          <Panel className="p-7">
-            <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-              <div>
-                <div className="text-sm text-red-300">Exposure Terminal</div>
-                <h2 className="mt-2 text-3xl font-bold">ShadowScore Risk View</h2>
-                <p className="mt-3 max-w-2xl leading-7 text-zinc-500">
-                  Private assessment of seller-supplied evidence, public patterns and operational risk indicators.
-                </p>
-              </div>
-
-              <div className="rounded-full border border-red-400/25 bg-red-500/10 px-4 py-2 text-sm text-red-200">
-                Independent Assessment
-              </div>
+      <section id="risk-categories" className="mx-auto max-w-7xl px-6 py-16">
+        <div className="text-center">
+          <div className="text-sm uppercase tracking-[0.28em] text-red-300">ShadowScore Framework</div>
+          <h2 className="mt-4 text-4xl font-bold">Nine Risk Families. One Marketplace Trust View.</h2>
+          <p className="mx-auto mt-4 max-w-3xl leading-7 text-zinc-500">Every case we analyze is mapped into a structured marketplace risk taxonomy.</p>
+        </div>
+        <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          {riskCategories.map(([title, body]) => (
+            <div key={title} className="rounded-[28px] border border-white/10 bg-white/[0.03] p-6">
+              <div className="text-xl font-bold text-white">{title}</div>
+              <p className="mt-4 leading-7 text-zinc-500">{body}</p>
             </div>
+          ))}
+        </div>
+      </section>
 
-            <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-4">
-              {[
-                ["Marketplace Trust", "Review Needed", "w-4/5"],
-                ["Tracking Integrity", "Assess", "w-3/5"],
-                ["Payout Stability", "Watchlist", "w-2/5"],
-                ["Policy Exposure", "Map Signals", "w-full"],
-              ].map(([title, status, width]) => (
-                <div key={title} className="rounded-2xl border border-white/10 bg-black/55 p-5 backdrop-blur-sm">
-                  <div className="flex items-center justify-between">
-                    <div className="text-xs uppercase tracking-[0.18em] text-zinc-500">
-                      {title}
-                    </div>
-                    <div className="h-2 w-2 rounded-full bg-red-400 shadow-[0_0_10px_rgba(248,113,113,0.8)]" />
-                  </div>
-
-                  <div className="mt-5 text-2xl font-semibold text-white">
-                    {status}
-                  </div>
-
-                  <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/5">
-                    <div className={`h-full ${width} rounded-full bg-gradient-to-r from-red-700 via-red-500 to-red-400`} />
-                  </div>
+      <section className="mx-auto max-w-7xl px-6 py-16">
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Panel className="p-8">
+            <div className="text-sm uppercase tracking-[0.28em] text-red-300">Marketplace Blind Spot</div>
+            <h2 className="mt-4 text-4xl font-bold">Seller Performance Does Not Always Equal Account Safety.</h2>
+            <p className="mt-5 leading-8 text-zinc-400">A seller can have positive feedback, delivered orders and healthy visible metrics, yet still face BBE, MC011, VeRO, verification review, payout hold or permanent selling restriction.</p>
+          </Panel>
+          <Panel className="p-8">
+            <div className="text-sm uppercase tracking-[0.28em] text-red-300">Trust Timeline</div>
+            <div className="mt-6 space-y-4">
+              {["Healthy sales", "Operational drift", "Policy or verification signal", "Marketplace review", "Restriction risk"].map((item, index) => (
+                <div key={item} className="flex items-center gap-4 rounded-2xl border border-white/10 bg-black/55 p-4">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full border border-red-400/30 bg-red-500/10 text-sm font-black text-red-200">{index + 1}</div>
+                  <div className="font-bold text-white">{item}</div>
                 </div>
               ))}
             </div>
           </Panel>
-        </section>
+        </div>
       </section>
 
       <section id="topics" className="mx-auto max-w-7xl px-6 py-16">
@@ -385,18 +250,13 @@ I would like to begin a private ShadowScore review.`;
           <div className="flex flex-col gap-6 border-b border-white/10 pb-7 md:flex-row md:items-end md:justify-between">
             <div>
               <div className="text-sm uppercase tracking-[0.28em] text-red-300">Marketplace Intelligence Topics</div>
-              <h2 className="mt-4 text-4xl font-bold">Common Marketplace Review Areas</h2>
-              <p className="mt-4 max-w-3xl leading-7 text-zinc-500">
-                Public marketplace incidents and seller-reported cases converted into structured risk-assessment topics. The assessment framework remains private.
-              </p>
+              <h2 className="mt-4 text-4xl font-bold">Real Issues Sellers Report Every Day</h2>
+              <p className="mt-4 max-w-3xl leading-7 text-zinc-500">Public seller reports are converted into structured risk categories. The internal scoring model stays private.</p>
             </div>
-            <div className="rounded-full border border-red-400/25 bg-red-500/10 px-4 py-2 text-sm font-bold text-red-200">
-              Public Signal Mapping
-            </div>
+            <div className="rounded-full border border-red-400/25 bg-red-500/10 px-4 py-2 text-sm font-bold text-red-200">Community Signals</div>
           </div>
-
           <div className="mt-7 grid gap-3">
-            {threatFeed.map((item) => (
+            {intelligenceTopics.map((item) => (
               <div key={item.event} className="grid gap-4 rounded-2xl border border-white/10 bg-black/60 p-5 md:grid-cols-[120px_1fr_150px_120px]">
                 <div className="font-bold text-zinc-300">{item.platform}</div>
                 <div className="font-semibold text-white">{item.event}</div>
@@ -410,172 +270,20 @@ I would like to begin a private ShadowScore review.`;
 
       <section id="cases" className="mx-auto max-w-7xl px-6 py-16">
         <div className="text-center">
-          <div className="text-sm uppercase tracking-[0.28em] text-red-300">Case Intelligence</div>
-          <h2 className="mt-4 text-4xl font-bold">Built From Real Marketplace Investigations</h2>
-          <p className="mx-auto mt-4 max-w-3xl leading-7 text-zinc-500">
-            ShadowScore does not sell shortcuts. It organizes signals, evidence and likely risk drivers into decision-ready assessment.
-          </p>
+          <div className="text-sm uppercase tracking-[0.28em] text-red-300">Case Library</div>
+          <h2 className="mt-4 text-4xl font-bold">No Fake Testimonials. Real Marketplace Patterns.</h2>
+          <p className="mx-auto mt-4 max-w-3xl leading-7 text-zinc-500">ShadowScore is built from observed marketplace cases, not invented success stories.</p>
         </div>
-
         <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
           {[
-            ["MC011", "Proof of delivery", "Tracking integrity, buyer confirmation and delivery evidence."],
-            ["MC999", "Account restriction", "Account trust, access signals and policy review."],
-            ["Payout Hold", "Managed payments", "Delivery confidence, order velocity and risk exposure."],
-            ["Verification", "Seller identity", "Document quality, business consistency and access behavior."],
-          ].map(([title, type, text]) => (
+            ["Above Standard", "Restricted despite healthy visible metrics."],
+            ["Delivered Orders", "Still entered review due to broader trust exposure."],
+            ["VeRO Complaint", "Listing removed after rights-owner report."],
+            ["TikTok Verification", "Business proof and warehouse evidence requested."],
+          ].map(([title, text]) => (
             <div key={title} className="rounded-[28px] border border-white/10 bg-white/[0.03] p-6">
-              <div className="text-3xl font-black text-red-300">{title}</div>
-              <div className="mt-3 text-xl font-bold">{type}</div>
+              <div className="text-2xl font-black text-red-300">{title}</div>
               <p className="mt-4 leading-7 text-zinc-500">{text}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-
-      <section className="mx-auto max-w-7xl px-6 py-16">
-        <Panel className="p-8">
-          <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
-            <div>
-              <div className="text-sm uppercase tracking-[0.28em] text-red-300">Marketplace Post-Mortem</div>
-              <h2 className="mt-4 text-4xl font-bold">Understand What Likely Happened</h2>
-              <p className="mt-5 leading-8 text-zinc-400">
-                Upload marketplace emails, tracking records, screenshots, appeal messages and policy notices. ShadowScore organizes the evidence into a clear risk narrative.
-              </p>
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              {[
-                ["Likely Trigger Areas", "Tracking, payout, policy, verification and trust signals."],
-                ["Missing Evidence", "What proof may have been weak, late or inconsistent."],
-                ["Risk Escalation Timeline", "How small issues may have accumulated into enforcement exposure."],
-                ["Next-Account Lessons", "Operational controls to avoid repeating the same risk pattern."],
-              ].map(([title, body]) => (
-                <div key={title} className="rounded-2xl border border-white/10 bg-black/55 p-5">
-                  <div className="font-bold text-white">{title}</div>
-                  <p className="mt-3 leading-7 text-zinc-500">{body}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </Panel>
-      </section>
-
-      
-      <section id="blindspot" className="mx-auto max-w-7xl px-6 py-16">
-        <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-          <Panel className="p-8">
-            <div className="text-sm uppercase tracking-[0.28em] text-red-300">The Marketplace Blind Spot</div>
-            <h2 className="mt-4 text-4xl font-bold">Sellers See Orders. Marketplaces See Risk.</h2>
-            <p className="mt-5 leading-8 text-zinc-400">
-              Good feedback, delivered orders and Above Standard status do not always mean low account risk. Marketplaces also evaluate trust, consistency, verification, policy exposure and fulfillment behavior.
-            </p>
-            <div className="mt-8 grid gap-4 md:grid-cols-2">
-              {[
-                ["Seller View", "Sales, feedback, orders, revenue and visible performance metrics."],
-                ["Marketplace View", "Trust signals, document quality, sourcing consistency and operational risk."],
-                ["The Gap", "Most sellers discover the gap only after MC011, MC999, payout hold or restriction."],
-                ["ShadowScore", "We map seller evidence into a practical trust-exposure picture."],
-              ].map(([title, body]) => (
-                <div key={title} className="rounded-2xl border border-white/10 bg-black/55 p-5">
-                  <div className="font-bold text-white">{title}</div>
-                  <p className="mt-3 leading-7 text-zinc-500">{body}</p>
-                </div>
-              ))}
-            </div>
-          </Panel>
-
-          <Panel className="p-8">
-            <div className="text-sm uppercase tracking-[0.28em] text-red-300">ShadowScore Engine</div>
-            <h2 className="mt-4 text-4xl font-bold">Risk Categories We Assess</h2>
-            <div className="mt-8 grid gap-4">
-              {[
-                ["Performance Risk", "INR, late shipment, feedback, defects and visible seller metrics."],
-                ["Policy Risk", "Marketplace policy notices, dropshipping rules and compliance history."],
-                ["Product Policy Risk", "Adult, weapons, medical claims, restricted products and category mapping."],
-                ["IP / VeRO Risk", "Copyright, trademark, brand complaints, copied images and product content."],
-                ["Security Risk", "Multiple accounts, VPN, device mismatch, identity and location consistency."],
-                ["Verification Risk", "Business license, utility bills, warehouse proof and identity verification."],
-                ["Supplier Risk", "Amazon sourcing, AliExpress, CJ, invoice quality and supplier dependency."],
-                ["Payment Risk", "PayPal, Stripe, chargebacks, reserves, payout holds and cash-flow exposure."],
-              ].map(([title, body]) => (
-                <div key={title} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-                  <div className="font-bold text-red-100">{title}</div>
-                  <p className="mt-2 leading-7 text-zinc-500">{body}</p>
-                </div>
-              ))}
-            </div>
-          </Panel>
-        </div>
-      </section>
-
-      <section id="exposure" className="mx-auto max-w-7xl px-6 py-16">
-        <div className="rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
-          <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
-            <div>
-              <div className="text-sm uppercase tracking-[0.28em] text-red-300">Exposure & Readiness Assistance</div>
-              <h2 className="mt-4 text-3xl font-bold">Facing A Review? Start With Evidence Readiness.</h2>
-              <p className="mt-4 max-w-3xl leading-7 text-zinc-400">
-                ShadowScore can help sellers assess evidence readiness, organize marketplace documentation and understand likely exposure areas. Where relevant, qualified sellers may be introduced to independent consultants. Results are never guaranteed.
-              </p>
-            </div>
-            <a href="/intake" className="rounded-2xl bg-red-600 px-7 py-4 text-center font-bold hover:bg-red-500">
-              Check Exposure Readiness
-            </a>
-          </div>
-        </div>
-      </section>
-
-
-      
-      <section className="mx-auto max-w-7xl px-6 py-16">
-        <div className="rounded-[34px] border border-red-400/20 bg-red-500/[0.06] p-8 shadow-[0_0_70px_rgba(120,0,20,0.16)]">
-          <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
-            <div>
-              <div className="text-sm uppercase tracking-[0.28em] text-red-300">Marketplace Trust</div>
-              <h2 className="mt-4 text-4xl font-bold">Revenue Problems Usually Start As Trust Problems</h2>
-              <p className="mt-5 leading-8 text-zinc-400">
-                Most marketplace restrictions, payout holds and compliance reviews are preceded by measurable risk signals. ShadowScore helps identify those signals before they affect your business.
-              </p>
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              {[
-                ["Operational Risk", "Fulfillment consistency, tracking quality and evidence gaps."],
-                ["Compliance Risk", "Policy exposure, IP complaints, restricted products and document issues."],
-                ["Cashflow Risk", "Payout holds, reserves and delayed funds release."],
-                ["Trust Drift", "Healthy-looking accounts can still accumulate hidden marketplace exposure."],
-              ].map(([title, body]) => (
-                <div key={title} className="rounded-2xl border border-white/10 bg-black/55 p-5">
-                  <div className="font-bold text-white">{title}</div>
-                  <p className="mt-3 leading-7 text-zinc-500">{body}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-
-      <section id="myths" className="mx-auto max-w-7xl px-6 py-16">
-        <div className="text-center">
-          <div className="text-sm uppercase tracking-[0.28em] text-red-300">Marketplace Myth Busters</div>
-          <h2 className="mt-4 text-4xl font-bold">Visible Performance Does Not Always Mean Account Safety</h2>
-          <p className="mx-auto mt-4 max-w-3xl leading-7 text-zinc-500">
-            Most sellers only see sales, feedback and orders. Marketplaces may also evaluate trust, compliance, identity, payment, supplier and policy exposure.
-          </p>
-        </div>
-        <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-          {[
-            ["Positive feedback means I am safe", "False", "Accounts can still enter review when other trust or compliance indicators are weak."],
-            ["Delivered orders remove all risk", "False", "Delivery is only one signal. Tracking quality, evidence and sourcing may still matter."],
-            ["Above Standard protects my account", "False", "Seller level does not fully reflect security, supplier, payment or policy exposure."],
-            ["Recovery is the main product", "False", "ShadowScore focuses on visibility and risk assessment. Recovery help is secondary and never guaranteed."],
-          ].map(([myth, verdict, body]) => (
-            <div key={myth} className="rounded-[28px] border border-white/10 bg-white/[0.03] p-6">
-              <div className="text-sm uppercase tracking-[0.22em] text-zinc-500">Myth</div>
-              <div className="mt-3 text-xl font-bold text-white">{myth}</div>
-              <div className="mt-5 text-2xl font-black text-red-300">{verdict}</div>
-              <p className="mt-4 leading-7 text-zinc-500">{body}</p>
             </div>
           ))}
         </div>
@@ -584,79 +292,44 @@ I would like to begin a private ShadowScore review.`;
       <section id="pricing" className="mx-auto max-w-7xl px-6 py-20">
         <div className="text-center">
           <div className="text-sm uppercase tracking-[0.28em] text-red-300">Pricing</div>
-          <h2 className="mt-4 text-4xl font-bold">Start With A Marketplace Audit. Upgrade Into Intelligence.</h2>
-          <p className="mx-auto mt-4 max-w-3xl text-zinc-500">
-            A low-friction entry point for sellers under pressure, with deeper intelligence for serious operators.
-          </p>
+          <h2 className="mt-4 text-4xl font-bold">Start Free. Pay Only When You Need The Full Report.</h2>
+          <p className="mx-auto mt-4 max-w-3xl text-zinc-500">Free scan creates the first trust map. Paid reports provide deeper findings and recommended actions.</p>
         </div>
-
         <div className="mt-12 grid items-stretch gap-6 lg:grid-cols-4">
           {plans.map((plan) => (
-            <div
-              key={plan.name}
-              onClick={() => setSelectedPlan(plan.name)}
-              className={`relative flex h-full min-h-[560px] cursor-pointer flex-col rounded-[30px] border p-6 transition-all duration-300 ${
-                selectedPlan === plan.name
-                  ? "border-red-400/65 bg-red-500/8 shadow-[0_0_38px_rgba(220,38,38,0.13)]"
-                  : "border-white/10 bg-white/[0.025] hover:border-white/20"
-              }`}
-            >
-              {plan.tag && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-red-400/40 bg-red-600 px-5 py-2 text-xs font-black uppercase tracking-[0.18em] text-white shadow-[0_0_28px_rgba(220,38,38,0.45)]">
-                  {plan.tag}
-                </div>
-              )}
-
-              <div className="flex min-h-[190px] flex-col">
+            <div key={plan.name} onClick={() => setSelectedPlan(plan.name)} className={`relative flex h-full min-h-[650px] cursor-pointer flex-col rounded-[30px] border p-6 transition-all duration-300 ${selectedPlan === plan.name ? "border-red-400/65 bg-red-500/8 shadow-[0_0_38px_rgba(220,38,38,0.13)]" : "border-white/10 bg-white/[0.025] hover:border-white/20"}`}>
+              {plan.tag && <div className="absolute -top-4 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-red-400/40 bg-red-600 px-5 py-2 text-xs font-black uppercase tracking-[0.18em] text-white shadow-[0_0_28px_rgba(220,38,38,0.45)]">{plan.tag}</div>}
+              <div className="flex min-h-[210px] flex-col">
                 <div className="text-xl font-bold">{plan.name}</div>
-                <div className="mt-7 flex items-end gap-3">
-                  <div className="text-4xl font-bold tracking-tight text-white">{plan.price}</div>
-                </div>
+                <div className="mt-7 text-4xl font-bold tracking-tight text-white">{plan.price}</div>
                 <div className="mt-2 text-sm text-zinc-500">{plan.sub}</div>
                 <p className="mt-6 leading-7 text-zinc-400">{plan.desc}</p>
               </div>
-
               <div className="mt-8 flex-1 space-y-4">
-                {plan.items.map((item) => (
-                  <div key={item} className="flex items-start gap-3 text-zinc-300">
-                    <div className="mt-1 text-red-300">✓</div>
-                    <div>{item}</div>
-                  </div>
-                ))}
+                {plan.items.map((item) => <div key={item} className="flex items-start gap-3 text-zinc-300"><div className="mt-1 text-red-300">✓</div><div>{item}</div></div>)}
               </div>
-
-              <PaymentButtons planName={plan.name} price={plan.price} />
+              <div onClick={(event) => event.stopPropagation()}>
+                {plan.price === "$0" ? <Link href="/intake" className="mt-6 block rounded-2xl bg-red-600 px-5 py-3 text-center text-sm font-black text-white hover:bg-red-500">Start Free Scan</Link> : <PaymentButtons planName={plan.name} price={plan.price} />}
+              </div>
             </div>
           ))}
         </div>
-
-        <div className="mx-auto mt-8 max-w-4xl rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center text-sm leading-7 text-zinc-500">
-          ShadowScore provides independent marketplace risk assessments based on seller-supplied information and publicly observable marketplace behavior. ShadowScore does not have access to internal marketplace systems and is not affiliated with eBay, Amazon, Walmart, Etsy, SHEIN, TikTok Shop, Vinted, Facebook Marketplace, Shopify, PayPal or Stripe.
-        </div>
+        <div className="mx-auto mt-8 max-w-4xl rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center text-sm leading-7 text-zinc-500">Accepted payments: PayPal, Payoneer, Visa, Mastercard, American Express and bank transfer. ShadowScore is independent and does not access internal marketplace systems.</div>
       </section>
 
       <section className="relative overflow-hidden border-t border-white/10 py-20">
         <div className="relative z-10 mx-auto max-w-7xl px-6">
           <div className="mb-10 text-center">
-            <div className="text-sm uppercase tracking-[0.28em] text-red-300">
-              Active Marketplace Intelligence Network
-            </div>
-            <h2 className="mt-4 text-4xl font-bold text-white">Platforms Under Behavioral Monitoring</h2>
-            <p className="mx-auto mt-4 max-w-3xl leading-7 text-zinc-400">
-              ShadowScore monitors marketplace exposure across multiple seller ecosystems before visible enforcement actions happen.
-            </p>
+            <div className="text-sm uppercase tracking-[0.28em] text-red-300">Marketplace Coverage</div>
+            <h2 className="mt-4 text-4xl font-bold text-white">Built For Multi-Platform Sellers</h2>
           </div>
-
-          <div className="mx-auto max-w-6xl overflow-hidden rounded-[28px] border border-white/10 bg-black/80 shadow-[0_0_42px_rgba(220,38,38,0.10)]">
-            <img
-              src="/marketplaces-monitor-v8.png?v=market-v34"
-              alt="Marketplaces monitored by ShadowScore including eBay, Amazon, Walmart, SHEIN, TikTok Shop and Etsy"
-              className="h-auto w-full grayscale transition duration-700 hover:grayscale-0 hover:saturate-125"
-            />
-          </div>
-
-          <div className="mt-8 text-center text-sm text-zinc-500">
-            Marketplace names are displayed for monitoring coverage only. ShadowScore is independent and not affiliated with these platforms.
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-9">
+            {marketplaces.map((item) => (
+              <div key={item.name} className="group rounded-2xl border border-white/10 bg-black/60 px-3 py-5 text-center grayscale transition duration-500 hover:border-red-400/40 hover:bg-red-500/[0.06] hover:grayscale-0">
+                <div className={`text-lg font-black ${item.className} opacity-55 transition group-hover:opacity-100`}>{item.logo}</div>
+                <div className="mt-2 text-[10px] uppercase tracking-[0.16em] text-zinc-600 group-hover:text-zinc-300">{item.name}</div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -664,163 +337,32 @@ I would like to begin a private ShadowScore review.`;
       <section className="mx-auto max-w-5xl px-6 py-20">
         <div className="text-center">
           <div className="text-sm uppercase tracking-[0.28em] text-red-300">FAQ</div>
-          <h2 className="mt-4 text-4xl font-bold">
-            Questions Marketplace Operators Ask Before Enforcement Begins
-          </h2>
+          <h2 className="mt-4 text-4xl font-bold">Professional Questions. Direct Answers.</h2>
         </div>
-
         <div className="mt-12 space-y-4">
-          {visibleFaq.map((faq) => (
-            <details key={faq.q} className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
-              <summary className="cursor-pointer text-lg font-semibold">{faq.q}</summary>
-              <p className="mt-4 leading-7 text-zinc-400">{faq.a}</p>
-            </details>
-          ))}
+          {visibleFaq.map(([q, a]) => <details key={q} className="rounded-2xl border border-white/10 bg-white/[0.03] p-6"><summary className="cursor-pointer text-lg font-semibold">{q}</summary><p className="mt-4 leading-7 text-zinc-400">{a}</p></details>)}
         </div>
-
-        {!showMoreFaq && (
-          <div className="mt-8 text-center">
-            <button
-              type="button"
-              onClick={() => setShowMoreFaq(true)}
-              className="rounded-xl border border-white/10 px-7 py-3.5 text-zinc-300 transition hover:border-red-400/30 hover:text-white"
-            >
-              Show More Questions
-            </button>
-          </div>
-        )}
+        {!showMoreFaq && <div className="mt-8 text-center"><button type="button" onClick={() => setShowMoreFaq(true)} className="rounded-xl border border-white/10 px-7 py-3.5 text-zinc-300 transition hover:border-red-400/30 hover:text-white">Show More Questions</button></div>}
       </section>
 
-      <section className="mx-auto max-w-7xl px-6 py-16">
-        <div className="rounded-[32px] border border-red-400/20 bg-red-500/[0.06] p-8">
-          <div className="grid items-center gap-8 lg:grid-cols-[1fr_auto]">
-            <div>
-              <div className="text-sm uppercase tracking-[0.28em] text-red-300">
-                Private Intelligence Console
-              </div>
-              <h2 className="mt-4 text-3xl font-bold">
-                Submit Evidence. Review Exposure. Generate A Private Report.
-              </h2>
-              <p className="mt-4 max-w-2xl leading-7 text-zinc-400">
-                The console shows how approved sellers submit screenshots, tracking exports and marketplace notices before receiving exposure analysis.
-              </p>
-            </div>
-
-            <a
-              href="/intake"
-              className="rounded-2xl bg-red-600 px-7 py-4 text-center font-semibold transition hover:bg-red-500"
-            >
-              Enter Console
-            </a>
-          </div>
-        </div>
-      </section>
-
-      
-      <section id="contact" className="mx-auto max-w-5xl px-6 py-20 text-center">
+      <section className="mx-auto max-w-5xl px-6 py-20 text-center">
         <div className="rounded-[34px] border border-white/10 bg-white/[0.03] p-10">
-          <div className="text-sm uppercase tracking-[0.28em] text-red-300">Contact ShadowScore</div>
-          <h2 className="mt-4 text-4xl font-bold">Request A Private Review</h2>
-          <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-zinc-400">
-            Private exposure reviews for serious marketplace operators.
-          </p>
-
+          <div className="text-sm uppercase tracking-[0.28em] text-red-300">Early Access</div>
+          <h2 className="mt-4 text-4xl font-bold">Join The Marketplace Trust Intelligence Layer</h2>
+          <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-zinc-400">No fake reviews. No recovery promises. Just a sharper way to understand marketplace risk before it hurts the business.</p>
           <div className="mt-10 flex flex-col items-center justify-center gap-4 md:flex-row">
-            <button
-              type="button"
-              onClick={() => openWhatsApp(selectedPlan)}
-              className="rounded-xl bg-emerald-600 px-8 py-4 font-bold text-white shadow-[0_0_26px_rgba(34,197,94,0.24)] transition hover:bg-emerald-500"
-            >
-              Talk With An Expert on WhatsApp
-            </button>
-
-            <a
-              href={TIKTOK_URL}
-              target="_blank"
-              rel="noreferrer"
-              className="rounded-xl border border-white/10 px-8 py-4 text-zinc-300 transition hover:border-red-400/30 hover:text-white"
-            >
-              TikTok Intelligence Feed
-            </a>
+            <Link href="/intake" className="rounded-xl bg-red-600 px-8 py-4 font-bold transition hover:bg-red-500">Start Free Risk Scan</Link>
+            <button type="button" onClick={() => openWhatsApp(selected.name)} className="rounded-xl border border-white/10 px-8 py-4 text-zinc-300 transition hover:border-red-400/30 hover:text-white">Open WhatsApp Chat</button>
           </div>
         </div>
-
-        <div className="mt-10 text-sm text-zinc-600">
-          © 2026 ShadowScore. Marketplace Trust Intelligence. All rights reserved.<br />Independent Marketplace Risk Intelligence Platform.
+        <div className="mt-10 flex flex-wrap items-center justify-center gap-5 text-sm text-zinc-600">
+          <Link href="/about" className="hover:text-white">About</Link>
+          <Link href="/privacy" className="hover:text-white">Privacy</Link>
+          <Link href="/terms" className="hover:text-white">Terms</Link>
+          <Link href="/security" className="hover:text-white">Security</Link>
+          <a href={TIKTOK_URL} target="_blank" rel="noreferrer" className="hover:text-white">TikTok</a>
         </div>
       </section>
-
-      {showScanner && (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/90 px-6 backdrop-blur-xl">
-          <div className="max-h-[88vh] w-full max-w-2xl overflow-y-auto rounded-[30px] border border-red-400/20 bg-black p-8">
-            <div className="text-sm uppercase tracking-[0.25em] text-red-300">Exposure Scan Initiated</div>
-
-            <div className="mt-6 rounded-2xl border border-white/10 bg-black/60 p-5">
-              <div className="text-sm text-zinc-500">Store URL</div>
-              <div className="mt-3 break-all text-xl">{scanText || "Missing store URL"}</div>
-            </div>
-
-            {!scanText.trim() && (
-              <div className="mt-5 rounded-2xl border border-yellow-400/25 bg-yellow-500/10 p-4 text-sm leading-7 text-yellow-100">
-                Add a store URL or seller username to generate a more useful intelligence request.
-              </div>
-            )}
-
-            <div className="mt-8 space-y-4 text-zinc-400">
-              {[
-                ["Reading marketplace signals", 72],
-                ["Checking tracking exposure", 58],
-                ["Analyzing review exposure", 81],
-                ["Preparing private audit request", 100],
-              ].map(([label, progress]) => (
-                <div key={label as string}>
-                  <div className="mb-2 flex justify-between text-sm">
-                    <span>● {label}</span>
-                    <span>{progress}%</span>
-                  </div>
-                  <div className="h-1.5 rounded-full bg-white/10">
-                    <div className="h-1.5 rounded-full bg-gradient-to-r from-red-700 via-red-500 to-red-300" style={{ width: `${progress}%` }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-8 rounded-3xl border border-red-400/20 bg-red-500/8 p-7">
-              <div className="text-6xl font-bold text-red-400">{scanText.trim() ? Math.max(41, Math.min(84, 41 + (scanText.length * 7) % 44)) : "--"}</div>
-              <div className="mt-4 text-2xl font-bold">Exposure Preview</div>
-              <p className="mt-4 leading-7 text-zinc-400">
-                This public scan is intentionally limited. A full private audit requires seller context, screenshots and operational exports.
-              </p>
-              <div className="mt-5 text-sm text-zinc-500">Selected plan: {selected.name}</div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setShowScanner(false)}
-              className="mt-7 w-full rounded-xl border border-white/10 px-7 py-3.5 text-zinc-300 transition hover:border-red-400/30 hover:text-white"
-            >
-              Back To Site
-            </button>
-          </div>
-        </div>
-      )}
-
-      <section className="mx-auto max-w-7xl px-6 py-12">
-        <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-6">
-          <div className="text-sm uppercase tracking-[0.28em] text-red-300">Legal & Trust</div>
-          <div className="mt-5 flex flex-wrap gap-5 text-sm text-zinc-400">
-            <a href="/about" className="hover:text-white">About</a>
-            <a href="/privacy" className="hover:text-white">Privacy Policy</a>
-            <a href="/terms" className="hover:text-white">Terms of Service</a>
-            <a href="/security" className="hover:text-white">Security & Data Handling</a>
-            <a href="https://www.tiktok.com/@shadowscore8" target="_blank" rel="noreferrer" className="hover:text-white">TikTok</a>
-          </div>
-          <p className="mt-5 max-w-4xl text-sm leading-7 text-zinc-500">
-            ShadowScore provides independent marketplace trust assessments based on seller-supplied information and publicly observable marketplace behavior. ShadowScore does not have access to internal marketplace systems and is not affiliated with eBay, Amazon, Walmart, Etsy, SHEIN, TikTok Shop, Vinted, Facebook Marketplace, Shopify, PayPal or Stripe.
-          </p>
-        </div>
-      </section>
-
     </main>
   );
 }

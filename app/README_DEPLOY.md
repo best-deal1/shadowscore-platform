@@ -1,33 +1,35 @@
-# ShadowScore V6.1 Risk Framework + Payments Update
+# ShadowScore V8 Marketplace Trust Intelligence
 
-What was updated:
-- Green business-style WhatsApp CTA: "Talk With An Expert".
-- Payment selector upgraded to branded payment tiles: PayPal, Credit Card, Payoneer, Bank Transfer.
-- PayPal direct checkout remains active.
-- Credit Card, Payoneer and Bank Transfer open secure WhatsApp payment requests.
-- Marketplace coverage expanded beyond eBay: Amazon, Walmart, Etsy, TikTok Shop, SHEIN, Vinted, Facebook Marketplace, Shopify, PayPal and Stripe.
-- Risk framework expanded to 8 categories:
-  - Performance Risk
-  - Policy Risk
-  - Product Policy Risk
-  - IP / VeRO Risk
-  - Security Risk
-  - Verification Risk
-  - Supplier Risk
-  - Payment Risk
-- Added Marketplace Myth Busters section instead of fake testimonials.
-- Intake engine expanded with requirements for Vinted, Facebook Marketplace, Shopify, PayPal and Stripe.
-- Intake signals expanded for restricted products, adult categories, weapons, chargebacks, reserves and Vinted cases.
-- Kept safe positioning: no internal marketplace access claims, no recovery guarantees, scoring logic remains private.
+What changed:
+- Stronger category: Marketplace Trust Intelligence.
+- New hero: See Marketplace Risk Before Marketplaces Do.
+- Free Risk Scan funnel added as the main CTA.
+- Payment options added: PayPal, Payoneer, Visa, Mastercard, Amex and bank transfer.
+- Risk framework expanded to 9 families:
+  1. Performance Risk
+  2. Policy Risk
+  3. Product Policy Risk
+  4. VeRO / IP Risk
+  5. Security Risk
+  6. Verification Risk
+  7. Supplier Risk
+  8. Payment Risk
+  9. Community Reporting Risk
+- Intake engine expanded to eBay, Amazon, Walmart, Etsy, TikTok Shop, Vinted, PayPal and Stripe.
+- Intake now validates missing evidence and produces preliminary findings.
+- FAQ expanded with BBE, VeRO, recovery and payment answers.
+- Case library added without fake testimonials.
+- About, Privacy, Terms and Security pages strengthened.
+- OpenGraph metadata updated.
 
-Files changed:
-- app/page.tsx
-- app/intake/page.tsx
-- components/PaymentButtons.tsx
-- components/ShadowScoreLayout.tsx
+Important:
+- This does not claim access to internal marketplace systems.
+- It does not promise account recovery.
+- It keeps scoring logic private while giving users useful findings.
 
 Deploy:
 npm run build
+npm run lint
 git add .
-git commit -m "Update ShadowScore V6.1 risk framework and payments"
+git commit -m "Upgrade ShadowScore V8 marketplace trust intelligence"
 git push origin main
