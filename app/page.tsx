@@ -47,7 +47,7 @@ const plans = [
     sub: "complimentary assessment",
     desc: "Upload evidence and receive a basic risk map with missing documents and visible exposure areas.",
     tag: "Start Here",
-    items: ["Basic ShadowScore", "Missing evidence flags", "Marketplace requirements", "Upgrade path to full report"],
+    items: ["Basic ShadowScore", "Missing evidence flags", "Marketplace requirements", "Report download available for $9.90"],
     button: "Start Risk Assessment",
   },
   {
@@ -292,8 +292,8 @@ I would like to start a marketplace trust assessment.`;
       <section id="pricing" className="mx-auto max-w-7xl px-6 py-20">
         <div className="text-center">
           <div className="text-sm uppercase tracking-[0.28em] text-red-300">Pricing</div>
-          <h2 className="mt-4 text-4xl font-bold">Start Free. Pay Only When You Need The Full Report.</h2>
-          <p className="mx-auto mt-4 max-w-3xl text-zinc-500">Free scan creates the first trust map. Paid reports provide deeper findings and recommended actions.</p>
+          <h2 className="mt-4 text-4xl font-bold">Scan Free. Download The Report Only If It Helps.</h2>
+          <p className="mx-auto mt-4 max-w-3xl text-zinc-500">The initial scan is free. If the findings are useful, unlock the downloadable report for $9.90 or upgrade to a full audit.</p>
         </div>
         <div className="mt-12 grid items-stretch gap-6 lg:grid-cols-4">
           {plans.map((plan) => (
@@ -309,7 +309,7 @@ I would like to start a marketplace trust assessment.`;
                 {plan.items.map((item) => <div key={item} className="flex items-start gap-3 text-zinc-300"><div className="mt-1 text-red-300">✓</div><div>{item}</div></div>)}
               </div>
               <div onClick={(event) => event.stopPropagation()}>
-                {plan.price === "$0" ? <Link href="/intake" className="mt-6 block rounded-2xl bg-red-600 px-5 py-3 text-center text-sm font-black text-white hover:bg-red-500">Start Free Scan</Link> : <PaymentButtons planName={plan.name} price={plan.price} />}
+                {plan.name.includes("Free") ? <Link href="/intake" className="mt-6 block rounded-2xl bg-emerald-600 px-5 py-3 text-center text-sm font-black text-white shadow-[0_0_22px_rgba(16,185,129,0.28)] hover:bg-emerald-500">Start Scan</Link> : <PaymentButtons planName={plan.name} price={plan.price} />}
               </div>
             </div>
           ))}
@@ -352,8 +352,11 @@ I would like to start a marketplace trust assessment.`;
           <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-zinc-400">No fake reviews. No recovery promises. Just a sharper way to understand marketplace risk before it hurts the business.</p>
           <div className="mt-10 flex flex-col items-center justify-center gap-4 md:flex-row">
             <Link href="/intake" className="rounded-xl bg-red-600 px-8 py-4 font-bold transition hover:bg-red-500">Start Free Risk Scan</Link>
-            <button type="button" onClick={() => openWhatsApp(selected.name)} className="rounded-xl border border-white/10 px-8 py-4 text-zinc-300 transition hover:border-red-400/30 hover:text-white">Open WhatsApp Chat</button>
+            <button type="button" onClick={() => openWhatsApp(selected.name)} className="rounded-xl border border-white/10 px-8 py-4 text-zinc-300 transition hover:border-red-400/30 hover:text-white">Talk To A Marketplace Risk Analyst</button>
           </div>
+        </div>
+        <div className="mx-auto mt-8 max-w-4xl rounded-2xl border border-white/10 bg-black/35 p-4 text-center text-xs leading-6 text-zinc-500">
+          ShadowScore provides independent marketplace risk intelligence only. It does not guarantee account recovery, payment release or legal outcomes. Users remain responsible for their own marketplace actions, submissions and business decisions.
         </div>
         <div className="mt-10 flex flex-wrap items-center justify-center gap-5 text-sm text-zinc-600">
           <Link href="/about" className="hover:text-white">About</Link>

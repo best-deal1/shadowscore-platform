@@ -1,30 +1,18 @@
-# ShadowScore V4 Full Day Updates
+# ShadowScore V8.4 Checkout + Legal Cleanup
 
-Files included:
-- app/page.tsx
-- app/head.tsx
-- app/intake/page.tsx
-- components/ShadowScoreLayout.tsx
+## Fixed
+- Removed visible referral/debug language such as "Referral detected: partner".
+- Renamed checkout wording to "Secure Payment Request".
+- Made WhatsApp CTA more inviting: "Talk To A Marketplace Risk Analyst".
+- Rebuilt PaymentButtons with clear PayPal and Payoneer logo buttons.
+- Added clearer credit card payment button.
+- Added legal disclaimer: ShadowScore does not provide legal advice, does not guarantee reinstatement, payment release, marketplace approval or business outcomes.
+- Added user responsibility and limitation of liability language.
+- Added no-credentials and independent-assessment language to Security.
 
-Main updates:
-- Logo links to the homepage
-- Safer positioning: independent marketplace risk assessment
-- TikTok link added
-- Marketplace Post-Mortem section added
-- Real Marketplace Cases added
-- MC011, MC999, Payout Hold and Policy Violations included
-- Pricing card alignment improved
-- $49 / $99 / $199 / $299 pricing ladder
-- Strong disclaimer added
-- Intake page upgraded
-- Open Graph preview added
-
-Required public assets:
-- public/shadowscore-shield-v8.png
-- public/marketplaces-monitor-v8.png
-
-Deploy:
+## Deploy
 npm run build
+npm run lint
 git add .
-git commit -m "ShadowScore V4 full day updates"
+git commit -m "ShadowScore V8.4 checkout cleanup and legal disclaimer"
 git push origin main
