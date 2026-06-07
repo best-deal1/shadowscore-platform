@@ -38,10 +38,10 @@ export default function PaymentButtons({ planName, price }: PaymentButtonsProps)
   const [open, setOpen] = useState(false);
 
   const whatsappHref = buildWhatsappHref(planName, price);
-  const paypalHref = buildEmailHref(planName, price, "PayPal");
-  const payoneerHref = buildEmailHref(planName, price, "Payoneer");
-  const cardHref = buildEmailHref(planName, price, "Credit Card");
-  const bankHref = buildEmailHref(planName, price, "Bank Transfer");
+  const paypalHref = "https://www.paypal.com/paypalme/YOURPAYPAL";
+  const payoneerHref = whatsappHref + "%0APayment:%20Payoneer";
+  const cardHref = whatsappHref + "%0APayment:%20Credit%20Card";
+  const bankHref = whatsappHref + "%0APayment:%20Bank%20Transfer";
 
   return (
     <>
