@@ -1,17 +1,15 @@
-# ShadowScore V8.6 Payment UX Fix
+# ShadowScore V8.9 Real PayPal + Bank Transfer UX
 
 ## Fixed
-- Pricing card buttons use inviting green CTA style.
-- Payment options stay hidden until the user clicks Open Checkout.
-- Checkout modal payment options are clearly clickable.
-- PayPal and Payoneer logos are larger and cleaner.
-- Credit card button is green and visually distinct.
-- WhatsApp remains green and positioned as a help option inside the modal.
-- Removed clutter from pricing cards.
+- PayPal now opens a real PayPal payment page using business email: sales@best-deal.org
+- PayPal opens in a new tab.
+- Credit Card, Payoneer and Bank Transfer open WhatsApp in a new tab.
+- Bank Transfer button is now more inviting and no longer black.
+- No PayPal placeholder remains.
 
 ## Deploy
 npm run build
 npm run lint
 git add .
-git commit -m "Improve checkout payment UX"
+git commit -m "Connect real PayPal and improve bank transfer button"
 git push origin main
