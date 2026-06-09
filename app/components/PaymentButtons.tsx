@@ -1,108 +1,152 @@
 "use client";
 
+import { useState } from "react";
+
 type PaymentButtonsProps = {
   planName: string;
   price: string;
 };
 
 const WHATSAPP_NUMBER = "972557293979";
-const SUPPORT_EMAIL = "help@shadowscore.io";
+const PAYPAL_BUSINESS_EMAIL = "sales@best-deal.org";
 
-const cards = ["Visa", "Mastercard", "Amex"];
+function numericAmount(price: string) {
+  const match = price.match(/[0-9]+(?:\.[0-9]+)?/);
+  return match ? match[0] : "";
+}
 
-function buildEmailHref(planName: string, price: string, method: string) {
-  const subject = encodeURIComponent(`ShadowScore payment request - ${planName}`);
-  const body = encodeURIComponent(`Hi ShadowScore team,
+function buildPaypalHref(planName: string, price: string) {
+  const amount = numericAmount(price);
+  const params = new URLSearchParams({
+    cmd: "_xclick",
+    business: PAYPAL_BUSINESS_EMAIL,
+    item_name: `ShadowScore - ${planName}`,
+    currency_code: "USD",
+  });
 
-I would like to start the ${planName} plan (${price}).
+  if (amount) params.set("amount", amount);
+
+  return `https://www.paypal.com/cgi-bin/webscr?${params.toString()}`;
+}
+
+function buildWhatsappHref(planName: string, price: string, method: string) {
+  const message = `Hi ShadowScore team,
+
+I would like to continue with:
+${planName} - ${price}
 
 Preferred payment method: ${method}
 
-Please send me the secure payment link and next steps.
-`);
-
-  return `mailto:${SUPPORT_EMAIL}?subject=${subject}&body=${body}`;
-}
-
-function buildWhatsappHref(planName: string, price: string) {
-  const message = `Hi ShadowScore team,
-
-I want to start the ${planName} plan (${price}).
-
-Please send me the payment link and next steps.
-
-Preferred options:
-- PayPal
-- Payoneer
-- Credit Card
-- Bank Transfer`;
+Please send me the secure payment link and next steps.`;
 
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
 }
 
+function openNewTab(url: string) {
+  window.open(url, "_blank", "noopener,noreferrer");
+}
+
 export default function PaymentButtons({ planName, price }: PaymentButtonsProps) {
-  const whatsappHref = buildWhatsappHref(planName, price);
-  const paypalHref = buildEmailHref(planName, price, "PayPal");
-  const payoneerHref = buildEmailHref(planName, price, "Payoneer");
-  const cardHref = buildEmailHref(planName, price, "Credit Card");
+  const [open, setOpen] = useState(false);
+
+  const paypalHref = buildPaypalHref(planName, price);
+  const cardHref = buildWhatsappHref(planName, price, "Credit Card");
+  const payoneerHref = buildWhatsappHref(planName, price, "Payoneer");
+  const bankHref = buildWhatsappHref(planName, price, "Bank Transfer");
+  const whatsappHref = buildWhatsappHref(planName, price, "General help");
 
   return (
-    <div className="mt-6 space-y-4">
-      <a
-        href={whatsappHref}
-        target="_blank"
-        rel="noreferrer"
-        className="flex items-center justify-center gap-3 rounded-2xl bg-[#25D366] px-5 py-3.5 text-center text-sm font-black text-black shadow-[0_0_22px_rgba(37,211,102,0.22)] transition hover:bg-[#1ebe5d]"
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="mt-6 w-full rounded-2xl bg-emerald-500 px-6 py-4 text-center text-sm font-black text-black shadow-[0_0_28px_rgba(16,185,129,0.28)] transition hover:bg-emerald-400"
       >
-        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-black/10 text-lg">☎</span>
-        <span>Start On WhatsApp</span>
-      </a>
+        Open Checkout
+      </button>
 
-      <div className="grid gap-3 md:grid-cols-2">
-        <a
-          href={paypalHref}
-          className="flex min-h-[70px] items-center justify-center rounded-2xl border border-white/10 bg-white px-4 py-3 transition hover:border-sky-400 hover:shadow-[0_0_24px_rgba(56,189,248,0.16)]"
-        >
-          <img
-            src="/payments/paypal-logo.png"
-            alt="PayPal"
-            className="h-10 max-w-[150px] object-contain"
-          />
-        </a>
-
-        <a
-          href={payoneerHref}
-          className="flex min-h-[70px] items-center justify-center rounded-2xl border border-white/10 bg-white px-4 py-3 transition hover:border-orange-400 hover:shadow-[0_0_24px_rgba(249,115,22,0.16)]"
-        >
-          <img
-            src="/payments/payoneer-logo.png"
-            alt="Payoneer"
-            className="h-10 max-w-[165px] object-contain"
-          />
-        </a>
+      <div className="mt-3 text-center text-xs leading-5 text-zinc-600">
+        Pay by PayPal, credit card, Payoneer or bank transfer.
       </div>
 
-      <a
-        href={cardHref}
-        className="block rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-3 text-center text-sm font-bold text-zinc-300 transition hover:border-red-400/30 hover:text-white"
-      >
-        Pay With Credit Card
-      </a>
+      {open && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/80 px-5 backdrop-blur-xl">
+          <div className="relative w-full max-w-xl rounded-[30px] border border-white/10 bg-[#050505] p-6 shadow-[0_0_80px_rgba(16,185,129,0.14)]">
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="absolute right-5 top-5 rounded-full border border-white/10 px-4 py-2 text-sm text-zinc-400 transition hover:border-emerald-400/30 hover:text-white"
+            >
+              Close
+            </button>
 
-      <div className="grid grid-cols-3 gap-2 pt-1">
-        {cards.map((method) => (
-          <div
-            key={method}
-            className="rounded-xl border border-white/10 bg-black/45 px-2 py-2 text-center text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-400"
-          >
-            {method}
+            <div className="pr-20">
+              <div className="text-xs font-bold uppercase tracking-[0.28em] text-emerald-300">
+                Secure Checkout
+              </div>
+              <h3 className="mt-3 text-3xl font-black text-white">{planName}</h3>
+              <div className="mt-2 text-lg font-bold text-zinc-400">{price}</div>
+            </div>
+
+            <div className="mt-7 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm leading-6 text-zinc-400">
+              Choose a payment method. PayPal opens a real PayPal payment page. Other payment methods open WhatsApp so we can send the correct secure payment request.
+            </div>
+
+            <div className="mt-6 grid gap-3">
+              <button
+                type="button"
+                onClick={() => openNewTab(paypalHref)}
+                className="flex min-h-[74px] items-center justify-center rounded-2xl border border-white/10 bg-white px-5 py-4 transition hover:border-sky-400 hover:shadow-[0_0_26px_rgba(56,189,248,0.22)]"
+                aria-label="Pay with PayPal"
+              >
+                <img src="/payments/paypal-logo.png" alt="PayPal" className="h-12 max-w-[190px] object-contain" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => openNewTab(cardHref)}
+                className="flex min-h-[64px] items-center justify-center rounded-2xl border border-emerald-400/25 bg-emerald-500 px-5 py-4 text-sm font-black text-black shadow-[0_0_22px_rgba(16,185,129,0.20)] transition hover:bg-emerald-400"
+                aria-label="Pay with credit card"
+              >
+                <span className="mr-3 text-lg">💳</span>
+                Pay With Credit Card
+              </button>
+
+              <button
+                type="button"
+                onClick={() => openNewTab(payoneerHref)}
+                className="flex min-h-[74px] items-center justify-center rounded-2xl border border-white/10 bg-white px-5 py-4 transition hover:border-orange-400 hover:shadow-[0_0_26px_rgba(249,115,22,0.22)]"
+                aria-label="Pay with Payoneer"
+              >
+                <img src="/payments/payoneer-logo.png" alt="Payoneer" className="h-12 max-w-[215px] object-contain" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => openNewTab(bankHref)}
+                className="flex min-h-[62px] items-center justify-center rounded-2xl border border-emerald-400/25 bg-emerald-500/12 px-5 py-4 text-sm font-black text-emerald-200 shadow-[0_0_18px_rgba(16,185,129,0.10)] transition hover:border-emerald-300/50 hover:bg-emerald-500/20 hover:text-white"
+                aria-label="Pay by bank transfer"
+              >
+                <span className="mr-3 text-lg">🏦</span>
+                Bank Transfer
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => openNewTab(whatsappHref)}
+              className="mt-5 flex w-full items-center justify-center gap-3 rounded-2xl bg-[#25D366] px-5 py-4 text-center text-sm font-black text-black shadow-[0_0_22px_rgba(37,211,102,0.24)] transition hover:bg-[#1ebe5d]"
+            >
+              <span className="text-lg">💬</span>
+              Need help? Talk on WhatsApp
+            </button>
+
+            <div className="mt-5 text-center text-xs leading-6 text-zinc-600">
+              ShadowScore does not guarantee marketplace outcomes, reinstatement or payment release.
+            </div>
           </div>
-        ))}
-      </div>
-
-      <div className="rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-center text-xs leading-6 text-zinc-500">
-        Secure payment options: PayPal, Payoneer, credit card and bank transfer. Payment links are sent manually until live checkout is connected.
-      </div>
-    </div>
+        </div>
+      )}
+    </>
   );
 }

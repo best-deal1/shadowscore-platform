@@ -19,6 +19,12 @@ const marketplaces = [
   { name: "Stripe", logo: "Stripe", className: "text-violet-300" },
 ];
 
+const paymentSystems = [
+  { name: "PayPal", logo: "PayPal", className: "text-sky-300" },
+  { name: "Payoneer", logo: "Payoneer", className: "text-orange-300" },
+  { name: "Stripe", logo: "Stripe", className: "text-violet-300" },
+];
+
 const riskCategories = [
   ["Performance Risk", "INR, late shipment, defects, feedback patterns and account-health movement."],
   ["Policy Risk", "Marketplace policies, restricted behavior, category rules and listing compliance."],
@@ -29,6 +35,7 @@ const riskCategories = [
   ["Supplier Risk", "Amazon, retail arbitrage, invoice quality, unauthorized distribution and sourcing consistency."],
   ["Payment Risk", "PayPal reserve, Stripe reserve, chargebacks, payout holds and cashflow exposure."],
   ["Community Reporting Risk", "Competitor reports, high-complaint categories and repeated listing takedowns."],
+  ["Authenticity Risk", "Counterfeit exposure, brand authenticity, supplier documentation and invoice quality."],
 ];
 
 const intelligenceTopics = [
@@ -38,6 +45,8 @@ const intelligenceTopics = [
   { platform: "TikTok Shop", event: "Business verification and warehouse proof requests", signal: "Verification", severity: "Elevated" },
   { platform: "Vinted", event: "Commercial activity restriction on Pro accounts", signal: "Policy", severity: "Rising" },
   { platform: "PayPal", event: "Reserve and chargeback exposure", signal: "Payment", severity: "Elevated" },
+  { platform: "Walmart", event: "Counterfeit and supplier authenticity investigations", signal: "Authenticity", severity: "High" },
+  { platform: "Payoneer", event: "Cross-border seller verification and compliance reviews", signal: "Payments", severity: "Elevated" },
 ];
 
 const plans = [
@@ -90,6 +99,9 @@ const faqItems = [
   ["What documents should I upload?", "Upload review notices, payout hold messages, tracking exports, delivery proof, account health screenshots, policy warnings, verification requests and supplier documents."],
   ["Is this a recovery service?", "Recovery is not the main product. ShadowScore focuses on intelligence, evidence readiness and prevention. In some cases, sellers may be introduced to independent recovery consultants."],
   ["How do payments work?", "ShadowScore supports PayPal, Payoneer, credit card and bank transfer. Live checkout links can be connected to PayPal or Stripe."],
+  ["What is Marketplace Health Stage?", "It is a practical status layer that classifies an account as Healthy, Warning, Restricted, Suspended or Permanent Restriction based on visible evidence."],
+  ["Do you analyze Payoneer?", "Yes. Payoneer reviews, account verification, payout friction and cross-border payment risk can be included in the payment-risk layer."],
+  ["Do you analyze counterfeit or authenticity issues?", "Yes. Authenticity risk includes counterfeit exposure, branded-product risk, supplier documentation quality and invoice consistency."],
 ];
 
 function severityClass(severity: string) {
@@ -156,14 +168,14 @@ I would like to start a marketplace trust assessment.`;
           <div className="max-w-2xl">
             <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-red-400/25 bg-red-500/8 px-4 py-2 text-sm text-red-200">
               <span className="h-2 w-2 rounded-full bg-red-400 shadow-[0_0_12px_rgba(248,113,113,0.8)]" />
-              Credit Score For Digital Marketplace Sellers
+              Marketplace Health Intelligence For Professional Sellers
             </div>
             <h1 className="text-5xl font-extrabold leading-[1.02] tracking-tight md:text-6xl">
-              See Marketplace Risk
-              <span className="mt-4 block text-red-400">Before Marketplaces Do.</span>
+              Predict Marketplace Risks
+              <span className="mt-4 block text-red-400">Before They Become Suspensions.</span>
             </h1>
             <p className="mt-7 max-w-xl text-lg leading-8 text-zinc-400">
-              ShadowScore helps sellers understand trust, compliance, verification, payment and supplier risk across eBay, Amazon, Etsy, Walmart, TikTok Shop and more.
+              Analyze trust, compliance, verification, payment, authenticity and supplier risk across eBay, Amazon, Etsy, Walmart, TikTok Shop and connected payment systems.
             </p>
             <div className="mt-6 max-w-2xl rounded-2xl border border-red-400/20 bg-red-500/[0.06] p-5 text-sm leading-7 text-red-100">
               Sellers see orders, feedback and revenue. Marketplaces see risk. ShadowScore maps the gap before it becomes a restriction, hold or review.
@@ -182,6 +194,17 @@ I would like to start a marketplace trust assessment.`;
 
           <Panel className="p-8">
             <div className="text-sm uppercase tracking-[0.28em] text-red-300">Marketplace Trust Dashboard</div>
+            <div className="mt-5 rounded-3xl border border-orange-400/25 bg-orange-500/10 p-5">
+              <div className="text-xs uppercase tracking-[0.24em] text-orange-200">Marketplace Health Stage</div>
+              <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold">
+                {["Healthy", "Warning", "Restricted", "Suspended", "Permanent Restriction"].map((stage, index) => (
+                  <span key={stage} className={`rounded-full border px-3 py-2 ${index === 1 ? "border-orange-300/50 bg-orange-500/20 text-orange-100" : "border-white/10 bg-black/40 text-zinc-500"}`}>
+                    {stage}
+                  </span>
+                ))}
+              </div>
+              <p className="mt-4 text-sm leading-6 text-zinc-400">The product does not only score risk. It identifies the current enforcement stage and the next likely escalation path.</p>
+            </div>
             <div className="mt-5 grid gap-4">
               {[
                 ["Overall Trust Score", "74", "Elevated exposure"],
@@ -211,7 +234,7 @@ I would like to start a marketplace trust assessment.`;
       <section id="risk-categories" className="mx-auto max-w-7xl px-6 py-16">
         <div className="text-center">
           <div className="text-sm uppercase tracking-[0.28em] text-red-300">ShadowScore Framework</div>
-          <h2 className="mt-4 text-4xl font-bold">Nine Risk Families. One Marketplace Trust View.</h2>
+          <h2 className="mt-4 text-4xl font-bold">Ten Risk Families. One Marketplace Health View.</h2>
           <p className="mx-auto mt-4 max-w-3xl leading-7 text-zinc-500">Every case we analyze is mapped into a structured marketplace risk taxonomy.</p>
         </div>
         <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
@@ -234,7 +257,7 @@ I would like to start a marketplace trust assessment.`;
           <Panel className="p-8">
             <div className="text-sm uppercase tracking-[0.28em] text-red-300">Trust Timeline</div>
             <div className="mt-6 space-y-4">
-              {["Healthy sales", "Operational drift", "Policy or verification signal", "Marketplace review", "Restriction risk"].map((item, index) => (
+              {["Healthy", "Warning signal", "Restricted or payout hold", "Suspended", "Permanent restriction"].map((item, index) => (
                 <div key={item} className="flex items-center gap-4 rounded-2xl border border-white/10 bg-black/55 p-4">
                   <div className="flex h-9 w-9 items-center justify-center rounded-full border border-red-400/30 bg-red-500/10 text-sm font-black text-red-200">{index + 1}</div>
                   <div className="font-bold text-white">{item}</div>
@@ -317,6 +340,25 @@ I would like to start a marketplace trust assessment.`;
         <div className="mx-auto mt-8 max-w-4xl rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center text-sm leading-7 text-zinc-500">Accepted payments: PayPal, Payoneer, Visa, Mastercard, American Express and bank transfer. ShadowScore is independent and does not access internal marketplace systems.</div>
       </section>
 
+      <section className="mx-auto max-w-7xl px-6 py-10">
+        <div className="rounded-[30px] border border-white/10 bg-black/55 p-7">
+          <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+            <div>
+              <div className="text-sm uppercase tracking-[0.28em] text-red-300">Connected Payment Risk</div>
+              <h2 className="mt-3 text-3xl font-bold">Payments Are Part Of Marketplace Health.</h2>
+              <p className="mt-3 max-w-2xl leading-7 text-zinc-500">PayPal, Payoneer and Stripe reviews, reserves, payout holds and chargeback patterns are analyzed as part of the risk picture.</p>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              {paymentSystems.map((item) => (
+                <div key={item.name} className="rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4 text-center">
+                  <div className={`text-lg font-black ${item.className}`}>{item.logo}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="relative overflow-hidden border-t border-white/10 py-20">
         <div className="relative z-10 mx-auto max-w-7xl px-6">
           <div className="mb-10 text-center">
@@ -330,6 +372,9 @@ I would like to start a marketplace trust assessment.`;
                 <div className="mt-2 text-[10px] uppercase tracking-[0.16em] text-zinc-600 group-hover:text-zinc-300">{item.name}</div>
               </div>
             ))}
+          </div>
+          <div className="mt-8 text-center text-sm text-zinc-500">
+            Coming soon: Depop and Facebook Marketplace. Kept intentionally focused to avoid generic coverage claims.
           </div>
         </div>
       </section>

@@ -1,28 +1,48 @@
-# ShadowScore V8.1 Payment Patch
+# ShadowScore V9.1 Marketplace Health Intelligence
 
-This patch fixes the payment section.
+## What changed
 
-Included:
-- PayPal logo displayed inside the payment button
-- Payoneer logo displayed inside the payment button
-- Green WhatsApp CTA button
-- Credit card CTA
-- Manual payment request fallback via email
-- Public assets added under public/payments
+- Added Marketplace Health Stage:
+  - Healthy
+  - Warning
+  - Restricted / Review
+  - Suspended / Critical
+  - Permanent Restriction Risk
 
-Files changed:
-- components/PaymentButtons.tsx
-- public/payments/paypal-logo.png
-- public/payments/payoneer-logo.png
+- Updated homepage hero:
+  - Predict Marketplace Risks Before They Become Suspensions
 
-Deploy:
-```bash
+- Added Connected Payment Risk layer:
+  - PayPal
+  - Payoneer
+  - Stripe
+
+- Added Authenticity Risk:
+  - counterfeit exposure
+  - supplier documentation
+  - invoice quality
+  - brand authenticity
+
+- Expanded Intelligence Feed:
+  - Walmart counterfeit investigations
+  - Payoneer compliance reviews
+  - cross-border seller verification
+
+- Improved Intake results:
+  - score
+  - health stage
+  - next likely action
+  - findings and recommendations
+
+- Added FAQ entries for:
+  - Marketplace Health Stage
+  - Payoneer
+  - Counterfeit / Authenticity risk
+
+## Deploy
+
 npm run build
 npm run lint
 git add .
-git commit -m "Fix ShadowScore payment buttons and logos"
+git commit -m "Upgrade ShadowScore V9.1 marketplace health intelligence"
 git push origin main
-```
-
-Note:
-Until live PayPal Checkout / Stripe Checkout is connected, the PayPal, Payoneer and credit-card buttons create a payment request by email. The WhatsApp button opens a direct WhatsApp request.
