@@ -8,12 +8,51 @@ const WHATSAPP_NUMBER = "972557293979";
 const TIKTOK_URL = "https://www.tiktok.com/@shadowscore8";
 
 const marketplaces = [
-  { name: "eBay", logo: "eBay", hoverClass: "group-hover:text-[#E53238]" },
-  { name: "Amazon", logo: "amazon", hoverClass: "group-hover:text-[#FF9900]" },
-  { name: "Walmart", logo: "Walmart", hoverClass: "group-hover:text-[#2E7BEF]" },
-  { name: "Etsy", logo: "Etsy", hoverClass: "group-hover:text-[#F1641E]" },
-  { name: "TikTok Shop", logo: "TikTok", hoverClass: "group-hover:text-white" },
+  { name: "eBay", key: "ebay" },
+  { name: "Amazon", key: "amazon" },
+  { name: "Walmart", key: "walmart" },
+  { name: "Etsy", key: "etsy" },
+  { name: "TikTok Shop", key: "tiktok" },
 ];
+
+function MarketplaceLogo({ type }: { type: string }) {
+  if (type === "ebay") {
+    return (
+      <div className="text-4xl font-black tracking-tight grayscale opacity-55 transition duration-500 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-105">
+        <span className="text-[#e53238]">e</span><span className="text-[#0064d2]">b</span><span className="text-[#f5af02]">a</span><span className="text-[#86b817]">y</span>
+      </div>
+    );
+  }
+
+  if (type === "amazon") {
+    return (
+      <div className="text-center grayscale opacity-55 transition duration-500 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-105">
+        <div className="text-4xl font-black tracking-tight text-white">amazon</div>
+        <div className="mx-auto mt-1 h-1 w-16 rounded-full bg-[#ff9900]" />
+      </div>
+    );
+  }
+
+  if (type === "walmart") {
+    return (
+      <div className="flex items-center justify-center gap-2 grayscale opacity-55 transition duration-500 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-105">
+        <span className="text-3xl font-black text-[#2e7bef]">Walmart</span>
+        <span className="text-3xl text-[#ffc220]">✦</span>
+      </div>
+    );
+  }
+
+  if (type === "etsy") {
+    return <div className="text-4xl font-black tracking-tight text-[#f1641e] grayscale opacity-55 transition duration-500 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-105">Etsy</div>;
+  }
+
+  return (
+    <div className="text-center grayscale opacity-55 transition duration-500 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-105">
+      <div className="text-4xl font-black tracking-tight text-white [text-shadow:_-2px_0_#25f4ee,2px_0_#fe2c55]">TikTok</div>
+      <div className="mt-1 text-[10px] uppercase tracking-[0.3em] text-zinc-400">Shop</div>
+    </div>
+  );
+}
 
 const additionalPlatforms = ["SHEIN", "Vinted", "Depop", "Facebook Marketplace", "Shopify Risk Signals"];
 
@@ -391,7 +430,7 @@ I would like to start a marketplace trust assessment.`;
         <div className="relative z-10 mx-auto max-w-7xl px-6">
           <div className="mb-12 text-center">
             <div className="text-sm uppercase tracking-[0.32em] text-red-300">Marketplace Coverage</div>
-            <h2 className="mt-4 text-4xl font-black text-white md:text-5xl">Built For Multi-Platform Sellers</h2>
+            <h2 className="mt-4 text-4xl font-black text-white md:text-5xl">Coverage Across The World's Largest Marketplaces</h2>
             <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-zinc-500">Primary coverage stays focused on the marketplaces professional sellers use every day. Additional platforms remain in research until enough field signals are collected.</p>
           </div>
 
@@ -400,7 +439,7 @@ I would like to start a marketplace trust assessment.`;
               <div key={item.name} className="group relative flex h-36 items-center justify-center overflow-hidden rounded-[28px] border border-white/10 bg-black/70 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_0_35px_rgba(0,0,0,0.42)] transition duration-500 hover:-translate-y-1 hover:border-red-400/35 hover:bg-white/[0.035]">
                 <div className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 transition group-hover:opacity-100" />
                 <div>
-                  <div className={`text-3xl font-black tracking-tight text-zinc-500 transition duration-500 ${item.hoverClass} group-hover:scale-105 group-hover:drop-shadow-[0_0_18px_rgba(255,255,255,0.18)]`}>{item.logo}</div>
+                  <MarketplaceLogo type={item.key} />
                   <div className="mt-3 text-[10px] uppercase tracking-[0.22em] text-zinc-700 transition group-hover:text-zinc-300">{item.name}</div>
                 </div>
               </div>
@@ -430,19 +469,19 @@ I would like to start a marketplace trust assessment.`;
           <h2 className="mt-4 text-4xl font-bold">Join The Marketplace Trust Intelligence Layer</h2>
           <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-zinc-400">No fake reviews. No recovery promises. Just a sharper way to understand marketplace risk before it hurts the business.</p>
           <div className="mt-10 flex flex-col items-center justify-center gap-4 md:flex-row">
-            <Link href="/intake" className="rounded-xl bg-red-600 px-8 py-4 font-bold transition hover:bg-red-500">Start Scan My Marketplace Risk</Link>
-            <button type="button" onClick={() => openWhatsApp(selected.name)} className="rounded-xl border border-white/10 px-8 py-4 text-zinc-300 transition hover:border-red-400/30 hover:text-white">Need help? Talk on WhatsApp</button>
+            <Link href="/intake" className="rounded-xl bg-red-600 px-8 py-4 font-bold transition hover:bg-red-500">Scan My Marketplace Risk</Link>
+            <button type="button" onClick={() => openWhatsApp(selected.name)} className="rounded-xl border border-white/10 px-8 py-4 text-zinc-300 transition hover:border-red-400/30 hover:text-white">Talk With An Analyst</button>
           </div>
         </div>
-        <div className="mx-auto mt-8 max-w-4xl rounded-2xl border border-white/10 bg-black/35 p-4 text-center text-xs leading-6 text-zinc-500">
+        <div className="mx-auto mt-8 max-w-4xl rounded-2xl border border-white/10 bg-black/35 p-5 text-center text-sm leading-7 text-zinc-400">
           ShadowScore provides independent marketplace risk intelligence only. It does not guarantee account recovery, payment release or legal outcomes. Users remain responsible for their own marketplace actions, submissions and business decisions.
         </div>
-        <div className="mt-10 flex flex-wrap items-center justify-center gap-5 text-sm text-zinc-600">
-          <Link href="/about" className="hover:text-white">About</Link>
-          <Link href="/privacy" className="hover:text-white">Privacy</Link>
-          <Link href="/terms" className="hover:text-white">Terms</Link>
-          <Link href="/security" className="hover:text-white">Security</Link>
-          <a href={TIKTOK_URL} target="_blank" rel="noreferrer" className="hover:text-white">TikTok</a>
+        <div className="mt-10 flex flex-wrap items-center justify-center gap-5 text-sm text-zinc-500">
+          <Link href="/about" target="_blank" className="hover:text-white">About</Link>
+          <Link href="/privacy" target="_blank" className="hover:text-white">Privacy</Link>
+          <Link href="/terms" target="_blank" className="hover:text-white">Terms</Link>
+          <Link href="/security" target="_blank" className="hover:text-white">Security</Link>
+          <button type="button" onClick={() => openWhatsApp(selected.name)} className="hover:text-white">Contact</button>
         </div>
       </section>
     </main>
