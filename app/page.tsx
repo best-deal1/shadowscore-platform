@@ -8,11 +8,11 @@ const WHATSAPP_NUMBER = "972557293979";
 const TIKTOK_URL = "https://www.tiktok.com/@shadowscore8";
 
 const marketplaces = [
-  { name: "eBay", logo: "eBay", className: "text-[#E53238]" },
-  { name: "Amazon", logo: "amazon", className: "text-[#FF9900]" },
-  { name: "Walmart", logo: "Walmart", className: "text-[#2E7BEF]" },
-  { name: "Etsy", logo: "Etsy", className: "text-[#F1641E]" },
-  { name: "TikTok Shop", logo: "TikTok", className: "text-white" },
+  { name: "eBay", logo: "eBay", hoverClass: "group-hover:text-[#E53238]" },
+  { name: "Amazon", logo: "amazon", hoverClass: "group-hover:text-[#FF9900]" },
+  { name: "Walmart", logo: "Walmart", hoverClass: "group-hover:text-[#2E7BEF]" },
+  { name: "Etsy", logo: "Etsy", hoverClass: "group-hover:text-[#F1641E]" },
+  { name: "TikTok Shop", logo: "TikTok", hoverClass: "group-hover:text-white" },
 ];
 
 const additionalPlatforms = ["SHEIN", "Vinted", "Depop", "Facebook Marketplace", "Shopify Risk Signals"];
@@ -387,20 +387,27 @@ I would like to start a marketplace trust assessment.`;
       </section>
 
       <section className="relative overflow-hidden border-t border-white/10 py-20">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(220,38,38,0.16),transparent_45%)]" />
         <div className="relative z-10 mx-auto max-w-7xl px-6">
-          <div className="mb-10 text-center">
-            <div className="text-sm uppercase tracking-[0.28em] text-red-300">Marketplace Coverage</div>
-            <h2 className="mt-4 text-4xl font-bold text-white">Built For Multi-Platform Sellers</h2>
+          <div className="mb-12 text-center">
+            <div className="text-sm uppercase tracking-[0.32em] text-red-300">Marketplace Coverage</div>
+            <h2 className="mt-4 text-4xl font-black text-white md:text-5xl">Built For Multi-Platform Sellers</h2>
+            <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-zinc-500">Primary coverage stays focused on the marketplaces professional sellers use every day. Additional platforms remain in research until enough field signals are collected.</p>
           </div>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
+
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
             {marketplaces.map((item) => (
-              <div key={item.name} className="group rounded-2xl border border-white/10 bg-black/60 px-3 py-5 text-center grayscale transition duration-500 hover:border-red-400/40 hover:bg-red-500/[0.06] hover:grayscale-0">
-                <div className={`text-lg font-black ${item.className} opacity-55 transition group-hover:opacity-100`}>{item.logo}</div>
-                <div className="mt-2 text-[10px] uppercase tracking-[0.16em] text-zinc-600 group-hover:text-zinc-300">{item.name}</div>
+              <div key={item.name} className="group relative flex h-36 items-center justify-center overflow-hidden rounded-[28px] border border-white/10 bg-black/70 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_0_35px_rgba(0,0,0,0.42)] transition duration-500 hover:-translate-y-1 hover:border-red-400/35 hover:bg-white/[0.035]">
+                <div className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 transition group-hover:opacity-100" />
+                <div>
+                  <div className={`text-3xl font-black tracking-tight text-zinc-500 transition duration-500 ${item.hoverClass} group-hover:scale-105 group-hover:drop-shadow-[0_0_18px_rgba(255,255,255,0.18)]`}>{item.logo}</div>
+                  <div className="mt-3 text-[10px] uppercase tracking-[0.22em] text-zinc-700 transition group-hover:text-zinc-300">{item.name}</div>
+                </div>
               </div>
             ))}
           </div>
-          <div className="mt-8 text-center text-sm text-zinc-500">
+
+          <div className="mx-auto mt-8 max-w-4xl rounded-2xl border border-white/10 bg-black/40 px-5 py-4 text-center text-sm leading-7 text-zinc-500">
             Additional platforms under research: {additionalPlatforms.join(" • ")}. Kept intentionally focused to avoid generic coverage claims.
           </div>
         </div>

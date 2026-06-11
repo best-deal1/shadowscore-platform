@@ -20,3 +20,9 @@ git add .
 git commit -m "Upgrade ShadowScore v10 marketplace payout intelligence"
 git push origin main
 ```
+
+## v10.2 Other Marketplace Intake Update
+- Added `Other` to the Intake marketplace selector.
+- When `Other` is selected, a custom marketplace name field opens.
+- The scan result and saved lead use the custom marketplace name instead of showing only `Other`.
+- Added generic evidence requirements for unlisted marketplaces, payment providers and commerce platforms.
