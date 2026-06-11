@@ -1,48 +1,14 @@
-# ShadowScore V9.1 Marketplace Health Intelligence
+# ShadowScore v10.4 Footer Navigation UX
 
-## What changed
-
-- Added Marketplace Health Stage:
-  - Healthy
-  - Warning
-  - Restricted / Review
-  - Suspended / Critical
-  - Permanent Restriction Risk
-
-- Updated homepage hero:
-  - Predict Marketplace Risks Before They Become Suspensions
-
-- Added Connected Payment Risk layer:
-  - PayPal
-  - Payoneer
-  - Stripe
-
-- Added Authenticity Risk:
-  - counterfeit exposure
-  - supplier documentation
-  - invoice quality
-  - brand authenticity
-
-- Expanded Intelligence Feed:
-  - Walmart counterfeit investigations
-  - Payoneer compliance reviews
-  - cross-border seller verification
-
-- Improved Intake results:
-  - score
-  - health stage
-  - next likely action
-  - findings and recommendations
-
-- Added FAQ entries for:
-  - Marketplace Health Stage
-  - Payoneer
-  - Counterfeit / Authenticity risk
+## Updated
+- Footer links no longer open in a new browser tab.
+- About, Privacy, Terms, Security and Contact open as normal internal pages.
+- Internal pages now keep the same ShadowScore header and footer.
+- Internal pages include a clear Back to ShadowScore button.
+- Contact is now a dedicated internal page with WhatsApp as a secondary action.
 
 ## Deploy
-
 npm run build
-npm run lint
 git add .
-git commit -m "Upgrade ShadowScore V9.1 marketplace health intelligence"
+git commit -m "Improve footer navigation UX"
 git push origin main

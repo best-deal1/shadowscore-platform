@@ -477,11 +477,11 @@ I would like to start a marketplace trust assessment.`;
           ShadowScore provides independent marketplace risk intelligence only. It does not guarantee account recovery, payment release or legal outcomes. Users remain responsible for their own marketplace actions, submissions and business decisions.
         </div>
         <div className="mt-10 flex flex-wrap items-center justify-center gap-5 text-sm text-zinc-500">
-          <Link href="/about" target="_blank" className="hover:text-white">About</Link>
-          <Link href="/privacy" target="_blank" className="hover:text-white">Privacy</Link>
-          <Link href="/terms" target="_blank" className="hover:text-white">Terms</Link>
-          <Link href="/security" target="_blank" className="hover:text-white">Security</Link>
-          <button type="button" onClick={() => openWhatsApp(selected.name)} className="hover:text-white">Contact</button>
+          <Link href="/about" className="hover:text-white">About</Link>
+          <Link href="/privacy" className="hover:text-white">Privacy</Link>
+          <Link href="/terms" className="hover:text-white">Terms</Link>
+          <Link href="/security" className="hover:text-white">Security</Link>
+          <Link href="/contact" className="hover:text-white">Contact</Link>
         </div>
       </section>
     </main>
