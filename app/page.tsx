@@ -13,11 +13,9 @@ const marketplaces = [
   { name: "Walmart", logo: "Walmart", className: "text-[#2E7BEF]" },
   { name: "Etsy", logo: "Etsy", className: "text-[#F1641E]" },
   { name: "TikTok Shop", logo: "TikTok", className: "text-white" },
-  { name: "SHEIN", logo: "SHEIN", className: "text-white" },
-  { name: "Vinted", logo: "Vinted", className: "text-emerald-300" },
-  { name: "PayPal", logo: "PayPal", className: "text-sky-300" },
-  { name: "Stripe", logo: "Stripe", className: "text-violet-300" },
 ];
+
+const additionalPlatforms = ["SHEIN", "Vinted", "Depop", "Facebook Marketplace", "Shopify Risk Signals"];
 
 const paymentSystems = [
   { name: "PayPal", logo: "PayPal", className: "text-sky-300" },
@@ -33,17 +31,19 @@ const riskCategories = [
   ["Security Risk", "Login patterns, device changes, identity mismatch and linked-account exposure."],
   ["Verification Risk", "Business license, ID, utility bill, warehouse proof and supplier documentation gaps."],
   ["Supplier Risk", "Amazon, retail arbitrage, invoice quality, unauthorized distribution and sourcing consistency."],
-  ["Payment Risk", "PayPal reserve, Stripe reserve, chargebacks, payout holds and cashflow exposure."],
+  ["Payout Risk", "PayPal reserve, Payoneer compliance review, Stripe reserve, deferred settlement, payout holds, withdrawal freezes, chargebacks and cashflow exposure."],
+  ["Reputation Risk", "Product ratings, negative reviews, customer complaints, return patterns and trust deterioration."],
   ["Community Reporting Risk", "Competitor reports, high-complaint categories and repeated listing takedowns."],
   ["Authenticity Risk", "Counterfeit exposure, brand authenticity, supplier documentation and invoice quality."],
 ];
 
 const intelligenceTopics = [
+  { platform: "eBay", event: "Missing tracking before handling deadline", signal: "Fulfillment SLA", severity: "High" },
   { platform: "eBay", event: "MC011 proof-of-delivery review patterns", signal: "Fulfillment", severity: "High" },
   { platform: "eBay", event: "BBE restriction despite healthy visible metrics", signal: "Trust", severity: "Elevated" },
   { platform: "eBay", event: "VeRO and rights-owner complaints", signal: "IP", severity: "High" },
   { platform: "TikTok Shop", event: "Business verification and warehouse proof requests", signal: "Verification", severity: "Elevated" },
-  { platform: "Vinted", event: "Commercial activity restriction on Pro accounts", signal: "Policy", severity: "Rising" },
+  { platform: "TikTok Shop", event: "Deferred settlement due to low product rating", signal: "Payout + Reputation", severity: "High" },
   { platform: "PayPal", event: "Reserve and chargeback exposure", signal: "Payment", severity: "Elevated" },
   { platform: "Walmart", event: "Counterfeit and supplier authenticity investigations", signal: "Authenticity", severity: "High" },
   { platform: "Payoneer", event: "Cross-border seller verification and compliance reviews", signal: "Payments", severity: "Elevated" },
@@ -149,7 +149,7 @@ I would like to start a marketplace trust assessment.`;
             <img src="/shadowscore-shield-v8.png?v=v8" alt="ShadowScore shield" className="h-10 w-10 rounded-xl object-contain bg-black p-1" />
             <div className="leading-none">
               <div className="text-2xl font-extrabold tracking-tight">Shadow<span className="text-red-400">Score</span></div>
-              <div className="mt-1.5 text-[10px] uppercase tracking-[0.34em] text-zinc-500">Marketplace Trust Intelligence</div>
+              <div className="mt-1.5 text-[10px] uppercase tracking-[0.34em] text-zinc-500">Marketplace & Payout Intelligence</div>
             </div>
           </Link>
           <nav className="hidden items-center gap-8 text-sm text-zinc-400 md:flex">
@@ -159,7 +159,7 @@ I would like to start a marketplace trust assessment.`;
             <a href={TIKTOK_URL} target="_blank" rel="noreferrer" className="hover:text-white">TikTok</a>
             <Link href="/intake" className="text-red-300 hover:text-red-200">Free Scan</Link>
           </nav>
-          <Link href="/intake" className="rounded-xl bg-red-600 px-5 py-3 text-sm font-bold shadow-[0_0_22px_rgba(220,38,38,0.28)] transition hover:bg-red-500">Free Risk Scan</Link>
+          <Link href="/intake" className="rounded-xl bg-red-600 px-5 py-3 text-sm font-bold shadow-[0_0_22px_rgba(220,38,38,0.28)] transition hover:bg-red-500">Scan My Marketplace Risk</Link>
         </div>
       </header>
 
@@ -171,11 +171,11 @@ I would like to start a marketplace trust assessment.`;
               Marketplace Health Intelligence For Professional Sellers
             </div>
             <h1 className="text-5xl font-extrabold leading-[1.02] tracking-tight md:text-6xl">
-              Predict Marketplace Risks
-              <span className="mt-4 block text-red-400">Before They Become Suspensions.</span>
+              Marketplace & Payout Risk Intelligence
+              <span className="mt-4 block text-red-400">Before Revenue Is Impacted.</span>
             </h1>
             <p className="mt-7 max-w-xl text-lg leading-8 text-zinc-400">
-              Analyze trust, compliance, verification, payment, authenticity and supplier risk across eBay, Amazon, Etsy, Walmart, TikTok Shop and connected payment systems.
+              Analyze trust, compliance, verification, reputation, payout and operational risk across eBay, Amazon, Walmart, Etsy, TikTok Shop, PayPal, Payoneer and Stripe.
             </p>
             <div className="mt-6 max-w-2xl rounded-2xl border border-red-400/20 bg-red-500/[0.06] p-5 text-sm leading-7 text-red-100">
               Sellers see orders, feedback and revenue. Marketplaces see risk. ShadowScore maps the gap before it becomes a restriction, hold or review.
@@ -183,12 +183,13 @@ I would like to start a marketplace trust assessment.`;
             <div className="mt-9 rounded-3xl border border-white/10 bg-black/55 p-5 backdrop-blur-xl">
               <div className="flex flex-col gap-3 md:flex-row">
                 <input value={scanText} onChange={(event) => setScanText(event.target.value)} placeholder="Paste store URL or seller username" className="flex-1 rounded-2xl border border-white/10 bg-black px-5 py-4 text-base text-white outline-none transition placeholder:text-zinc-600 focus:border-red-400" />
-                <Link href="/intake" className="rounded-2xl bg-red-600 px-8 py-4 text-center font-bold transition hover:bg-red-500">Free Risk Scan</Link>
+                <Link href="/intake" className="rounded-2xl bg-red-600 px-8 py-4 text-center font-bold transition hover:bg-red-500">Scan My Marketplace Risk</Link>
               </div>
               <div className="mt-4 text-sm text-zinc-500">No password required • Evidence-based • Independent assessment</div>
             </div>
             <div className="mt-8 flex flex-wrap gap-2 text-xs text-zinc-500">
-              {marketplaces.slice(0, 6).map((item) => <span key={item.name} className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-2">{item.name}</span>)}
+              {marketplaces.map((item) => <span key={item.name} className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-2">{item.name}</span>)}
+              {paymentSystems.map((item) => <span key={item.name} className="rounded-full border border-red-400/20 bg-red-500/[0.04] px-3 py-2 text-red-100">{item.name}</span>)}
             </div>
           </div>
 
@@ -234,8 +235,8 @@ I would like to start a marketplace trust assessment.`;
       <section id="risk-categories" className="mx-auto max-w-7xl px-6 py-16">
         <div className="text-center">
           <div className="text-sm uppercase tracking-[0.28em] text-red-300">ShadowScore Framework</div>
-          <h2 className="mt-4 text-4xl font-bold">Ten Risk Families. One Marketplace Health View.</h2>
-          <p className="mx-auto mt-4 max-w-3xl leading-7 text-zinc-500">Every case we analyze is mapped into a structured marketplace risk taxonomy.</p>
+          <h2 className="mt-4 text-4xl font-bold">Marketplace, Reputation And Payout Risk In One View.</h2>
+          <p className="mx-auto mt-4 max-w-3xl leading-7 text-zinc-500">Every case is mapped into a structured risk framework across marketplace enforcement, reputation signals, verification gaps, operations and payout exposure.</p>
         </div>
         <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {riskCategories.map(([title, body]) => (
@@ -266,6 +267,31 @@ I would like to start a marketplace trust assessment.`;
             </div>
           </Panel>
         </div>
+      </section>
+
+
+      <section className="mx-auto max-w-7xl px-6 py-16">
+        <Panel className="p-8">
+          <div className="grid gap-8 lg:grid-cols-[.9fr_1.1fr] lg:items-center">
+            <div>
+              <div className="text-sm uppercase tracking-[0.28em] text-red-300">New Signal Added</div>
+              <h2 className="mt-4 text-4xl font-bold">Missing Tracking Before Handling Deadline</h2>
+              <p className="mt-5 leading-8 text-zinc-400">When a seller depends on AliExpress or another external supplier and cannot upload tracking before the ship-by date, the account can enter a fulfillment-risk pattern even before the buyer complains.</p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-3">
+              {[
+                ["Signal", "No tracking uploaded"],
+                ["Impact", "+12 risk points"],
+                ["Stage", "Warning"],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-2xl border border-white/10 bg-black/55 p-5">
+                  <div className="text-xs uppercase tracking-[0.22em] text-zinc-500">{label}</div>
+                  <div className="mt-3 text-xl font-black text-red-200">{value}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Panel>
       </section>
 
       <section id="topics" className="mx-auto max-w-7xl px-6 py-16">
@@ -300,6 +326,7 @@ I would like to start a marketplace trust assessment.`;
         <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
           {[
             ["Above Standard", "Restricted despite healthy visible metrics."],
+            ["Missing Tracking", "AliExpress or supplier delay before the handling deadline."],
             ["Delivered Orders", "Still entered review due to broader trust exposure."],
             ["VeRO Complaint", "Listing removed after rights-owner report."],
             ["TikTok Verification", "Business proof and warehouse evidence requested."],
@@ -346,7 +373,7 @@ I would like to start a marketplace trust assessment.`;
             <div>
               <div className="text-sm uppercase tracking-[0.28em] text-red-300">Connected Payment Risk</div>
               <h2 className="mt-3 text-3xl font-bold">Payments Are Part Of Marketplace Health.</h2>
-              <p className="mt-3 max-w-2xl leading-7 text-zinc-500">PayPal, Payoneer and Stripe reviews, reserves, payout holds and chargeback patterns are analyzed as part of the risk picture.</p>
+              <p className="mt-3 max-w-2xl leading-7 text-zinc-500">PayPal, Payoneer and Stripe reviews, reserves, deferred settlement, payout holds, withdrawal freezes and chargeback patterns are analyzed as part of the risk picture.</p>
             </div>
             <div className="grid grid-cols-3 gap-3">
               {paymentSystems.map((item) => (
@@ -365,7 +392,7 @@ I would like to start a marketplace trust assessment.`;
             <div className="text-sm uppercase tracking-[0.28em] text-red-300">Marketplace Coverage</div>
             <h2 className="mt-4 text-4xl font-bold text-white">Built For Multi-Platform Sellers</h2>
           </div>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-9">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
             {marketplaces.map((item) => (
               <div key={item.name} className="group rounded-2xl border border-white/10 bg-black/60 px-3 py-5 text-center grayscale transition duration-500 hover:border-red-400/40 hover:bg-red-500/[0.06] hover:grayscale-0">
                 <div className={`text-lg font-black ${item.className} opacity-55 transition group-hover:opacity-100`}>{item.logo}</div>
@@ -374,7 +401,7 @@ I would like to start a marketplace trust assessment.`;
             ))}
           </div>
           <div className="mt-8 text-center text-sm text-zinc-500">
-            Coming soon: Depop and Facebook Marketplace. Kept intentionally focused to avoid generic coverage claims.
+            Additional platforms under research: {additionalPlatforms.join(" • ")}. Kept intentionally focused to avoid generic coverage claims.
           </div>
         </div>
       </section>
@@ -396,7 +423,7 @@ I would like to start a marketplace trust assessment.`;
           <h2 className="mt-4 text-4xl font-bold">Join The Marketplace Trust Intelligence Layer</h2>
           <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-zinc-400">No fake reviews. No recovery promises. Just a sharper way to understand marketplace risk before it hurts the business.</p>
           <div className="mt-10 flex flex-col items-center justify-center gap-4 md:flex-row">
-            <Link href="/intake" className="rounded-xl bg-red-600 px-8 py-4 font-bold transition hover:bg-red-500">Start Free Risk Scan</Link>
+            <Link href="/intake" className="rounded-xl bg-red-600 px-8 py-4 font-bold transition hover:bg-red-500">Start Scan My Marketplace Risk</Link>
             <button type="button" onClick={() => openWhatsApp(selected.name)} className="rounded-xl border border-white/10 px-8 py-4 text-zinc-300 transition hover:border-red-400/30 hover:text-white">Need help? Talk on WhatsApp</button>
           </div>
         </div>
