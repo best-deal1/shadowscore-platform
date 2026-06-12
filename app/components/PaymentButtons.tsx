@@ -1,14 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { WHATSAPP_NUMBER, PAYPAL_BUSINESS_EMAIL } from "../lib/config";
 
 type PaymentButtonsProps = {
   planName: string;
   price: string;
 };
 
-const WHATSAPP_NUMBER = "972557293979";
-const PAYPAL_BUSINESS_EMAIL = "sales@best-deal.org";
 
 function numericAmount(price: string) {
   const match = price.match(/[0-9]+(?:\.[0-9]+)?/);

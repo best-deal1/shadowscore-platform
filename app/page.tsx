@@ -1,11 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import PaymentButtons from "../components/PaymentButtons";
+import { TIKTOK_URL, buildWhatsAppUrl } from "../lib/config";
 
-const WHATSAPP_NUMBER = "972557293979";
-const TIKTOK_URL = "https://www.tiktok.com/@shadowscore8";
 
 const marketplaces = [
   { name: "eBay", key: "ebay" },
@@ -55,6 +54,35 @@ function MarketplaceLogo({ type }: { type: string }) {
 }
 
 const additionalPlatforms = ["SHEIN", "Vinted", "Depop", "Facebook Marketplace", "Shopify Risk Signals"];
+
+
+const heroMessages = [
+  {
+    headline: "Most Sellers Monitor Sales.",
+    highlight: "Marketplaces Monitor Risk.",
+    sub: "Orders, feedback and revenue are visible. Verification, payout, policy and trust exposure usually build before sellers notice the problem.",
+  },
+  {
+    headline: "Above Standard",
+    highlight: "Doesn't Mean Safe.",
+    sub: "We keep seeing sellers with strong metrics, delivered orders and positive feedback still facing reviews, holds and restrictions.",
+  },
+  {
+    headline: "The Suspension Is The Result.",
+    highlight: "Not The Beginning.",
+    sub: "ShadowScore helps map the risk signals that may appear before marketplace enforcement becomes visible.",
+  },
+  {
+    headline: "Payouts Frozen?",
+    highlight: "The Risk Started Earlier.",
+    sub: "Payment holds, reserves, deferred settlement and verification loops are part of the same marketplace trust lifecycle.",
+  },
+  {
+    headline: "See The Marketplace Blind Spot.",
+    highlight: "Before Revenue Is Impacted.",
+    sub: "Marketplace, reputation, verification and payout risk in one independent assessment view.",
+  },
+];
 
 const paymentSystems = [
   { name: "PayPal", logo: "PayPal", className: "text-sky-300" },
@@ -164,6 +192,15 @@ export default function Home() {
   const [showMoreFaq, setShowMoreFaq] = useState(false);
   const visibleFaq = showMoreFaq ? faqItems : faqItems.slice(0, 6);
   const selected = useMemo(() => plans.find((plan) => plan.name === selectedPlan) || plans[1], [selectedPlan]);
+  const [heroIndex, setHeroIndex] = useState(0);
+  const hero = heroMessages[heroIndex];
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setHeroIndex((current) => (current + 1) % heroMessages.length);
+    }, 4200);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const buildWhatsappUrl = (planName = selectedPlan, store = scanText) => {
     const message = `ShadowScore request
@@ -172,7 +209,7 @@ Store / Seller: ${store || "Not provided yet"}
 Selected Plan: ${planName}
 
 I would like to start a marketplace trust assessment.`;
-    return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+    return buildWhatsAppUrl(message);
   };
 
   const openWhatsApp = (planName = selectedPlan) => window.open(buildWhatsappUrl(planName), "_blank", "noopener,noreferrer");
@@ -210,12 +247,23 @@ I would like to start a marketplace trust assessment.`;
               Marketplace Health Intelligence For Professional Sellers
             </div>
             <h1 className="text-5xl font-extrabold leading-[1.02] tracking-tight md:text-6xl">
-              Marketplace & Payout Risk Intelligence
-              <span className="mt-4 block text-red-400">Before Revenue Is Impacted.</span>
+              {hero.headline}
+              <span className="mt-4 block text-red-400">{hero.highlight}</span>
             </h1>
             <p className="mt-7 max-w-xl text-lg leading-8 text-zinc-400">
-              Analyze trust, compliance, verification, reputation, payout and operational risk across eBay, Amazon, Walmart, Etsy, TikTok Shop, PayPal, Payoneer and Stripe.
+              {hero.sub}
             </p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              {heroMessages.map((_, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => setHeroIndex(index)}
+                  className={`h-2.5 rounded-full transition-all ${index === heroIndex ? "w-9 bg-red-400" : "w-2.5 bg-white/20 hover:bg-white/40"}`}
+                  aria-label={`Show hero message ${index + 1}`}
+                />
+              ))}
+            </div>
             <div className="mt-6 max-w-2xl rounded-2xl border border-red-400/20 bg-red-500/[0.06] p-5 text-sm leading-7 text-red-100">
               Sellers see orders, feedback and revenue. Marketplaces see risk. ShadowScore maps the gap before it becomes a restriction, hold or review.
             </div>

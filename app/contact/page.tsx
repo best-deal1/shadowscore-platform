@@ -1,6 +1,7 @@
 import ShadowScoreLayout from "../../components/ShadowScoreLayout";
+import { buildWhatsAppUrl } from "../../lib/config";
 
-const whatsappUrl = "https://wa.me/972505830003?text=Hi%20ShadowScore%2C%20I%20would%20like%20to%20discuss%20a%20marketplace%20risk%20case.";
+const whatsappUrl = buildWhatsAppUrl("Hi ShadowScore, I would like to discuss a marketplace risk case.");
 
 export default function ContactPage() {
   return (
@@ -9,12 +10,12 @@ export default function ContactPage() {
         <div className="text-sm uppercase tracking-[0.28em] text-red-300">Contact ShadowScore</div>
         <h1 className="mt-4 text-5xl font-black">Talk With An Analyst</h1>
         <p className="mt-6 text-lg leading-8 text-zinc-400">
-          Use this page to request an early access review, discuss a marketplace risk case or ask about supported platforms and payout risk analysis.
+          Request an early access review, discuss a marketplace risk case or ask about supported platforms and payout risk analysis.
         </p>
         <div className="mt-10 rounded-3xl border border-white/10 bg-white/[0.03] p-8">
           <div className="text-xl font-bold">Preferred Contact</div>
           <p className="mt-4 leading-7 text-zinc-400">
-            Send a short summary of the marketplace, issue type and any notice or dashboard screenshot you want reviewed. Do not send marketplace passwords or sensitive card information.
+            Send a short summary of the marketplace, issue type and any notice or dashboard screenshot you want reviewed. Do not send marketplace passwords, CVV details or sensitive card information.
           </p>
           <a href={whatsappUrl} target="_blank" rel="noreferrer" className="mt-6 inline-flex rounded-xl bg-red-600 px-7 py-4 font-bold text-white transition hover:bg-red-500">
             Open WhatsApp
