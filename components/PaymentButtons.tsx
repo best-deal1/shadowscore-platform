@@ -66,7 +66,7 @@ export default function PaymentButtons({ planName, price, buttonLabel = "Open Ch
       </button>
 
       <div className="mt-3 text-center text-xs leading-5 text-zinc-600">
-        Pay by PayPal, credit card, Payoneer or bank transfer.
+        Pay by PayPal, credit card, Payoneer or bank transfer. Secure checkout options available worldwide.
       </div>
 
       {open && (
@@ -89,7 +89,7 @@ export default function PaymentButtons({ planName, price, buttonLabel = "Open Ch
             </div>
 
             <div className="mt-7 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm leading-6 text-zinc-400">
-              Choose a payment method. PayPal opens a real PayPal payment page. Other payment methods open WhatsApp so we can send the correct secure payment request.
+              Choose a payment method. PayPal opens a PayPal checkout page. Card, Payoneer and bank transfer requests open WhatsApp so we can send the correct secure payment request.
             </div>
 
             <div className="mt-6 grid gap-3">

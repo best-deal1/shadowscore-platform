@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { CONTACT_EMAIL, SUPPORT_EMAIL } from "../lib/config";
 
 const footerLinks = [
   { href: "/about", label: "About" },
@@ -45,8 +46,13 @@ export default function ShadowScoreLayout({ children }: { children: ReactNode })
             </Link>
           ))}
         </nav>
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-4 text-sm text-zinc-500">
+          <a href={`mailto:${CONTACT_EMAIL}`} className="hover:text-white">{CONTACT_EMAIL}</a>
+          <span className="text-zinc-700">•</span>
+          <a href={`mailto:${SUPPORT_EMAIL}`} className="hover:text-white">{SUPPORT_EMAIL}</a>
+        </div>
         <p className="mx-auto mt-6 max-w-3xl text-xs leading-6 text-zinc-600">
-          ShadowScore provides independent marketplace risk intelligence only. It does not guarantee account recovery, payment release or legal outcomes.
+          ShadowScore provides independent marketplace, reputation and payout risk intelligence only. It does not guarantee account recovery, payment release or legal outcomes.
         </p>
       </footer>
     </main>

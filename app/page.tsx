@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import PaymentButtons from "../components/PaymentButtons";
-import { TIKTOK_URL, buildWhatsAppUrl } from "../lib/config";
+import { TIKTOK_URL, CONTACT_EMAIL, SUPPORT_EMAIL, buildWhatsAppUrl } from "../lib/config";
 
 
 const marketplaces = [
@@ -58,29 +58,29 @@ const additionalPlatforms = ["SHEIN", "Vinted", "Depop", "Facebook Marketplace",
 
 const heroMessages = [
   {
-    headline: "Most Sellers Monitor Sales.",
-    highlight: "Marketplaces Monitor Risk.",
-    sub: "Orders, feedback and revenue are visible. Verification, payout, policy and trust exposure usually build before sellers notice the problem.",
+    headline: "Protect Revenue",
+    highlight: "Before Problems Escalate.",
+    sub: "Monitor marketplace, reputation, verification and payout risks before they freeze cashflow, reduce visibility or restrict access.",
   },
   {
-    headline: "Above Standard",
-    highlight: "Doesn't Mean Safe.",
-    sub: "We keep seeing sellers with strong metrics, delivered orders and positive feedback still facing reviews, holds and restrictions.",
+    headline: "Good Sellers",
+    highlight: "Still Get Restricted.",
+    sub: "Top Rated status, positive feedback and delivered orders do not always mean marketplace trust is healthy.",
   },
   {
-    headline: "The Suspension Is The Result.",
+    headline: "The Warning Is Usually",
     highlight: "Not The Beginning.",
-    sub: "ShadowScore helps map the risk signals that may appear before marketplace enforcement becomes visible.",
+    sub: "BBE, MC011, verification loops, reserves and payout holds often appear after risk has already been building.",
   },
   {
-    headline: "Payouts Frozen?",
-    highlight: "The Risk Started Earlier.",
-    sub: "Payment holds, reserves, deferred settlement and verification loops are part of the same marketplace trust lifecycle.",
+    headline: "Know Your Risk",
+    highlight: "Before They Do.",
+    sub: "ShadowScore maps visible evidence into marketplace, reputation and payout risk intelligence.",
   },
   {
-    headline: "See The Marketplace Blind Spot.",
-    highlight: "Before Revenue Is Impacted.",
-    sub: "Marketplace, reputation, verification and payout risk in one independent assessment view.",
+    headline: "The Trust Layer",
+    highlight: "For Digital Sellers.",
+    sub: "Starting with marketplaces and payouts, expanding toward URL and business trust intelligence.",
   },
 ];
 
@@ -88,49 +88,54 @@ const paymentSystems = [
   { name: "PayPal", logo: "PayPal", className: "text-sky-300" },
   { name: "Payoneer", logo: "Payoneer", className: "text-orange-300" },
   { name: "Stripe", logo: "Stripe", className: "text-violet-300" },
+  { name: "Visa", logo: "Visa", className: "text-blue-300" },
+  { name: "Mastercard", logo: "Mastercard", className: "text-red-300" },
+  { name: "Amex", logo: "Amex", className: "text-cyan-300" },
 ];
 
 const riskCategories = [
-  ["Performance Risk", "INR, late shipment, defects, feedback patterns and account-health movement."],
-  ["Policy Risk", "Marketplace policies, restricted behavior, category rules and listing compliance."],
-  ["Product Policy Risk", "Adult items, weapon-related accessories, medical claims and restricted product groups."],
-  ["VeRO / IP Risk", "Brand complaints, copyrighted images, trademark usage and rights-owner reports."],
-  ["Security Risk", "Login patterns, device changes, identity mismatch and linked-account exposure."],
-  ["Verification Risk", "Business license, ID, utility bill, warehouse proof and supplier documentation gaps."],
+  ["Performance Risk", "INR, late shipment, defects, feedback patterns, service metrics and account-health movement."],
+  ["Policy Risk", "Marketplace policies, restricted behavior, category rules, listing compliance and product setup gaps."],
+  ["Product Policy Risk", "Adult items, weapon-related accessories, medical claims, restricted categories and category mismatch."],
+  ["VeRO / IP Risk", "Brand complaints, copyrighted images, trademark usage, copied descriptions and rights-owner reports."],
+  ["Security Risk", "Login anomalies, device changes, IP reputation, identity mismatch and linked-account exposure."],
+  ["Verification Risk", "Business license, ID, utility bill, warehouse proof, tax details and supplier documentation gaps."],
   ["Supplier Risk", "Amazon, retail arbitrage, invoice quality, unauthorized distribution and sourcing consistency."],
-  ["Payout Risk", "PayPal reserve, Payoneer compliance review, Stripe reserve, deferred settlement, payout holds, withdrawal freezes, chargebacks and cashflow exposure."],
+  ["Financial Risk", "PayPal reserve, Payoneer review, Stripe reserve, deferred settlement, payout holds, withdrawal freezes and chargebacks."],
   ["Reputation Risk", "Product ratings, negative reviews, customer complaints, return patterns and trust deterioration."],
-  ["Community Reporting Risk", "Competitor reports, high-complaint categories and repeated listing takedowns."],
-  ["Authenticity Risk", "Counterfeit exposure, brand authenticity, supplier documentation and invoice quality."],
+  ["Community Reporting Risk", "Competitor reports, high-complaint categories, repeated listing takedowns and user-generated enforcement triggers."],
+  ["Authenticity Risk", "Counterfeit exposure, brand authenticity, supplier documentation and invoice consistency."],
+  ["Transparency Risk", "Unclear suspension reasons, placeholder policy names, missing root-cause details and poor appeal visibility."],
 ];
 
 const intelligenceTopics = [
+  { platform: "eBay", event: "BBE restriction despite Top Rated or Above Standard status", signal: "Trust", severity: "High" },
   { platform: "eBay", event: "Missing tracking before handling deadline", signal: "Fulfillment SLA", severity: "High" },
   { platform: "eBay", event: "MC011 proof-of-delivery review patterns", signal: "Fulfillment", severity: "High" },
-  { platform: "eBay", event: "BBE restriction despite healthy visible metrics", signal: "Trust", severity: "Elevated" },
   { platform: "eBay", event: "VeRO and rights-owner complaints", signal: "IP", severity: "High" },
+  { platform: "eBay", event: "Security concern suspensions with limited explanation", signal: "Security", severity: "High" },
   { platform: "TikTok Shop", event: "Business verification and warehouse proof requests", signal: "Verification", severity: "Elevated" },
-  { platform: "TikTok Shop", event: "Deferred settlement due to low product rating", signal: "Payout + Reputation", severity: "High" },
-  { platform: "PayPal", event: "Reserve and chargeback exposure", signal: "Payment", severity: "Elevated" },
-  { platform: "Walmart", event: "Counterfeit and supplier authenticity investigations", signal: "Authenticity", severity: "High" },
-  { platform: "Payoneer", event: "Cross-border seller verification and compliance reviews", signal: "Payments", severity: "Elevated" },
+  { platform: "TikTok Shop", event: "Deferred settlement due to low product rating", signal: "Financial + Reputation", severity: "High" },
+  { platform: "Walmart", event: "Counterfeit and supplier authenticity suspensions", signal: "Authenticity", severity: "High" },
+  { platform: "PayPal", event: "Reserve and chargeback exposure", signal: "Financial", severity: "Elevated" },
+  { platform: "Payoneer", event: "Business verification and compliance review loops", signal: "Payment Verification", severity: "Elevated" },
 ];
 
 const plans = [
   {
-    name: "Free Marketplace Risk Scan",
+    name: "Free Risk Scan",
     price: "",
-    sub: "complimentary assessment",
-    desc: "Upload evidence and receive a basic risk map with missing documents and visible exposure areas.",
+    sub: "complimentary business health scan",
+    desc: "Upload evidence and receive a basic risk map with missing documents, visible exposure areas and marketplace health stage.",
     tag: "Start Here",
-    items: ["Basic ShadowScore", "Missing evidence flags", "Marketplace requirements", "Report download available for $9.90"],
-    button: "Start Risk Assessment",
+    items: ["Basic ShadowScore", "Missing evidence flags", "Marketplace and payout category mapping", "Report download available for $9.90"],
+    button: "Scan Free",
   },
   {
     name: "Full Audit Report",
     price: "$49",
     sub: "downloadable report",
-    desc: "A deeper assessment with risk categories, evidence readiness and recommended actions.",
+    desc: "A deeper assessment with risk categories, evidence readiness, health stage and recommended actions.",
     tag: "Most Popular",
     items: ["Full risk breakdown", "PDF-style findings", "Action recommendations", "PayPal or card payment"],
     button: "Unlock Report",
@@ -138,37 +143,39 @@ const plans = [
   {
     name: "Case Investigation",
     price: "$199",
-    sub: "manual review",
-    desc: "Manual post-mortem for sellers facing restrictions, payout holds, policy issues or verification failures.",
+    sub: "manual post-mortem",
+    desc: "Manual investigation for sellers facing restrictions, payout holds, policy issues, verification failures or unclear enforcement reasons.",
     tag: "",
-    items: ["Evidence timeline", "Likely trigger areas", "Appeal readiness review", "Consultation handoff"],
+    items: ["Evidence timeline", "Likely trigger areas", "Next likely outcome", "Consultation handoff"],
     button: "Open Investigation",
   },
   {
     name: "Continuous Monitoring",
     price: "$299",
     sub: "per month",
-    desc: "Ongoing trust and risk monitoring for sellers who depend on multiple marketplaces.",
+    desc: "Ongoing trust, reputation and payout monitoring for sellers who depend on multiple marketplaces and payment systems.",
     tag: "",
-    items: ["Monthly risk review", "Policy exposure tracking", "Payment risk review", "Early warning guidance"],
+    items: ["Monthly risk review", "Policy and reputation tracking", "Payment risk review", "Early warning guidance"],
     button: "Start Monitoring",
   },
 ];
 
 const faqItems = [
-  ["What is ShadowScore?", "ShadowScore is an independent Marketplace Trust Intelligence platform that helps sellers assess operational risk, evidence readiness and marketplace exposure across major marketplaces."],
-  ["Is ShadowScore affiliated with eBay, Amazon, Walmart, Etsy, SHEIN, Vinted or TikTok Shop?", "No. ShadowScore is independent. Marketplace names are shown only to indicate supported coverage areas."],
-  ["Does ShadowScore access internal marketplace systems?", "No. ShadowScore does not access internal marketplace data, algorithms or proprietary trust scores. Assessments are based on seller-supplied evidence, public marketplace policies and observable operational indicators."],
-  ["Can ShadowScore guarantee account recovery?", "No. ShadowScore does not guarantee marketplace outcomes. It helps sellers understand risk categories, evidence gaps and likely exposure areas."],
-  ["Can a seller with positive feedback still be restricted?", "Yes. Visible seller metrics do not always equal account safety. Marketplaces can evaluate compliance, verification, supplier, payment, security and trust indicators."],
+  ["What is ShadowScore?", "ShadowScore is an independent Marketplace, Reputation and Payout Risk Intelligence platform that helps digital sellers assess risk before revenue, payouts or account access are affected."],
+  ["Is ShadowScore only for eBay?", "No. eBay was one trigger, but the platform supports broader marketplace and payment risk analysis across eBay, Amazon, Walmart, Etsy, TikTok Shop, PayPal, Payoneer and Stripe."],
+  ["Is ShadowScore affiliated with any marketplace or payment company?", "No. ShadowScore is independent. Marketplace and payment names are shown only to indicate supported coverage areas."],
+  ["Does ShadowScore access internal marketplace systems?", "No. ShadowScore does not access internal marketplace data, algorithms or proprietary trust scores. Assessments are based on seller-supplied evidence, public policies and observable operational indicators."],
+  ["Can ShadowScore guarantee account recovery?", "No. ShadowScore does not guarantee marketplace outcomes. It helps sellers understand risk categories, evidence gaps, likely exposure areas and next recommended actions."],
+  ["Can a seller with positive feedback still be restricted?", "Yes. Visible seller metrics do not always equal account safety. Marketplaces can evaluate compliance, verification, supplier, payment, security, reputation and trust indicators."],
   ["What is BBE?", "BBE usually refers to bad buying experience. It can appear even when a seller believes visible metrics are healthy, because marketplace evaluation can include broader trust and risk signals."],
   ["What is VeRO risk?", "VeRO risk relates to rights-owner complaints, trademark usage, copied images, copyrighted descriptions and brand enforcement on marketplace listings."],
+  ["What is payout risk?", "Payout risk includes reserves, deferred settlement, payment holds, withdrawal freezes, chargebacks and payment processor reviews."],
+  ["What is Marketplace Health Stage?", "It is a practical status layer that classifies a case as Healthy, Warning, Restricted, Suspended or Permanent Restriction based on visible evidence."],
   ["What documents should I upload?", "Upload review notices, payout hold messages, tracking exports, delivery proof, account health screenshots, policy warnings, verification requests and supplier documents."],
-  ["Is this a recovery service?", "Recovery is not the main product. ShadowScore focuses on intelligence, evidence readiness and prevention. In some cases, sellers may be introduced to independent recovery consultants."],
-  ["How do payments work?", "ShadowScore supports PayPal, Payoneer, credit card and bank transfer. Live checkout links can be connected to PayPal or Stripe."],
-  ["What is Marketplace Health Stage?", "It is a practical status layer that classifies an account as Healthy, Warning, Restricted, Suspended or Permanent Restriction based on visible evidence."],
-  ["Do you analyze Payoneer?", "Yes. Payoneer reviews, account verification, payout friction and cross-border payment risk can be included in the payment-risk layer."],
+  ["Is the scan free?", "Yes. The initial scan is free. Payment is only required if you want the downloadable report, a manual investigation or continuous monitoring."],
+  ["Do you analyze Payoneer?", "Yes. Payoneer reviews, account verification, payout friction and cross-border payment risk can be included in the financial-risk layer."],
   ["Do you analyze counterfeit or authenticity issues?", "Yes. Authenticity risk includes counterfeit exposure, branded-product risk, supplier documentation quality and invoice consistency."],
+  ["Will ShadowScore expand to any URL?", "Yes, URL Intelligence is a future beta direction. The current focus remains marketplace and payout risk because that is where the strongest field data exists."],
 ];
 
 function severityClass(severity: string) {
@@ -240,7 +247,7 @@ I would like to start a marketplace trust assessment.`;
             <a href={TIKTOK_URL} target="_blank" rel="noreferrer" className="hover:text-white">TikTok</a>
             <Link href="/intake" className="text-red-300 hover:text-red-200">Free Scan</Link>
           </nav>
-          <Link href="/intake" className="rounded-xl bg-red-600 px-5 py-3 text-sm font-bold shadow-[0_0_22px_rgba(220,38,38,0.28)] transition hover:bg-red-500">Scan My Marketplace Risk</Link>
+          <Link href="/intake" className="rounded-xl bg-red-600 px-5 py-3 text-sm font-bold shadow-[0_0_22px_rgba(220,38,38,0.28)] transition hover:bg-red-500">Scan My Business Risk</Link>
         </div>
       </header>
 
@@ -277,7 +284,7 @@ I would like to start a marketplace trust assessment.`;
             <div className="mt-9 rounded-3xl border border-white/10 bg-black/55 p-5 backdrop-blur-xl">
               <div className="flex flex-col gap-3 md:flex-row">
                 <input value={scanText} onChange={(event) => setScanText(event.target.value)} placeholder="Paste store URL or seller username" className="flex-1 rounded-2xl border border-white/10 bg-black px-5 py-4 text-base text-white outline-none transition placeholder:text-zinc-600 focus:border-red-400" />
-                <Link href="/intake" className="rounded-2xl bg-red-600 px-8 py-4 text-center font-bold transition hover:bg-red-500">Scan My Marketplace Risk</Link>
+                <Link href="/intake" className="rounded-2xl bg-red-600 px-8 py-4 text-center font-bold transition hover:bg-red-500">Scan My Business Risk</Link>
               </div>
               <div className="mt-4 text-sm text-zinc-500">No password required • Evidence-based • Independent assessment</div>
             </div>
@@ -329,8 +336,8 @@ I would like to start a marketplace trust assessment.`;
       <section id="risk-categories" className="mx-auto max-w-7xl px-6 py-16">
         <div className="text-center">
           <div className="text-sm uppercase tracking-[0.28em] text-red-300">ShadowScore Framework</div>
-          <h2 className="mt-4 text-4xl font-bold">Marketplace, Reputation And Payout Risk In One View.</h2>
-          <p className="mx-auto mt-4 max-w-3xl leading-7 text-zinc-500">Every case is mapped into a structured risk framework across marketplace enforcement, reputation signals, verification gaps, operations and payout exposure.</p>
+          <h2 className="mt-4 text-4xl font-bold">Marketplace, Reputation And Financial Risk In One View.</h2>
+          <p className="mx-auto mt-4 max-w-3xl leading-7 text-zinc-500">Every case is mapped into a structured risk framework across marketplace enforcement, reputation signals, verification gaps, operations and financial exposure.</p>
         </div>
         <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {riskCategories.map(([title, body]) => (
@@ -507,6 +514,34 @@ I would like to start a marketplace trust assessment.`;
         </div>
       </section>
 
+
+      <section className="mx-auto max-w-7xl px-6 py-16">
+        <Panel className="p-8">
+          <div className="grid gap-8 lg:grid-cols-[.9fr_1.1fr] lg:items-center">
+            <div>
+              <div className="text-sm uppercase tracking-[0.28em] text-red-300">Coming Soon</div>
+              <h2 className="mt-4 text-4xl font-bold">URL Intelligence Beta</h2>
+              <p className="mt-5 leading-8 text-zinc-400">
+                ShadowScore is starting with marketplace and payout risk because that is where real field data is strongest. The same trust framework can later evaluate any business, website or online service.
+              </p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              {[
+                ["Company Trust", "Business identity, contact details, transparency and public footprint."],
+                ["Reputation Risk", "Reviews, complaints, community sentiment and support patterns."],
+                ["Offer Risk", "Overpromising, aggressive marketing, refund friction and evidence quality."],
+                ["Decision Support", "A clear risk picture before buying, subscribing, investing or sharing payment details."],
+              ].map(([title, body]) => (
+                <div key={title} className="rounded-2xl border border-white/10 bg-black/55 p-5">
+                  <div className="font-bold text-white">{title}</div>
+                  <p className="mt-3 text-sm leading-6 text-zinc-500">{body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Panel>
+      </section>
+
       <section className="mx-auto max-w-5xl px-6 py-20">
         <div className="text-center">
           <div className="text-sm uppercase tracking-[0.28em] text-red-300">FAQ</div>
@@ -524,12 +559,17 @@ I would like to start a marketplace trust assessment.`;
           <h2 className="mt-4 text-4xl font-bold">Join The Marketplace Trust Intelligence Layer</h2>
           <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-zinc-400">No fake reviews. No recovery promises. Just a sharper way to understand marketplace risk before it hurts the business.</p>
           <div className="mt-10 flex flex-col items-center justify-center gap-4 md:flex-row">
-            <Link href="/intake" className="rounded-xl bg-red-600 px-8 py-4 font-bold transition hover:bg-red-500">Scan My Marketplace Risk</Link>
+            <Link href="/intake" className="rounded-xl bg-red-600 px-8 py-4 font-bold transition hover:bg-red-500">Scan My Business Risk</Link>
             <button type="button" onClick={() => openWhatsApp(selected.name)} className="rounded-xl border border-white/10 px-8 py-4 text-zinc-300 transition hover:border-red-400/30 hover:text-white">Talk With An Analyst</button>
           </div>
         </div>
         <div className="mx-auto mt-8 max-w-4xl rounded-2xl border border-white/10 bg-black/35 p-5 text-center text-sm leading-7 text-zinc-400">
           ShadowScore provides independent marketplace risk intelligence only. It does not guarantee account recovery, payment release or legal outcomes. Users remain responsible for their own marketplace actions, submissions and business decisions.
+        </div>
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-4 text-sm text-zinc-500">
+          <a href={`mailto:${CONTACT_EMAIL}`} className="hover:text-white">{CONTACT_EMAIL}</a>
+          <span className="text-zinc-700">•</span>
+          <a href={`mailto:${SUPPORT_EMAIL}`} className="hover:text-white">{SUPPORT_EMAIL}</a>
         </div>
         <div className="mt-10 flex flex-wrap items-center justify-center gap-5 text-sm text-zinc-500">
           <Link href="/about" className="hover:text-white">About</Link>
