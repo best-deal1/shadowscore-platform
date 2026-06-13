@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import PaymentButtons from "../../components/PaymentButtons";
+import { analyzeRisk } from "../../lib/riskEngine";
 
 type Severity = "Low" | "Medium" | "High" | "Critical";
 type Finding = { title: string; severity: Severity; points: number; detail: string; recommendation: string };
@@ -311,6 +312,16 @@ export default function IntakePage() {
     return Math.max(18, Math.min(96, score));
   }, [presentEvidence, files.length, detectedSignals.length, warningIssues.length, blockingIssues.length, store, email]);
 
+  const engineResult = useMemo(() => analyzeRisk({
+    marketplace: displayMarketplace,
+    caseType,
+    store,
+    email,
+    fileNames: files.map((file) => file.name),
+    evidencePresent: presentEvidence,
+    evidenceRequired: requirements.length,
+  }), [displayMarketplace, caseType, store, email, files, presentEvidence, requirements.length]);
+
   const canAnalyze = files.length > 0 && blockingIssues.length === 0 && formErrors.length === 0;
 
   const saveLead = () => {
@@ -321,10 +332,13 @@ export default function IntakePage() {
       store,
       email,
       files: files.map((file) => ({ name: file.name, size: file.size, type: file.type })),
-      score,
-      label: scoreLabel(score),
-      stage: healthStage(score),
-      findings: findings.map((item) => item.title),
+      score: engineResult.score,
+      label: scoreLabel(engineResult.score),
+      stage: engineResult.stage,
+      revenueImpact: engineResult.revenueImpact,
+      primaryRiskDomain: engineResult.primaryRiskDomain,
+      rootCauseHypothesis: engineResult.rootCauseHypothesis,
+      findings: engineResult.findings.map((item) => item.title),
       warnings: warningIssues.map((item) => `${item.file}: ${item.issue}`),
     };
     localStorage.setItem("shadowscore_last_lead", JSON.stringify(lead));
@@ -470,13 +484,13 @@ export default function IntakePage() {
               <div className="mt-8 rounded-[28px] border border-red-400/20 bg-red-500/[0.06] p-6">
                 <div className="grid gap-6 md:grid-cols-[180px_1fr]">
                   <div>
-                    <div className={`text-6xl font-black ${scoreColor(score)}`}>{score}</div>
-                    <div className="mt-3 text-sm font-bold text-white">{scoreLabel(score)}</div>
+                    <div className={`text-6xl font-black ${scoreColor(engineResult.score)}`}>{engineResult.score}</div>
+                    <div className="mt-3 text-sm font-bold text-white">{scoreLabel(engineResult.score)}</div>
                     <div className="mt-2 text-xs text-zinc-500">{displayMarketplace} · {caseType}</div>
                     <div className="mt-5 rounded-2xl border border-white/10 bg-black/50 p-4">
                       <div className="text-xs uppercase tracking-[0.22em] text-zinc-500">Health Stage</div>
-                      <div className="mt-2 text-lg font-black text-orange-200">{healthStage(score)}</div>
-                      <p className="mt-2 text-xs leading-5 text-zinc-400">{nextLikelyAction(score)}</p>
+                      <div className="mt-2 text-lg font-black text-orange-200">{engineResult.stage}</div>
+                      <p className="mt-2 text-xs leading-5 text-zinc-400">{engineResult.nextLikelyOutcome}</p>
                     </div>
                     <div className="mt-4 grid gap-3">
                       <div className="rounded-2xl border border-white/10 bg-black/50 p-4">
@@ -490,7 +504,40 @@ export default function IntakePage() {
                     </div>
                   </div>
                   <div>
-                    <div className="text-xl font-bold">Detected issue signals</div>
+                    <div className="rounded-2xl border border-red-400/20 bg-black/55 p-5">
+                      <div className="text-xs uppercase tracking-[0.22em] text-red-300">Risk Engine V1</div>
+                      <div className="mt-4 grid gap-3 md:grid-cols-2">
+                        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                          <div className="text-xs uppercase tracking-[0.18em] text-zinc-500">Primary Domain</div>
+                          <div className="mt-2 font-black text-white">{engineResult.primaryRiskDomain}</div>
+                        </div>
+                        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                          <div className="text-xs uppercase tracking-[0.18em] text-zinc-500">Revenue Impact</div>
+                          <div className="mt-2 font-black text-red-100">{engineResult.revenueImpact}</div>
+                        </div>
+                        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                          <div className="text-xs uppercase tracking-[0.18em] text-zinc-500">Trust Score</div>
+                          <div className="mt-2 font-black text-emerald-200">{engineResult.trustScore}/100</div>
+                        </div>
+                        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                          <div className="text-xs uppercase tracking-[0.18em] text-zinc-500">Revenue Risk</div>
+                          <div className="mt-2 font-black text-orange-200">{engineResult.revenueRiskScore}/100</div>
+                        </div>
+                      </div>
+                      <div className="mt-4 rounded-xl border border-white/10 bg-black/50 p-4">
+                        <div className="text-xs uppercase tracking-[0.18em] text-zinc-500">Root Cause Hypothesis</div>
+                        <div className="mt-2 font-bold text-white">{engineResult.rootCauseHypothesis}</div>
+                        <p className="mt-2 text-sm leading-6 text-zinc-400">{engineResult.nextLikelyOutcome}</p>
+                      </div>
+                      {engineResult.missingEvidence.length > 0 && (
+                        <div className="mt-4 rounded-xl border border-yellow-400/20 bg-yellow-500/10 p-4 text-sm leading-6 text-yellow-100">
+                          <div className="font-bold">Missing evidence</div>
+                          <div className="mt-2 space-y-1">{engineResult.missingEvidence.map((item) => <div key={item}>• {item}</div>)}</div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mt-6 text-xl font-bold">Detected issue signals</div>
                     <div className="mt-4 rounded-2xl border border-white/10 bg-black/45 p-4 text-sm leading-6 text-zinc-300">
                       {detectedSignals.length ? detectedSignals.slice(0, 4).map((signal) => <div key={signal.term}>• {signal.title}</div>) : <div>Auto detect did not find a strong issue signal yet. Add notices with clear filenames such as ebay-mc011.pdf, walmart-counterfeit.png or paypal-reserve.pdf.</div>}
                     </div>
@@ -508,9 +555,9 @@ export default function IntakePage() {
                 </div>
 
                 <div className="mt-6 grid gap-4 md:grid-cols-3">
-                  <div className="rounded-2xl border border-white/10 bg-black/50 p-4"><div className="text-xs uppercase tracking-[0.22em] text-zinc-500">Current Stage</div><div className="mt-2 font-black text-orange-200">{healthStage(score)}</div></div>
+                  <div className="rounded-2xl border border-white/10 bg-black/50 p-4"><div className="text-xs uppercase tracking-[0.22em] text-zinc-500">Current Stage</div><div className="mt-2 font-black text-orange-200">{engineResult.stage}</div></div>
                   <div className="rounded-2xl border border-white/10 bg-black/50 p-4"><div className="text-xs uppercase tracking-[0.22em] text-zinc-500">Predicted Next</div><div className="mt-2 font-black text-red-200">{score >= 45 ? "Manual Review" : "Warning"}</div></div>
-                  <div className="rounded-2xl border border-white/10 bg-black/50 p-4"><div className="text-xs uppercase tracking-[0.22em] text-zinc-500">Fix Impact</div><div className="mt-2 font-black text-emerald-200">{Math.max(18, score - 23)} after evidence</div></div>
+                  <div className="rounded-2xl border border-white/10 bg-black/50 p-4"><div className="text-xs uppercase tracking-[0.22em] text-zinc-500">Fix Impact</div><div className="mt-2 font-black text-emerald-200">{Math.max(18, engineResult.score - 23)} after evidence</div></div>
                 </div>
 
                 <div className="mt-6 rounded-2xl border border-white/10 bg-black/50 p-5 text-sm leading-7 text-zinc-400">This preliminary score is not internal marketplace data. It is a direction signal based on uploaded evidence metadata and visible indicators.</div>
