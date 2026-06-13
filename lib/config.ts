@@ -7,7 +7,7 @@ export const PARTNERS_EMAIL = "partners@shadowscore.io";
 
 // Use a verified PayPal business email before going live.
 // If info@shadowscore.io is not verified in PayPal yet, replace this with the verified PayPal account email.
-export const PAYPAL_BUSINESS_EMAIL = "info@shadowscore.io";
+export const PAYPAL_BUSINESS_EMAIL = "sales@best-deal.org";
 
 export function buildWhatsAppUrl(message: string) {
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
