@@ -63,6 +63,49 @@ const MARKETPLACE_REQUIREMENTS: Record<string, Requirement[]> = {
     { label: "Fulfillment proof", hints: ["delivery", "tracking", "order", "proof"] },
     { label: "Business and product documentation", hints: ["business", "product", "policy", "verification"] },
   ],
+
+  SHEIN: [
+    { label: "Seller verification or compliance notice", hints: ["shein", "verification", "seller", "compliance", "review"] },
+    { label: "Product, catalog or authenticity notice", hints: ["product", "catalog", "authenticity", "counterfeit", "brand"] },
+    { label: "Order, fulfillment or payout evidence", hints: ["order", "fulfillment", "delivery", "payout", "settlement"] },
+    { label: "Supplier or business documentation", hints: ["supplier", "invoice", "business", "company", "license"] },
+  ],
+  Shopify: [
+    { label: "Store, payment or risk notice", hints: ["shopify", "store", "risk", "notice", "review", "hold"] },
+    { label: "Payment processor evidence", hints: ["paypal", "stripe", "payoneer", "reserve", "chargeback"] },
+    { label: "Order, fulfillment or dispute evidence", hints: ["order", "tracking", "delivery", "dispute", "refund"] },
+    { label: "Product and supplier documentation", hints: ["product", "supplier", "invoice", "policy"] },
+  ],
+  "Facebook Marketplace": [
+    { label: "Marketplace restriction or account notice", hints: ["facebook", "marketplace", "restriction", "review", "appeal"] },
+    { label: "Buyer, order or message evidence", hints: ["buyer", "order", "message", "dispute", "complaint"] },
+    { label: "Payment or payout evidence", hints: ["payout", "payment", "hold", "reserve"] },
+    { label: "Policy or product notice", hints: ["policy", "product", "listing", "violation"] },
+  ],
+  Vinted: [
+    { label: "Account or commercial activity notice", hints: ["vinted", "commercial", "restriction", "review"] },
+    { label: "Listing or product policy evidence", hints: ["listing", "product", "policy", "catalog"] },
+    { label: "Buyer or order evidence", hints: ["buyer", "order", "tracking", "delivery"] },
+    { label: "Verification or identity evidence", hints: ["verification", "identity", "business", "id"] },
+  ],
+  Depop: [
+    { label: "Depop account or listing notice", hints: ["depop", "account", "listing", "restriction", "review"] },
+    { label: "Buyer or dispute evidence", hints: ["buyer", "message", "dispute", "refund"] },
+    { label: "Policy or authenticity evidence", hints: ["policy", "authenticity", "brand", "counterfeit"] },
+    { label: "Payment or payout evidence", hints: ["payment", "payout", "hold", "reserve"] },
+  ],
+  Mercari: [
+    { label: "Mercari account or marketplace notice", hints: ["mercari", "account", "restriction", "review", "notice"] },
+    { label: "Order, shipping or buyer evidence", hints: ["order", "shipping", "tracking", "buyer"] },
+    { label: "Policy or product evidence", hints: ["policy", "product", "violation", "authenticity"] },
+    { label: "Payment or verification evidence", hints: ["payment", "payout", "verification", "hold"] },
+  ],
+  Temu: [
+    { label: "Temu seller or compliance notice", hints: ["temu", "seller", "compliance", "review", "restriction"] },
+    { label: "Product, catalog or authenticity evidence", hints: ["product", "catalog", "counterfeit", "authenticity"] },
+    { label: "Fulfillment or payout evidence", hints: ["fulfillment", "delivery", "payout", "settlement"] },
+    { label: "Supplier or business documentation", hints: ["supplier", "invoice", "business", "license"] },
+  ],
   Other: [
     { label: "Marketplace, payment or account notice", hints: ["notice", "restriction", "suspension", "review", "appeal", "violation", "warning", "hold"] },
     { label: "Store, account or dashboard screenshot", hints: ["store", "seller", "account", "dashboard", "shop", "profile"] },
@@ -72,6 +115,7 @@ const MARKETPLACE_REQUIREMENTS: Record<string, Requirement[]> = {
 };
 
 const CASE_TYPES = [
+  "Auto detect",
   "Marketplace review",
   "Payout hold / reserve",
   "Verification review",
@@ -83,6 +127,13 @@ const CASE_TYPES = [
   "BBE / poor buying experience",
   "MC011 / proof of delivery",
   "MC999 / permanent restriction",
+  "Restricted account",
+  "Permanent suspension",
+  "Deferred settlement",
+  "Account health warning",
+  "Warehouse / overseas inventory",
+  "Payment review",
+  "Other",
 ];
 
 const RISK_SIGNALS = [
@@ -158,12 +209,19 @@ function nextLikelyAction(score: number) {
   if (score >= 25) return "Monitor account health and correct weak signals.";
   return "Maintain consistent operations and documentation.";
 }
+function evidenceQuality(confidence: number) {
+  if (confidence >= 82) return "Strong";
+  if (confidence >= 62) return "Medium";
+  if (confidence >= 42) return "Weak";
+  return "Insufficient";
+}
+
 
 export default function IntakePage() {
   const [files, setFiles] = useState<File[]>([]);
   const [marketplace, setMarketplace] = useState("eBay");
   const [customMarketplace, setCustomMarketplace] = useState("");
-  const [caseType, setCaseType] = useState("Marketplace review");
+  const [caseType, setCaseType] = useState("Auto detect");
   const [store, setStore] = useState("");
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
@@ -232,7 +290,28 @@ export default function IntakePage() {
   }, [files.length, findings, requirements.length, presentEvidence]);
 
   const progress = files.length === 0 ? 0 : Math.min(100, 20 + files.length * 10 + presentEvidence * 16 - blockingIssues.length * 20);
-  const canAnalyze = files.length > 0 && blockingIssues.length === 0;
+
+  const detectedSignals = useMemo(() => {
+    return RISK_SIGNALS.filter((item) => fileNames.some((name) => name.includes(item.term)) || normalize(caseType).includes(item.term));
+  }, [fileNames, caseType]);
+
+  const formErrors = useMemo(() => {
+    const errors: string[] = [];
+    if (!marketplace) errors.push("Select a marketplace.");
+    if (marketplace === "Other" && !customMarketplace.trim()) errors.push("Enter the marketplace name or choose an existing option.");
+    if (!caseType) errors.push("Select a case type or choose Auto detect.");
+    if (!store.trim()) errors.push("Enter a store URL, seller ID or username.");
+    if (!email.trim()) errors.push("Enter an email address for the report.");
+    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) errors.push("Enter a valid email address.");
+    return errors;
+  }, [marketplace, customMarketplace, caseType, store, email]);
+
+  const confidence = useMemo(() => {
+    const score = 34 + presentEvidence * 12 + files.length * 7 + detectedSignals.length * 5 - warningIssues.length * 6 - blockingIssues.length * 20 + (store.trim() ? 8 : 0) + (email.trim() ? 8 : 0);
+    return Math.max(18, Math.min(96, score));
+  }, [presentEvidence, files.length, detectedSignals.length, warningIssues.length, blockingIssues.length, store, email]);
+
+  const canAnalyze = files.length > 0 && blockingIssues.length === 0 && formErrors.length === 0;
 
   const saveLead = () => {
     const lead = {
@@ -284,7 +363,7 @@ export default function IntakePage() {
             <div className="mt-10 rounded-3xl border border-white/10 bg-white/[0.035] p-6">
               <div className="font-bold">Anti-garbage validation</div>
               <p className="mt-4 leading-7 text-zinc-400">
-                The scan accepts only relevant evidence formats and checks file size, file type, platform requirements and marketplace-related signals before producing a score.
+                The scan accepts only relevant evidence formats and checks file size, file type, platform requirements and marketplace-related signals before producing a score. Unsupported files are blocked, weak evidence is flagged, missing notices are detected and evidence quality is scored.
               </p>
             </div>
             <div className="mt-6 rounded-3xl border border-red-400/20 bg-red-500/[0.06] p-6">
@@ -298,23 +377,23 @@ export default function IntakePage() {
           <div className="rounded-[32px] border border-white/10 bg-black/55 p-6 shadow-[0_0_60px_rgba(120,0,20,0.16)] backdrop-blur-xl">
             <div className="grid gap-5 md:grid-cols-2">
               <label>
-                <div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">Marketplace</div>
+                <div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">Marketplace *</div>
                 <select value={marketplace} onChange={(e) => { setMarketplace(e.target.value); setSubmitted(false); setLeadSaved(false); }} className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white">
                   {Object.keys(MARKETPLACE_REQUIREMENTS).map((item) => <option key={item}>{item}</option>)}
                 </select>
               </label>
               <label>
-                <div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">Case type</div>
+                <div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">Case type *</div>
                 <select value={caseType} onChange={(e) => setCaseType(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white">
                   {CASE_TYPES.map((item) => <option key={item}>{item}</option>)}
                 </select>
               </label>
               <label>
-                <div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">Store URL or seller name</div>
+                <div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">Store URL, seller ID or username *</div>
                 <input value={store} onChange={(e) => setStore(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white" placeholder="https://..." />
               </label>
               <label>
-                <div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">Email for report</div>
+                <div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">Email for report *</div>
                 <input value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white" placeholder="you@example.com" />
               </label>
             </div>
@@ -374,7 +453,12 @@ export default function IntakePage() {
 
             {!canAnalyze && submitted && (
               <div className="mt-6 rounded-2xl border border-red-400/25 bg-red-500/10 p-5 text-sm leading-7 text-red-100">
-                Assessment cannot run yet. Upload at least one valid evidence file and remove blocked files.
+                <div className="font-bold">Assessment cannot run yet.</div>
+                <div className="mt-2 space-y-1">
+                  {files.length === 0 && <div>• Upload at least one valid evidence file.</div>}
+                  {blockingIssues.length > 0 && <div>• Remove blocked files before running the scan.</div>}
+                  {formErrors.map((error) => <div key={error}>• {error}</div>)}
+                </div>
               </div>
             )}
 
@@ -394,9 +478,23 @@ export default function IntakePage() {
                       <div className="mt-2 text-lg font-black text-orange-200">{healthStage(score)}</div>
                       <p className="mt-2 text-xs leading-5 text-zinc-400">{nextLikelyAction(score)}</p>
                     </div>
+                    <div className="mt-4 grid gap-3">
+                      <div className="rounded-2xl border border-white/10 bg-black/50 p-4">
+                        <div className="text-xs uppercase tracking-[0.22em] text-zinc-500">Scan Confidence</div>
+                        <div className="mt-2 text-lg font-black text-emerald-200">{confidence}%</div>
+                      </div>
+                      <div className="rounded-2xl border border-white/10 bg-black/50 p-4">
+                        <div className="text-xs uppercase tracking-[0.22em] text-zinc-500">Evidence Quality</div>
+                        <div className="mt-2 text-lg font-black text-red-100">{evidenceQuality(confidence)}</div>
+                      </div>
+                    </div>
                   </div>
                   <div>
-                    <div className="text-xl font-bold">Preliminary findings</div>
+                    <div className="text-xl font-bold">Detected issue signals</div>
+                    <div className="mt-4 rounded-2xl border border-white/10 bg-black/45 p-4 text-sm leading-6 text-zinc-300">
+                      {detectedSignals.length ? detectedSignals.slice(0, 4).map((signal) => <div key={signal.term}>• {signal.title}</div>) : <div>Auto detect did not find a strong issue signal yet. Add notices with clear filenames such as ebay-mc011.pdf, walmart-counterfeit.png or paypal-reserve.pdf.</div>}
+                    </div>
+                    <div className="mt-6 text-xl font-bold">Preliminary findings</div>
                     <div className="mt-4 space-y-3">
                       {findings.map((finding) => (
                         <div key={finding.title} className="rounded-2xl border border-white/10 bg-black/45 p-4">
@@ -416,10 +514,12 @@ export default function IntakePage() {
                 </div>
 
                 <div className="mt-6 rounded-2xl border border-white/10 bg-black/50 p-5 text-sm leading-7 text-zinc-400">This preliminary score is not internal marketplace data. It is a direction signal based on uploaded evidence metadata and visible indicators.</div>
-                <div className="mt-6 grid gap-3 md:grid-cols-2"><button type="button" onClick={saveLead} className="rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-4 text-sm font-bold text-white hover:border-red-400/30">Save Lead Locally</button><Link href="/#pricing" className="rounded-2xl bg-red-600 px-5 py-4 text-center text-sm font-black text-white hover:bg-red-500">Download Full Report - $9.90</Link></div>
-                {leadSaved && <div className="mt-4 rounded-2xl border border-emerald-400/25 bg-emerald-500/10 p-4 text-sm text-emerald-100">Lead saved locally in this browser.</div>}
+                <div className="mt-6 grid gap-3 md:grid-cols-2">
+                  <button type="button" onClick={saveLead} className="rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-4 text-sm font-bold text-white hover:border-red-400/30">Save Case Draft</button>
+                  <PaymentButtons planName="Downloadable Scan Report" price="$9.90" buttonLabel="Download Full Report - $9.90" />
+                </div>
+                {leadSaved && <div className="mt-4 rounded-2xl border border-emerald-400/25 bg-emerald-500/10 p-4 text-sm text-emerald-100">Case draft saved only in this browser. It is not uploaded to a server yet.</div>}
                 <div className="mt-4 rounded-2xl border border-white/10 bg-black/50 p-4 text-sm leading-7 text-zinc-400">The scan is free. Payment is only required if you want to download the full report.</div>
-                <PaymentButtons planName="Downloadable Scan Report" price="$9.90" />
               </div>
             )}
           </div>

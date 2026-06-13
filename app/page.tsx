@@ -193,12 +193,17 @@ export default function Home() {
   const visibleFaq = showMoreFaq ? faqItems : faqItems.slice(0, 6);
   const selected = useMemo(() => plans.find((plan) => plan.name === selectedPlan) || plans[1], [selectedPlan]);
   const [heroIndex, setHeroIndex] = useState(0);
+  const [heroVisible, setHeroVisible] = useState(true);
   const hero = heroMessages[heroIndex];
 
   useEffect(() => {
     const timer = window.setInterval(() => {
-      setHeroIndex((current) => (current + 1) % heroMessages.length);
-    }, 4200);
+      setHeroVisible(false);
+      window.setTimeout(() => {
+        setHeroIndex((current) => (current + 1) % heroMessages.length);
+        setHeroVisible(true);
+      }, 260);
+    }, 4400);
     return () => window.clearInterval(timer);
   }, []);
 
@@ -246,13 +251,15 @@ I would like to start a marketplace trust assessment.`;
               <span className="h-2 w-2 rounded-full bg-red-400 shadow-[0_0_12px_rgba(248,113,113,0.8)]" />
               Marketplace Health Intelligence For Professional Sellers
             </div>
-            <h1 className="text-5xl font-extrabold leading-[1.02] tracking-tight md:text-6xl">
-              {hero.headline}
-              <span className="mt-4 block text-red-400">{hero.highlight}</span>
-            </h1>
-            <p className="mt-7 max-w-xl text-lg leading-8 text-zinc-400">
-              {hero.sub}
-            </p>
+            <div className={`min-h-[285px] transition-opacity duration-500 md:min-h-[250px] ${heroVisible ? "opacity-100" : "opacity-0"}`}>
+              <h1 className="text-5xl font-extrabold leading-[1.02] tracking-tight md:text-6xl">
+                {hero.headline}
+                <span className="mt-4 block text-red-400">{hero.highlight}</span>
+              </h1>
+              <p className="mt-7 max-w-xl text-lg leading-8 text-zinc-400">
+                {hero.sub}
+              </p>
+            </div>
             <div className="mt-5 flex flex-wrap gap-2">
               {heroMessages.map((_, index) => (
                 <button

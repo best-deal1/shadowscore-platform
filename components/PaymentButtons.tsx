@@ -6,6 +6,7 @@ import { WHATSAPP_NUMBER, PAYPAL_BUSINESS_EMAIL } from "../lib/config";
 type PaymentButtonsProps = {
   planName: string;
   price: string;
+  buttonLabel?: string;
 };
 
 
@@ -45,7 +46,7 @@ function openNewTab(url: string) {
   window.open(url, "_blank", "noopener,noreferrer");
 }
 
-export default function PaymentButtons({ planName, price }: PaymentButtonsProps) {
+export default function PaymentButtons({ planName, price, buttonLabel = "Open Checkout" }: PaymentButtonsProps) {
   const [open, setOpen] = useState(false);
 
   const paypalHref = buildPaypalHref(planName, price);
@@ -61,7 +62,7 @@ export default function PaymentButtons({ planName, price }: PaymentButtonsProps)
         onClick={() => setOpen(true)}
         className="mt-6 w-full rounded-2xl bg-emerald-500 px-6 py-4 text-center text-sm font-black text-black shadow-[0_0_28px_rgba(16,185,129,0.28)] transition hover:bg-emerald-400"
       >
-        Open Checkout
+        {buttonLabel}
       </button>
 
       <div className="mt-3 text-center text-xs leading-5 text-zinc-600">
