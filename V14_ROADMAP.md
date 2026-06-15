@@ -4,7 +4,7 @@ Core Direction:
 - Revenue Protection
 - Marketplace Risk Intelligence
 - Trust Intelligence
-- URL Intelligence (Beta)
+- URL Intelligence: postponed. Keep focus on marketplace and payment evidence.
 
 New Risk Domains:
 - Marketplace Risk
@@ -14,9 +14,9 @@ New Risk Domains:
 - Security Risk
 - Trust Risk
 
-Future Engine:
-- URL analysis
-- Trust score
-- Consumer risk score
-- Claim credibility score
+Current Engine:
+- Marketplace evidence analysis
+- Payment risk analysis
+- Restriction probability
+- Risk timeline
 - Revenue impact score

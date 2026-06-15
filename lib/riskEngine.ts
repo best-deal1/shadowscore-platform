@@ -24,11 +24,18 @@ export type RiskEngineInput = {
   evidenceRequired?: number;
 };
 
+export type RiskTimelinePoint = {
+  label: string;
+  status: string;
+  detail: string;
+};
+
 export type RiskEngineOutput = {
   score: number;
   trustScore: number;
   revenueRiskScore: number;
   stage: HealthStage;
+  restrictionProbability: RiskSeverity;
   revenueImpact: RevenueImpact;
   confidence: number;
   primaryRiskDomain: string;
@@ -37,6 +44,7 @@ export type RiskEngineOutput = {
   findings: RiskFinding[];
   missingEvidence: string[];
   recommendedActions: string[];
+  timeline: RiskTimelinePoint[];
   disclaimer: string;
 };
 
@@ -51,6 +59,51 @@ const rules: Array<{
   explanation: string;
   recommendedAction: string;
 }> = [
+  {
+    id: "ebay-mc081",
+    terms: ["mc081", "registration suspension", "registration review"],
+    domain: "Security Risk",
+    title: "MC081 / registration integrity signal",
+    severity: "Critical",
+    points: 26,
+    revenuePoints: 16,
+    explanation: "MC081-style notices usually indicate registration, identity or account integrity concerns rather than a simple seller-performance issue.",
+    recommendedAction: "Review identity, registration, payment, device, IP and linked-account consistency before submitting another appeal.",
+  },
+  {
+    id: "amazon-resale-warning",
+    terms: ["purpose of resale", "rental", "ship such products to your customers", "amazon conditions of use", "refunds on your amazon account"],
+    domain: "Supplier Risk",
+    title: "Amazon retail sourcing / resale detection",
+    severity: "High",
+    points: 20,
+    revenuePoints: 12,
+    explanation: "The evidence suggests Amazon detected buyer-account activity consistent with commercial resale or dropshipping.",
+    recommendedAction: "Reduce dependency on retail buyer accounts, diversify suppliers and move toward invoice-backed wholesale or authorized sourcing.",
+  },
+  {
+    id: "tiktok-fair-trading",
+    terms: ["fair trading", "flash deal", "platform-funded discount", "daily order creation is limited"],
+    domain: "Compliance Risk",
+    title: "TikTok Shop fair trading enforcement",
+    severity: "High",
+    points: 18,
+    revenuePoints: 22,
+    explanation: "Fair trading enforcement can limit promotions, order creation and withdrawals while the account remains under restrictions.",
+    recommendedAction: "Review shop activity, promotional behavior, customer complaints and seller terms before appealing.",
+  },
+  {
+    id: "product-quality-rating",
+    terms: ["low product rating", "product rating", "violation points", "deferred settlement", "customer complaints"],
+    domain: "Reputation Risk",
+    title: "Product quality and rating risk",
+    severity: "High",
+    points: 17,
+    revenuePoints: 20,
+    explanation: "Low product ratings and complaint patterns can trigger violation points, settlement delays and broader shop health issues.",
+    recommendedAction: "Audit product quality, listing claims, customer expectations, refunds, reviews and complaint responses.",
+  },
+
   {
     id: "ebay-mc011",
     terms: ["mc011", "proof of delivery", "delivery verification"],
@@ -245,6 +298,53 @@ function revenueImpactFromScore(score: number): RevenueImpact {
   return "Low";
 }
 
+
+function restrictionProbabilityFromScore(score: number): RiskSeverity {
+  if (score >= 84) return "Critical";
+  if (score >= 62) return "High";
+  if (score >= 35) return "Medium";
+  return "Low";
+}
+
+function buildTimeline(stage: HealthStage, primaryRiskDomain: string, score: number): RiskTimelinePoint[] {
+  if (stage === "Healthy") {
+    return [
+      { label: "Now", status: "Healthy", detail: "No major enforcement language detected in the supplied evidence." },
+      { label: "Next", status: "Monitor", detail: "Keep tracking, verification and payout evidence organized." },
+    ];
+  }
+
+  if (stage === "Warning") {
+    return [
+      { label: "Before", status: "Healthy", detail: "Visible seller metrics may still look normal." },
+      { label: "Now", status: "Warning", detail: `${primaryRiskDomain} signals are visible and should be handled before escalation.` },
+      { label: "Next", status: "Possible restriction", detail: "Unresolved warnings can become payout holds, order limits or account review." },
+    ];
+  }
+
+  if (stage === "Restricted") {
+    return [
+      { label: "Before", status: "Warning signs", detail: "Risk was likely building before the restriction appeared." },
+      { label: "Now", status: "Restricted", detail: `${primaryRiskDomain} is currently the main visible risk domain.` },
+      { label: "Next", status: "Escalation risk", detail: "If evidence is incomplete, the case may move toward suspension or payout freeze." },
+    ];
+  }
+
+  if (stage === "Suspended") {
+    return [
+      { label: "Before", status: "Restricted or reviewed", detail: "The account likely passed through a review or warning stage." },
+      { label: "Now", status: "Suspended", detail: `Detected score ${score}/100 with ${primaryRiskDomain} as the leading risk domain.` },
+      { label: "Next", status: "Appeal or post-mortem", detail: "The outcome depends on root cause clarity, evidence quality and platform severity." },
+    ];
+  }
+
+  return [
+    { label: "Before", status: "High-risk pattern", detail: "Signals suggest severe trust, compliance or payment exposure." },
+    { label: "Now", status: "Critical", detail: `${primaryRiskDomain} may already be affecting account access, payouts or listings.` },
+    { label: "Next", status: "Business continuity risk", detail: "Prioritize cashflow protection, evidence timeline and operating-model changes." },
+  ];
+}
+
 function nextOutcome(stage: HealthStage, revenueImpact: RevenueImpact) {
   if (stage === "Critical") return "Funds, listings or account access may already be at severe risk. Manual post-mortem is recommended.";
   if (stage === "Suspended") return "Appeal or recovery path depends on root cause and evidence quality.";
@@ -342,6 +442,7 @@ export function analyzeRisk(input: RiskEngineInput): RiskEngineOutput {
   );
 
   const stage = stageFromScore(score);
+  const restrictionProbability = restrictionProbabilityFromScore(score);
   const revenueImpact = revenueImpactFromScore(revenueRiskScore);
   const domainCounts = findings.reduce<Record<string, number>>((acc, item) => {
     acc[item.domain] = (acc[item.domain] || 0) + item.points;
@@ -351,12 +452,14 @@ export function analyzeRisk(input: RiskEngineInput): RiskEngineOutput {
 
   const rootCauseHypothesis = findings[0]?.title || "Insufficient evidence";
   const recommendedActions = Array.from(new Set(findings.slice(0, 5).map((item) => item.recommendedAction)));
+  const timeline = buildTimeline(stage, primaryRiskDomain, score);
 
   return {
     score,
     trustScore,
     revenueRiskScore,
     stage,
+    restrictionProbability,
     revenueImpact,
     confidence,
     primaryRiskDomain,
@@ -365,6 +468,7 @@ export function analyzeRisk(input: RiskEngineInput): RiskEngineOutput {
     findings,
     missingEvidence,
     recommendedActions,
+    timeline,
     disclaimer:
       "ShadowScore is an independent risk assessment based on seller-supplied evidence and visible indicators. It does not represent internal marketplace or payment-provider data.",
   };

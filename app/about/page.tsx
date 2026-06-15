@@ -5,12 +5,12 @@ export default function AboutPage() {
     <ShadowScoreLayout>
       <section className="mx-auto max-w-4xl px-6 py-20">
         <div className="text-sm uppercase tracking-[0.28em] text-red-300">About ShadowScore</div>
-        <h1 className="mt-4 text-5xl font-black">The Trust Layer For Digital Sellers</h1>
+        <h1 className="mt-4 text-5xl font-black">Marketplace & Payment Risk Intelligence For Digital Sellers</h1>
         <p className="mt-6 text-lg leading-8 text-zinc-400">
-          ShadowScore helps sellers understand marketplace, reputation and payout risk before revenue, account access or payment flow are affected.
+          ShadowScore helps sellers understand marketplace, verification, compliance and payout risk before revenue, account access or payment flow are affected.
         </p>
         <p className="mt-6 leading-8 text-zinc-400">
-          We start with the places where sellers feel the pain first: eBay, Amazon, Walmart, Etsy, TikTok Shop, PayPal, Payoneer and Stripe. The long-term vision is broader URL and business trust intelligence.
+          We focus on the places where sellers feel the pain first: eBay, Amazon, Walmart, Etsy, TikTok Shop, PayPal, Payoneer and Stripe. We intentionally prioritize marketplace and payment evidence over generic URL scanning.
         </p>
         <p className="mt-6 leading-8 text-zinc-400">
           ShadowScore is independent and does not claim access to internal marketplace systems. The platform is built around seller-supplied evidence, public policies, visible operational signals and structured risk analysis.

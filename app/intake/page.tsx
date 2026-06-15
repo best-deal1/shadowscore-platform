@@ -336,6 +336,7 @@ export default function IntakePage() {
       label: scoreLabel(engineResult.score),
       stage: engineResult.stage,
       revenueImpact: engineResult.revenueImpact,
+      restrictionProbability: engineResult.restrictionProbability,
       primaryRiskDomain: engineResult.primaryRiskDomain,
       rootCauseHypothesis: engineResult.rootCauseHypothesis,
       findings: engineResult.findings.map((item) => item.title),
@@ -495,18 +496,18 @@ export default function IntakePage() {
                     <div className="mt-4 grid gap-3">
                       <div className="rounded-2xl border border-white/10 bg-black/50 p-4">
                         <div className="text-xs uppercase tracking-[0.22em] text-zinc-500">Scan Confidence</div>
-                        <div className="mt-2 text-lg font-black text-emerald-200">{confidence}%</div>
+                        <div className="mt-2 text-lg font-black text-emerald-200">{engineResult.confidence}%</div>
                       </div>
                       <div className="rounded-2xl border border-white/10 bg-black/50 p-4">
                         <div className="text-xs uppercase tracking-[0.22em] text-zinc-500">Evidence Quality</div>
-                        <div className="mt-2 text-lg font-black text-red-100">{evidenceQuality(confidence)}</div>
+                        <div className="mt-2 text-lg font-black text-red-100">{evidenceQuality(engineResult.confidence)}</div>
                       </div>
                     </div>
                   </div>
                   <div>
                     <div className="rounded-2xl border border-red-400/20 bg-black/55 p-5">
                       <div className="text-xs uppercase tracking-[0.22em] text-red-300">Risk Engine V1</div>
-                      <div className="mt-4 grid gap-3 md:grid-cols-2">
+                      <div className="mt-4 grid gap-3 md:grid-cols-3">
                         <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
                           <div className="text-xs uppercase tracking-[0.18em] text-zinc-500">Primary Domain</div>
                           <div className="mt-2 font-black text-white">{engineResult.primaryRiskDomain}</div>
@@ -514,6 +515,10 @@ export default function IntakePage() {
                         <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
                           <div className="text-xs uppercase tracking-[0.18em] text-zinc-500">Revenue Impact</div>
                           <div className="mt-2 font-black text-red-100">{engineResult.revenueImpact}</div>
+                        </div>
+                        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                          <div className="text-xs uppercase tracking-[0.18em] text-zinc-500">Restriction Probability</div>
+                          <div className="mt-2 font-black text-orange-200">{engineResult.restrictionProbability}</div>
                         </div>
                         <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
                           <div className="text-xs uppercase tracking-[0.18em] text-zinc-500">Trust Score</div>
@@ -535,6 +540,20 @@ export default function IntakePage() {
                           <div className="mt-2 space-y-1">{engineResult.missingEvidence.map((item) => <div key={item}>• {item}</div>)}</div>
                         </div>
                       )}
+                      <div className="mt-4 rounded-xl border border-white/10 bg-black/50 p-4">
+                        <div className="text-xs uppercase tracking-[0.18em] text-zinc-500">Risk Timeline</div>
+                        <div className="mt-4 space-y-3">
+                          {engineResult.timeline.map((point, index) => (
+                            <div key={`${point.label}-${index}`} className="flex gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-red-500/15 text-xs font-black text-red-200">{index + 1}</div>
+                              <div>
+                                <div className="text-sm font-bold text-white">{point.label}: {point.status}</div>
+                                <div className="mt-1 text-xs leading-5 text-zinc-500">{point.detail}</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
 
                     <div className="mt-6 text-xl font-bold">Detected issue signals</div>
@@ -556,7 +575,7 @@ export default function IntakePage() {
 
                 <div className="mt-6 grid gap-4 md:grid-cols-3">
                   <div className="rounded-2xl border border-white/10 bg-black/50 p-4"><div className="text-xs uppercase tracking-[0.22em] text-zinc-500">Current Stage</div><div className="mt-2 font-black text-orange-200">{engineResult.stage}</div></div>
-                  <div className="rounded-2xl border border-white/10 bg-black/50 p-4"><div className="text-xs uppercase tracking-[0.22em] text-zinc-500">Predicted Next</div><div className="mt-2 font-black text-red-200">{score >= 45 ? "Manual Review" : "Warning"}</div></div>
+                  <div className="rounded-2xl border border-white/10 bg-black/50 p-4"><div className="text-xs uppercase tracking-[0.22em] text-zinc-500">Predicted Next</div><div className="mt-2 font-black text-red-200">{engineResult.restrictionProbability === "Critical" ? "Critical enforcement" : engineResult.restrictionProbability === "High" ? "Manual review" : engineResult.restrictionProbability === "Medium" ? "Warning" : "Monitor"}</div></div>
                   <div className="rounded-2xl border border-white/10 bg-black/50 p-4"><div className="text-xs uppercase tracking-[0.22em] text-zinc-500">Fix Impact</div><div className="mt-2 font-black text-emerald-200">{Math.max(18, engineResult.score - 23)} after evidence</div></div>
                 </div>
 

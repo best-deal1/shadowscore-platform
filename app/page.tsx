@@ -53,14 +53,14 @@ function MarketplaceLogo({ type }: { type: string }) {
   );
 }
 
-const additionalPlatforms = ["SHEIN", "Vinted", "Depop", "Facebook Marketplace", "Shopify Risk Signals"];
+const additionalPlatforms = ["SHEIN", "Vinted", "Depop", "Facebook Marketplace", "Shopify Risk Signals", "Temu", "AliExpress"];
 
 
 const heroMessages = [
   {
     headline: "Protect Revenue",
     highlight: "Before Problems Escalate.",
-    sub: "Monitor marketplace, reputation, verification and payout risks before they freeze cashflow, reduce visibility or restrict access.",
+    sub: "Monitor marketplace, verification, compliance and payout risks before they freeze cashflow, reduce visibility or restrict access.",
   },
   {
     headline: "Good Sellers",
@@ -76,11 +76,6 @@ const heroMessages = [
     headline: "Know Your Risk",
     highlight: "Before They Do.",
     sub: "ShadowScore maps visible evidence into marketplace, reputation and payout risk intelligence.",
-  },
-  {
-    headline: "The Trust Layer",
-    highlight: "For Digital Sellers.",
-    sub: "Starting with marketplaces and payouts, expanding toward URL and business trust intelligence.",
   },
 ];
 
@@ -119,6 +114,23 @@ const intelligenceTopics = [
   { platform: "Walmart", event: "Counterfeit and supplier authenticity suspensions", signal: "Authenticity", severity: "High" },
   { platform: "PayPal", event: "Reserve and chargeback exposure", signal: "Financial", severity: "Elevated" },
   { platform: "Payoneer", event: "Business verification and compliance review loops", signal: "Payment Verification", severity: "Elevated" },
+];
+
+
+const caseLibrary = [
+  { name: "Top Rated + BBE", platform: "eBay", cause: "Bad Buyer Experience", outcome: "Permanent selling restriction", lesson: "Seller level and feedback do not always equal account safety." },
+  { name: "MC081 registration suspension", platform: "eBay", cause: "Security / registration integrity", outcome: "Permanent suspension risk", lesson: "Identity, device, IP and registration consistency matter." },
+  { name: "Low rating + deferred settlement", platform: "TikTok Shop", cause: "Product quality and reputation", outcome: "Violation points and delayed settlement", lesson: "Product ratings can become payment risk." },
+  { name: "Counterfeit suspension", platform: "Walmart", cause: "Authenticity / supplier documentation", outcome: "Account suspension and POA review", lesson: "Supplier evidence is part of marketplace trust." },
+  { name: "Retail resale warning", platform: "Amazon", cause: "Dropshipping / commercial resale detection", outcome: "Refund restriction or account closure warning", lesson: "Supplier model can create risk before marketplace enforcement." },
+];
+
+const timelineStages = [
+  ["Healthy", "Visible metrics look normal, but evidence should already be organized."],
+  ["Warning", "Early signals appear: verification, ratings, tracking, policy or payment friction."],
+  ["Restricted", "Order limits, listing removals, promotion blocks or payout holds begin."],
+  ["Suspended", "Selling access is limited or stopped while appeal or review is pending."],
+  ["Critical", "Permanent restriction, severe payment freeze or business-continuity risk."],
 ];
 
 const plans = [
@@ -161,7 +173,7 @@ const plans = [
 ];
 
 const faqItems = [
-  ["What is ShadowScore?", "ShadowScore is an independent Marketplace, Reputation and Payout Risk Intelligence platform that helps digital sellers assess risk before revenue, payouts or account access are affected."],
+  ["What is ShadowScore?", "ShadowScore is an independent Marketplace & Payment Risk Intelligence platform that helps digital sellers assess risk before revenue, payouts or account access are affected."],
   ["Is ShadowScore only for eBay?", "No. eBay was one trigger, but the platform supports broader marketplace and payment risk analysis across eBay, Amazon, Walmart, Etsy, TikTok Shop, PayPal, Payoneer and Stripe."],
   ["Is ShadowScore affiliated with any marketplace or payment company?", "No. ShadowScore is independent. Marketplace and payment names are shown only to indicate supported coverage areas."],
   ["Does ShadowScore access internal marketplace systems?", "No. ShadowScore does not access internal marketplace data, algorithms or proprietary trust scores. Assessments are based on seller-supplied evidence, public policies and observable operational indicators."],
@@ -175,7 +187,7 @@ const faqItems = [
   ["Is the scan free?", "Yes. The initial scan is free. Payment is only required if you want the downloadable report, a manual investigation or continuous monitoring."],
   ["Do you analyze Payoneer?", "Yes. Payoneer reviews, account verification, payout friction and cross-border payment risk can be included in the financial-risk layer."],
   ["Do you analyze counterfeit or authenticity issues?", "Yes. Authenticity risk includes counterfeit exposure, branded-product risk, supplier documentation quality and invoice consistency."],
-  ["Will ShadowScore expand to any URL?", "Yes, URL Intelligence is a future beta direction. The current focus remains marketplace and payout risk because that is where the strongest field data exists."],
+  ["Do you scan random URLs or rumors?", "No. The current product focuses on marketplace and payment evidence, not gossip, public campaigns or unverified claims. ShadowScore is built around platform notices, seller dashboards, payment messages and operational evidence."],
 ];
 
 function severityClass(severity: string) {
@@ -336,8 +348,8 @@ I would like to start a marketplace trust assessment.`;
       <section id="risk-categories" className="mx-auto max-w-7xl px-6 py-16">
         <div className="text-center">
           <div className="text-sm uppercase tracking-[0.28em] text-red-300">ShadowScore Framework</div>
-          <h2 className="mt-4 text-4xl font-bold">Marketplace, Reputation And Financial Risk In One View.</h2>
-          <p className="mx-auto mt-4 max-w-3xl leading-7 text-zinc-500">Every case is mapped into a structured risk framework across marketplace enforcement, reputation signals, verification gaps, operations and financial exposure.</p>
+          <h2 className="mt-4 text-4xl font-bold">Marketplace And Payment Risk In One View.</h2>
+          <p className="mx-auto mt-4 max-w-3xl leading-7 text-zinc-500">Every case is mapped into a structured risk framework across marketplace enforcement, verification, compliance, operations and financial exposure.</p>
         </div>
         <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {riskCategories.map(([title, body]) => (
@@ -359,10 +371,13 @@ I would like to start a marketplace trust assessment.`;
           <Panel className="p-8">
             <div className="text-sm uppercase tracking-[0.28em] text-red-300">Trust Timeline</div>
             <div className="mt-6 space-y-4">
-              {["Healthy", "Warning signal", "Restricted or payout hold", "Suspended", "Permanent restriction"].map((item, index) => (
-                <div key={item} className="flex items-center gap-4 rounded-2xl border border-white/10 bg-black/55 p-4">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full border border-red-400/30 bg-red-500/10 text-sm font-black text-red-200">{index + 1}</div>
-                  <div className="font-bold text-white">{item}</div>
+              {timelineStages.map(([item, detail], index) => (
+                <div key={item} className="flex items-start gap-4 rounded-2xl border border-white/10 bg-black/55 p-4">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-red-400/30 bg-red-500/10 text-sm font-black text-red-200">{index + 1}</div>
+                  <div>
+                    <div className="font-bold text-white">{item}</div>
+                    <div className="mt-1 text-sm leading-6 text-zinc-500">{detail}</div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -424,17 +439,14 @@ I would like to start a marketplace trust assessment.`;
           <h2 className="mt-4 text-4xl font-bold">No Fake Testimonials. Real Marketplace Patterns.</h2>
           <p className="mx-auto mt-4 max-w-3xl leading-7 text-zinc-500">ShadowScore is built from observed marketplace cases, not invented success stories.</p>
         </div>
-        <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-          {[
-            ["Above Standard", "Restricted despite healthy visible metrics."],
-            ["Missing Tracking", "AliExpress or supplier delay before the handling deadline."],
-            ["Delivered Orders", "Still entered review due to broader trust exposure."],
-            ["VeRO Complaint", "Listing removed after rights-owner report."],
-            ["TikTok Verification", "Business proof and warehouse evidence requested."],
-          ].map(([title, text]) => (
-            <div key={title} className="rounded-[28px] border border-white/10 bg-white/[0.03] p-6">
-              <div className="text-2xl font-black text-red-300">{title}</div>
-              <p className="mt-4 leading-7 text-zinc-500">{text}</p>
+        <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-5">
+          {caseLibrary.map((item) => (
+            <div key={item.name} className="rounded-[28px] border border-white/10 bg-white/[0.03] p-6">
+              <div className="text-xs font-bold uppercase tracking-[0.22em] text-zinc-500">{item.platform}</div>
+              <div className="mt-3 text-2xl font-black text-red-300">{item.name}</div>
+              <p className="mt-4 text-sm leading-6 text-zinc-500"><span className="font-bold text-zinc-300">Cause:</span> {item.cause}</p>
+              <p className="mt-2 text-sm leading-6 text-zinc-500"><span className="font-bold text-zinc-300">Outcome:</span> {item.outcome}</p>
+              <p className="mt-4 leading-7 text-zinc-400">{item.lesson}</p>
             </div>
           ))}
         </div>
@@ -519,18 +531,18 @@ I would like to start a marketplace trust assessment.`;
         <Panel className="p-8">
           <div className="grid gap-8 lg:grid-cols-[.9fr_1.1fr] lg:items-center">
             <div>
-              <div className="text-sm uppercase tracking-[0.28em] text-red-300">Coming Soon</div>
-              <h2 className="mt-4 text-4xl font-bold">URL Intelligence Beta</h2>
+              <div className="text-sm uppercase tracking-[0.28em] text-red-300">Case Intelligence Engine</div>
+              <h2 className="mt-4 text-4xl font-bold">No Random URL Claims. Only Marketplace Evidence.</h2>
               <p className="mt-5 leading-8 text-zinc-400">
-                ShadowScore is starting with marketplace and payout risk because that is where real field data is strongest. The same trust framework can later evaluate any business, website or online service.
+                ShadowScore focuses on structured seller evidence: platform notices, seller dashboards, payout messages, account-health screens, tracking records and verification requests.
               </p>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               {[
-                ["Company Trust", "Business identity, contact details, transparency and public footprint."],
-                ["Reputation Risk", "Reviews, complaints, community sentiment and support patterns."],
-                ["Offer Risk", "Overpromising, aggressive marketing, refund friction and evidence quality."],
-                ["Decision Support", "A clear risk picture before buying, subscribing, investing or sharing payment details."],
+                ["Evidence First", "The scan is based on uploaded notices, screenshots, reports and document gaps."],
+                ["Risk Classification", "Each case is mapped into marketplace, verification, compliance, payment and reputation risk domains."],
+                ["Probability Layer", "The engine estimates restriction probability and likely escalation path from visible indicators."],
+                ["Learning Dataset", "Each real case can become a structured data point for future model improvement."],
               ].map(([title, body]) => (
                 <div key={title} className="rounded-2xl border border-white/10 bg-black/55 p-5">
                   <div className="font-bold text-white">{title}</div>
@@ -556,7 +568,7 @@ I would like to start a marketplace trust assessment.`;
       <section className="mx-auto max-w-5xl px-6 py-20 text-center">
         <div className="rounded-[34px] border border-white/10 bg-white/[0.03] p-10">
           <div className="text-sm uppercase tracking-[0.28em] text-red-300">Early Access</div>
-          <h2 className="mt-4 text-4xl font-bold">Join The Marketplace Trust Intelligence Layer</h2>
+          <h2 className="mt-4 text-4xl font-bold">Join The Marketplace & Payment Risk Intelligence Layer</h2>
           <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-zinc-400">No fake reviews. No recovery promises. Just a sharper way to understand marketplace risk before it hurts the business.</p>
           <div className="mt-10 flex flex-col items-center justify-center gap-4 md:flex-row">
             <Link href="/intake" className="rounded-xl bg-red-600 px-8 py-4 font-bold transition hover:bg-red-500">Scan My Business Risk</Link>
