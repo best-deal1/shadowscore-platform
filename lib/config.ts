@@ -1,5 +1,10 @@
 export const WHATSAPP_NUMBER = "972557293979";
 export const TIKTOK_URL = "https://www.tiktok.com/@shadowscore8";
+
+export const SITE_URL = "https://shadowscore.io";
+export const LINKEDIN_URL = "https://www.linkedin.com/company/shadowscore";
+export const X_URL = "https://x.com/shadowscore";
+export const YOUTUBE_URL = "https://www.youtube.com/@shadowscore";
 export const CONTACT_EMAIL = "info@shadowscore.io";
 export const SUPPORT_EMAIL = "help@shadowscore.io";
 export const PRIVACY_EMAIL = "privacy@shadowscore.io";
