@@ -27,11 +27,12 @@ export default function ShadowScoreLayout({ children }: { children: ReactNode })
             <Link href="/#risk-categories" className="hover:text-white">Risk Categories</Link>
             <Link href="/#pricing" className="hover:text-white">Pricing</Link>
             <Link href="/intake" className="hover:text-white">Free Scan</Link>
+            <Link href="/dashboard" className="hover:text-white">Dashboard</Link>
             <Link href="/security" className="hover:text-white">Security</Link>
             <Link href="/example-report" className="hover:text-white">Example Report</Link>
             <Link href="/contact" className="hover:text-white">Contact</Link>
           </nav>
-          <Link href="/intake" className="rounded-full bg-red-600 px-5 py-2 text-sm font-bold text-white shadow-lg shadow-red-950/40 hover:bg-red-500">Free Risk Scan</Link>
+          <Link href="/dashboard" className="rounded-full bg-red-600 px-5 py-2 text-sm font-bold text-white shadow-lg shadow-red-950/40 hover:bg-red-500">Open Dashboard</Link>
         </div>
       </header>
 

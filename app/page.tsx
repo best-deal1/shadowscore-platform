@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import PaymentButtons from "../components/PaymentButtons";
-import { TIKTOK_URL, CONTACT_EMAIL, SUPPORT_EMAIL, buildWhatsAppUrl } from "../lib/config";
+import { TIKTOK_URL, LINKEDIN_URL, X_URL, YOUTUBE_URL, CONTACT_EMAIL, SUPPORT_EMAIL, buildWhatsAppUrl } from "../lib/config";
 
 
 const marketplaces = [
@@ -572,6 +572,7 @@ I would like to start a marketplace trust assessment.`;
           <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-zinc-400">No fake reviews. No recovery promises. Just a sharper way to understand marketplace risk before it hurts the business.</p>
           <div className="mt-10 flex flex-col items-center justify-center gap-4 md:flex-row">
             <Link href="/intake" className="rounded-xl bg-red-600 px-8 py-4 font-bold transition hover:bg-red-500">Scan My Business Risk</Link>
+            <Link href="/dashboard" className="rounded-xl border border-white/10 px-8 py-4 text-zinc-300 transition hover:border-red-400/30 hover:text-white">Open Dashboard</Link>
             <button type="button" onClick={() => openWhatsApp(selected.name)} className="rounded-xl border border-white/10 px-8 py-4 text-zinc-300 transition hover:border-red-400/30 hover:text-white">Talk With An Analyst</button>
           </div>
         </div>
@@ -583,11 +584,20 @@ I would like to start a marketplace trust assessment.`;
           <span className="text-zinc-700">•</span>
           <a href={`mailto:${SUPPORT_EMAIL}`} className="hover:text-white">{SUPPORT_EMAIL}</a>
         </div>
+        <div className="mt-8 text-xs font-bold uppercase tracking-[0.28em] text-zinc-700">Follow ShadowScore</div>
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-3 text-sm">
+          <a href={LINKEDIN_URL} target="_blank" rel="noreferrer" className="rounded-full border border-white/10 px-4 py-2 text-zinc-400 hover:border-red-400/30 hover:text-white">LinkedIn</a>
+          <a href={TIKTOK_URL} target="_blank" rel="noreferrer" className="rounded-full border border-white/10 px-4 py-2 text-zinc-400 hover:border-red-400/30 hover:text-white">TikTok</a>
+          <a href={X_URL} target="_blank" rel="noreferrer" className="rounded-full border border-white/10 px-4 py-2 text-zinc-400 hover:border-red-400/30 hover:text-white">X</a>
+          <a href={YOUTUBE_URL} target="_blank" rel="noreferrer" className="rounded-full border border-white/10 px-4 py-2 text-zinc-400 hover:border-red-400/30 hover:text-white">YouTube</a>
+        </div>
         <div className="mt-10 flex flex-wrap items-center justify-center gap-5 text-sm text-zinc-500">
           <Link href="/about" className="hover:text-white">About</Link>
           <Link href="/privacy" className="hover:text-white">Privacy</Link>
           <Link href="/terms" className="hover:text-white">Terms</Link>
           <Link href="/security" className="hover:text-white">Security</Link>
+          <Link href="/example-report" className="hover:text-white">Example Report</Link>
+          <Link href="/dashboard" className="hover:text-white">Dashboard</Link>
           <Link href="/contact" className="hover:text-white">Contact</Link>
         </div>
       </section>

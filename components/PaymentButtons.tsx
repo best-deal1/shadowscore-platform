@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { WHATSAPP_NUMBER, PAYPAL_BUSINESS_EMAIL } from "../lib/config";
 import { LEGAL_ACCEPTANCE_VERSION, generateReportId, legalAcceptanceBullets } from "../lib/legal";
+import { saveCheckoutReport } from "../lib/portal";
 
 type PaymentButtonsProps = {
   planName: string;
@@ -108,7 +109,7 @@ export default function PaymentButtons({ planName, price, buttonLabel = "Open Ch
     const finalAcceptedAt = acceptedAt || new Date().toISOString();
     const finalReportId = reportId || generateReportId();
 
-    persistAcceptance({
+    const acceptanceRecord = {
       reportId: finalReportId,
       planName,
       price,
@@ -116,7 +117,10 @@ export default function PaymentButtons({ planName, price, buttonLabel = "Open Ch
       acceptedAt: finalAcceptedAt,
       legalVersion: LEGAL_ACCEPTANCE_VERSION,
       source: "checkout-modal",
-    });
+    };
+
+    persistAcceptance(acceptanceRecord);
+    saveCheckoutReport(acceptanceRecord);
 
     if (method === "PayPal") {
       openNewTab(buildPaypalHref(planName, price, finalReportId));

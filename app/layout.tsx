@@ -2,26 +2,26 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ShadowScore | Marketplace Trust Intelligence",
+  title: "ShadowScore | Trust & Risk Intelligence Platform",
   description:
-    "Independent marketplace trust assessments for sellers facing account reviews, payout holds, policy issues, verification gaps and restriction risk.",
+    "Trust and risk intelligence for marketplaces, payments, businesses and digital operators before restrictions, payment holds or trust failures occur.",
   metadataBase: new URL("https://shadowscore.io"),
   openGraph: {
-    title: "ShadowScore | Marketplace Trust Intelligence",
+    title: "ShadowScore | Trust & Risk Intelligence Platform",
     description:
-      "Free marketplace risk scan and evidence-based trust assessment for digital sellers.",
+      "Trust and risk intelligence for marketplace sellers, payment risk and digital business decisions.",
     url: "https://shadowscore.io",
     siteName: "ShadowScore",
     images: [
-      { url: "/marketplaces-monitor-v8.png", width: 1200, height: 630, alt: "ShadowScore Marketplace Trust Intelligence" },
+      { url: "/marketplaces-monitor-v8.png", width: 1200, height: 630, alt: "ShadowScore Trust & Risk Intelligence Platform" },
     ],
     locale: "en_US",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "ShadowScore | Marketplace Trust Intelligence",
-    description: "Free marketplace risk scan before reviews, holds and restrictions escalate.",
+    title: "ShadowScore | Trust & Risk Intelligence Platform",
+    description: "Trust and risk intelligence before reviews, holds and restrictions escalate.",
     images: ["/marketplaces-monitor-v8.png"],
   },
   icons: {
