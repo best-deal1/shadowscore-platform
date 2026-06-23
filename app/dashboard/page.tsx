@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import ShadowScoreLayout from "../../components/ShadowScoreLayout";
 import {
@@ -15,6 +16,7 @@ import {
   readJsonArray,
   writeJsonArray,
 } from "../../lib/portal";
+import { ShadowScoreUser, getCurrentUser, logoutUser } from "../../lib/auth";
 
 const stageClass: Record<ShadowScoreReport["stage"], string> = {
   Healthy: "border-emerald-400/30 bg-emerald-500/10 text-emerald-200",
@@ -37,14 +39,24 @@ function Panel({ children, className = "" }: { children: React.ReactNode; classN
 }
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const [user, setUser] = useState<ShadowScoreUser | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
   const [reports, setReports] = useState<ShadowScoreReport[]>(demoReports);
   const [entities, setEntities] = useState<ShadowScoreEntity[]>(demoEntities);
   const [acceptances, setAcceptances] = useState<ShadowScoreAcceptance[]>([]);
-  const [email, setEmail] = useState("");
   const [entityName, setEntityName] = useState("");
   const [entityType, setEntityType] = useState<ShadowScoreEntity["type"]>("Marketplace");
 
   useEffect(() => {
+    const currentUser = getCurrentUser();
+    if (!currentUser) {
+      router.push("/login");
+      return;
+    }
+    setUser(currentUser);
+    setAuthChecked(true);
+
     const storedReports = readJsonArray<ShadowScoreReport>(REPORTS_STORAGE_KEY, []);
     const storedEntities = readJsonArray<ShadowScoreEntity>(ENTITIES_STORAGE_KEY, []);
     const storedAcceptances = readJsonArray<ShadowScoreAcceptance>(ACCEPTANCES_STORAGE_KEY, []);
@@ -52,13 +64,11 @@ export default function DashboardPage() {
     setReports(storedReports.length ? storedReports : demoReports);
     setEntities(storedEntities.length ? storedEntities : demoEntities);
     setAcceptances(storedAcceptances);
-    setEmail(window.localStorage.getItem("shadowscoreUserEmail") || "");
-  }, []);
+  }, [router]);
 
-  function saveEmail() {
-    try {
-      window.localStorage.setItem("shadowscoreUserEmail", email.trim());
-    } catch {}
+  function signOut() {
+    logoutUser();
+    router.push("/login");
   }
 
   function addEntity() {
@@ -84,6 +94,14 @@ export default function DashboardPage() {
   const avgRisk = useMemo(() => Math.round(reports.reduce((sum, item) => sum + item.riskScore, 0) / Math.max(reports.length, 1)), [reports]);
   const highRiskCount = useMemo(() => reports.filter((item) => item.riskScore >= 70).length, [reports]);
 
+  if (!authChecked || !user) {
+    return (
+      <ShadowScoreLayout>
+        <section className="mx-auto max-w-3xl px-6 py-20 text-zinc-400">Loading secure workspace...</section>
+      </ShadowScoreLayout>
+    );
+  }
+
   return (
     <ShadowScoreLayout>
       <section className="mx-auto max-w-7xl px-6 py-16">
@@ -97,17 +115,17 @@ export default function DashboardPage() {
           </div>
 
           <Panel>
-            <div className="text-xs font-black uppercase tracking-[0.26em] text-zinc-500">Account Identity</div>
-            <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-              <input
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="your@email.com"
-                className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-black/60 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-red-400/50"
-              />
-              <button onClick={saveEmail} className="rounded-2xl bg-red-600 px-5 py-3 text-sm font-black text-white hover:bg-red-500">Save</button>
+            <div className="text-xs font-black uppercase tracking-[0.26em] text-zinc-500">Signed In Account</div>
+            <div className="mt-4 rounded-2xl border border-white/10 bg-black/50 p-4">
+              <div className="text-lg font-black text-white">{user.name}</div>
+              <div className="mt-1 text-sm text-zinc-500">{user.email}</div>
+              <div className="mt-2 break-all text-xs text-zinc-700">User ID: {user.id}</div>
             </div>
-            <p className="mt-3 text-xs leading-5 text-zinc-600">Demo identity is saved locally. V19 should connect this to a production database and authentication provider.</p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <Link href="/account" className="rounded-2xl border border-white/10 px-5 py-3 text-sm font-black text-zinc-300 hover:border-red-400/30 hover:text-white">Account Settings</Link>
+              <button onClick={signOut} className="rounded-2xl bg-red-600 px-5 py-3 text-sm font-black text-white hover:bg-red-500">Sign Out</button>
+            </div>
+            <p className="mt-3 text-xs leading-5 text-zinc-600">V18.1 adds email and password authentication for the workspace. Production should connect this to a secure backend database.</p>
           </Panel>
         </div>
 
