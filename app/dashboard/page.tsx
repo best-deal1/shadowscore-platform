@@ -131,9 +131,9 @@ export default function DashboardPage() {
 
         <div className="mt-10 grid gap-4 md:grid-cols-4">
           {[
-            ["Reports", reports.length.toString(), "Saved scans and checkout report intents"],
-            ["Average Risk", `${avgRisk}/100`, "Across current workspace reports"],
-            ["High Risk", highRiskCount.toString(), "Reports above 70 risk score"],
+            ["Reports", reports.length.toString(), "Paid reports and locked checkout intents"],
+            ["Average Risk", `${avgRisk}/100`, "Across unlocked reports only"],
+            ["High Risk", highRiskCount.toString(), "Unlocked reports above 70 risk score"],
             ["Acceptances", acceptances.length.toString(), "Legal acceptance records stored locally"],
           ].map(([label, value, body]) => (
             <Panel key={label}>

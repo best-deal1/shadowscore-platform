@@ -137,7 +137,7 @@ export default function PaymentButtons({ planName, price, buttonLabel = "Open Ch
       <div className="mb-5 rounded-2xl border border-red-400/25 bg-red-950/20 p-4 text-sm text-zinc-300">
         <div className="font-black text-red-100">Full Report Unlock</div>
         <p className="mt-2 leading-6">
-          Payment unlocks the full ShadowScore report, including detailed score, risk factors, recommendations, evidence checklist and dashboard history.
+          Payment unlocks the full ShadowScore report, including the detailed score, risk factors, recommendations, evidence checklist and dashboard history.
         </p>
       </div>
       <button
@@ -149,7 +149,7 @@ export default function PaymentButtons({ planName, price, buttonLabel = "Open Ch
       </button>
 
       <div className="mt-3 text-center text-xs leading-5 text-zinc-600">
-        Pay by PayPal, credit card, Payoneer or bank transfer. Secure checkout options available worldwide.
+        Free scan shows a preview only. Pay by PayPal, credit card, Payoneer or bank transfer to unlock the full report.
       </div>
 
       {open && (

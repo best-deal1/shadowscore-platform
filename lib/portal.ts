@@ -58,25 +58,28 @@ export function writeJsonArray<T>(key: string, items: T[]) {
   }
 }
 
-export function saveCheckoutReport(record: ShadowScoreAcceptance) {
-  if (typeof window === "undefined") return;
-  const reports = readJsonArray<ShadowScoreReport>(REPORTS_STORAGE_KEY, []);
-  const exists = reports.some((item) => item.reportId === record.reportId);
-  if (exists) return;
+export function saveCheckoutReport(record: { reportId: string; planName: string; price: string; method: string; acceptedAt: string }) {
+  const reports = readReports();
+  const existingIndex = reports.findIndex((report) => report.id === record.reportId);
 
-  const report: ShadowScoreReport = {
-    reportId: record.reportId,
-    acceptanceId: record.reportId.replace("SS-", "SSA-"),
+  const lockedReport: ShadowScoreReport = {
+    id: record.reportId,
     title: `${record.planName} Checkout`,
-    entity: "New ShadowScore Request",
-    platform: "Checkout",
-    riskScore: record.planName.toLowerCase().includes("investigation") ? 82 : 68,
-    confidenceScore: 72,
-    stage: record.planName.toLowerCase().includes("investigation") ? "Restricted" : "Warning",
+    source: `Payment intent • ${record.method} • ${new Date(record.acceptedAt).toLocaleString()}`,
     createdAt: record.acceptedAt,
-    source: record.source,
-    topFactors: ["Legal acceptance recorded", "Payment intent created", "Evidence pending", "Report generation pending"],
+    score: 0,
+    confidence: 0,
+    status: "Locked",
+    factors: [
+      "Legal acceptance recorded",
+      "Payment intent created",
+      "Full report locked until payment is completed"
+    ],
   };
 
-  writeJsonArray(REPORTS_STORAGE_KEY, [report, ...reports].slice(0, 50));
+  const next = existingIndex >= 0
+    ? reports.map((report, index) => (index === existingIndex ? lockedReport : report))
+    : [lockedReport, ...reports];
+
+  writeReports(next.slice(0, 25));
 }
