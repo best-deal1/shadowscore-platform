@@ -61,8 +61,8 @@ export default function DashboardPage() {
     const storedEntities = readJsonArray<ShadowScoreEntity>(ENTITIES_STORAGE_KEY, []);
     const storedAcceptances = readJsonArray<ShadowScoreAcceptance>(ACCEPTANCES_STORAGE_KEY, []);
 
-    setReports(storedReports.length ? storedReports : demoReports);
-    setEntities(storedEntities.length ? storedEntities : demoEntities);
+    setReports(storedReports);
+    setEntities(storedEntities);
     setAcceptances(storedAcceptances);
   }, [router]);
 
@@ -110,7 +110,7 @@ export default function DashboardPage() {
             <div className="text-sm font-bold uppercase tracking-[0.3em] text-red-300">User Portal V18</div>
             <h1 className="mt-4 text-5xl font-black tracking-tight md:text-6xl">Your ShadowScore Risk Workspace</h1>
             <p className="mt-6 max-w-3xl text-lg leading-8 text-zinc-400">
-              Saved reports, watched entities, legal acceptances and risk history now live in one private workspace. This is the first step from one-time scans into a true risk intelligence platform.
+              Your workspace will store paid reports, watched entities, legal acceptances and risk history after your first scan.
             </p>
           </div>
 

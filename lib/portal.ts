@@ -35,40 +35,9 @@ export const REPORTS_STORAGE_KEY = "shadowscoreReports";
 export const ENTITIES_STORAGE_KEY = "shadowscoreEntities";
 export const ACCEPTANCES_STORAGE_KEY = "shadowscoreLegalAcceptances";
 
-export const demoReports: ShadowScoreReport[] = [
-  {
-    reportId: "SS-2026-000481",
-    acceptanceId: "SSA-2026-000481",
-    title: "eBay MC011 Exposure Review",
-    entity: "gadge.deals",
-    platform: "eBay",
-    riskScore: 78,
-    confidenceScore: 84,
-    stage: "Restricted",
-    createdAt: "2026-06-17T12:30:00.000Z",
-    source: "Example dataset",
-    topFactors: ["Supplier documentation gaps", "Tracking integrity exposure", "Marketplace enforcement signals", "Retail arbitrage indicators"],
-  },
-  {
-    reportId: "SS-2026-000512",
-    acceptanceId: "SSA-2026-000512",
-    title: "Payment Hold Risk Snapshot",
-    entity: "PayPal / Payoneer flow",
-    platform: "Payments",
-    riskScore: 64,
-    confidenceScore: 76,
-    stage: "Warning",
-    createdAt: "2026-06-18T08:45:00.000Z",
-    source: "Example dataset",
-    topFactors: ["Payout review friction", "Reserve exposure", "Business verification dependency"],
-  },
-];
+export const demoReports: ShadowScoreReport[] = [];
 
-export const demoEntities: ShadowScoreEntity[] = [
-  { id: "ent-ebay", name: "eBay Seller Account", type: "Marketplace", status: "Needs Evidence", lastScore: 78, updatedAt: "2026-06-17T12:30:00.000Z" },
-  { id: "ent-paypal", name: "PayPal / Payoneer Payments", type: "Payment", status: "Monitoring", lastScore: 64, updatedAt: "2026-06-18T08:45:00.000Z" },
-  { id: "ent-url", name: "shadowscore.io", type: "Website", status: "Stable", lastScore: 31, updatedAt: "2026-06-19T07:20:00.000Z" },
-];
+export const demoEntities: ShadowScoreEntity[] = [];
 
 export function readJsonArray<T>(key: string, fallback: T[] = []): T[] {
   if (typeof window === "undefined") return fallback;
