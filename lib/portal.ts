@@ -49,6 +49,17 @@ export function readJsonArray<T>(key: string, fallback: T[] = []): T[] {
   }
 }
 
+
+function readReports(): ShadowScoreReport[] {
+  return readJsonArray<ShadowScoreReport>(REPORTS_STORAGE_KEY);
+}
+
+function writeReports(reports: ShadowScoreReport[]) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(REPORTS_STORAGE_KEY, JSON.stringify(reports));
+}
+
+
 export function writeJsonArray<T>(key: string, items: T[]) {
   if (typeof window === "undefined") return;
   try {
@@ -60,17 +71,20 @@ export function writeJsonArray<T>(key: string, items: T[]) {
 
 export function saveCheckoutReport(record: { reportId: string; planName: string; price: string; method: string; acceptedAt: string }) {
   const reports = readReports();
-  const existingIndex = reports.findIndex((report) => report.id === record.reportId);
+  const existingIndex = reports.findIndex((report) => report.reportId === record.reportId);
 
   const lockedReport: ShadowScoreReport = {
-    id: record.reportId,
+    reportId: record.reportId,
+    acceptanceId: record.reportId,
     title: `${record.planName} Checkout`,
-    source: `Payment intent • ${record.method} • ${new Date(record.acceptedAt).toLocaleString()}`,
+    entity: "Payment pending",
+    platform: "Checkout",
+    riskScore: 0,
+    confidenceScore: 0,
+    stage: "Warning",
     createdAt: record.acceptedAt,
-    score: 0,
-    confidence: 0,
-    status: "Locked",
-    factors: [
+    source: `Payment intent • ${record.method} • ${new Date(record.acceptedAt).toLocaleString()}`,
+    topFactors: [
       "Legal acceptance recorded",
       "Payment intent created",
       "Full report locked until payment is completed"

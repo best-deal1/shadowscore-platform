@@ -90,9 +90,11 @@ export default function DashboardPage() {
     setEntityName("");
   }
 
-  const latestReport = reports[0];
-  const avgRisk = useMemo(() => Math.round(reports.reduce((sum, item) => sum + item.riskScore, 0) / Math.max(reports.length, 1)), [reports]);
-  const highRiskCount = useMemo(() => reports.filter((item) => item.riskScore >= 70).length, [reports]);
+  const paidReports = useMemo(() => reports.filter((item) => item.platform !== "Checkout" && item.riskScore > 0), [reports]);
+  const lockedIntents = useMemo(() => reports.filter((item) => item.platform === "Checkout" || item.riskScore === 0), [reports]);
+  const latestReport = paidReports[0];
+  const avgRisk = useMemo(() => Math.round(paidReports.reduce((sum, item) => sum + item.riskScore, 0) / Math.max(paidReports.length, 1)), [paidReports]);
+  const highRiskCount = useMemo(() => paidReports.filter((item) => item.riskScore >= 70).length, [paidReports]);
 
   if (!authChecked || !user) {
     return (
@@ -131,7 +133,7 @@ export default function DashboardPage() {
 
         <div className="mt-10 grid gap-4 md:grid-cols-4">
           {[
-            ["Reports", reports.length.toString(), "Paid reports and locked checkout intents"],
+            ["Reports", paidReports.length.toString(), "Paid reports only"],
             ["Average Risk", `${avgRisk}/100`, "Across unlocked reports only"],
             ["High Risk", highRiskCount.toString(), "Unlocked reports above 70 risk score"],
             ["Acceptances", acceptances.length.toString(), "Legal acceptance records stored locally"],
@@ -155,7 +157,13 @@ export default function DashboardPage() {
             </div>
 
             <div className="mt-8 space-y-4">
-              {reports.map((report) => (
+              {paidReports.length === 0 && (
+                <div className="rounded-3xl border border-white/10 bg-black/55 p-6">
+                  <div className="text-xl font-black text-white">No paid reports yet</div>
+                  <p className="mt-2 text-sm leading-6 text-zinc-500">Run a free scan to preview risk, then unlock the full ShadowScore report after payment.</p>
+                </div>
+              )}
+              {paidReports.map((report) => (
                 <div key={report.reportId} className="rounded-3xl border border-white/10 bg-black/55 p-5">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
@@ -189,6 +197,24 @@ export default function DashboardPage() {
               ))}
             </div>
           </Panel>
+
+
+          {lockedIntents.length > 0 && (
+            <Panel>
+              <div className="text-xs font-black uppercase tracking-[0.26em] text-yellow-300">Locked Payment Intents</div>
+              <h2 className="mt-2 text-3xl font-black">Pending Checkout</h2>
+              <p className="mt-3 text-sm leading-6 text-zinc-500">These are payment intents only. Full risk score, recommendations and action plan unlock only after payment is completed.</p>
+              <div className="mt-6 space-y-3">
+                {lockedIntents.map((report) => (
+                  <div key={report.reportId} className="rounded-2xl border border-yellow-400/20 bg-yellow-500/10 p-4">
+                    <div className="font-black text-white">{report.reportId}</div>
+                    <div className="mt-1 text-sm text-zinc-400">{report.title}</div>
+                    <div className="mt-3 inline-flex rounded-full border border-yellow-400/25 px-3 py-1 text-xs font-black text-yellow-100">Locked until payment</div>
+                  </div>
+                ))}
+              </div>
+            </Panel>
+          )}
 
           <div className="space-y-8">
             <Panel>
