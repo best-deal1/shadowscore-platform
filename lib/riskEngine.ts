@@ -1,4 +1,6 @@
 import type { ProviderResult } from "./providers";
+
+export const RISK_ENGINE_VERSION = "risk-engine-v19";
 export type RiskSeverity = "Low" | "Medium" | "High" | "Critical";
 export type HealthStage = "Healthy" | "Warning" | "Restricted" | "Suspended" | "Critical";
 export type RevenueImpact = "Low" | "Medium" | "High" | "Critical";
