@@ -1,2 +1,86 @@
 "use client";
-export default function ReportPage(){return <main className="min-h-screen overflow-hidden bg-black text-white"><div className="fixed inset-0 pointer-events-none opacity-[0.06] bg-[linear-gradient(to_right,#ffffff12_1px,transparent_1px),linear-gradient(to_bottom,#ffffff10_1px,transparent_1px)] bg-[size:76px_76px]"/><header className="relative z-10 border-b border-white/10 bg-black/85 px-6 py-5 backdrop-blur-xl"><div className="mx-auto flex max-w-7xl justify-between"><a href="/" className="text-sm text-zinc-500 hover:text-white">← Back to ShadowScore</a><a href="/intake" className="text-sm font-bold text-red-300 hover:text-red-200">New Intake</a></div></header><section className="relative z-10 mx-auto max-w-5xl px-6 py-14"><div className="text-xs uppercase tracking-[0.45em] text-red-300">Private Intelligence Report</div><h1 className="mt-6 text-5xl font-extrabold">ShadowScore Exposure Report</h1><p className="mt-5 max-w-3xl text-lg leading-8 text-zinc-400">A private operational risk interpretation designed to identify which trust signals may be increasing marketplace exposure.</p><div className="mt-10 rounded-[32px] border border-white/10 bg-black/55 p-8 shadow-[0_0_60px_rgba(120,0,20,0.16)]"><div className="grid gap-4">{[["Overall Exposure","Elevated"],["Primary Driver","Tracking Integrity"],["Evidence Quality","Moderate"],["Recommended Window","30-day stabilization"]].map(([label,value])=><div key={label} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5"><div className="text-xs uppercase tracking-[0.28em] text-zinc-500">{label}</div><div className="mt-3 text-2xl font-bold">{value}</div></div>)}</div></div><div className="mt-8 rounded-[28px] border border-red-400/20 bg-red-500/[0.06] p-7"><div className="text-2xl font-bold text-red-100">Recommended action</div><p className="mt-4 leading-8 text-zinc-400">Preserve original delivery evidence, avoid artificial tracking manipulation, reduce operational noise and submit only the documentation requested by the marketplace review team.</p></div></section></main>}
+
+import { useMemo } from "react";
+import Link from "next/link";
+import ShadowScoreLayout from "../../components/ShadowScoreLayout";
+import { getCurrentSession } from "../../lib/auth";
+import { getWorkspace, ShadowScoreReport } from "../../lib/workspace";
+import { useEffect, useState } from "react";
+
+function formatDate(value?: string) {
+  if (!value) return "Pending";
+  try {
+    return new Intl.DateTimeFormat("en", { month: "short", day: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(value));
+  } catch {
+    return value;
+  }
+}
+
+export default function ReportPage() {
+  const [reportId, setReportId] = useState("");
+  const [reports, setReports] = useState<ShadowScoreReport[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    setReportId(new URLSearchParams(window.location.search).get("reportId") || "");
+    const session = getCurrentSession();
+    if (!session) {
+      setLoaded(true);
+      return;
+    }
+    getWorkspace(session).then((workspace) => setReports(workspace.reports)).finally(() => setLoaded(true));
+  }, []);
+
+  const report = useMemo(() => reports.find((item) => item.reportId === reportId), [reports, reportId]);
+  const isReady = report?.reportStatus === "ready";
+
+  return (
+    <ShadowScoreLayout>
+      <section className="mx-auto max-w-5xl px-6 py-16">
+        <Link href="/dashboard" className="text-sm font-bold text-red-300 hover:text-red-200">← Back to dashboard</Link>
+        <div className="mt-8 text-xs uppercase tracking-[0.45em] text-red-300">Private Intelligence Report</div>
+        {!loaded && <p className="mt-6 text-zinc-400">Loading report...</p>}
+        {loaded && !report && (
+          <div className="mt-8 rounded-[28px] border border-white/10 bg-white/[0.035] p-7">
+            <h1 className="text-3xl font-black">Report not found</h1>
+            <p className="mt-4 leading-7 text-zinc-400">Open a ready report from your dashboard. ShadowScore does not display demo reports.</p>
+          </div>
+        )}
+        {report && !isReady && (
+          <div className="mt-8 rounded-[28px] border border-yellow-400/20 bg-yellow-500/10 p-7">
+            <h1 className="text-3xl font-black text-yellow-100">Report locked</h1>
+            <p className="mt-4 leading-7 text-zinc-300">This report is not ready. Full report details and downloads appear only when paymentStatus is paid and reportStatus is ready.</p>
+          </div>
+        )}
+        {report && isReady && (
+          <div className="mt-8 rounded-[32px] border border-white/10 bg-black/55 p-8 shadow-[0_0_60px_rgba(120,0,20,0.16)]">
+            <h1 className="text-5xl font-extrabold">{report.title}</h1>
+            <p className="mt-5 max-w-3xl text-lg leading-8 text-zinc-400">{report.reportSummary?.message}</p>
+            <div className="mt-8 grid gap-4 md:grid-cols-2">
+              {[
+                ["Report ID", report.reportId],
+                ["Target", report.target || report.entity],
+                ["Scan mode", report.scanMode || "Unknown"],
+                ["Ready at", formatDate(report.readyAt)],
+                ["Payment status", report.paymentStatus || "paid"],
+                ["Report status", report.reportStatus],
+                ["Engine version", report.engineVersion || "Unknown"],
+                ["Primary domain", report.reportSummary?.primaryRiskDomain || "Provider placeholder"],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+                  <div className="text-xs uppercase tracking-[0.28em] text-zinc-500">{label}</div>
+                  <div className="mt-3 break-words text-xl font-bold text-white">{value}</div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+              <div className="text-xs uppercase tracking-[0.28em] text-red-300">Provider results</div>
+              <pre className="mt-4 overflow-x-auto text-xs leading-6 text-zinc-400">{JSON.stringify(report.providerResults || [], null, 2)}</pre>
+            </div>
+            <button className="mt-8 rounded-2xl border border-emerald-400/30 bg-emerald-500/10 px-5 py-4 text-sm font-black text-emerald-100">Download Report placeholder</button>
+          </div>
+        )}
+      </section>
+    </ShadowScoreLayout>
+  );
+}

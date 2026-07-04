@@ -10,6 +10,7 @@ import {
   ShadowScoreReport,
   addWatchlistEntity,
   getWorkspace,
+  markPaymentPaidAndGenerateReport,
   workspaceModeLabel,
 } from "../../lib/workspace";
 import { ShadowScoreUser, getCurrentSession, getCurrentUser, logoutUser } from "../../lib/auth";
@@ -84,10 +85,17 @@ export default function DashboardPage() {
     setEntityName("");
   }
 
-  const paidReports = useMemo(() => reports.filter((item) => item.platform !== "Checkout" && item.riskScore > 0), [reports]);
-  const lockedIntents = useMemo(() => reports.filter((item) => item.platform === "Checkout" || item.riskScore === 0), [reports]);
-  const avgRisk = useMemo(() => Math.round(paidReports.reduce((sum, item) => sum + item.riskScore, 0) / Math.max(paidReports.length, 1)), [paidReports]);
-  const highRiskCount = useMemo(() => paidReports.filter((item) => item.riskScore >= 70).length, [paidReports]);
+
+  async function simulatePaid(paymentIntentId: string) {
+    const currentSession = getCurrentSession();
+    if (!currentSession) return;
+    await markPaymentPaidAndGenerateReport(currentSession, paymentIntentId);
+    const workspace = await getWorkspace(currentSession);
+    setReports(workspace.reports);
+  }
+  const readyReports = useMemo(() => reports.filter((item) => item.reportStatus === "ready"), [reports]);
+  const avgRisk = useMemo(() => Math.round(readyReports.reduce((sum, item) => sum + (item.riskScore || 0), 0) / Math.max(readyReports.filter((item) => typeof item.riskScore === "number").length, 1)), [readyReports]);
+  const highRiskCount = useMemo(() => readyReports.filter((item) => (item.riskScore || 0) >= 70).length, [readyReports]);
 
   if (!authChecked || !user) {
     return (
@@ -126,7 +134,7 @@ export default function DashboardPage() {
 
         <div className="mt-10 grid gap-4 md:grid-cols-4">
           {[
-            ["Reports", paidReports.length.toString(), "Paid reports only"],
+            ["Ready Reports", readyReports.length.toString(), "Payment-unlocked reports"],
             ["Average Risk", `${avgRisk}/100`, "Across unlocked reports only"],
             ["High Risk", highRiskCount.toString(), "Unlocked reports above 70 risk score"],
             ["Acceptances", acceptances.length.toString(), "Legal acceptance records for paid reports"],
@@ -150,13 +158,13 @@ export default function DashboardPage() {
             </div>
 
             <div className="mt-8 space-y-4">
-              {paidReports.length === 0 && (
+              {readyReports.length === 0 && (
                 <div className="rounded-3xl border border-white/10 bg-black/55 p-6">
                   <div className="text-xl font-black text-white">No paid reports yet</div>
                   <p className="mt-2 text-sm leading-6 text-zinc-500">Run a free scan to preview risk, then unlock the full ShadowScore report after payment.</p>
                 </div>
               )}
-              {paidReports.map((report) => (
+              {readyReports.map((report) => (
                 <div key={report.reportId} className="rounded-3xl border border-white/10 bg-black/55 p-5">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
@@ -170,18 +178,18 @@ export default function DashboardPage() {
                   <div className="mt-5 grid gap-3 sm:grid-cols-2">
                     <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                       <div className="text-xs uppercase tracking-[0.22em] text-zinc-600">Risk Score</div>
-                      <div className="mt-2 text-3xl font-black text-white">{report.riskScore}</div>
+                      <div className="mt-2 text-3xl font-black text-white">{report.riskScore ?? "Provider pending"}</div>
                     </div>
                     <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                       <div className="text-xs uppercase tracking-[0.22em] text-zinc-600">Confidence</div>
-                      <div className="mt-2 text-3xl font-black text-white">{report.confidenceScore}%</div>
+                      <div className="mt-2 text-3xl font-black text-white">{report.confidenceScore ? `${report.confidenceScore}%` : "Provider pending"}</div>
                     </div>
                   </div>
 
                   <div className="mt-5">
                     <div className="text-xs font-black uppercase tracking-[0.22em] text-zinc-600">Why This Score?</div>
                     <div className="mt-3 flex flex-wrap gap-2">
-                      {report.topFactors.map((factor) => (
+                      {(report.topFactors.length ? report.topFactors : [report.reportSummary?.message || "Placeholder providers completed; production intelligence pending."]).map((factor) => (
                         <span key={factor} className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-zinc-400">{factor}</span>
                       ))}
                     </div>
@@ -192,22 +200,33 @@ export default function DashboardPage() {
           </Panel>
 
 
-          {lockedIntents.length > 0 && (
-            <Panel>
-              <div className="text-xs font-black uppercase tracking-[0.26em] text-yellow-300">Locked Payment Intents</div>
-              <h2 className="mt-2 text-3xl font-black">Pending Checkout</h2>
-              <p className="mt-3 text-sm leading-6 text-zinc-500">These are payment intents only. Full risk score, recommendations and action plan unlock only after payment is completed.</p>
-              <div className="mt-6 space-y-3">
-                {lockedIntents.map((report) => (
-                  <div key={report.reportId} className="rounded-2xl border border-yellow-400/20 bg-yellow-500/10 p-4">
-                    <div className="font-black text-white">{report.reportId}</div>
-                    <div className="mt-1 text-sm text-zinc-400">{report.title}</div>
-                    <div className="mt-3 inline-flex rounded-full border border-yellow-400/25 px-3 py-1 text-xs font-black text-yellow-100">Locked until payment</div>
+          <Panel>
+            <div className="text-xs font-black uppercase tracking-[0.26em] text-yellow-300">Payment & Report Lifecycle</div>
+            <h2 className="mt-2 text-3xl font-black">Pipeline States</h2>
+            <p className="mt-3 text-sm leading-6 text-zinc-500">Reports unlock from paymentStatus == paid only. Non-ready reports hide download and full report details.</p>
+            <div className="mt-6 space-y-3">
+              {reports.length === 0 && <div className="rounded-2xl border border-white/10 bg-black/50 p-4 text-sm text-zinc-500">No lifecycle records yet.</div>}
+              {reports.map((report) => (
+                <div key={report.reportId} className="rounded-2xl border border-white/10 bg-black/50 p-4">
+                  <div className="font-black text-white">{report.title}</div>
+                  <div className="mt-1 text-xs text-zinc-500">{report.entity} • {formatDate(report.createdAt)}</div>
+                  <div className="mt-3 flex flex-wrap gap-2 text-xs font-black">
+                    <span className="rounded-full border border-white/10 px-3 py-1 text-zinc-300">Payment: {report.paymentStatus || "paid"}</span>
+                    <span className="rounded-full border border-white/10 px-3 py-1 text-zinc-300">Report: {report.reportStatus}</span>
                   </div>
-                ))}
-              </div>
-            </Panel>
-          )}
+                  {report.reportStatus !== "ready" && report.paymentIntentId && (
+                    <button onClick={() => simulatePaid(report.paymentIntentId!)} className="mt-4 rounded-2xl border border-yellow-400/30 bg-yellow-500/10 px-4 py-3 text-xs font-black text-yellow-100">Dev webhook: mark paid and generate</button>
+                  )}
+                  {report.reportStatus === "ready" && (
+                    <div className="mt-4 flex flex-wrap gap-3">
+                      <Link href={`/report?reportId=${encodeURIComponent(report.reportId)}`} className="rounded-2xl bg-red-600 px-4 py-3 text-xs font-black text-white hover:bg-red-500">View Report</Link>
+                      <button className="rounded-2xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-xs font-black text-emerald-100">Download Report placeholder</button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </Panel>
 
           <div className="space-y-8">
             <Panel>

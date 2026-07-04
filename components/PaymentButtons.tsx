@@ -11,6 +11,7 @@ type PaymentButtonsProps = {
   planName: string;
   price: string;
   buttonLabel?: string;
+  intakeId?: string;
 };
 
 function numericAmount(price: string) {
@@ -57,7 +58,7 @@ function openNewTab(url: string) {
   window.open(url, "_blank", "noopener,noreferrer");
 }
 
-export default function PaymentButtons({ planName, price, buttonLabel = "Open Checkout" }: PaymentButtonsProps) {
+export default function PaymentButtons({ planName, price, buttonLabel = "Open Checkout", intakeId }: PaymentButtonsProps) {
   const [open, setOpen] = useState(false);
   const [accepted, setAccepted] = useState(false);
   const [reportId, setReportId] = useState("");
@@ -66,6 +67,7 @@ export default function PaymentButtons({ planName, price, buttonLabel = "Open Ch
   const legalSummary = useMemo(() => legalAcceptanceBullets, []);
 
   function openCheckout() {
+    if (!intakeId) return;
     setAccepted(false);
     setAcceptedAt("");
     setReportId(generateReportId());
@@ -92,7 +94,7 @@ export default function PaymentButtons({ planName, price, buttonLabel = "Open Ch
 
     const session = getCurrentSession();
     if (session) {
-      await createCheckoutIntent(session, { planName, price, method });
+      await createCheckoutIntent(session, { planName, price, method, intakeId });
     }
 
     if (method === "PayPal") {
@@ -116,13 +118,14 @@ export default function PaymentButtons({ planName, price, buttonLabel = "Open Ch
       <button
         type="button"
         onClick={openCheckout}
-        className="mt-6 w-full rounded-2xl bg-emerald-500 px-6 py-4 text-center text-sm font-black text-black shadow-[0_0_28px_rgba(16,185,129,0.28)] transition hover:bg-emerald-400"
+        disabled={!intakeId}
+        className="mt-6 w-full rounded-2xl bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-40 px-6 py-4 text-center text-sm font-black text-black shadow-[0_0_28px_rgba(16,185,129,0.28)] transition hover:bg-emerald-400"
       >
-        {buttonLabel}
+        {intakeId ? buttonLabel : "Save intake before checkout"}
       </button>
 
       <div className="mt-3 text-center text-xs leading-5 text-zinc-600">
-        Free scan shows a preview only. Pay by PayPal, credit card, Payoneer or bank transfer to unlock the full report.
+        Free scan creates an intake first.  Pay by PayPal, credit card, Payoneer or bank transfer to unlock the full report.
       </div>
 
       {open && (
