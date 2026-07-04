@@ -1,8 +1,10 @@
 "use client";
 
-import { useMemo } from "react";
+import { Suspense, useMemo } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import ShadowScoreLayout from "../../components/ShadowScoreLayout";
+import { isAdminEmail } from "../../lib/admin";
 import { getCurrentSession } from "../../lib/auth";
 import { getWorkspace, ShadowScoreReport } from "../../lib/workspace";
 import { useEffect, useState } from "react";
@@ -16,23 +18,35 @@ function formatDate(value?: string) {
   }
 }
 
-export default function ReportPage() {
+function ReportContent() {
+  const searchParams = useSearchParams();
   const [reportId, setReportId] = useState("");
   const [reports, setReports] = useState<ShadowScoreReport[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [adminInspect, setAdminInspect] = useState(false);
 
   useEffect(() => {
-    setReportId(new URLSearchParams(window.location.search).get("reportId") || "");
     const session = getCurrentSession();
+    const nextReportId = searchParams.get("reportId") || "";
+    const nextAdminInspect = searchParams.get("admin") === "1" && isAdminEmail(session?.email);
     if (!session) {
-      setLoaded(true);
+      Promise.resolve().then(() => {
+        setReportId(nextReportId);
+        setAdminInspect(nextAdminInspect);
+        setLoaded(true);
+      });
       return;
     }
-    getWorkspace(session).then((workspace) => setReports(workspace.reports)).finally(() => setLoaded(true));
-  }, []);
+    getWorkspace(session).then((workspace) => {
+      setReportId(nextReportId);
+      setAdminInspect(nextAdminInspect);
+      setReports(workspace.reports);
+    }).finally(() => setLoaded(true));
+  }, [searchParams]);
 
   const report = useMemo(() => reports.find((item) => item.reportId === reportId), [reports, reportId]);
-  const isReady = report?.reportStatus === "ready";
+  const isCustomerUnlocked = report?.paymentStatus === "paid" && report?.reportStatus === "ready";
+  const canInspect = Boolean(adminInspect && report);
 
   return (
     <ShadowScoreLayout>
@@ -46,14 +60,15 @@ export default function ReportPage() {
             <p className="mt-4 leading-7 text-zinc-400">Open a ready report from your dashboard. ShadowScore does not display demo reports.</p>
           </div>
         )}
-        {report && !isReady && (
+        {report && !isCustomerUnlocked && !canInspect && (
           <div className="mt-8 rounded-[28px] border border-yellow-400/20 bg-yellow-500/10 p-7">
             <h1 className="text-3xl font-black text-yellow-100">Report locked</h1>
             <p className="mt-4 leading-7 text-zinc-300">This report is not ready. Full report details and downloads appear only when paymentStatus is paid and reportStatus is ready.</p>
           </div>
         )}
-        {report && isReady && (
+        {report && (isCustomerUnlocked || canInspect) && (
           <div className="mt-8 rounded-[32px] border border-white/10 bg-black/55 p-8 shadow-[0_0_60px_rgba(120,0,20,0.16)]">
+            {canInspect && <div className="mb-5 rounded-2xl border border-red-400/20 bg-red-500/10 p-4 text-sm font-bold text-red-100">Admin inspection mode. Viewing this report does not change payment, ready, unlocked, or downloaded state.</div>}
             <h1 className="text-5xl font-extrabold">{report.title}</h1>
             <p className="mt-5 max-w-3xl text-lg leading-8 text-zinc-400">{report.reportSummary?.message}</p>
             <div className="mt-8 grid gap-4 md:grid-cols-2">
@@ -83,4 +98,9 @@ export default function ReportPage() {
       </section>
     </ShadowScoreLayout>
   );
+}
+
+
+export default function ReportPage() {
+  return <Suspense fallback={<ShadowScoreLayout><section className="mx-auto max-w-5xl px-6 py-16 text-zinc-400">Loading report...</section></ShadowScoreLayout>}><ReportContent /></Suspense>;
 }

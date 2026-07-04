@@ -79,6 +79,7 @@ export type ShadowScoreAcceptance = {
 export type PaymentIntent = {
   id: string;
   intakeId?: string;
+  userId?: string;
   planName: string;
   price: string;
   method: string;
@@ -116,7 +117,8 @@ function centsFromPrice(price: string) {
 function mapPaymentIntentRow(row: Record<string, any>): PaymentIntent {
   return {
     id: row.id,
-    intakeId: row.metadata?.intakeId,
+    intakeId: row.metadata?.intakeId || row.intake_id,
+    userId: row.user_id,
     planName: row.plan_name,
     price: row.metadata?.price || `${row.currency} ${(row.amount_cents / 100).toFixed(2)}`,
     method: row.method,
@@ -170,7 +172,7 @@ export async function createIntake(session: WorkspaceSession, record: Omit<Shado
 export async function createCheckoutIntent(session: WorkspaceSession, record: { planName: string; price: string; method: string; intakeId?: string }) {
   const now = new Date().toISOString();
   const id = `pi-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-  const intent: PaymentIntent = { id, ...record, paymentStatus: "payment_pending", createdAt: now };
+  const intent: PaymentIntent = { id, userId: session.userId, ...record, paymentStatus: "payment_pending", createdAt: now };
   const acceptance: ShadowScoreAcceptance = {
     reportId: id,
     ...record,
@@ -253,6 +255,15 @@ export async function createCheckoutIntent(session: WorkspaceSession, record: { 
     }
   }
   return intent;
+}
+
+export async function markPaymentFailed(session: WorkspaceSession, paymentIntentId: string) {
+  const workspace = requireWorkspace(session.userId);
+  const intent = workspace.paymentIntents.find((item) => item.id === paymentIntentId);
+  if (!intent) throw new Error("Payment intent not found.");
+  intent.paymentStatus = "failed";
+  workspace.intakes = workspace.intakes.map((item) => item.intakeId === intent.intakeId ? { ...item, paymentStatus: "failed", reportStatus: "failed" } : item);
+  workspace.reports = workspace.reports.map((item) => item.paymentIntentId === intent.id ? { ...item, paymentStatus: "failed", reportStatus: "failed" } : item);
 }
 
 export async function markPaymentPaidAndGenerateReport(session: WorkspaceSession, paymentIntentId: string) {
