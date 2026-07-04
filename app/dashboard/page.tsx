@@ -11,8 +11,6 @@ import {
   ShadowScoreAcceptance,
   ShadowScoreEntity,
   ShadowScoreReport,
-  demoEntities,
-  demoReports,
   readJsonArray,
   writeJsonArray,
 } from "../../lib/portal";
@@ -42,8 +40,8 @@ export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<ShadowScoreUser | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
-  const [reports, setReports] = useState<ShadowScoreReport[]>(demoReports);
-  const [entities, setEntities] = useState<ShadowScoreEntity[]>(demoEntities);
+  const [reports, setReports] = useState<ShadowScoreReport[]>([]);
+  const [entities, setEntities] = useState<ShadowScoreEntity[]>([]);
   const [acceptances, setAcceptances] = useState<ShadowScoreAcceptance[]>([]);
   const [entityName, setEntityName] = useState("");
   const [entityType, setEntityType] = useState<ShadowScoreEntity["type"]>("Marketplace");
@@ -92,7 +90,6 @@ export default function DashboardPage() {
 
   const paidReports = useMemo(() => reports.filter((item) => item.platform !== "Checkout" && item.riskScore > 0), [reports]);
   const lockedIntents = useMemo(() => reports.filter((item) => item.platform === "Checkout" || item.riskScore === 0), [reports]);
-  const latestReport = paidReports[0];
   const avgRisk = useMemo(() => Math.round(paidReports.reduce((sum, item) => sum + item.riskScore, 0) / Math.max(paidReports.length, 1)), [paidReports]);
   const highRiskCount = useMemo(() => paidReports.filter((item) => item.riskScore >= 70).length, [paidReports]);
 
@@ -109,7 +106,7 @@ export default function DashboardPage() {
       <section className="mx-auto max-w-7xl px-6 py-16">
         <div className="grid gap-8 lg:grid-cols-[1.1fr_.9fr] lg:items-end">
           <div>
-            <div className="text-sm font-bold uppercase tracking-[0.3em] text-red-300">User Portal V18</div>
+            <div className="text-sm font-bold uppercase tracking-[0.3em] text-red-300">Trust Intelligence Workspace V19</div>
             <h1 className="mt-4 text-5xl font-black tracking-tight md:text-6xl">Your ShadowScore Risk Workspace</h1>
             <p className="mt-6 max-w-3xl text-lg leading-8 text-zinc-400">
               Your workspace will store paid reports, watched entities, legal acceptances and risk history after your first scan.
@@ -127,7 +124,7 @@ export default function DashboardPage() {
               <Link href="/account" className="rounded-2xl border border-white/10 px-5 py-3 text-sm font-black text-zinc-300 hover:border-red-400/30 hover:text-white">Account Settings</Link>
               <button onClick={signOut} className="rounded-2xl bg-red-600 px-5 py-3 text-sm font-black text-white hover:bg-red-500">Sign Out</button>
             </div>
-            <p className="mt-3 text-xs leading-5 text-zinc-600">V18.1 adds email and password authentication for the workspace. Production should connect this to a secure backend database.</p>
+            <p className="mt-3 text-xs leading-5 text-zinc-600">V19 keeps this workspace empty for new accounts and treats persisted risk history as user-owned evidence. Production authentication and database storage remain the next hardening milestone.</p>
           </Panel>
         </div>
 
@@ -136,7 +133,7 @@ export default function DashboardPage() {
             ["Reports", paidReports.length.toString(), "Paid reports only"],
             ["Average Risk", `${avgRisk}/100`, "Across unlocked reports only"],
             ["High Risk", highRiskCount.toString(), "Unlocked reports above 70 risk score"],
-            ["Acceptances", acceptances.length.toString(), "Legal acceptance records stored locally"],
+            ["Acceptances", acceptances.length.toString(), "Legal acceptance records for paid reports"],
           ].map(([label, value, body]) => (
             <Panel key={label}>
               <div className="text-xs font-bold uppercase tracking-[0.24em] text-zinc-600">{label}</div>
@@ -220,9 +217,15 @@ export default function DashboardPage() {
             <Panel>
               <div className="text-xs font-black uppercase tracking-[0.26em] text-red-300">Watchlist</div>
               <h2 className="mt-2 text-3xl font-black">Saved Entities</h2>
-              <p className="mt-3 text-sm leading-6 text-zinc-500">Track seller accounts, payment providers, suppliers, websites and businesses from one workspace.</p>
+              <p className="mt-3 text-sm leading-6 text-zinc-500">Track seller accounts, payment providers, suppliers, websites and businesses from one workspace. New workspaces start with an empty watchlist.</p>
 
               <div className="mt-6 space-y-3">
+                {entities.length === 0 && (
+                  <div className="rounded-2xl border border-white/10 bg-black/50 p-4">
+                    <div className="font-black text-white">Empty watchlist</div>
+                    <p className="mt-2 text-sm leading-6 text-zinc-500">Add your first marketplace account, payment provider, supplier, website or business when you are ready to monitor it.</p>
+                  </div>
+                )}
                 {entities.map((entity) => (
                   <div key={entity.id} className="rounded-2xl border border-white/10 bg-black/50 p-4">
                     <div className="flex items-center justify-between gap-3">
@@ -260,6 +263,12 @@ export default function DashboardPage() {
               <div className="text-xs font-black uppercase tracking-[0.26em] text-red-300">Risk Timeline</div>
               <h2 className="mt-2 text-3xl font-black">Latest Movement</h2>
               <div className="mt-6 space-y-4">
+                {reports.length === 0 && (
+                  <div className="rounded-2xl border border-white/10 bg-black/50 p-4">
+                    <div className="font-black text-white">Empty timeline</div>
+                    <p className="mt-2 text-sm leading-6 text-zinc-500">Your scan and paid-report activity will appear here after you start your first scan.</p>
+                  </div>
+                )}
                 {reports.slice(0, 4).map((report, index) => (
                   <div key={report.reportId} className="flex gap-4">
                     <div className="flex flex-col items-center">
@@ -278,9 +287,9 @@ export default function DashboardPage() {
         </div>
 
         <Panel className="mt-10">
-          <div className="text-xs font-black uppercase tracking-[0.26em] text-red-300">V18 Data Note</div>
+          <div className="text-xs font-black uppercase tracking-[0.26em] text-red-300">V19 Data Note</div>
           <p className="mt-3 text-sm leading-7 text-zinc-500">
-            This version introduces the user portal and persistent local workspace. For production, the next step is connecting this model to real authentication and a database such as Supabase, Firebase, Postgres or another secure backend.
+            ShadowScore should use the database as the source of truth for reports, scan history, watchlists, purchased reports, payment history, legal acceptances and profile settings. Local persistence remains a temporary client-side bridge only.
           </p>
         </Panel>
       </section>
