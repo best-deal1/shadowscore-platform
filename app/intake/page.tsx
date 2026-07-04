@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import PaymentButtons from "../../components/PaymentButtons";
+import { getCurrentSession } from "../../lib/auth";
+import { createIntake, ShadowScoreIntake } from "../../lib/workspace";
 
 type Severity = "Low" | "Medium" | "High" | "Critical";
 type Finding = {
@@ -543,6 +545,7 @@ export default function IntakePage() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [leadSaved, setLeadSaved] = useState(false);
+  const [intake, setIntake] = useState<ShadowScoreIntake | null>(null);
 
   const displayMarketplace =
     marketplace === "Other"
@@ -773,7 +776,22 @@ export default function IntakePage() {
     formErrors.length === 0 &&
     (scanMode !== "evidence" || files.length > 0);
 
-  const saveLead = () => {
+  const intakeRecord = () => ({
+      scanMode,
+      platform: scanMode === "website" ? "Website / Business" : displayMarketplace,
+      caseType: scanMode === "website" ? "Business trust scan" : caseType,
+      target: activeTarget,
+      email,
+      fileNames: files.map((file) => file.name),
+      visibleSignalCategories: scanMode === "website" ? FUTURE_WEBSITE_PROVIDERS : (detectedSignals.length ? detectedSignals.map((item) => item.title) : ["Marketplace identity", "Evidence readiness", "Payment or policy categories"]),
+    });
+
+  const saveLead = async () => {
+    const session = getCurrentSession();
+    if (session) {
+      const created = await createIntake(session, intakeRecord());
+      setIntake(created);
+    }
     const lead = {
       createdAt: new Date().toISOString(),
       scanMode,
@@ -1321,12 +1339,12 @@ export default function IntakePage() {
                     planName="Downloadable Trust Intelligence Report"
                     price="$9.90"
                     buttonLabel="Unlock Full Report - $9.90"
+                    intakeId={intake?.intakeId}
                   />
                 </div>
                 {leadSaved && (
                   <div className="mt-4 rounded-2xl border border-emerald-400/25 bg-emerald-500/10 p-4 text-sm text-emerald-100">
-                    Intake draft saved only in this browser. It is not uploaded
-                    to a server yet.
+                    Intake record created with reportStatus=preview. Checkout will create a payment intent and locked placeholder only.
                   </div>
                 )}
               </div>
