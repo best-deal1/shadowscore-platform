@@ -1,4 +1,5 @@
 import { LEGAL_ACCEPTANCE_VERSION } from "./legal";
+import type { ProviderResult } from "./providers";
 import { buildReadyReport, canGenerateReport } from "./reportPipeline";
 import { supabaseFetch, isSupabaseConfigured } from "./supabase";
 
@@ -51,7 +52,7 @@ export type ShadowScoreReport = {
   source: string;
   engineVersion?: string;
   providerVersions?: Record<string, string>;
-  providerResults?: unknown[];
+  providerResults?: ProviderResult[];
   evidenceSummary?: unknown;
   reportSummary?: { message: string; primaryRiskDomain?: string; findingCount?: number };
   topFactors: string[];
@@ -265,7 +266,7 @@ export async function markPaymentPaidAndGenerateReport(session: WorkspaceSession
   intake.paymentStatus = "paid";
   intake.reportStatus = "generating";
   if (!canGenerateReport(intent)) throw new Error("Payment is not paid.");
-  const report = buildReadyReport({ intake, paymentIntent: intent });
+  const report = await buildReadyReport({ intake, paymentIntent: intent });
   workspace.reports = [report, ...workspace.reports.filter((item) => item.paymentIntentId !== intent.id)].slice(0, 25);
   intake.reportStatus = "ready";
   return report;

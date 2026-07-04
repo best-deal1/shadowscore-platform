@@ -1,0 +1,70 @@
+export type ProviderCategory =
+  | "ssl"
+  | "dns"
+  | "whois"
+  | "security_headers"
+  | "email_authentication"
+  | "reputation"
+  | "business_profile"
+  | "marketplace"
+  | "payment"
+  | "compliance";
+
+export type ProviderStatus = "completed" | "failed" | "skipped";
+
+export type ProviderFinding = {
+  id: string;
+  title: string;
+  description: string;
+  severity: "info" | "low" | "medium" | "high" | "critical";
+};
+
+export type ProviderEvidence = {
+  id: string;
+  type: "placeholder" | "configuration" | "document" | "observation";
+  label: string;
+  value?: string;
+  source: string;
+};
+
+export type ProviderExecutionContext = {
+  intakeId: string;
+  scanMode: string;
+  target: string;
+  platform: string;
+  caseType?: string;
+  email?: string;
+  fileNames: string[];
+  visibleSignalCategories: string[];
+  paymentIntentId?: string;
+};
+
+export type ProviderHealth = {
+  providerId: string;
+  providerVersion: string;
+  status: "healthy" | "degraded" | "unavailable";
+  checkedAt: string;
+  metadata: Record<string, unknown>;
+};
+
+export type ProviderResult = {
+  providerId: string;
+  providerVersion: string;
+  status: ProviderStatus;
+  startedAt: string;
+  completedAt: string;
+  duration: number;
+  findings: ProviderFinding[];
+  evidence: ProviderEvidence[];
+  metadata: Record<string, unknown>;
+  errors: string[];
+};
+
+export interface Provider {
+  id: string;
+  name: string;
+  version: string;
+  category: ProviderCategory;
+  execute(context: ProviderExecutionContext): Promise<ProviderResult>;
+  health(): Promise<ProviderHealth>;
+}

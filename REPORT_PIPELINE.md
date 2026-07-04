@@ -44,12 +44,12 @@ Checkout never creates a completed report. It creates a locked placeholder. The 
 - accepts intake data
 - accepts payment intent data
 - verifies `paymentStatus == paid`
-- executes placeholder providers
-- passes structured provider context to the risk engine
+- executes the Provider Framework through `ProviderManager`
+- passes structured `ProviderResult[]` context to the risk engine
 - builds the report object
 - returns a ready report for workspace storage
 
-Placeholder providers return only structured placeholder results. They do not hardcode fake scores or fake intelligence.
+V23 placeholder providers live in `lib/providers/` and return only structured placeholder results. They do not perform real lookups, hardcode fake scores or emit fake intelligence.
 
 ## Unlock logic
 
