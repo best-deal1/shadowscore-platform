@@ -66,7 +66,11 @@ export default function DashboardPage() {
     router.push("/login");
   }
 
+  const currentWorkspaceModeLabel = workspaceModeLabel();
+  const testControlsDisabled = currentWorkspaceModeLabel === "Supabase database";
+
   async function addEntity() {
+    if (testControlsDisabled) return;
     const trimmed = entityName.trim();
     const currentSession = getCurrentSession();
     if (!trimmed || !currentSession) return;
@@ -87,6 +91,7 @@ export default function DashboardPage() {
 
 
   async function simulatePaid(paymentIntentId: string) {
+    if (testControlsDisabled) return;
     const currentSession = getCurrentSession();
     if (!currentSession) return;
     await markPaymentPaidAndGenerateReport(currentSession, paymentIntentId);
@@ -128,8 +133,20 @@ export default function DashboardPage() {
               <Link href="/account" className="rounded-2xl border border-white/10 px-5 py-3 text-sm font-black text-zinc-300 hover:border-red-400/30 hover:text-white">Account Settings</Link>
               <button onClick={signOut} className="rounded-2xl bg-red-600 px-5 py-3 text-sm font-black text-white hover:bg-red-500">Sign Out</button>
             </div>
-            <p className="mt-3 text-xs leading-5 text-zinc-600">V19 keeps this workspace empty for new accounts and treats persisted risk history as user-owned evidence. Current data mode: {workspaceModeLabel()}.</p>
+            <p className="mt-3 text-xs leading-5 text-zinc-600">V19 keeps this workspace empty for new accounts and treats persisted risk history as user-owned evidence. Current data mode: {currentWorkspaceModeLabel}.</p>
           </Panel>
+        </div>
+
+        <div className="mt-10 rounded-[30px] border border-yellow-400/30 bg-yellow-500/10 p-6 text-yellow-50 shadow-[0_0_32px_rgba(234,179,8,0.08)]">
+          <div className="text-xs font-black uppercase tracking-[0.26em] text-yellow-200">Development / Preview Admin Console</div>
+          <p className="mt-3 text-sm leading-6 text-yellow-100">
+            Admin controls are development-only until server-side admin API and Supabase service-role access are implemented.
+          </p>
+          {testControlsDisabled && (
+            <p className="mt-3 rounded-2xl border border-yellow-300/20 bg-black/30 p-4 text-sm leading-6 text-yellow-100">
+              Test controls are disabled in Supabase mode until a secure server-side admin API is implemented.
+            </p>
+          )}
         </div>
 
         <div className="mt-10 grid gap-4 md:grid-cols-4">
@@ -203,7 +220,7 @@ export default function DashboardPage() {
           <Panel>
             <div className="text-xs font-black uppercase tracking-[0.26em] text-yellow-300">Payment & Report Lifecycle</div>
             <h2 className="mt-2 text-3xl font-black">Pipeline States</h2>
-            <p className="mt-3 text-sm leading-6 text-zinc-500">Reports unlock from paymentStatus == paid only. Non-ready reports hide download and full report details.</p>
+            <p className="mt-3 text-sm leading-6 text-zinc-500">Reports unlock from paymentStatus == paid only. Non-ready reports hide download and full report details. Read-only lifecycle inspection remains available in Supabase mode for allowlisted admins.</p>
             <div className="mt-6 space-y-3">
               {reports.length === 0 && <div className="rounded-2xl border border-white/10 bg-black/50 p-4 text-sm text-zinc-500">No lifecycle records yet.</div>}
               {reports.map((report) => (
@@ -215,7 +232,14 @@ export default function DashboardPage() {
                     <span className="rounded-full border border-white/10 px-3 py-1 text-zinc-300">Report: {report.reportStatus}</span>
                   </div>
                   {report.reportStatus !== "ready" && report.paymentIntentId && (
-                    <button onClick={() => simulatePaid(report.paymentIntentId!)} className="mt-4 rounded-2xl border border-yellow-400/30 bg-yellow-500/10 px-4 py-3 text-xs font-black text-yellow-100">Dev webhook: mark paid and generate</button>
+                    <button
+                      onClick={() => simulatePaid(report.paymentIntentId!)}
+                      disabled={testControlsDisabled}
+                      title={testControlsDisabled ? "Test controls are disabled in Supabase mode until a secure server-side admin API is implemented." : undefined}
+                      className="mt-4 rounded-2xl border border-yellow-400/30 bg-yellow-500/10 px-4 py-3 text-xs font-black text-yellow-100 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/[0.03] disabled:text-zinc-500"
+                    >
+                      Dev-only test webhook: mark paid and generate
+                    </button>
                   )}
                   {report.reportStatus === "ready" && (
                     <div className="mt-4 flex flex-wrap gap-3">
@@ -269,7 +293,14 @@ export default function DashboardPage() {
                     <option>Website</option>
                     <option>Supplier</option>
                   </select>
-                  <button onClick={addEntity} className="rounded-2xl border border-red-400/30 bg-red-600/15 px-4 py-3 text-sm font-black text-red-100 hover:bg-red-600/25">Add to Watchlist</button>
+                  <button
+                    onClick={addEntity}
+                    disabled={testControlsDisabled}
+                    title={testControlsDisabled ? "Test controls are disabled in Supabase mode until a secure server-side admin API is implemented." : undefined}
+                    className="rounded-2xl border border-red-400/30 bg-red-600/15 px-4 py-3 text-sm font-black text-red-100 hover:bg-red-600/25 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/[0.03] disabled:text-zinc-500 disabled:hover:bg-white/[0.03]"
+                  >
+                    Preview test add to watchlist
+                  </button>
                 </div>
               </div>
             </Panel>
