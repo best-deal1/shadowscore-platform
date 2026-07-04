@@ -113,6 +113,18 @@ function centsFromPrice(price: string) {
   return match ? Math.round(Number(match[0]) * 100) : 0;
 }
 
+function mapPaymentIntentRow(row: Record<string, any>): PaymentIntent {
+  return {
+    id: row.id,
+    intakeId: row.metadata?.intakeId,
+    planName: row.plan_name,
+    price: row.metadata?.price || `${row.currency} ${(row.amount_cents / 100).toFixed(2)}`,
+    method: row.method,
+    paymentStatus: (row.status === "succeeded" ? "paid" : row.status === "requires_payment" ? "payment_pending" : row.status) as PaymentStatus,
+    createdAt: row.created_at,
+  };
+}
+
 export async function getWorkspace(session: WorkspaceSession): Promise<WorkspaceData> {
   if (isSupabaseConfigured() && session.accessToken) {
     const [reportRows, entityRows, acceptanceRows, intentRows] = await Promise.all([
@@ -126,7 +138,7 @@ export async function getWorkspace(session: WorkspaceSession): Promise<Workspace
       intakes: [],
       entities: entityRows.map((row) => ({ id: row.id, name: row.name, type: row.type, status: row.status, lastScore: row.last_score, updatedAt: row.updated_at })),
       acceptances: acceptanceRows.map((row) => ({ reportId: row.report_id || row.payment_intent_id || row.id, planName: row.metadata?.planName || "Checkout", price: row.metadata?.price || "", method: row.metadata?.method || "", acceptedAt: row.accepted_at, legalVersion: row.legal_version, source: row.source })),
-      paymentIntents: intentRows.map((row) => ({ id: row.id, intakeId: row.metadata?.intakeId, planName: row.plan_name, price: `${row.currency} ${(row.amount_cents / 100).toFixed(2)}`, method: row.method, paymentStatus: (row.status === "succeeded" ? "paid" : row.status === "requires_payment" ? "payment_pending" : row.status) as PaymentStatus, createdAt: row.created_at })),
+      paymentIntents: intentRows.map(mapPaymentIntentRow),
     };
   }
 
@@ -174,7 +186,44 @@ export async function createCheckoutIntent(session: WorkspaceSession, record: { 
       body: JSON.stringify({ user_id: session.userId, plan_name: record.planName, amount_cents: centsFromPrice(record.price), currency: "USD", method: record.method, status: "requires_payment", metadata: { price: record.price, intakeId: record.intakeId } }),
     }, session.accessToken);
     await supabaseFetch("/rest/v1/legal_acceptances", { method: "POST", body: JSON.stringify({ user_id: session.userId, payment_intent_id: createdIntent.id, legal_version: LEGAL_ACCEPTANCE_VERSION, terms_version: LEGAL_ACCEPTANCE_VERSION, privacy_version: LEGAL_ACCEPTANCE_VERSION, source: "checkout", metadata: record }) }, session.accessToken);
-    return intent;
+    if (record.intakeId) {
+      const [updatedIntake] = await supabaseFetch<Record<string, any>[]>(`/rest/v1/intakes?intake_id=eq.${encodeURIComponent(record.intakeId)}&select=*`, {
+        method: "PATCH",
+        headers: { Prefer: "return=representation" },
+        body: JSON.stringify({ report_status: "payment_pending" }),
+      }, session.accessToken);
+      if (updatedIntake) {
+        await supabaseFetch("/rest/v1/reports", {
+          method: "POST",
+          body: JSON.stringify({
+            user_id: session.userId,
+            report_id: `locked-${createdIntent.id}`,
+            intake_id: updatedIntake.intake_id,
+            payment_intent_id: createdIntent.id,
+            title: "Locked Trust Intelligence Report",
+            entity: updatedIntake.target,
+            platform: updatedIntake.platform,
+            risk_score: 0,
+            confidence_score: 0,
+            stage: "Healthy",
+            source: "checkout_locked_placeholder",
+            top_factors: [],
+            risk_engine_version: "locked",
+            provider_versions: {},
+            evidence_snapshot: {},
+            report_version: "locked",
+            score_explanation: "Report locked until payment is completed.",
+            scan_mode: updatedIntake.scan_mode,
+            target: updatedIntake.target,
+            payment_status: "payment_pending",
+            report_status: "payment_pending",
+            provider_results: [],
+            metadata: { paymentStatus: "payment_pending", reportStatus: "payment_pending" },
+          }),
+        }, session.accessToken);
+      }
+    }
+    return mapPaymentIntentRow(createdIntent);
   }
 
   const workspace = requireWorkspace(session.userId);
