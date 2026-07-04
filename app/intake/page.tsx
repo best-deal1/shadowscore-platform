@@ -342,7 +342,7 @@ export default function IntakePage() {
       findings: engineResult.findings.map((item) => item.title),
       warnings: warningIssues.map((item) => `${item.file}: ${item.issue}`),
     };
-    localStorage.setItem("shadowscore_last_lead", JSON.stringify(lead));
+    sessionStorage.setItem("shadowscore_last_lead", JSON.stringify(lead));
     setLeadSaved(true);
   };
 

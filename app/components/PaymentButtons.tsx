@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { WHATSAPP_NUMBER, PAYPAL_BUSINESS_EMAIL } from "../lib/config";
+import { getCurrentSession } from "../../lib/auth";
+import { createCheckoutIntent } from "../../lib/workspace";
 
 type PaymentButtonsProps = {
   planName: string;
@@ -50,6 +52,15 @@ function openNewTab(url: string) {
 export default function PaymentButtons({ planName, price, buttonLabel = "Open Checkout" }: PaymentButtonsProps) {
   const [open, setOpen] = useState(false);
   const [accepted, setAccepted] = useState(false);
+
+  async function openPayment(url: string, method: string) {
+    if (!accepted) return;
+    const session = getCurrentSession();
+    if (session) {
+      await createCheckoutIntent(session, { planName, price, method });
+    }
+    openNewTab(url);
+  }
 
   const paypalHref = buildPaypalHref(planName, price);
   const cardHref = buildWhatsappHref(planName, price, "Credit Card");
@@ -112,7 +123,7 @@ export default function PaymentButtons({ planName, price, buttonLabel = "Open Ch
             <div className="mt-6 grid gap-3">
               <button
                 type="button"
-                onClick={() => accepted && openNewTab(paypalHref)}
+                onClick={() => openPayment(paypalHref, "PayPal")}
                 disabled={!accepted}
                 className="flex min-h-[74px] disabled:cursor-not-allowed disabled:opacity-40 items-center justify-center rounded-2xl border border-white/10 bg-white px-5 py-4 transition hover:border-sky-400 hover:shadow-[0_0_26px_rgba(56,189,248,0.22)]"
                 aria-label="Pay with PayPal"
@@ -122,7 +133,7 @@ export default function PaymentButtons({ planName, price, buttonLabel = "Open Ch
 
               <button
                 type="button"
-                onClick={() => accepted && openNewTab(cardHref)}
+                onClick={() => openPayment(cardHref, "Credit Card")}
                 disabled={!accepted}
                 className="flex min-h-[64px] disabled:cursor-not-allowed disabled:opacity-40 items-center justify-center rounded-2xl border border-emerald-400/25 bg-emerald-500 px-5 py-4 text-sm font-black text-black shadow-[0_0_22px_rgba(16,185,129,0.20)] transition hover:bg-emerald-400"
                 aria-label="Pay with credit card"
@@ -133,7 +144,7 @@ export default function PaymentButtons({ planName, price, buttonLabel = "Open Ch
 
               <button
                 type="button"
-                onClick={() => accepted && openNewTab(payoneerHref)}
+                onClick={() => openPayment(payoneerHref, "Payoneer")}
                 disabled={!accepted}
                 className="flex min-h-[74px] disabled:cursor-not-allowed disabled:opacity-40 items-center justify-center rounded-2xl border border-white/10 bg-white px-5 py-4 transition hover:border-orange-400 hover:shadow-[0_0_26px_rgba(249,115,22,0.22)]"
                 aria-label="Pay with Payoneer"
@@ -143,7 +154,7 @@ export default function PaymentButtons({ planName, price, buttonLabel = "Open Ch
 
               <button
                 type="button"
-                onClick={() => accepted && openNewTab(bankHref)}
+                onClick={() => openPayment(bankHref, "Bank Transfer")}
                 disabled={!accepted}
                 className="flex min-h-[62px] disabled:cursor-not-allowed disabled:opacity-40 items-center justify-center rounded-2xl border border-emerald-400/25 bg-emerald-500/12 px-5 py-4 text-sm font-black text-emerald-200 shadow-[0_0_18px_rgba(16,185,129,0.10)] transition hover:border-emerald-300/50 hover:bg-emerald-500/20 hover:text-white"
                 aria-label="Pay by bank transfer"

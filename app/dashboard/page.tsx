@@ -5,16 +5,14 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import ShadowScoreLayout from "../../components/ShadowScoreLayout";
 import {
-  ACCEPTANCES_STORAGE_KEY,
-  ENTITIES_STORAGE_KEY,
-  REPORTS_STORAGE_KEY,
   ShadowScoreAcceptance,
   ShadowScoreEntity,
   ShadowScoreReport,
-  readJsonArray,
-  writeJsonArray,
-} from "../../lib/portal";
-import { ShadowScoreUser, getCurrentUser, logoutUser } from "../../lib/auth";
+  addWatchlistEntity,
+  getWorkspace,
+  workspaceModeLabel,
+} from "../../lib/workspace";
+import { ShadowScoreUser, getCurrentSession, getCurrentUser, logoutUser } from "../../lib/auth";
 
 const stageClass: Record<ShadowScoreReport["stage"], string> = {
   Healthy: "border-emerald-400/30 bg-emerald-500/10 text-emerald-200",
@@ -38,7 +36,7 @@ function Panel({ children, className = "" }: { children: React.ReactNode; classN
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [user, setUser] = useState<ShadowScoreUser | null>(null);
+  const [user] = useState<ShadowScoreUser | null>(() => getCurrentUser());
   const [authChecked, setAuthChecked] = useState(false);
   const [reports, setReports] = useState<ShadowScoreReport[]>([]);
   const [entities, setEntities] = useState<ShadowScoreEntity[]>([]);
@@ -48,20 +46,18 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const currentUser = getCurrentUser();
-    if (!currentUser) {
+    const currentSession = getCurrentSession();
+    if (!currentUser || !currentSession) {
       router.push("/login");
       return;
     }
-    setUser(currentUser);
-    setAuthChecked(true);
-
-    const storedReports = readJsonArray<ShadowScoreReport>(REPORTS_STORAGE_KEY, []);
-    const storedEntities = readJsonArray<ShadowScoreEntity>(ENTITIES_STORAGE_KEY, []);
-    const storedAcceptances = readJsonArray<ShadowScoreAcceptance>(ACCEPTANCES_STORAGE_KEY, []);
-
-    setReports(storedReports);
-    setEntities(storedEntities);
-    setAcceptances(storedAcceptances);
+    getWorkspace(currentSession)
+      .then((workspace) => {
+        setReports(workspace.reports);
+        setEntities(workspace.entities);
+        setAcceptances(workspace.acceptances);
+      })
+      .finally(() => setAuthChecked(true));
   }, [router]);
 
   function signOut() {
@@ -69,9 +65,10 @@ export default function DashboardPage() {
     router.push("/login");
   }
 
-  function addEntity() {
+  async function addEntity() {
     const trimmed = entityName.trim();
-    if (!trimmed) return;
+    const currentSession = getCurrentSession();
+    if (!trimmed || !currentSession) return;
 
     const next: ShadowScoreEntity = {
       id: `ent-${Date.now()}`,
@@ -82,9 +79,8 @@ export default function DashboardPage() {
       updatedAt: new Date().toISOString(),
     };
 
-    const updated = [next, ...entities].slice(0, 25);
-    setEntities(updated);
-    writeJsonArray(ENTITIES_STORAGE_KEY, updated.filter((item) => !item.id.startsWith("ent-ebay") && !item.id.startsWith("ent-paypal") && !item.id.startsWith("ent-url")));
+    const created = await addWatchlistEntity(currentSession, next);
+    setEntities((items) => [created, ...items].slice(0, 25));
     setEntityName("");
   }
 
@@ -124,7 +120,7 @@ export default function DashboardPage() {
               <Link href="/account" className="rounded-2xl border border-white/10 px-5 py-3 text-sm font-black text-zinc-300 hover:border-red-400/30 hover:text-white">Account Settings</Link>
               <button onClick={signOut} className="rounded-2xl bg-red-600 px-5 py-3 text-sm font-black text-white hover:bg-red-500">Sign Out</button>
             </div>
-            <p className="mt-3 text-xs leading-5 text-zinc-600">V19 keeps this workspace empty for new accounts and treats persisted risk history as user-owned evidence. Production authentication and database storage remain the next hardening milestone.</p>
+            <p className="mt-3 text-xs leading-5 text-zinc-600">V19 keeps this workspace empty for new accounts and treats persisted risk history as user-owned evidence. Current data mode: {workspaceModeLabel()}.</p>
           </Panel>
         </div>
 
@@ -289,7 +285,7 @@ export default function DashboardPage() {
         <Panel className="mt-10">
           <div className="text-xs font-black uppercase tracking-[0.26em] text-red-300">V19 Data Note</div>
           <p className="mt-3 text-sm leading-7 text-zinc-500">
-            ShadowScore should use the database as the source of truth for reports, scan history, watchlists, purchased reports, payment history, legal acceptances and profile settings. Local persistence remains a temporary client-side bridge only.
+            ShadowScore uses the configured database as the source of truth for reports, scan history, watchlists, purchased reports, payment history, legal acceptances and profile settings. LocalStorage is no longer used as primary workspace storage.
           </p>
         </Panel>
       </section>

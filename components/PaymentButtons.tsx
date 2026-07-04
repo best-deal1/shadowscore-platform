@@ -4,22 +4,13 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { WHATSAPP_NUMBER, PAYPAL_BUSINESS_EMAIL } from "../lib/config";
 import { LEGAL_ACCEPTANCE_VERSION, generateReportId, legalAcceptanceBullets } from "../lib/legal";
-import { saveCheckoutReport } from "../lib/portal";
+import { getCurrentSession } from "../lib/auth";
+import { createCheckoutIntent } from "../lib/workspace";
 
 type PaymentButtonsProps = {
   planName: string;
   price: string;
   buttonLabel?: string;
-};
-
-type AcceptanceRecord = {
-  reportId: string;
-  planName: string;
-  price: string;
-  method: string;
-  acceptedAt: string;
-  legalVersion: string;
-  source: string;
 };
 
 function numericAmount(price: string) {
@@ -66,17 +57,6 @@ function openNewTab(url: string) {
   window.open(url, "_blank", "noopener,noreferrer");
 }
 
-function persistAcceptance(record: AcceptanceRecord) {
-  try {
-    const key = "shadowscoreLegalAcceptances";
-    const existing = JSON.parse(window.localStorage.getItem(key) || "[]");
-    const next = Array.isArray(existing) ? [record, ...existing].slice(0, 25) : [record];
-    window.localStorage.setItem(key, JSON.stringify(next));
-  } catch {
-    // Local storage can be unavailable in private mode. Payment links still include the reference ID.
-  }
-}
-
 export default function PaymentButtons({ planName, price, buttonLabel = "Open Checkout" }: PaymentButtonsProps) {
   const [open, setOpen] = useState(false);
   const [accepted, setAccepted] = useState(false);
@@ -103,24 +83,17 @@ export default function PaymentButtons({ planName, price, buttonLabel = "Open Ch
     }
   }
 
-  function proceed(method: string) {
+  async function proceed(method: string) {
     if (!accepted) return;
 
     const finalAcceptedAt = acceptedAt || new Date().toISOString();
     const finalReportId = reportId || generateReportId();
 
-    const acceptanceRecord = {
-      reportId: finalReportId,
-      planName,
-      price,
-      method,
-      acceptedAt: finalAcceptedAt,
-      legalVersion: LEGAL_ACCEPTANCE_VERSION,
-      source: "checkout-modal",
-    };
 
-    persistAcceptance(acceptanceRecord);
-    saveCheckoutReport(acceptanceRecord);
+    const session = getCurrentSession();
+    if (session) {
+      await createCheckoutIntent(session, { planName, price, method });
+    }
 
     if (method === "PayPal") {
       openNewTab(buildPaypalHref(planName, price, finalReportId));
@@ -203,7 +176,7 @@ export default function PaymentButtons({ planName, price, buttonLabel = "Open Ch
 
               {accepted && (
                 <div className="mt-3 rounded-xl border border-emerald-400/20 bg-emerald-500/10 p-3 text-xs text-emerald-200">
-                  Acceptance recorded locally for reference. Accepted at: {acceptedAt || "now"}. Version: {LEGAL_ACCEPTANCE_VERSION}.
+                  Acceptance ready for workspace recording. Accepted at: {acceptedAt || "now"}. Version: {LEGAL_ACCEPTANCE_VERSION}.
                 </div>
               )}
             </div>
