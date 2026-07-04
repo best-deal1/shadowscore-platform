@@ -11,7 +11,8 @@ export type ShadowScoreUser = {
 
 export type ShadowScoreSession = WorkspaceSession;
 
-const SESSION_STORAGE_KEY = "shadowscore.session.v19";
+const SESSION_STORAGE_KEY = "shadowscore.session.v24";
+const LEGACY_SESSION_STORAGE_KEY = "shadowscore.session.v19";
 const devUsers = new Map<string, ShadowScoreUser & { password: string }>();
 
 function makeId(prefix: string) {
@@ -22,7 +23,8 @@ function makeId(prefix: string) {
 
 function persistSession(session: ShadowScoreSession) {
   if (typeof window === "undefined") return;
-  window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+  window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+  window.sessionStorage.removeItem(LEGACY_SESSION_STORAGE_KEY);
 }
 
 type SupabaseAuthResponse = {
@@ -102,14 +104,53 @@ function getCurrentUserFromSession(session: ShadowScoreSession): ShadowScoreUser
   };
 }
 
-export function getCurrentSession(): ShadowScoreSession | null {
-  if (typeof window === "undefined") return null;
+function parseSession(raw: string | null): ShadowScoreSession | null {
   try {
-    const parsed = JSON.parse(window.sessionStorage.getItem(SESSION_STORAGE_KEY) || "null");
+    const parsed = JSON.parse(raw || "null");
     return parsed?.userId && parsed?.email ? parsed : null;
   } catch {
     return null;
   }
+}
+
+function isAccessTokenExpired(accessToken?: string) {
+  if (!accessToken) return false;
+  try {
+    const payload = JSON.parse(atob(accessToken.split(".")[1] || ""));
+    return typeof payload.exp === "number" && payload.exp * 1000 <= Date.now() + 30_000;
+  } catch {
+    return false;
+  }
+}
+
+export function getCurrentSession(): ShadowScoreSession | null {
+  if (typeof window === "undefined") return null;
+  return parseSession(window.localStorage.getItem(SESSION_STORAGE_KEY));
+}
+
+export async function restoreCurrentSession(): Promise<ShadowScoreSession | null> {
+  if (typeof window === "undefined") return null;
+
+  const persistedSession = getCurrentSession() || parseSession(window.sessionStorage.getItem(LEGACY_SESSION_STORAGE_KEY));
+  if (!persistedSession) return null;
+
+  if (!isSupabaseConfigured()) {
+    persistSession(persistedSession);
+    return persistedSession;
+  }
+
+  if (isAccessTokenExpired(persistedSession.accessToken) && persistedSession.refreshToken) {
+    const refreshed = await supabaseFetch<SupabaseAuthResponse>("/auth/v1/token?grant_type=refresh_token", {
+      method: "POST",
+      body: JSON.stringify({ refresh_token: persistedSession.refreshToken }),
+    });
+    const session = toSession(refreshed, persistedSession.name || persistedSession.email);
+    persistSession(session);
+    return session;
+  }
+
+  persistSession(persistedSession);
+  return persistedSession;
 }
 
 export function getCurrentUser(): ShadowScoreUser | null {
@@ -119,5 +160,6 @@ export function getCurrentUser(): ShadowScoreUser | null {
 
 export function logoutUser() {
   if (typeof window === "undefined") return;
-  window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
+  window.localStorage.removeItem(SESSION_STORAGE_KEY);
+  window.sessionStorage.removeItem(LEGACY_SESSION_STORAGE_KEY);
 }

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import ShadowScoreLayout from "../../components/ShadowScoreLayout";
 import { getAdminConsoleData, isAdminAllowed, type AdminConsoleData } from "../../lib/admin";
-import { getCurrentUser } from "../../lib/auth";
+import { restoreCurrentSession } from "../../lib/auth";
 import type { PaymentStatus, ReportStatus } from "../../lib/workspace";
 
 function formatDate(value?: string) {
@@ -37,16 +37,19 @@ export default function AdminPage() {
   const [selectedJson, setSelectedJson] = useState<unknown>(null);
 
   useEffect(() => {
-    const user = getCurrentUser();
-    if (!user) {
-      router.push("/login");
-      return;
-    }
-    if (!isAdminAllowed(user.email)) {
-      Promise.resolve().then(() => setError("This signed-in account is not on the admin allowlist."));
-      return;
-    }
-    getAdminConsoleData().then(setData).catch((err) => setError(err instanceof Error ? err.message : "Unable to load admin console."));
+    restoreCurrentSession()
+      .then((session) => {
+        if (!session) {
+          router.push("/login");
+          return;
+        }
+        if (!isAdminAllowed(session.email)) {
+          setError("This signed-in account is not on the admin allowlist.");
+          return;
+        }
+        return getAdminConsoleData().then(setData);
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : "Unable to load admin console."));
   }, [router]);
 
   const overview = useMemo(() => {

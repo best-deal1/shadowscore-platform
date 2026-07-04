@@ -10,10 +10,9 @@ import {
   ShadowScoreReport,
   addWatchlistEntity,
   getWorkspace,
-  markPaymentPaidAndGenerateReport,
   workspaceModeLabel,
 } from "../../lib/workspace";
-import { ShadowScoreUser, getCurrentSession, getCurrentUser, logoutUser } from "../../lib/auth";
+import { ShadowScoreUser, getCurrentSession, logoutUser, restoreCurrentSession } from "../../lib/auth";
 
 const stageClass: Record<ShadowScoreReport["stage"], string> = {
   Healthy: "border-emerald-400/30 bg-emerald-500/10 text-emerald-200",
@@ -37,7 +36,7 @@ function Panel({ children, className = "" }: { children: React.ReactNode; classN
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [user] = useState<ShadowScoreUser | null>(() => getCurrentUser());
+  const [user, setUser] = useState<ShadowScoreUser | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [reports, setReports] = useState<ShadowScoreReport[]>([]);
   const [entities, setEntities] = useState<ShadowScoreEntity[]>([]);
@@ -46,14 +45,23 @@ export default function DashboardPage() {
   const [entityType, setEntityType] = useState<ShadowScoreEntity["type"]>("Marketplace");
 
   useEffect(() => {
-    const currentUser = getCurrentUser();
-    const currentSession = getCurrentSession();
-    if (!currentUser || !currentSession) {
-      router.push("/login");
-      return;
-    }
-    getWorkspace(currentSession)
+    restoreCurrentSession()
+      .then((currentSession) => {
+        if (!currentSession) {
+          router.push("/login");
+          return null;
+        }
+        setUser({
+          id: currentSession.userId,
+          name: currentSession.name,
+          email: currentSession.email,
+          createdAt: currentSession.startedAt,
+          lastLoginAt: currentSession.startedAt,
+        });
+        return getWorkspace(currentSession);
+      })
       .then((workspace) => {
+        if (!workspace) return;
         setReports(workspace.reports);
         setEntities(workspace.entities);
         setAcceptances(workspace.acceptances);
@@ -86,13 +94,6 @@ export default function DashboardPage() {
   }
 
 
-  async function simulatePaid(paymentIntentId: string) {
-    const currentSession = getCurrentSession();
-    if (!currentSession) return;
-    await markPaymentPaidAndGenerateReport(currentSession, paymentIntentId);
-    const workspace = await getWorkspace(currentSession);
-    setReports(workspace.reports);
-  }
   const readyReports = useMemo(() => reports.filter((item) => item.reportStatus === "ready"), [reports]);
   const avgRisk = useMemo(() => Math.round(readyReports.reduce((sum, item) => sum + (item.riskScore || 0), 0) / Math.max(readyReports.filter((item) => typeof item.riskScore === "number").length, 1)), [readyReports]);
   const highRiskCount = useMemo(() => readyReports.filter((item) => (item.riskScore || 0) >= 70).length, [readyReports]);
@@ -214,9 +215,6 @@ export default function DashboardPage() {
                     <span className="rounded-full border border-white/10 px-3 py-1 text-zinc-300">Payment: {report.paymentStatus || "paid"}</span>
                     <span className="rounded-full border border-white/10 px-3 py-1 text-zinc-300">Report: {report.reportStatus}</span>
                   </div>
-                  {report.reportStatus !== "ready" && report.paymentIntentId && (
-                    <button onClick={() => simulatePaid(report.paymentIntentId!)} className="mt-4 rounded-2xl border border-yellow-400/30 bg-yellow-500/10 px-4 py-3 text-xs font-black text-yellow-100">Dev webhook: mark paid and generate</button>
-                  )}
                   {report.reportStatus === "ready" && (
                     <div className="mt-4 flex flex-wrap gap-3">
                       <Link href={`/report?reportId=${encodeURIComponent(report.reportId)}`} className="rounded-2xl bg-red-600 px-4 py-3 text-xs font-black text-white hover:bg-red-500">View Report</Link>

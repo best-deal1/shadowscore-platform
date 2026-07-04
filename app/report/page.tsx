@@ -1,11 +1,10 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import ShadowScoreLayout from "../../components/ShadowScoreLayout";
-import { getCurrentSession } from "../../lib/auth";
+import { restoreCurrentSession } from "../../lib/auth";
 import { getWorkspace, ShadowScoreReport } from "../../lib/workspace";
-import { useEffect, useState } from "react";
 
 function formatDate(value?: string) {
   if (!value) return "Pending";
@@ -22,13 +21,18 @@ export default function ReportPage() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    setReportId(new URLSearchParams(window.location.search).get("reportId") || "");
-    const session = getCurrentSession();
-    if (!session) {
-      setLoaded(true);
-      return;
-    }
-    getWorkspace(session).then((workspace) => setReports(workspace.reports)).finally(() => setLoaded(true));
+    const directReportId = new URLSearchParams(window.location.search).get("reportId") || "";
+    setReportId(directReportId);
+
+    restoreCurrentSession()
+      .then((session) => {
+        if (!session) return null;
+        return getWorkspace(session);
+      })
+      .then((workspace) => {
+        if (workspace) setReports(workspace.reports);
+      })
+      .finally(() => setLoaded(true));
   }, []);
 
   const report = useMemo(() => reports.find((item) => item.reportId === reportId), [reports, reportId]);
