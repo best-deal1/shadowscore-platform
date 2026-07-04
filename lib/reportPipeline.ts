@@ -1,53 +1,40 @@
+import { ProviderManager, createDefaultProviders } from "./providers";
+import type { ProviderExecutionContext } from "./providers";
 import { analyzeRisk } from "./riskEngine";
 import type { PaymentIntent, ShadowScoreIntake, ShadowScoreReport } from "./workspace";
 
 export const REPORT_ENGINE_VERSION = "report-pipeline-v22";
 
-type ProviderResult = {
-  providerId: string;
-  version: string;
-  status: "placeholder_ready";
-  categories: string[];
-  evidence: string[];
-};
-
-const placeholderProviders = [
-  { id: "target-capture", version: "placeholder-v1", categories: ["target", "identity"] },
-  { id: "evidence-readiness", version: "placeholder-v1", categories: ["evidence", "documentation"] },
-  { id: "payment-unlock", version: "placeholder-v1", categories: ["payment", "entitlement"] },
-];
+const providerManager = new ProviderManager().registerMany(createDefaultProviders());
 
 export function canGenerateReport(paymentIntent: PaymentIntent) {
   return paymentIntent.paymentStatus === "paid";
 }
 
-function executePlaceholderProviders(intake: ShadowScoreIntake, paymentIntent: PaymentIntent): ProviderResult[] {
-  return placeholderProviders.map((provider) => ({
-    providerId: provider.id,
-    version: provider.version,
-    status: "placeholder_ready",
-    categories: provider.categories,
-    evidence: [
-      `intake:${intake.intakeId}`,
-      `paymentIntent:${paymentIntent.id}`,
-      `scanMode:${intake.scanMode}`,
-    ],
-  }));
-}
-
-export function buildReadyReport(input: {
+export async function buildReadyReport(input: {
   intake: ShadowScoreIntake;
   paymentIntent: PaymentIntent;
   reportId?: string;
   createdAt?: string;
-}): ShadowScoreReport {
+}): Promise<ShadowScoreReport> {
   const { intake, paymentIntent } = input;
 
   if (!canGenerateReport(paymentIntent)) {
     throw new Error("Report generation requires paymentStatus == paid.");
   }
 
-  const providerResults = executePlaceholderProviders(intake, paymentIntent);
+  const providerContext: ProviderExecutionContext = {
+    intakeId: intake.intakeId,
+    scanMode: intake.scanMode,
+    target: intake.target,
+    platform: intake.platform,
+    caseType: intake.caseType,
+    email: intake.email,
+    fileNames: intake.fileNames,
+    visibleSignalCategories: intake.visibleSignalCategories,
+    paymentIntentId: paymentIntent.id,
+  };
+  const providerResults = await providerManager.runProviders(providerContext);
   const engineInput = {
     marketplace: intake.platform,
     caseType: intake.caseType,
@@ -56,6 +43,7 @@ export function buildReadyReport(input: {
     fileNames: intake.fileNames,
     evidencePresent: intake.visibleSignalCategories.length,
     evidenceRequired: intake.scanMode === "website" ? 0 : 4,
+    providerResults,
   };
   const riskEnginePreview = analyzeRisk(engineInput);
   const now = new Date().toISOString();
@@ -76,7 +64,7 @@ export function buildReadyReport(input: {
     reportStatus: "ready",
     source: "payment_unlock_pipeline",
     engineVersion: REPORT_ENGINE_VERSION,
-    providerVersions: Object.fromEntries(providerResults.map((result) => [result.providerId, result.version])),
+    providerVersions: Object.fromEntries(providerResults.map((result) => [result.providerId, result.providerVersion])),
     providerResults,
     evidenceSummary: {
       fileCount: intake.fileNames.length,

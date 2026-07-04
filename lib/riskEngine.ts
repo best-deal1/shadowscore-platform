@@ -1,3 +1,4 @@
+import type { ProviderResult } from "./providers";
 export type RiskSeverity = "Low" | "Medium" | "High" | "Critical";
 export type HealthStage = "Healthy" | "Warning" | "Restricted" | "Suspended" | "Critical";
 export type RevenueImpact = "Low" | "Medium" | "High" | "Critical";
@@ -22,6 +23,7 @@ export type RiskEngineInput = {
   rawText?: string;
   evidencePresent?: number;
   evidenceRequired?: number;
+  providerResults?: ProviderResult[];
 };
 
 export type RiskTimelinePoint = {
@@ -383,7 +385,8 @@ export function analyzeRisk(input: RiskEngineInput): RiskEngineOutput {
   }
 
   const required = input.evidenceRequired || 0;
-  const present = input.evidencePresent || 0;
+  const completedProviderCount = input.providerResults?.filter((result) => result.status === "completed").length || 0;
+  const present = Math.max(input.evidencePresent || 0, completedProviderCount);
   const missingCount = Math.max(0, required - present);
   const missingEvidence: string[] = [];
 
