@@ -127,15 +127,16 @@ function mapPaymentIntentRow(row: Record<string, any>): PaymentIntent {
 
 export async function getWorkspace(session: WorkspaceSession): Promise<WorkspaceData> {
   if (isSupabaseConfigured() && session.accessToken) {
-    const [reportRows, entityRows, acceptanceRows, intentRows] = await Promise.all([
+    const [reportRows, intakeRows, entityRows, acceptanceRows, intentRows] = await Promise.all([
       supabaseFetch<Record<string, any>[]>(`/rest/v1/reports?select=*&order=created_at.desc`, {}, session.accessToken),
+      supabaseFetch<Record<string, any>[]>(`/rest/v1/intakes?select=*&order=created_at.desc`, {}, session.accessToken),
       supabaseFetch<Record<string, any>[]>(`/rest/v1/watchlist_entries?select=*&order=updated_at.desc`, {}, session.accessToken),
       supabaseFetch<Record<string, any>[]>(`/rest/v1/legal_acceptances?select=*&order=accepted_at.desc`, {}, session.accessToken),
       supabaseFetch<Record<string, any>[]>(`/rest/v1/payment_intents?select=*&order=created_at.desc`, {}, session.accessToken),
     ]);
     return {
-      reports: reportRows.map((row) => ({ reportId: row.report_id, acceptanceId: row.acceptance_id, title: row.title, entity: row.entity, platform: row.platform, riskScore: row.risk_score || undefined, confidenceScore: row.confidence_score || undefined, stage: row.stage || "Healthy", createdAt: row.created_at, readyAt: row.ready_at, paymentStatus: row.payment_status || (row.metadata?.paymentStatus as PaymentStatus), reportStatus: row.report_status || "ready", source: row.source, engineVersion: row.risk_engine_version, providerVersions: row.provider_versions || {}, providerResults: row.provider_results || [], evidenceSummary: row.evidence_snapshot || {}, reportSummary: row.metadata?.reportSummary, topFactors: row.top_factors || [] })),
-      intakes: [],
+      reports: reportRows.map((row) => ({ reportId: row.report_id, intakeId: row.intake_id, paymentIntentId: row.payment_intent_id, acceptanceId: row.acceptance_id, userId: row.user_id, title: row.title, entity: row.entity, platform: row.platform, scanMode: row.scan_mode, target: row.target, riskScore: row.risk_score || undefined, confidenceScore: row.confidence_score || undefined, stage: row.stage || "Healthy", createdAt: row.created_at, readyAt: row.ready_at, paymentStatus: row.payment_status || (row.metadata?.paymentStatus as PaymentStatus), reportStatus: row.report_status || "ready", source: row.source, engineVersion: row.risk_engine_version, providerVersions: row.provider_versions || {}, providerResults: row.provider_results || [], evidenceSummary: row.evidence_snapshot || {}, reportSummary: row.metadata?.reportSummary, topFactors: row.top_factors || [] })),
+      intakes: intakeRows.map((row) => ({ intakeId: row.intake_id, userId: row.user_id, scanMode: row.scan_mode, target: row.target, platform: row.platform, caseType: row.case_type, email: row.email, fileNames: row.file_names || [], visibleSignalCategories: row.visible_signal_categories || [], paymentStatus: row.payment_status || "payment_pending", reportStatus: row.report_status || "preview", createdAt: row.created_at })),
       entities: entityRows.map((row) => ({ id: row.id, name: row.name, type: row.type, status: row.status, lastScore: row.last_score, updatedAt: row.updated_at })),
       acceptances: acceptanceRows.map((row) => ({ reportId: row.report_id || row.payment_intent_id || row.id, planName: row.metadata?.planName || "Checkout", price: row.metadata?.price || "", method: row.metadata?.method || "", acceptedAt: row.accepted_at, legalVersion: row.legal_version, source: row.source })),
       paymentIntents: intentRows.map(mapPaymentIntentRow),
