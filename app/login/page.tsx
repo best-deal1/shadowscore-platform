@@ -53,7 +53,7 @@ export default function LoginPage() {
           <div className="mt-6 text-sm text-zinc-500">
             New to ShadowScore? <Link href="/signup" className="font-bold text-white hover:text-red-200">Create an account</Link>
           </div>
-          <p className="mt-6 text-xs leading-6 text-zinc-600">V18.1 uses browser-based authentication for the MVP. Production should connect this flow to Supabase, Firebase, Auth.js, Clerk or another secure backend.</p>
+          <p className="mt-6 text-xs leading-6 text-zinc-600">V19 is Supabase Auth-ready. When Supabase environment variables are configured, passwords and sessions are handled by the auth provider; otherwise this preview uses a non-persistent development session.</p>
         </div>
       </section>
     </ShadowScoreLayout>

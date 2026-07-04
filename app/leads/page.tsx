@@ -22,12 +22,14 @@ export default function LeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
 
   useEffect(() => {
-    const data = JSON.parse(localStorage.getItem(LEADS_KEY) || "[]");
-    setLeads(data);
+    queueMicrotask(() => {
+      const data = JSON.parse(sessionStorage.getItem(LEADS_KEY) || "[]");
+      setLeads(data);
+    });
   }, []);
 
   const clearLeads = () => {
-    localStorage.removeItem(LEADS_KEY);
+    sessionStorage.removeItem(LEADS_KEY);
     setLeads([]);
   };
 
@@ -62,7 +64,7 @@ export default function LeadsPage() {
             <Link href="/" className="text-sm text-zinc-500 hover:text-white">← Back to ShadowScore</Link>
             <h1 className="mt-5 text-4xl font-black">ShadowScore Leads</h1>
             <p className="mt-3 max-w-3xl text-zinc-400">
-              Local lead dashboard for scans created on this browser. For production, connect this flow to Supabase, Firebase or a backend API.
+              Session-only lead dashboard for scans created on this browser. Production lead history belongs in the Supabase-backed workspace database.
             </p>
           </div>
           <div className="flex gap-3">
