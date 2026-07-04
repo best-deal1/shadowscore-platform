@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import ShadowScoreLayout from "../../components/ShadowScoreLayout";
-import { getCurrentSession } from "../../lib/auth";
+import { restoreCurrentSession } from "../../lib/auth";
 import { getWorkspace, ShadowScoreReport } from "../../lib/workspace";
 import { useEffect, useState } from "react";
 
@@ -17,19 +18,20 @@ function formatDate(value?: string) {
 }
 
 export default function ReportPage() {
-  const [reportId, setReportId] = useState("");
+  const router = useRouter();
+  const [reportId] = useState(() => (typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("reportId") || ""));
   const [reports, setReports] = useState<ShadowScoreReport[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    setReportId(new URLSearchParams(window.location.search).get("reportId") || "");
-    const session = getCurrentSession();
-    if (!session) {
-      setLoaded(true);
-      return;
-    }
-    getWorkspace(session).then((workspace) => setReports(workspace.reports)).finally(() => setLoaded(true));
-  }, []);
+    restoreCurrentSession().then((session) => {
+      if (!session) {
+        router.push("/login");
+        return;
+      }
+      getWorkspace(session).then((workspace) => setReports(workspace.reports)).finally(() => setLoaded(true));
+    });
+  }, [router]);
 
   const report = useMemo(() => reports.find((item) => item.reportId === reportId), [reports, reportId]);
   const isReady = report?.reportStatus === "ready";

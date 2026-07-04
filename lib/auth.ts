@@ -9,9 +9,13 @@ export type ShadowScoreUser = {
   lastLoginAt?: string;
 };
 
-export type ShadowScoreSession = WorkspaceSession;
+export type ShadowScoreSession = WorkspaceSession & {
+  expiresAt?: number;
+};
 
-const SESSION_STORAGE_KEY = "shadowscore.session.v19";
+const SESSION_STORAGE_KEY = "shadowscore.session.v24";
+const LEGACY_SESSION_STORAGE_KEY = "shadowscore.session.v19";
+const DEV_USERS_STORAGE_KEY = "shadowscore.devUsers.v24";
 const devUsers = new Map<string, ShadowScoreUser & { password: string }>();
 
 function makeId(prefix: string) {
@@ -20,26 +24,55 @@ function makeId(prefix: string) {
   return `${prefix}-${now}-${rand}`;
 }
 
+function storage() {
+  if (typeof window === "undefined") return null;
+  return window.localStorage;
+}
+
+function loadDevUsers() {
+  const store = storage();
+  if (!store || devUsers.size > 0) return;
+  try {
+    const users = JSON.parse(store.getItem(DEV_USERS_STORAGE_KEY) || "[]") as Array<ShadowScoreUser & { password: string }>;
+    users.forEach((user) => devUsers.set(user.email, user));
+  } catch {
+    store.removeItem(DEV_USERS_STORAGE_KEY);
+  }
+}
+
+function persistDevUsers() {
+  const store = storage();
+  if (!store) return;
+  store.setItem(DEV_USERS_STORAGE_KEY, JSON.stringify(Array.from(devUsers.values())));
+}
+
 function persistSession(session: ShadowScoreSession) {
-  if (typeof window === "undefined") return;
-  window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+  const store = storage();
+  if (!store) return;
+  store.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+  window.sessionStorage.removeItem(LEGACY_SESSION_STORAGE_KEY);
 }
 
 type SupabaseAuthResponse = {
   access_token?: string;
   refresh_token?: string;
+  expires_in?: number;
+  expires_at?: number;
   user: { id: string; email?: string; user_metadata?: { name?: string }; created_at?: string; last_sign_in_at?: string };
 };
 
 function toSession(response: SupabaseAuthResponse, fallbackName: string): ShadowScoreSession {
   const user = response.user;
+  const now = new Date().toISOString();
+  const expiresAt = response.expires_at ? response.expires_at * 1000 : response.expires_in ? Date.now() + response.expires_in * 1000 : undefined;
   return {
     userId: user.id,
     email: user.email || "",
     name: user.user_metadata?.name || fallbackName,
     accessToken: response.access_token,
     refreshToken: response.refresh_token,
-    startedAt: new Date().toISOString(),
+    startedAt: user.created_at || now,
+    expiresAt,
   };
 }
 
@@ -62,10 +95,12 @@ export async function signupUser(name: string, email: string, password: string) 
     return getCurrentUserFromSession(session);
   }
 
+  loadDevUsers();
   if (devUsers.has(cleanEmail)) throw new Error("An account with this email already exists.");
   const now = new Date().toISOString();
   const user = { id: makeId("SSU"), name: cleanName, email: cleanEmail, password: cleanPassword, createdAt: now, lastLoginAt: now };
   devUsers.set(cleanEmail, user);
+  persistDevUsers();
   persistSession({ userId: user.id, email: user.email, name: user.name, startedAt: now });
   return user;
 }
@@ -84,11 +119,13 @@ export async function loginUser(email: string, password: string) {
     return getCurrentUserFromSession(session);
   }
 
+  loadDevUsers();
   const user = devUsers.get(cleanEmail);
   if (!user || user.password !== cleanPassword) throw new Error("Invalid email or password.");
   const updated = { ...user, lastLoginAt: new Date().toISOString() };
   devUsers.set(cleanEmail, updated);
-  persistSession({ userId: updated.id, email: updated.email, name: updated.name, startedAt: new Date().toISOString() });
+  persistDevUsers();
+  persistSession({ userId: updated.id, email: updated.email, name: updated.name, startedAt: updated.createdAt });
   return updated;
 }
 
@@ -103,11 +140,34 @@ function getCurrentUserFromSession(session: ShadowScoreSession): ShadowScoreUser
 }
 
 export function getCurrentSession(): ShadowScoreSession | null {
-  if (typeof window === "undefined") return null;
+  const store = storage();
+  if (!store) return null;
   try {
-    const parsed = JSON.parse(window.sessionStorage.getItem(SESSION_STORAGE_KEY) || "null");
-    return parsed?.userId && parsed?.email ? parsed : null;
+    const raw = store.getItem(SESSION_STORAGE_KEY) || window.sessionStorage.getItem(LEGACY_SESSION_STORAGE_KEY) || "null";
+    const parsed = JSON.parse(raw);
+    if (!parsed?.userId || !parsed?.email) return null;
+    if (!store.getItem(SESSION_STORAGE_KEY)) persistSession(parsed);
+    return parsed;
   } catch {
+    return null;
+  }
+}
+
+export async function restoreCurrentSession(): Promise<ShadowScoreSession | null> {
+  const session = getCurrentSession();
+  if (!session) return null;
+  if (!isSupabaseConfigured() || !session.refreshToken || !session.expiresAt || session.expiresAt > Date.now() + 60_000) return session;
+
+  try {
+    const refreshed = await supabaseFetch<SupabaseAuthResponse>("/auth/v1/token?grant_type=refresh_token", {
+      method: "POST",
+      body: JSON.stringify({ refresh_token: session.refreshToken }),
+    });
+    const nextSession = toSession(refreshed, session.name || session.email);
+    persistSession(nextSession);
+    return nextSession;
+  } catch {
+    logoutUser();
     return null;
   }
 }
@@ -119,5 +179,6 @@ export function getCurrentUser(): ShadowScoreUser | null {
 
 export function logoutUser() {
   if (typeof window === "undefined") return;
-  window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
+  window.localStorage.removeItem(SESSION_STORAGE_KEY);
+  window.sessionStorage.removeItem(LEGACY_SESSION_STORAGE_KEY);
 }

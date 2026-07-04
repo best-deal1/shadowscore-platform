@@ -13,7 +13,7 @@ import {
   markPaymentPaidAndGenerateReport,
   workspaceModeLabel,
 } from "../../lib/workspace";
-import { ShadowScoreUser, getCurrentSession, getCurrentUser, logoutUser } from "../../lib/auth";
+import { ShadowScoreUser, getCurrentSession, getCurrentUser, logoutUser, restoreCurrentSession } from "../../lib/auth";
 
 const stageClass: Record<ShadowScoreReport["stage"], string> = {
   Healthy: "border-emerald-400/30 bg-emerald-500/10 text-emerald-200",
@@ -46,19 +46,25 @@ export default function DashboardPage() {
   const [entityType, setEntityType] = useState<ShadowScoreEntity["type"]>("Marketplace");
 
   useEffect(() => {
-    const currentUser = getCurrentUser();
-    const currentSession = getCurrentSession();
-    if (!currentUser || !currentSession) {
-      router.push("/login");
-      return;
-    }
-    getWorkspace(currentSession)
-      .then((workspace) => {
-        setReports(workspace.reports);
-        setEntities(workspace.entities);
-        setAcceptances(workspace.acceptances);
-      })
-      .finally(() => setAuthChecked(true));
+    let mounted = true;
+    restoreCurrentSession().then((currentSession) => {
+      const currentUser = getCurrentUser();
+      if (!currentUser || !currentSession) {
+        router.push("/login");
+        return;
+      }
+      getWorkspace(currentSession)
+        .then((workspace) => {
+          if (!mounted) return;
+          setReports(workspace.reports);
+          setEntities(workspace.entities);
+          setAcceptances(workspace.acceptances);
+        })
+        .finally(() => mounted && setAuthChecked(true));
+    });
+    return () => {
+      mounted = false;
+    };
   }, [router]);
 
   function signOut() {
