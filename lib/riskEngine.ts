@@ -287,6 +287,14 @@ function severityRank(severity: RiskSeverity) {
   return { Low: 1, Medium: 2, High: 3, Critical: 4 }[severity];
 }
 
+function normalizeProviderSeverity(severity: ProviderResult["findings"][number]["severity"]): RiskSeverity {
+  return ({ info: "Low", low: "Low", medium: "Medium", high: "High", critical: "Critical" } as const)[severity];
+}
+
+function providerSeverityPoints(severity: RiskSeverity) {
+  return { Low: 4, Medium: 10, High: 18, Critical: 28 }[severity];
+}
+
 function stageFromScore(score: number): HealthStage {
   if (score >= 84) return "Critical";
   if (score >= 68) return "Suspended";
@@ -382,6 +390,24 @@ export function analyzeRisk(input: RiskEngineInput): RiskEngineOutput {
         evidence,
         explanation: rule.explanation,
         recommendedAction: rule.recommendedAction,
+      });
+    }
+  }
+
+  for (const providerResult of input.providerResults || []) {
+    if (providerResult.providerId !== "whois" || providerResult.status !== "completed") continue;
+
+    for (const providerFinding of providerResult.findings) {
+      const severity = normalizeProviderSeverity(providerFinding.severity);
+      findings.push({
+        id: providerFinding.id,
+        domain: "WHOIS Risk",
+        title: providerFinding.title,
+        severity,
+        points: providerSeverityPoints(severity),
+        evidence: providerResult.evidence.map((item) => `${item.label}: ${item.value || "unavailable"}`),
+        explanation: providerFinding.description,
+        recommendedAction: "Validate domain ownership, registration age and domain status before relying on the target as a trusted business signal.",
       });
     }
   }

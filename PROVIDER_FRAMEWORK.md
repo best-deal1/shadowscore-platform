@@ -13,7 +13,9 @@ Provider code lives under `lib/providers/`.
 - `types.ts` defines the stable provider contracts used by ShadowScore and future Atlas services.
 - `BaseProvider.ts` supplies shared execution behavior, timing, result envelopes, error capture, and health checks.
 - `ProviderManager.ts` owns registration and execution orchestration.
-- `placeholderProviders.ts` registers V23 placeholder provider modules for every initial provider category.
+- `placeholderProviders.ts` registers placeholder-only provider modules.
+- `WHOISProvider.ts` owns the production WHOIS/RDAP implementation.
+- `defaultProviders.ts` composes placeholders with production providers for ProviderManager registration.
 - `index.ts` exposes the reusable public Provider Framework API.
 
 The Risk Engine receives `ProviderResult[]` and does not know how providers collect evidence internally. This keeps provider implementation details isolated from scoring and report generation.
@@ -54,11 +56,11 @@ Every `execute()` call returns a `ProviderResult` containing:
 
 V23 registers the default providers through `createDefaultProviders()` and `ProviderManager.registerMany()`.
 
-The initial placeholder provider set is:
+The default provider set is:
 
 - `SSLProvider`
 - `DNSProvider`
-- `WHOISProvider`
+- `WHOISProvider` (production RDAP implementation)
 - `SecurityHeadersProvider`
 - `SPFProvider`
 - `DMARCProvider`
@@ -78,7 +80,7 @@ Future parallel execution can be added inside `ProviderManager.runProviders()` w
 
 ## Placeholder provider rules
 
-V23 providers do not perform network calls, API lookups, scoring, or production intelligence. They return structured placeholder findings and evidence only:
+Placeholder providers do not perform network calls, API lookups, scoring, or production intelligence. They return structured placeholder findings and evidence only:
 
 - `metadata.lookupPerformed` is `false`.
 - `metadata.integrationStatus` is `not_connected`.
@@ -86,6 +88,10 @@ V23 providers do not perform network calls, API lookups, scoring, or production 
 - Evidence identifies the target and placeholder source.
 
 This preserves the architecture while avoiding fake scores, fake intelligence, demo reports, or unverified claims.
+
+## WHOIS production implementation
+
+The active WHOIS path is `ProviderManager` → `WHOISProvider.ts` → `Risk Engine`. `WHOISProvider.ts` performs RDAP lookups, returns observable domain evidence, and exposes WHOIS findings to the Risk Engine through the standard `ProviderResult[]` contract. No production WHOIS logic belongs in `placeholderProviders.ts`.
 
 ## Future provider implementation
 
