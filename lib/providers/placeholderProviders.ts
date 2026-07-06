@@ -61,7 +61,6 @@ class PlaceholderProvider extends BaseProvider {
 }
 
 export class SSLProvider extends PlaceholderProvider { constructor() { super({ id: "ssl", name: "SSL Provider", version: "1.0.0", category: "ssl", evidenceLabel: "Target prepared for SSL inspection", findingTitle: "SSL provider placeholder registered" }); } }
-export class DNSProvider extends PlaceholderProvider { constructor() { super({ id: "dns", name: "DNS Provider", version: "1.0.0", category: "dns", evidenceLabel: "Target prepared for DNS inspection", findingTitle: "DNS provider placeholder registered" }); } }
 export class SecurityHeadersProvider extends PlaceholderProvider { constructor() { super({ id: "security-headers", name: "Security Headers Provider", version: "1.0.0", category: "security_headers", evidenceLabel: "Target prepared for security headers inspection", findingTitle: "Security headers provider placeholder registered" }); } }
 export class SPFProvider extends PlaceholderProvider { constructor() { super({ id: "spf", name: "SPF Provider", version: "1.0.0", category: "email_authentication", evidenceLabel: "Target prepared for SPF inspection", findingTitle: "SPF provider placeholder registered" }); } }
 export class DMARCProvider extends PlaceholderProvider { constructor() { super({ id: "dmarc", name: "DMARC Provider", version: "1.0.0", category: "email_authentication", evidenceLabel: "Target prepared for DMARC inspection", findingTitle: "DMARC provider placeholder registered" }); } }
@@ -74,7 +73,6 @@ export class ComplianceProvider extends PlaceholderProvider { constructor() { su
 export function createPlaceholderProviders() {
   return [
     new SSLProvider(),
-    new DNSProvider(),
     new SecurityHeadersProvider(),
     new SPFProvider(),
     new DMARCProvider(),
