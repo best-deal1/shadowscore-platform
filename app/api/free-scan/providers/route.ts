@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { buildTrustInsights } from "../../../../lib/insightEngine";
+import { buildTrustTimeline } from "../../../../lib/trustTimeline";
 import { analyzeRisk } from "../../../../lib/riskEngine";
 import { DNSProvider } from "../../../../lib/providers/DNSProvider";
 import { WHOISProvider } from "../../../../lib/providers/WHOISProvider";
@@ -111,6 +112,12 @@ export async function POST(request: Request) {
       providerResults,
     });
     const insightOutput = buildTrustInsights({ providerResults, riskOutput, audience: "free" });
+    const timeline = buildTrustTimeline({
+      providerResults,
+      insights: insightOutput.insights,
+      insightEngineVersion: insightOutput.engineVersion,
+      audience: "free",
+    });
 
     const dnsResult = providerResults.find((result) => result.providerId === "dns");
     const whoisResult = providerResults.find((result) => result.providerId === "whois");
@@ -123,6 +130,7 @@ export async function POST(request: Request) {
       ],
       insights: insightOutput.insights,
       insightEngineVersion: insightOutput.engineVersion,
+      timeline,
     });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to run free provider scan." }, { status: 500 });

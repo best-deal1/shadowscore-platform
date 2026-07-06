@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import Link from "next/link";
 import ShadowScoreLayout from "../../components/ShadowScoreLayout";
 import { getCurrentSession } from "../../lib/auth";
+import { buildTrustTimeline } from "../../lib/trustTimeline";
 import { getWorkspace, ShadowScoreReport } from "../../lib/workspace";
 import { useEffect, useState } from "react";
 
@@ -33,6 +34,12 @@ export default function ReportPage() {
 
   const report = useMemo(() => reports.find((item) => item.reportId === reportId), [reports, reportId]);
   const isReady = report?.reportStatus === "ready";
+  const trustTimeline = useMemo(() => report ? buildTrustTimeline({
+    providerResults: report.providerResults,
+    insights: report.reportSummary?.insights,
+    insightEngineVersion: report.reportSummary?.insightEngineVersion,
+    audience: "paid",
+  }) : [], [report]);
 
   return (
     <ShadowScoreLayout>
@@ -86,6 +93,24 @@ export default function ReportPage() {
                       <p className="mt-4 text-sm leading-6 text-zinc-300">{insight.insight}</p>
                       <p className="mt-3 text-xs leading-5 text-zinc-500"><span className="text-zinc-400">Why it matters:</span> {insight.whyItMatters}</p>
                       <p className="mt-2 text-xs leading-5 text-zinc-500"><span className="text-zinc-400">Recommended next step:</span> {insight.recommendedNextStep}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {trustTimeline.length ? (
+              <div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+                <div className="text-xs uppercase tracking-[0.28em] text-red-300">Trust Timeline</div>
+                <div className="mt-5 space-y-4">
+                  {trustTimeline.map((item, index) => (
+                    <div key={`${item.title}-${index}`} className="rounded-2xl border border-white/10 bg-black/40 p-5">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="font-black text-white">Step {index + 1}: {item.title}</div>
+                        <span className="rounded-full border border-white/10 px-3 py-1 text-xs font-bold text-zinc-300">{item.status}</span>
+                      </div>
+                      <p className="mt-3 text-sm leading-6 text-zinc-300">{item.description}</p>
+                      <p className="mt-3 text-xs leading-5 text-zinc-500"><span className="text-zinc-400">Evidence source:</span> {item.evidenceSource}</p>
                     </div>
                   ))}
                 </div>

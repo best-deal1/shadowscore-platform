@@ -35,7 +35,8 @@ type TrustInsight = {
   recommendedNextStep: string;
   evidence: string[];
 };
-type FreeScanResult = { executedAt: string; providers: FreeScanProviderSummary[]; insights: TrustInsight[]; insightEngineVersion?: string };
+type TrustTimelineItem = { title: string; description: string; status: "completed" | "unavailable" | "pending"; evidenceSource: string };
+type FreeScanResult = { executedAt: string; providers: FreeScanProviderSummary[]; insights: TrustInsight[]; insightEngineVersion?: string; timeline?: TrustTimelineItem[] };
 
 const MAX_FILE_SIZE = 15 * 1024 * 1024;
 const MIN_FILE_SIZE = 1024;
@@ -1419,6 +1420,24 @@ export default function IntakePage() {
                           ))}
                         </div>
                         <p className="mt-3 text-xs leading-5 text-zinc-500">No scores or paid-report recommendations are shown in this free preview.</p>
+                      </div>
+                    ) : null}
+
+                    {freeScanResult?.timeline?.length ? (
+                      <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+                        <div className="text-xs uppercase tracking-[0.22em] text-red-300">Trust Timeline</div>
+                        <div className="mt-4 space-y-3">
+                          {freeScanResult.timeline.map((item, index) => (
+                            <div key={`${item.title}-${index}`} className="rounded-xl border border-white/10 bg-black/35 p-4">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <div className="font-black text-white">Step {index + 1}: {item.title}</div>
+                                <span className="rounded-full border border-emerald-400/25 bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-100">{item.status}</span>
+                              </div>
+                              <p className="mt-2 text-sm leading-6 text-zinc-300">{item.description}</p>
+                              <p className="mt-2 text-xs leading-5 text-zinc-500"><span className="text-zinc-400">Evidence source:</span> {item.evidenceSource}</p>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     ) : null}
                     {freeScanError && <div className="mt-4 rounded-xl border border-red-400/25 bg-red-500/10 p-3 text-sm text-red-100">{freeScanError}</div>}
