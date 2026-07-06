@@ -10,7 +10,6 @@ import {
   ShadowScoreReport,
   addWatchlistEntity,
   getWorkspace,
-  markPaymentPaidAndGenerateReport,
   workspaceModeLabel,
 } from "../../lib/workspace";
 import { ShadowScoreUser, getCurrentSession, getCurrentUser, logoutUser } from "../../lib/auth";
@@ -89,7 +88,12 @@ export default function DashboardPage() {
   async function simulatePaid(paymentIntentId: string) {
     const currentSession = getCurrentSession();
     if (!currentSession) return;
-    await markPaymentPaidAndGenerateReport(currentSession, paymentIntentId);
+    const response = await fetch("/api/workspace/mark-paid", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session: currentSession, paymentIntentId }),
+    });
+    if (!response.ok) throw new Error("Unable to mark payment as paid.");
     const workspace = await getWorkspace(currentSession);
     setReports(workspace.reports);
   }

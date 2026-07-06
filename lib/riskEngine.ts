@@ -1,4 +1,4 @@
-import type { ProviderResult } from "./providers";
+import type { ProviderResult } from "./providers/types";
 
 export const RISK_ENGINE_VERSION = "risk-engine-v19";
 export type RiskSeverity = "Low" | "Medium" | "High" | "Critical";
