@@ -80,6 +80,22 @@ export default function ReportPage() {
                 </div>
               ))}
             </div>
+            {report.reportSummary?.decision ? (
+              <div className="mt-8 rounded-2xl border border-red-400/25 bg-red-500/[0.06] p-5">
+                <div className="text-xs uppercase tracking-[0.28em] text-red-200">Business Decision</div>
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                  <div className="text-3xl font-black text-white">{report.reportSummary.decision.decisionLabel}</div>
+                  <span className="rounded-full border border-white/10 px-3 py-1 text-xs font-bold text-zinc-300">{report.reportSummary.decision.confidenceLevel} confidence</span>
+                </div>
+                <div className="mt-5 text-sm font-black text-zinc-100">Top reasons</div>
+                <ul className="mt-3 space-y-2 text-sm leading-6 text-zinc-300">
+                  {report.reportSummary.decision.topReasons.map((reason) => <li key={reason}>• {reason}</li>)}
+                </ul>
+                <p className="mt-5 text-sm leading-6 text-zinc-300"><span className="font-bold text-zinc-100">What this means:</span> {report.reportSummary.decision.whatThisMeans}</p>
+                <p className="mt-2 text-sm leading-6 text-zinc-300"><span className="font-bold text-zinc-100">Recommended action:</span> {report.reportSummary.decision.recommendedAction}</p>
+              </div>
+            ) : null}
+
             {report.reportSummary?.insights?.length ? (
               <div className="mt-8 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.05] p-5">
                 <div className="text-xs uppercase tracking-[0.28em] text-emerald-200">Insight Engine</div>
