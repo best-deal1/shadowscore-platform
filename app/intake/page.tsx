@@ -37,7 +37,8 @@ type TrustInsight = {
 };
 type TrustTimelineItem = { title: string; description: string; status: "completed" | "unavailable" | "pending"; evidenceSource: string };
 type DecisionPreview = { decisionLabel: "Safe to proceed" | "Proceed with verification" | "High caution"; confidenceLevel: "Low" | "Medium" | "High"; topReasons: string[]; whatThisMeans: string; recommendedAction: string; limitedPreview: boolean };
-type FreeScanResult = { executedAt: string; providers: FreeScanProviderSummary[]; insights: TrustInsight[]; insightEngineVersion?: string; timeline?: TrustTimelineItem[]; decisionPreview?: DecisionPreview };
+type IdentityProfile = { identitySummary: string };
+type FreeScanResult = { executedAt: string; providers: FreeScanProviderSummary[]; insights: TrustInsight[]; insightEngineVersion?: string; timeline?: TrustTimelineItem[]; decisionPreview?: DecisionPreview; identityProfile?: IdentityProfile };
 
 const MAX_FILE_SIZE = 15 * 1024 * 1024;
 const MIN_FILE_SIZE = 1024;
@@ -1418,6 +1419,13 @@ export default function IntakePage() {
                         <p className="mt-4 text-sm leading-6 text-zinc-300"><span className="font-bold text-zinc-100">What this means:</span> {freeScanResult.decisionPreview.whatThisMeans}</p>
                         <p className="mt-2 text-sm leading-6 text-zinc-300"><span className="font-bold text-zinc-100">Recommended action:</span> {freeScanResult.decisionPreview.recommendedAction}</p>
                         <p className="mt-3 text-xs leading-5 text-zinc-500">Limited preview only. Risk scores, trust scores and full decision reasoning are available only in the paid report.</p>
+                      </div>
+                    ) : null}
+
+                    {freeScanResult?.identityProfile?.identitySummary ? (
+                      <div className="mt-5 rounded-2xl border border-sky-400/20 bg-sky-500/[0.06] p-4">
+                        <div className="text-xs uppercase tracking-[0.22em] text-sky-200">Identity Summary</div>
+                        <p className="mt-3 text-sm leading-6 text-zinc-300">{freeScanResult.identityProfile.identitySummary}</p>
                       </div>
                     ) : null}
 

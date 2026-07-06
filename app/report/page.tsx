@@ -96,6 +96,13 @@ export default function ReportPage() {
               </div>
             ) : null}
 
+            {report.reportSummary?.identityProfile?.identitySummary ? (
+              <div className="mt-8 rounded-2xl border border-sky-400/20 bg-sky-500/[0.05] p-5">
+                <div className="text-xs uppercase tracking-[0.28em] text-sky-200">Identity Summary</div>
+                <p className="mt-4 text-sm leading-6 text-zinc-300">{report.reportSummary.identityProfile.identitySummary}</p>
+              </div>
+            ) : null}
+
             {report.reportSummary?.insights?.length ? (
               <div className="mt-8 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.05] p-5">
                 <div className="text-xs uppercase tracking-[0.28em] text-emerald-200">Insight Engine</div>

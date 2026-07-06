@@ -1,5 +1,6 @@
 import { buildDecision } from "./decisionEngine";
 import { buildTrustInsights } from "./insightEngine";
+import { buildIdentityProfile } from "./identityEngine";
 import { buildTrustTimeline } from "./trustTimeline";
 import { ProviderManager, createDefaultProviders } from "./providers";
 import type { ProviderExecutionContext } from "./providers/types";
@@ -50,6 +51,7 @@ export async function buildReadyReport(input: {
   };
   const riskEnginePreview = analyzeRisk(engineInput);
   const insightOutput = buildTrustInsights({ providerResults, riskOutput: riskEnginePreview, audience: "paid" });
+  const identityProfile = buildIdentityProfile({ providerResults, insights: insightOutput.insights });
   const trustTimeline = buildTrustTimeline({
     providerResults,
     insights: insightOutput.insights,
@@ -95,6 +97,7 @@ export async function buildReadyReport(input: {
       insights: insightOutput.insights,
       insightEngineVersion: insightOutput.engineVersion,
       decision,
+      identityProfile,
     },
     riskScore: undefined,
     confidenceScore: undefined,
