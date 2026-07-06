@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import PaymentButtons from "../../components/PaymentButtons";
 import { getCurrentSession } from "../../lib/auth";
@@ -18,6 +19,15 @@ type Requirement = { label: string; hints: string[] };
 type ScanMode = "website" | "marketplace" | "evidence";
 
 type FileIssue = { file: string; issue: string; severity: "Block" | "Warning" };
+type FreeScanProviderSummary = {
+  providerId: string;
+  providerName: string;
+  status: "completed" | "failed" | "skipped";
+  duration: number;
+  error?: string;
+  fields: Array<{ label: string; value: string }>;
+};
+type FreeScanResult = { executedAt: string; providers: FreeScanProviderSummary[] };
 
 const MAX_FILE_SIZE = 15 * 1024 * 1024;
 const MIN_FILE_SIZE = 1024;
@@ -74,16 +84,18 @@ const SCAN_MODES: Array<{
   },
 ];
 
-const FUTURE_WEBSITE_PROVIDERS = [
-  "SSL",
-  "DNS",
-  "WHOIS",
-  "security headers",
-  "SPF",
-  "DMARC",
-  "reputation",
-  "business profile",
+const WEBSITE_PROVIDER_EXECUTION = [
+  { id: "dns", label: "DNS Intelligence", production: true },
+  { id: "whois", label: "WHOIS Intelligence", production: true },
+  { id: "ssl", label: "SSL", production: false },
+  { id: "security-headers", label: "Security Headers", production: false },
+  { id: "spf", label: "SPF", production: false },
+  { id: "dmarc", label: "DMARC", production: false },
+  { id: "reputation", label: "Reputation", production: false },
+  { id: "business-profile", label: "Business Profile", production: false },
 ];
+
+const FUTURE_WEBSITE_PROVIDERS = WEBSITE_PROVIDER_EXECUTION.map((provider) => provider.label);
 
 const MARKETPLACE_REQUIREMENTS: Record<string, Requirement[]> = {
   eBay: [
@@ -546,6 +558,9 @@ export default function IntakePage() {
   const [submitted, setSubmitted] = useState(false);
   const [leadSaved, setLeadSaved] = useState(false);
   const [intake, setIntake] = useState<ShadowScoreIntake | null>(null);
+  const [freeScanResult, setFreeScanResult] = useState<FreeScanResult | null>(null);
+  const [freeScanRunning, setFreeScanRunning] = useState(false);
+  const [freeScanError, setFreeScanError] = useState("");
 
   const displayMarketplace =
     marketplace === "Other"
@@ -786,6 +801,55 @@ export default function IntakePage() {
       visibleSignalCategories: scanMode === "website" ? FUTURE_WEBSITE_PROVIDERS : (detectedSignals.length ? detectedSignals.map((item) => item.title) : ["Marketplace identity", "Evidence readiness", "Payment or policy categories"]),
     });
 
+  const resetFreeScan = () => {
+    setFreeScanResult(null);
+    setFreeScanError("");
+  };
+
+  const runFreePreview = async () => {
+    setSubmitted(true);
+    setFreeScanError("");
+
+    if (!canAnalyze) return;
+
+    if (scanMode !== "website") {
+      setFreeScanResult(null);
+      return;
+    }
+
+    setFreeScanRunning(true);
+    setFreeScanResult(null);
+
+    try {
+      const response = await fetch("/api/free-scan/providers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(intakeRecord()),
+      });
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload.error || "Unable to run provider checks.");
+      }
+
+      setFreeScanResult(payload as FreeScanResult);
+    } catch (error) {
+      setFreeScanError(error instanceof Error ? error.message : "Unable to run provider checks.");
+    } finally {
+      setFreeScanRunning(false);
+    }
+  };
+
+  const providerStatusIcon = (providerId: string) => {
+    if (!WEBSITE_PROVIDER_EXECUTION.find((provider) => provider.id === providerId)?.production) return "⏳";
+    if (freeScanRunning) return "⏳";
+    const result = freeScanResult?.providers.find((provider) => provider.providerId === providerId);
+    if (!result) return "⏳";
+    return result.status === "completed" ? "✓" : "!";
+  };
+
+  const renderValue = (value: string): ReactNode => value || "Unavailable";
+
   const saveLead = async () => {
     const session = getCurrentSession();
     if (session) {
@@ -891,6 +955,7 @@ export default function IntakePage() {
                     setScanMode(mode.id);
                     setSubmitted(false);
                     setLeadSaved(false);
+                    resetFreeScan();
                   }}
                   className={`rounded-2xl border p-4 text-left transition ${scanMode === mode.id ? "border-red-400/50 bg-red-500/15" : "border-white/10 bg-white/[0.03] hover:border-red-400/25"}`}
                 >
@@ -930,6 +995,7 @@ export default function IntakePage() {
                       setWebsiteTarget(e.target.value);
                       setSubmitted(false);
                       setLeadSaved(false);
+                      resetFreeScan();
                     }}
                     className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white"
                     placeholder="example.com or Example LLC"
@@ -948,16 +1014,17 @@ export default function IntakePage() {
                 </label>
                 <div className="md:col-span-2 rounded-2xl border border-red-400/20 bg-red-500/[0.06] p-5 text-sm leading-7 text-zinc-400">
                   <div className="font-bold text-red-100">
-                    Future provider slots
+                    {freeScanResult ? "Live Provider Results" : "Running Provider Checks..."}
                   </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {FUTURE_WEBSITE_PROVIDERS.map((provider) => (
-                      <span
-                        key={provider}
-                        className="rounded-full border border-white/10 bg-black/40 px-3 py-1 text-xs text-zinc-300"
+                  <div className="mt-3 grid gap-2 md:grid-cols-2">
+                    {WEBSITE_PROVIDER_EXECUTION.map((provider) => (
+                      <div
+                        key={provider.id}
+                        className="rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-xs text-zinc-300"
                       >
-                        {provider}
-                      </span>
+                        <span className={provider.production && freeScanResult ? "text-emerald-200" : "text-yellow-100"}>{providerStatusIcon(provider.id)}</span>{" "}
+                        {provider.label}{provider.production ? "" : " (Coming Soon)"}
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -1200,10 +1267,10 @@ export default function IntakePage() {
 
             <button
               type="button"
-              onClick={() => setSubmitted(true)}
+              onClick={runFreePreview}
               className="mt-6 block w-full rounded-2xl bg-red-600 px-7 py-5 text-center text-sm font-black uppercase tracking-[0.16em] shadow-[0_0_28px_rgba(220,38,38,0.28)] hover:bg-red-500"
             >
-              Run Free {activeMode.label} Preview
+              {freeScanRunning ? "Running Provider Checks..." : `Run Free ${activeMode.label} Preview`}
             </button>
 
             {submitted && canAnalyze && (
@@ -1281,6 +1348,37 @@ export default function IntakePage() {
                     ))}
                   </div>
                 </div>
+
+                {scanMode === "website" && (freeScanRunning || freeScanResult || freeScanError) && (
+                  <div className="mt-6 rounded-2xl border border-white/10 bg-black/50 p-5">
+                    <div className="text-xs uppercase tracking-[0.22em] text-red-300">
+                      {freeScanResult ? "Live Provider Results" : "Running Provider Checks..."}
+                    </div>
+                    <div className="mt-4 grid gap-3 md:grid-cols-2">
+                      {WEBSITE_PROVIDER_EXECUTION.map((provider) => {
+                        const result = freeScanResult?.providers.find((item) => item.providerId === provider.id);
+                        return (
+                          <div key={provider.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                            <div className="font-black text-white">
+                              {providerStatusIcon(provider.id)} {provider.label}{provider.production ? "" : " (Coming Soon)"}
+                            </div>
+                            {result && (
+                              <div className="mt-3 space-y-2 text-sm text-zinc-300">
+                                {result.fields.map((field) => (
+                                  <div key={field.label}>
+                                    <span className="text-zinc-500">{field.label}:</span> {renderValue(field.value)}
+                                  </div>
+                                ))}
+                                {result.status !== "completed" && <div className="text-yellow-100">Provider status: {result.status}. {result.error || "Unavailable"}</div>}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {freeScanError && <div className="mt-4 rounded-xl border border-red-400/25 bg-red-500/10 p-3 text-sm text-red-100">{freeScanError}</div>}
+                  </div>
+                )}
 
                 <div className="mt-6 text-xl font-bold">
                   Visible signal categories
