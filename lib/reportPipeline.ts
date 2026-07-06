@@ -1,3 +1,4 @@
+import { buildTrustInsights } from "./insightEngine";
 import { ProviderManager, createDefaultProviders } from "./providers";
 import type { ProviderExecutionContext } from "./providers/types";
 import { analyzeRisk } from "./riskEngine";
@@ -46,6 +47,7 @@ export async function buildReadyReport(input: {
     providerResults,
   };
   const riskEnginePreview = analyzeRisk(engineInput);
+  const insightOutput = buildTrustInsights({ providerResults, riskOutput: riskEnginePreview, audience: "paid" });
   const now = new Date().toISOString();
 
   return {
@@ -72,9 +74,11 @@ export async function buildReadyReport(input: {
       missingEvidence: riskEnginePreview.missingEvidence,
     },
     reportSummary: {
-      message: "Report generated from paid intake and placeholder provider outputs. Detailed intelligence will expand as production providers are connected.",
+      message: "Report generated from paid intake, provider evidence and Insight Engine business-trust analysis.",
       primaryRiskDomain: riskEnginePreview.primaryRiskDomain,
       findingCount: riskEnginePreview.findings.length,
+      insights: insightOutput.insights,
+      insightEngineVersion: insightOutput.engineVersion,
     },
     riskScore: undefined,
     confidenceScore: undefined,

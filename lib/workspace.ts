@@ -1,4 +1,5 @@
 import { LEGAL_ACCEPTANCE_VERSION } from "./legal";
+import type { TrustInsight } from "./insightEngine";
 import type { ProviderResult } from "./providers/types";
 import { supabaseFetch, isSupabaseConfigured } from "./supabase";
 import { cloneWorkspace, getMutableMemoryWorkspace } from "./workspaceStore";
@@ -54,7 +55,7 @@ export type ShadowScoreReport = {
   providerVersions?: Record<string, string>;
   providerResults?: ProviderResult[];
   evidenceSummary?: unknown;
-  reportSummary?: { message: string; primaryRiskDomain?: string; findingCount?: number };
+  reportSummary?: { message: string; primaryRiskDomain?: string; findingCount?: number; insights?: TrustInsight[]; insightEngineVersion?: string };
   topFactors: string[];
 };
 

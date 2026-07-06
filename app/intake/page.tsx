@@ -27,7 +27,15 @@ type FreeScanProviderSummary = {
   error?: string;
   fields: Array<{ label: string; value: string }>;
 };
-type FreeScanResult = { executedAt: string; providers: FreeScanProviderSummary[] };
+type TrustInsight = {
+  category: "Infrastructure Insight" | "Identity Insight" | "Email/Domain Insight" | "Overall Trust Note";
+  insight: string;
+  riskLevel: "Low" | "Medium" | "High" | "Unknown";
+  whyItMatters: string;
+  recommendedNextStep: string;
+  evidence: string[];
+};
+type FreeScanResult = { executedAt: string; providers: FreeScanProviderSummary[]; insights: TrustInsight[]; insightEngineVersion?: string };
 
 const MAX_FILE_SIZE = 15 * 1024 * 1024;
 const MIN_FILE_SIZE = 1024;
@@ -1393,6 +1401,26 @@ export default function IntakePage() {
                         );
                       })}
                     </div>
+
+                    {freeScanResult?.insights?.length ? (
+                      <div className="mt-5 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.06] p-4">
+                        <div className="text-xs uppercase tracking-[0.22em] text-emerald-200">Insight Engine Preview</div>
+                        <div className="mt-3 grid gap-3">
+                          {freeScanResult.insights.map((insight) => (
+                            <div key={insight.category} className="rounded-xl border border-white/10 bg-black/35 p-4">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <div className="font-black text-white">{insight.category}</div>
+                                <span className="rounded-full border border-white/10 px-3 py-1 text-xs font-bold text-zinc-300">{insight.riskLevel}</span>
+                              </div>
+                              <p className="mt-3 text-sm leading-6 text-zinc-300">{insight.insight}</p>
+                              <p className="mt-2 text-xs leading-5 text-zinc-500"><span className="text-zinc-400">Why it matters:</span> {insight.whyItMatters}</p>
+                              <p className="mt-2 text-xs leading-5 text-zinc-500"><span className="text-zinc-400">Next step:</span> {insight.recommendedNextStep}</p>
+                            </div>
+                          ))}
+                        </div>
+                        <p className="mt-3 text-xs leading-5 text-zinc-500">No scores or paid-report recommendations are shown in this free preview.</p>
+                      </div>
+                    ) : null}
                     {freeScanError && <div className="mt-4 rounded-xl border border-red-400/25 bg-red-500/10 p-3 text-sm text-red-100">{freeScanError}</div>}
                   </div>
                 )}
