@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { buildTrustInsights } from "../../../../lib/insightEngine";
 import { analyzeRisk } from "../../../../lib/riskEngine";
 import { DNSProvider } from "../../../../lib/providers/DNSProvider";
 import { WHOISProvider } from "../../../../lib/providers/WHOISProvider";
@@ -101,7 +102,7 @@ export async function POST(request: Request) {
 
     const providerResults = await productionProviderManager.runProviders(context);
 
-    analyzeRisk({
+    const riskOutput = analyzeRisk({
       marketplace: context.platform,
       caseType: context.caseType,
       store: context.target,
@@ -109,6 +110,7 @@ export async function POST(request: Request) {
       fileNames: context.fileNames,
       providerResults,
     });
+    const insightOutput = buildTrustInsights({ providerResults, riskOutput, audience: "free" });
 
     const dnsResult = providerResults.find((result) => result.providerId === "dns");
     const whoisResult = providerResults.find((result) => result.providerId === "whois");
@@ -119,6 +121,8 @@ export async function POST(request: Request) {
         ...(dnsResult ? [summarizeDns(dnsResult)] : []),
         ...(whoisResult ? [summarizeWhois(whoisResult)] : []),
       ],
+      insights: insightOutput.insights,
+      insightEngineVersion: insightOutput.engineVersion,
     });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to run free provider scan." }, { status: 500 });

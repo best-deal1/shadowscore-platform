@@ -73,6 +73,24 @@ export default function ReportPage() {
                 </div>
               ))}
             </div>
+            {report.reportSummary?.insights?.length ? (
+              <div className="mt-8 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.05] p-5">
+                <div className="text-xs uppercase tracking-[0.28em] text-emerald-200">Insight Engine</div>
+                <div className="mt-5 grid gap-4 md:grid-cols-2">
+                  {report.reportSummary.insights.map((insight) => (
+                    <div key={insight.category} className="rounded-2xl border border-white/10 bg-black/40 p-5">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="font-black text-white">{insight.category}</div>
+                        <span className="rounded-full border border-white/10 px-3 py-1 text-xs font-bold text-zinc-300">{insight.riskLevel}</span>
+                      </div>
+                      <p className="mt-4 text-sm leading-6 text-zinc-300">{insight.insight}</p>
+                      <p className="mt-3 text-xs leading-5 text-zinc-500"><span className="text-zinc-400">Why it matters:</span> {insight.whyItMatters}</p>
+                      <p className="mt-2 text-xs leading-5 text-zinc-500"><span className="text-zinc-400">Recommended next step:</span> {insight.recommendedNextStep}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
             <div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
               <div className="text-xs uppercase tracking-[0.28em] text-red-300">Provider results</div>
               <pre className="mt-4 overflow-x-auto text-xs leading-6 text-zinc-400">{JSON.stringify(report.providerResults || [], null, 2)}</pre>
