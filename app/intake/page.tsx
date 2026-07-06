@@ -36,7 +36,8 @@ type TrustInsight = {
   evidence: string[];
 };
 type TrustTimelineItem = { title: string; description: string; status: "completed" | "unavailable" | "pending"; evidenceSource: string };
-type FreeScanResult = { executedAt: string; providers: FreeScanProviderSummary[]; insights: TrustInsight[]; insightEngineVersion?: string; timeline?: TrustTimelineItem[] };
+type DecisionPreview = { decisionLabel: "Safe to proceed" | "Proceed with verification" | "High caution"; confidenceLevel: "Low" | "Medium" | "High"; topReasons: string[]; whatThisMeans: string; recommendedAction: string; limitedPreview: boolean };
+type FreeScanResult = { executedAt: string; providers: FreeScanProviderSummary[]; insights: TrustInsight[]; insightEngineVersion?: string; timeline?: TrustTimelineItem[]; decisionPreview?: DecisionPreview };
 
 const MAX_FILE_SIZE = 15 * 1024 * 1024;
 const MIN_FILE_SIZE = 1024;
@@ -1402,6 +1403,23 @@ export default function IntakePage() {
                         );
                       })}
                     </div>
+
+                    {freeScanResult?.decisionPreview ? (
+                      <div className="mt-5 rounded-2xl border border-red-400/25 bg-red-500/[0.07] p-4">
+                        <div className="text-xs uppercase tracking-[0.22em] text-red-200">Decision Preview</div>
+                        <div className="mt-3 flex flex-wrap items-center gap-3">
+                          <div className="text-2xl font-black text-white">{freeScanResult.decisionPreview.decisionLabel}</div>
+                          <span className="rounded-full border border-white/10 px-3 py-1 text-xs font-bold text-zinc-300">{freeScanResult.decisionPreview.confidenceLevel} confidence</span>
+                        </div>
+                        <div className="mt-4 text-sm font-bold text-zinc-200">Why:</div>
+                        <ul className="mt-2 space-y-2 text-sm leading-6 text-zinc-300">
+                          {freeScanResult.decisionPreview.topReasons.map((reason) => <li key={reason}>• {reason}</li>)}
+                        </ul>
+                        <p className="mt-4 text-sm leading-6 text-zinc-300"><span className="font-bold text-zinc-100">What this means:</span> {freeScanResult.decisionPreview.whatThisMeans}</p>
+                        <p className="mt-2 text-sm leading-6 text-zinc-300"><span className="font-bold text-zinc-100">Recommended action:</span> {freeScanResult.decisionPreview.recommendedAction}</p>
+                        <p className="mt-3 text-xs leading-5 text-zinc-500">Limited preview only. Risk scores, trust scores and full decision reasoning are available only in the paid report.</p>
+                      </div>
+                    ) : null}
 
                     {freeScanResult?.insights?.length ? (
                       <div className="mt-5 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.06] p-4">
