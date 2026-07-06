@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import ShadowScoreLayout from "../../components/ShadowScoreLayout";
-import { getAdminConsoleData, isAdminAllowed, type AdminConsoleData } from "../../lib/admin";
+import type { AdminConsoleData } from "../../lib/adminTypes";
 import { getCurrentUser } from "../../lib/auth";
 import type { PaymentStatus, ReportStatus } from "../../lib/workspace";
 
@@ -42,11 +42,21 @@ export default function AdminPage() {
       router.push("/login");
       return;
     }
-    if (!isAdminAllowed(user.email)) {
-      Promise.resolve().then(() => setError("This signed-in account is not on the admin allowlist."));
-      return;
-    }
-    getAdminConsoleData().then(setData).catch((err) => setError(err instanceof Error ? err.message : "Unable to load admin console."));
+    const session = window.sessionStorage.getItem("shadowscore.session.v19");
+    fetch("/api/admin/console", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session: session ? JSON.parse(session) : null, user }),
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({}));
+          throw new Error(payload.error || "Unable to load admin console.");
+        }
+        return response.json();
+      })
+      .then(setData)
+      .catch((err) => setError(err instanceof Error ? err.message : "Unable to load admin console."));
   }, [router]);
 
   const overview = useMemo(() => {

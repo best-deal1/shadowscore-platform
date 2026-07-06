@@ -1,40 +1,14 @@
 import { getCurrentSession, getCurrentUser, type ShadowScoreUser } from "./auth";
-import { createDefaultProviders, type Provider } from "./providers";
+import type { AdminConsoleData, AdminUserRow } from "./adminTypes";
+import { DEFAULT_PROVIDER_METADATA } from "./providers/metadata";
 import { REPORT_ENGINE_VERSION } from "./reportPipeline";
 import { RISK_ENGINE_VERSION } from "./riskEngine";
 import { isSupabaseConfigured } from "./supabase";
-import { getWorkspace, workspaceModeLabel, type PaymentIntent, type ShadowScoreIntake, type ShadowScoreReport } from "./workspace";
+import { getWorkspace, workspaceModeLabel } from "./workspace";
 
 export const PROVIDER_FRAMEWORK_VERSION = "provider-framework-v23";
 
-export type AdminUserRow = {
-  id: string;
-  name: string;
-  email: string;
-  createdAt: string;
-  reports: number;
-  payments: number;
-  lastActivity: string;
-};
-
-export type AdminConsoleData = {
-  currentUser: ShadowScoreUser;
-  users: AdminUserRow[];
-  intakes: ShadowScoreIntake[];
-  paymentIntents: PaymentIntent[];
-  reports: ShadowScoreReport[];
-  providerResults: Array<NonNullable<ShadowScoreReport["providerResults"]>[number] & { reportId: string; target: string; userId?: string }>;
-  evidence: Array<{ reportId: string; target: string; userId?: string; evidenceSummary: unknown; providerEvidenceCount: number }>;
-  systemStatus: {
-    providerFrameworkVersion: string;
-    riskEngineVersion: string;
-    reportEngineVersion: string;
-    workspaceMode: string;
-    supabaseConnected: boolean;
-    paymentProviderStatus: string;
-    registeredProviders: Array<Pick<Provider, "id" | "name" | "version" | "category">>;
-  };
-};
+export type { AdminConsoleData, AdminUserRow } from "./adminTypes";
 
 function configuredAdminEmails() {
   return (process.env.NEXT_PUBLIC_ADMIN_ALLOWLIST || process.env.NEXT_PUBLIC_ADMIN_EMAILS || "")
@@ -53,10 +27,7 @@ function latestDate(values: Array<string | undefined>) {
   return values.filter(Boolean).sort().at(-1) || "No activity";
 }
 
-export async function getAdminConsoleData(): Promise<AdminConsoleData> {
-  const session = getCurrentSession();
-  const currentUser = getCurrentUser();
-  if (!session || !currentUser) throw new Error("Admin console requires an authenticated session.");
+export async function getAdminConsoleDataForSession(session: NonNullable<ReturnType<typeof getCurrentSession>>, currentUser: ShadowScoreUser): Promise<AdminConsoleData> {
   if (!isAdminAllowed(currentUser.email)) throw new Error("This account is not on the admin allowlist.");
 
   const workspace = await getWorkspace(session);
@@ -122,7 +93,14 @@ export async function getAdminConsoleData(): Promise<AdminConsoleData> {
       workspaceMode: workspaceModeLabel(),
       supabaseConnected: isSupabaseConfigured(),
       paymentProviderStatus: "not_connected_placeholder",
-      registeredProviders: createDefaultProviders().map((provider) => ({ id: provider.id, name: provider.name, version: provider.version, category: provider.category })),
+      registeredProviders: DEFAULT_PROVIDER_METADATA,
     },
   };
+}
+
+export async function getAdminConsoleData(): Promise<AdminConsoleData> {
+  const session = getCurrentSession();
+  const currentUser = getCurrentUser();
+  if (!session || !currentUser) throw new Error("Admin console requires an authenticated session.");
+  return getAdminConsoleDataForSession(session, currentUser);
 }

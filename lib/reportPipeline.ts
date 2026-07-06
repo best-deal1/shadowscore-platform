@@ -1,5 +1,5 @@
 import { ProviderManager, createDefaultProviders } from "./providers";
-import type { ProviderExecutionContext } from "./providers";
+import type { ProviderExecutionContext } from "./providers/types";
 import { analyzeRisk } from "./riskEngine";
 import type { PaymentIntent, ShadowScoreIntake, ShadowScoreReport } from "./workspace";
 
