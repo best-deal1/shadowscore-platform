@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import PaymentButtons from "../components/PaymentButtons";
 import { TIKTOK_URL, LINKEDIN_URL, X_URL, YOUTUBE_URL, CONTACT_EMAIL, SUPPORT_EMAIL, buildWhatsAppUrl } from "../lib/config";
@@ -56,27 +56,12 @@ function MarketplaceLogo({ type }: { type: string }) {
 const additionalPlatforms = ["SHEIN", "Vinted", "Depop", "Facebook Marketplace", "Shopify Risk Signals", "Temu", "AliExpress"];
 
 
-const heroMessages = [
-  {
-    headline: "Protect Revenue",
-    highlight: "Before Problems Escalate.",
-    sub: "Monitor marketplace, verification, compliance and payout risks before they freeze cashflow, reduce visibility or restrict access.",
-  },
-  {
-    headline: "Good Sellers",
-    highlight: "Still Get Restricted.",
-    sub: "Top Rated status, positive feedback and delivered orders do not always mean marketplace trust is healthy.",
-  },
-  {
-    headline: "The Warning Is Usually",
-    highlight: "Not The Beginning.",
-    sub: "BBE, MC011, verification loops, reserves and payout holds often appear after risk has already been building.",
-  },
-  {
-    headline: "Know Your Risk",
-    highlight: "Before They Do.",
-    sub: "ShadowScore maps visible evidence into marketplace, reputation and payout risk intelligence.",
-  },
+const trustCheckCategories = [
+  ["Identity", "Business names, seller handles, marketplace profiles and verification signals."],
+  ["Infrastructure", "Domains, DNS, WHOIS, SSL, email authentication and website security posture."],
+  ["Reputation", "Reviews, complaint patterns, public trust signals and marketplace health indicators."],
+  ["Commerce", "Storefront behavior, fulfillment, payment processors, payout friction and transaction readiness."],
+  ["Risk", "Policy exposure, authenticity concerns, enforcement stage and escalation warning signs."],
 ];
 
 const paymentSystems = [
@@ -211,20 +196,6 @@ export default function Home() {
   const [showMoreFaq, setShowMoreFaq] = useState(false);
   const visibleFaq = showMoreFaq ? faqItems : faqItems.slice(0, 6);
   const selected = useMemo(() => plans.find((plan) => plan.name === selectedPlan) || plans[1], [selectedPlan]);
-  const [heroIndex, setHeroIndex] = useState(0);
-  const [heroVisible, setHeroVisible] = useState(true);
-  const hero = heroMessages[heroIndex];
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setHeroVisible(false);
-      window.setTimeout(() => {
-        setHeroIndex((current) => (current + 1) % heroMessages.length);
-        setHeroVisible(true);
-      }, 260);
-    }, 4400);
-    return () => window.clearInterval(timer);
-  }, []);
 
   const buildWhatsappUrl = (planName = selectedPlan, store = scanText) => {
     const message = `ShadowScore request
@@ -237,6 +208,12 @@ I would like to start a marketplace trust assessment.`;
   };
 
   const openWhatsApp = (planName = selectedPlan) => window.open(buildWhatsappUrl(planName), "_blank", "noopener,noreferrer");
+
+  const analyzeTarget = () => {
+    const target = scanText.trim();
+    const query = target ? `?target=${encodeURIComponent(target)}&mode=website` : "";
+    window.location.href = `/intake${query}`;
+  };
 
   return (
     <main className="min-h-screen overflow-hidden bg-black text-white">
@@ -257,99 +234,70 @@ I would like to start a marketplace trust assessment.`;
             <a href="#cases" className="hover:text-white">Cases</a>
             <a href="#pricing" className="hover:text-white">Pricing</a>
             <a href={TIKTOK_URL} target="_blank" rel="noreferrer" className="hover:text-white">TikTok</a>
-            <Link href="/intake" className="text-red-300 hover:text-red-200">Free Scan</Link>
+            <Link href="/intake" className="text-red-300 hover:text-red-200">Analyze Trust</Link>
           </nav>
-          <Link href="/intake" className="rounded-xl bg-red-600 px-5 py-3 text-sm font-bold shadow-[0_0_22px_rgba(220,38,38,0.28)] transition hover:bg-red-500">Scan My Business Risk</Link>
+          <Link href="/intake" className="rounded-xl bg-red-600 px-5 py-3 text-sm font-bold shadow-[0_0_22px_rgba(220,38,38,0.28)] transition hover:bg-red-500">Analyze Trust</Link>
         </div>
       </header>
 
       <section className="relative mx-auto max-w-7xl px-6 pb-14 pt-12 md:pt-16">
-        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-20">
-          <div className="max-w-2xl">
-            <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-red-400/25 bg-red-500/8 px-4 py-2 text-sm text-red-200">
-              <span className="h-2 w-2 rounded-full bg-red-400 shadow-[0_0_12px_rgba(248,113,113,0.8)]" />
-              Marketplace Health Intelligence For Professional Sellers
+        <div className="mx-auto max-w-5xl text-center">
+          <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-red-400/25 bg-red-500/8 px-4 py-2 text-sm text-red-200">
+            <span className="h-2 w-2 rounded-full bg-red-400 shadow-[0_0_12px_rgba(248,113,113,0.8)]" />
+            Search-first trust intelligence
+          </div>
+          <h1 className="text-5xl font-extrabold leading-[1.02] tracking-tight md:text-7xl">
+            Search any business, domain, seller, or marketplace account.
+          </h1>
+          <p className="mx-auto mt-7 max-w-3xl text-xl leading-9 text-zinc-400">
+            Know who you are dealing with before they know you are checking.
+          </p>
+
+          <form
+            className="mx-auto mt-10 max-w-4xl rounded-[32px] border border-white/10 bg-black/70 p-4 shadow-[0_0_70px_rgba(120,0,20,0.24)] backdrop-blur-xl md:p-5"
+            onSubmit={(event) => {
+              event.preventDefault();
+              analyzeTarget();
+            }}
+          >
+            <div className="flex flex-col gap-3 md:flex-row">
+              <input
+                value={scanText}
+                onChange={(event) => setScanText(event.target.value)}
+                placeholder="Business name, domain, website URL, seller profile, or marketplace account"
+                className="min-h-16 flex-1 rounded-2xl border border-white/10 bg-black px-5 py-4 text-base text-white outline-none transition placeholder:text-zinc-600 focus:border-red-400 md:text-lg"
+                aria-label="Trust search target"
+              />
+              <button type="submit" className="rounded-2xl bg-red-600 px-8 py-4 text-center text-lg font-bold transition hover:bg-red-500">Analyze Trust</button>
             </div>
-            <div className={`min-h-[285px] transition-opacity duration-500 md:min-h-[250px] ${heroVisible ? "opacity-100" : "opacity-0"}`}>
-              <h1 className="text-5xl font-extrabold leading-[1.02] tracking-tight md:text-6xl">
-                {hero.headline}
-                <span className="mt-4 block text-red-400">{hero.highlight}</span>
-              </h1>
-              <p className="mt-7 max-w-xl text-lg leading-8 text-zinc-400">
-                {hero.sub}
-              </p>
-            </div>
-            <div className="mt-5 flex flex-wrap gap-2">
-              {heroMessages.map((_, index) => (
-                <button
-                  key={index}
-                  type="button"
-                  onClick={() => setHeroIndex(index)}
-                  className={`h-2.5 rounded-full transition-all ${index === heroIndex ? "w-9 bg-red-400" : "w-2.5 bg-white/20 hover:bg-white/40"}`}
-                  aria-label={`Show hero message ${index + 1}`}
-                />
-              ))}
-            </div>
-            <div className="mt-6 max-w-2xl rounded-2xl border border-red-400/20 bg-red-500/[0.06] p-5 text-sm leading-7 text-red-100">
-              Sellers see orders, feedback and revenue. Marketplaces see risk. ShadowScore maps the gap before it becomes a restriction, hold or review.
-            </div>
-            <div className="mt-9 rounded-3xl border border-white/10 bg-black/55 p-5 backdrop-blur-xl">
-              <div className="flex flex-col gap-3 md:flex-row">
-                <input value={scanText} onChange={(event) => setScanText(event.target.value)} placeholder="Paste store URL or seller username" className="flex-1 rounded-2xl border border-white/10 bg-black px-5 py-4 text-base text-white outline-none transition placeholder:text-zinc-600 focus:border-red-400" />
-                <Link href="/intake" className="rounded-2xl bg-red-600 px-8 py-4 text-center font-bold transition hover:bg-red-500">Scan My Business Risk</Link>
+            <div className="mt-4 text-sm text-zinc-500">Free intake preview • Full report remains locked behind payment • Independent assessment</div>
+          </form>
+
+          <div className="mt-10 grid gap-4 md:grid-cols-5">
+            {trustCheckCategories.map(([title, body]) => (
+              <div key={title} className="rounded-3xl border border-white/10 bg-white/[0.03] p-5 text-left">
+                <div className="text-lg font-black text-white">{title}</div>
+                <p className="mt-3 text-sm leading-6 text-zinc-500">{body}</p>
               </div>
-              <div className="mt-4 text-sm text-zinc-500">No password required • Evidence-based • Independent assessment</div>
-            </div>
-            <div className="mt-8 flex flex-wrap gap-2 text-xs text-zinc-500">
-              {marketplaces.map((item) => <span key={item.name} className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-2">{item.name}</span>)}
-              {paymentSystems.map((item) => <span key={item.name} className="rounded-full border border-red-400/20 bg-red-500/[0.04] px-3 py-2 text-red-100">{item.name}</span>)}
-            </div>
+            ))}
           </div>
 
-          <Panel className="p-8">
-            <div className="text-sm uppercase tracking-[0.28em] text-red-300">Marketplace Trust Dashboard</div>
-            <div className="mt-5 rounded-3xl border border-orange-400/25 bg-orange-500/10 p-5">
-              <div className="text-xs uppercase tracking-[0.24em] text-orange-200">Marketplace Health Stage</div>
-              <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold">
-                {["Healthy", "Warning", "Restricted", "Suspended", "Permanent Restriction"].map((stage, index) => (
-                  <span key={stage} className={`rounded-full border px-3 py-2 ${index === 1 ? "border-orange-300/50 bg-orange-500/20 text-orange-100" : "border-white/10 bg-black/40 text-zinc-500"}`}>
-                    {stage}
-                  </span>
-                ))}
-              </div>
-              <p className="mt-4 text-sm leading-6 text-zinc-400">The product does not only score risk. It identifies the current enforcement stage and the next likely escalation path.</p>
-            </div>
-            <div className="mt-5 grid gap-4">
-              {[
-                ["Overall Trust Score", "74", "Elevated exposure"],
-                ["Policy Exposure", "82", "Restricted category and policy signals"],
-                ["Supplier Risk", "68", "Invoice and sourcing consistency"],
-                ["Payment Risk", "79", "Reserve, hold and chargeback exposure"],
-              ].map(([title, value, text]) => (
-                <div key={title} className="rounded-2xl border border-white/10 bg-black/55 p-5">
-                  <div className="flex items-end justify-between gap-4">
-                    <div>
-                      <div className="text-xs uppercase tracking-[0.2em] text-zinc-500">{title}</div>
-                      <div className="mt-2 text-sm text-zinc-500">{text}</div>
-                    </div>
-                    <div className="text-4xl font-black text-red-300">{value}</div>
-                  </div>
-                  <div className="mt-4 h-1.5 rounded-full bg-white/10"><div className="h-1.5 w-3/4 rounded-full bg-gradient-to-r from-red-700 via-red-500 to-red-300" /></div>
-                </div>
-              ))}
-            </div>
-            <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-sm leading-7 text-zinc-400">
-              This is an independent assessment view. It does not represent internal marketplace data.
-            </div>
-          </Panel>
+          <div className="mx-auto mt-8 max-w-3xl rounded-2xl border border-red-400/20 bg-red-500/[0.06] p-5 text-sm leading-7 text-red-100">
+            ShadowScore checks visible trust signals and seller-supplied evidence. It does not access internal marketplace systems, does not guarantee outcomes and does not expose paid scoring on the homepage.
+          </div>
+
+          <div className="mt-8 flex flex-wrap justify-center gap-2 text-xs text-zinc-500">
+            {marketplaces.map((item) => <span key={item.name} className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-2">{item.name}</span>)}
+            {paymentSystems.map((item) => <span key={item.name} className="rounded-full border border-red-400/20 bg-red-500/[0.04] px-3 py-2 text-red-100">{item.name}</span>)}
+          </div>
         </div>
       </section>
 
       <section id="risk-categories" className="mx-auto max-w-7xl px-6 py-16">
         <div className="text-center">
           <div className="text-sm uppercase tracking-[0.28em] text-red-300">ShadowScore Framework</div>
-          <h2 className="mt-4 text-4xl font-bold">Marketplace And Payment Risk In One View.</h2>
-          <p className="mx-auto mt-4 max-w-3xl leading-7 text-zinc-500">Every case is mapped into a structured risk framework across marketplace enforcement, verification, compliance, operations and financial exposure.</p>
+          <h2 className="mt-4 text-4xl font-bold">Identity, Infrastructure, Reputation, Commerce And Risk In One View.</h2>
+          <p className="mx-auto mt-4 max-w-3xl leading-7 text-zinc-500">Every search starts with the same trust intelligence frame: who they are, how their infrastructure behaves, what reputation signals appear, how commerce is conducted and where risk may be forming.</p>
         </div>
         <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {riskCategories.map(([title, body]) => (
@@ -571,7 +519,7 @@ I would like to start a marketplace trust assessment.`;
           <h2 className="mt-4 text-4xl font-bold">Join The Marketplace & Payment Risk Intelligence Layer</h2>
           <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-zinc-400">No fake reviews. No recovery promises. Just a sharper way to understand marketplace risk before it hurts the business.</p>
           <div className="mt-10 flex flex-col items-center justify-center gap-4 md:flex-row">
-            <Link href="/intake" className="rounded-xl bg-red-600 px-8 py-4 font-bold transition hover:bg-red-500">Scan My Business Risk</Link>
+            <Link href="/intake" className="rounded-xl bg-red-600 px-8 py-4 font-bold transition hover:bg-red-500">Analyze Trust</Link>
             <Link href="/dashboard" className="rounded-xl border border-white/10 px-8 py-4 text-zinc-300 transition hover:border-red-400/30 hover:text-white">Open Dashboard</Link>
             <button type="button" onClick={() => openWhatsApp(selected.name)} className="rounded-xl border border-white/10 px-8 py-4 text-zinc-300 transition hover:border-red-400/30 hover:text-white">Talk With An Analyst</button>
           </div>

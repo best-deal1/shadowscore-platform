@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import PaymentButtons from "../../components/PaymentButtons";
@@ -561,6 +561,23 @@ export default function IntakePage() {
   const [freeScanResult, setFreeScanResult] = useState<FreeScanResult | null>(null);
   const [freeScanRunning, setFreeScanRunning] = useState(false);
   const [freeScanError, setFreeScanError] = useState("");
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const target = params.get("target")?.trim();
+    const mode = params.get("mode");
+
+    if (!target) return;
+
+    if (mode === "marketplace") {
+      setScanMode("marketplace");
+      setStore(target);
+      return;
+    }
+
+    setScanMode("website");
+    setWebsiteTarget(target);
+  }, []);
 
   const displayMarketplace =
     marketplace === "Other"
