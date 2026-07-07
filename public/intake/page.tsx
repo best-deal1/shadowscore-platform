@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 export default function IntakePage() {
@@ -13,7 +14,7 @@ export default function IntakePage() {
 
       <header className="relative z-10 border-b border-white/10 bg-black/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
-          <a href="/" className="text-sm text-zinc-500 hover:text-white">← Back to ShadowScore</a>
+          <Link href="/" className="text-sm text-zinc-500 hover:text-white">← Back to ShadowScore</Link>
           <div className="rounded-full border border-red-400/25 bg-red-500/10 px-4 py-2 text-sm font-bold text-red-200">
             Marketplace Risk Intelligence
           </div>

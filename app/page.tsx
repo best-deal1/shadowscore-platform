@@ -451,7 +451,7 @@ I would like to start a marketplace trust assessment.`;
         <div className="relative z-10 mx-auto max-w-7xl px-6">
           <div className="mb-12 text-center">
             <div className="text-sm uppercase tracking-[0.32em] text-red-300">Marketplace Coverage</div>
-            <h2 className="mt-4 text-4xl font-black text-white md:text-5xl">Coverage Across The World's Largest Marketplaces</h2>
+            <h2 className="mt-4 text-4xl font-black text-white md:text-5xl">Coverage Across The World&apos;s Largest Marketplaces</h2>
             <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-zinc-500">Primary coverage stays focused on the marketplaces professional sellers use every day. Additional platforms remain in research until enough field signals are collected.</p>
           </div>
 

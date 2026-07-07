@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { LEGAL_ACCEPTANCE_VERSION } from "./legal";
 import type { DecisionOutput } from "./decisionEngine";
 import type { TrustInsight } from "./insightEngine";

@@ -182,7 +182,7 @@ I would like to begin a private ShadowScore review.`;
             </div>
 
             <h1 className="mt-8 text-5xl font-extrabold leading-[1.02] tracking-tight md:text-7xl">
-              The Platform Already Decided You're Risky.
+              The Platform Already Decided You&apos;re Risky.
               <span className="block text-red-400">ShadowScore Tells You First.</span>
             </h1>
 
