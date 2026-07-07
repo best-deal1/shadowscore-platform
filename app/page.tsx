@@ -234,9 +234,7 @@ I would like to start a marketplace trust assessment.`;
             <a href="#cases" className="hover:text-white">Cases</a>
             <a href="#pricing" className="hover:text-white">Pricing</a>
             <a href={TIKTOK_URL} target="_blank" rel="noreferrer" className="hover:text-white">TikTok</a>
-            <Link href="/intake" className="text-red-300 hover:text-red-200">Analyze Trust</Link>
           </nav>
-          <Link href="/intake" className="rounded-xl bg-red-600 px-5 py-3 text-sm font-bold shadow-[0_0_22px_rgba(220,38,38,0.28)] transition hover:bg-red-500">Analyze Trust</Link>
         </div>
       </header>
 
@@ -270,7 +268,6 @@ I would like to start a marketplace trust assessment.`;
               />
               <button type="submit" className="rounded-2xl bg-red-600 px-8 py-4 text-center text-lg font-bold transition hover:bg-red-500">Analyze Trust</button>
             </div>
-            <div className="mt-4 text-sm text-zinc-500">Free intake preview • Full report remains locked behind payment • Independent assessment</div>
           </form>
 
           <div className="mt-10 grid gap-4 md:grid-cols-5">
@@ -419,9 +416,11 @@ I would like to start a marketplace trust assessment.`;
               <div className="mt-8 flex-1 space-y-4">
                 {plan.items.map((item) => <div key={item} className="flex items-start gap-3 text-zinc-300"><div className="mt-1 text-red-300">✓</div><div>{item}</div></div>)}
               </div>
-              <div onClick={(event) => event.stopPropagation()}>
-                {plan.name.includes("Free") ? <Link href="/intake" className="mt-6 block rounded-2xl bg-emerald-600 px-5 py-3 text-center text-sm font-black text-white shadow-[0_0_22px_rgba(16,185,129,0.28)] hover:bg-emerald-500">Start Scan</Link> : <PaymentButtons planName={plan.name} price={plan.price} />}
-              </div>
+              {!plan.name.includes("Free") && (
+                <div onClick={(event) => event.stopPropagation()}>
+                  <PaymentButtons planName={plan.name} price={plan.price} />
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -519,7 +518,6 @@ I would like to start a marketplace trust assessment.`;
           <h2 className="mt-4 text-4xl font-bold">Join The Marketplace & Payment Risk Intelligence Layer</h2>
           <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-zinc-400">No fake reviews. No recovery promises. Just a sharper way to understand marketplace risk before it hurts the business.</p>
           <div className="mt-10 flex flex-col items-center justify-center gap-4 md:flex-row">
-            <Link href="/intake" className="rounded-xl bg-red-600 px-8 py-4 font-bold transition hover:bg-red-500">Analyze Trust</Link>
             <Link href="/dashboard" className="rounded-xl border border-white/10 px-8 py-4 text-zinc-300 transition hover:border-red-400/30 hover:text-white">Open Dashboard</Link>
             <button type="button" onClick={() => openWhatsApp(selected.name)} className="rounded-xl border border-white/10 px-8 py-4 text-zinc-300 transition hover:border-red-400/30 hover:text-white">Talk With An Analyst</button>
           </div>

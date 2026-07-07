@@ -799,9 +799,6 @@ export default function IntakePage() {
       errors.push("Enter a website URL, business name or company domain.");
     if (scanMode === "evidence" && files.length === 0)
       errors.push("Upload evidence for case review.");
-    if (!email.trim()) errors.push("Enter an email address for the report.");
-    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
-      errors.push("Enter a valid email address.");
     return errors;
   }, [
     scanMode,
@@ -810,7 +807,6 @@ export default function IntakePage() {
     caseType,
     store,
     websiteTarget,
-    email,
     files.length,
   ]);
 
@@ -1029,17 +1025,6 @@ export default function IntakePage() {
                     placeholder="example.com or Example LLC"
                   />
                 </label>
-                <label className="md:col-span-2">
-                  <div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">
-                    Email for locked report *
-                  </div>
-                  <input
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white"
-                    placeholder="you@example.com"
-                  />
-                </label>
                 <div className="md:col-span-2 rounded-2xl border border-red-400/20 bg-red-500/[0.06] p-5 text-sm leading-7 text-zinc-400">
                   <div className="font-bold text-red-100">
                     {freeScanResult ? "Live Provider Results" : "Running Provider Checks..."}
@@ -1130,17 +1115,6 @@ export default function IntakePage() {
                       />
                     </label>
                   )}
-                  <label className="md:col-span-2">
-                    <div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">
-                      Email for locked report *
-                    </div>
-                    <input
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white"
-                      placeholder="you@example.com"
-                    />
-                  </label>
                 </div>
 
                 {marketplace === "Other" && scanMode === "marketplace" && (
@@ -1298,7 +1272,7 @@ export default function IntakePage() {
               onClick={runFreePreview}
               className="mt-6 block w-full rounded-2xl bg-red-600 px-7 py-5 text-center text-sm font-black uppercase tracking-[0.16em] shadow-[0_0_28px_rgba(220,38,38,0.28)] hover:bg-red-500"
             >
-              {freeScanRunning ? "Running Provider Checks..." : `Run Free ${activeMode.label} Preview`}
+              {freeScanRunning ? "Running Provider Checks..." : "Analyze Trust"}
             </button>
 
             {submitted && canAnalyze && (
@@ -1515,20 +1489,33 @@ export default function IntakePage() {
                   payment succeeds. Checkout starts a payment intent only.
                 </div>
 
-                <div className="mt-6 grid gap-3 md:grid-cols-2">
-                  <button
-                    type="button"
-                    onClick={saveLead}
-                    className="rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-4 text-sm font-bold text-white hover:border-red-400/30"
-                  >
-                    Save Intake Draft
-                  </button>
-                  <PaymentButtons
-                    planName="Downloadable Trust Intelligence Report"
-                    price="$9.90"
-                    buttonLabel="Unlock Full Report - $9.90"
-                    intakeId={intake?.intakeId}
-                  />
+                <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+                  <label>
+                    <div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">
+                      Email for Unlock Full Report or Save Report
+                    </div>
+                    <input
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white"
+                      placeholder="you@example.com"
+                    />
+                  </label>
+                  <div className="mt-5 grid gap-3 md:grid-cols-2">
+                    <button
+                      type="button"
+                      onClick={saveLead}
+                      className="rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-4 text-sm font-bold text-white hover:border-red-400/30"
+                    >
+                      Save Report
+                    </button>
+                    <PaymentButtons
+                      planName="Downloadable Trust Intelligence Report"
+                      price="$9.90"
+                      buttonLabel="Unlock Full Report - $9.90"
+                      intakeId={intake?.intakeId}
+                    />
+                  </div>
                 </div>
                 {leadSaved && (
                   <div className="mt-4 rounded-2xl border border-emerald-400/25 bg-emerald-500/10 p-4 text-sm text-emerald-100">
