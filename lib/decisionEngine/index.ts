@@ -1,7 +1,9 @@
-import type { TrustInsight } from "./insightEngine";
-import type { ProviderResult } from "./providers/types";
-import type { RiskEngineOutput, RiskSeverity } from "./riskEngine";
-import type { TrustTimelineItem } from "./trustTimeline";
+export * from "./types";
+export { evaluateDecisionEvidence } from "./evaluator";
+import type { TrustInsight } from "../insightEngine";
+import type { ProviderResult } from "../providers/types";
+import type { RiskEngineOutput, RiskSeverity } from "../riskEngine";
+import type { TrustTimelineItem } from "../trustTimeline";
 
 export const DECISION_ENGINE_VERSION = "decision-engine-v1";
 
