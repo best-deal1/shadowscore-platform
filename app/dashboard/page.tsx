@@ -114,19 +114,19 @@ export default function DashboardPage() {
       <section className="mx-auto max-w-7xl px-6 py-16">
         <div className="grid gap-8 lg:grid-cols-[1.1fr_.9fr] lg:items-end">
           <div>
-            <div className="text-sm font-bold uppercase tracking-[0.3em] text-red-300">Trust Intelligence Workspace V19</div>
-            <h1 className="mt-4 text-5xl font-black tracking-tight md:text-6xl">Your ShadowScore Risk Workspace</h1>
+            <div className="text-sm font-bold uppercase tracking-[0.3em] text-red-300">Trust Intelligence Workspace</div>
+            <h1 className="mt-4 text-5xl font-black tracking-tight md:text-6xl">Dashboard</h1>
             <p className="mt-6 max-w-3xl text-lg leading-8 text-zinc-400">
-              Your workspace will store paid reports, watched entities, legal acceptances and risk history after your first scan.
+              Recent scans, saved reports, business history, monitoring and account controls are organized in one responsive workspace.
             </p>
           </div>
 
           <Panel>
-            <div className="text-xs font-black uppercase tracking-[0.26em] text-zinc-500">Signed In Account</div>
+            <div className="text-xs font-black uppercase tracking-[0.26em] text-zinc-500">Connected as:</div>
             <div className="mt-4 rounded-2xl border border-white/10 bg-black/50 p-4">
               <div className="text-lg font-black text-white">{user.name}</div>
               <div className="mt-1 text-sm text-zinc-500">{user.email}</div>
-              <div className="mt-2 break-all text-xs text-zinc-700">User ID: {user.id}</div>
+              <div className="mt-4 rounded-xl border border-red-400/20 bg-red-500/10 px-3 py-2 text-sm font-black text-red-100">Plan: {readyReports.length > 0 ? "Professional" : "Free"}</div>
             </div>
             <div className="mt-4 flex flex-wrap gap-3">
               <Link href="/account" className="rounded-2xl border border-white/10 px-5 py-3 text-sm font-black text-zinc-300 hover:border-red-400/30 hover:text-white">Account Settings</Link>
@@ -155,8 +155,8 @@ export default function DashboardPage() {
           <Panel>
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
-                <div className="text-xs font-black uppercase tracking-[0.26em] text-red-300">My Reports</div>
-                <h2 className="mt-2 text-3xl font-black">Saved Risk History</h2>
+                <div className="text-xs font-black uppercase tracking-[0.26em] text-red-300">Recent scans</div>
+                <h2 className="mt-2 text-3xl font-black">Saved reports</h2>
               </div>
               <Link href="/intake" className="rounded-full bg-red-600 px-5 py-3 text-sm font-black text-white hover:bg-red-500">New Scan</Link>
             </div>
@@ -205,8 +205,8 @@ export default function DashboardPage() {
 
 
           <Panel>
-            <div className="text-xs font-black uppercase tracking-[0.26em] text-yellow-300">Payment & Report Lifecycle</div>
-            <h2 className="mt-2 text-3xl font-black">Pipeline States</h2>
+            <div className="text-xs font-black uppercase tracking-[0.26em] text-yellow-300">Business history</div>
+            <h2 className="mt-2 text-3xl font-black">Report lifecycle</h2>
             <p className="mt-3 text-sm leading-6 text-zinc-500">Reports unlock from paymentStatus == paid only. Non-ready reports hide download and full report details.</p>
             <div className="mt-6 space-y-3">
               {reports.length === 0 && <div className="rounded-2xl border border-white/10 bg-black/50 p-4 text-sm text-zinc-500">No lifecycle records yet.</div>}
@@ -234,8 +234,8 @@ export default function DashboardPage() {
 
           <div className="space-y-8">
             <Panel>
-              <div className="text-xs font-black uppercase tracking-[0.26em] text-red-300">Watchlist</div>
-              <h2 className="mt-2 text-3xl font-black">Saved Entities</h2>
+              <div className="text-xs font-black uppercase tracking-[0.26em] text-red-300">Monitoring</div>
+              <h2 className="mt-2 text-3xl font-black">Business watchlist</h2>
               <p className="mt-3 text-sm leading-6 text-zinc-500">Track seller accounts, payment providers, suppliers, websites and businesses from one workspace. New workspaces start with an empty watchlist.</p>
 
               <div className="mt-6 space-y-3">
@@ -273,14 +273,14 @@ export default function DashboardPage() {
                     <option>Website</option>
                     <option>Supplier</option>
                   </select>
-                  <button onClick={addEntity} className="rounded-2xl border border-red-400/30 bg-red-600/15 px-4 py-3 text-sm font-black text-red-100 hover:bg-red-600/25">Add to Watchlist</button>
+                  <button onClick={addEntity} className="rounded-2xl border border-red-400/30 bg-red-600/15 px-4 py-3 text-sm font-black text-red-100 hover:bg-red-600/25">Add to Monitoring</button>
                 </div>
               </div>
             </Panel>
 
             <Panel>
-              <div className="text-xs font-black uppercase tracking-[0.26em] text-red-300">Risk Timeline</div>
-              <h2 className="mt-2 text-3xl font-black">Latest Movement</h2>
+              <div className="text-xs font-black uppercase tracking-[0.26em] text-red-300">Account</div>
+              <h2 className="mt-2 text-3xl font-black">Latest activity</h2>
               <div className="mt-6 space-y-4">
                 {reports.length === 0 && (
                   <div className="rounded-2xl border border-white/10 bg-black/50 p-4">
@@ -306,7 +306,7 @@ export default function DashboardPage() {
         </div>
 
         <Panel className="mt-10">
-          <div className="text-xs font-black uppercase tracking-[0.26em] text-red-300">V19 Data Note</div>
+          <div className="text-xs font-black uppercase tracking-[0.26em] text-red-300">Workspace data</div>
           <p className="mt-3 text-sm leading-7 text-zinc-500">
             ShadowScore uses the configured database as the source of truth for reports, scan history, watchlists, purchased reports, payment history, legal acceptances and profile settings. LocalStorage is no longer used as primary workspace storage.
           </p>

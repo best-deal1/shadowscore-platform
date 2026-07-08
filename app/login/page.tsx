@@ -29,11 +29,19 @@ export default function LoginPage() {
 
   return (
     <ShadowScoreLayout>
-      <section className="mx-auto max-w-3xl px-6 py-20">
+      <section className="mx-auto grid max-w-6xl gap-8 px-6 py-20 lg:grid-cols-[.9fr_1.1fr] lg:items-center">
+        <div>
+          <div className="text-xs font-black uppercase tracking-[0.32em] text-red-300">Secure workspace</div>
+          <h1 className="mt-4 text-5xl font-black tracking-tight">Welcome back to ShadowScore.</h1>
+          <p className="mt-5 text-lg leading-8 text-zinc-400">Sign in to view saved reports, business history, monitoring, account details and upgrade status.</p>
+          <div className="mt-8 grid gap-3 text-sm text-zinc-300 sm:grid-cols-2">
+            {["Recent scans", "Saved reports", "Business history", "Monitoring"].map((item) => <div key={item} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 font-bold">{item}</div>)}
+          </div>
+        </div>
         <div className="rounded-[34px] border border-white/10 bg-white/[0.035] p-8 shadow-2xl shadow-black/40">
           <div className="text-xs font-black uppercase tracking-[0.3em] text-red-300">ShadowScore Account</div>
-          <h1 className="mt-4 text-5xl font-black tracking-tight">Sign in</h1>
-          <p className="mt-4 text-zinc-400">Access your reports, watchlist, legal acceptance records and risk workspace.</p>
+          <h2 className="mt-4 text-4xl font-black tracking-tight">Sign in</h2>
+          <p className="mt-4 text-zinc-400">Access your professional risk workspace.</p>
 
           <form onSubmit={handleLogin} className="mt-8 grid gap-4">
             <label className="grid gap-2 text-sm font-bold text-zinc-300">
@@ -53,7 +61,7 @@ export default function LoginPage() {
           <div className="mt-6 text-sm text-zinc-500">
             New to ShadowScore? <Link href="/signup" className="font-bold text-white hover:text-red-200">Create an account</Link>
           </div>
-          <p className="mt-6 text-xs leading-6 text-zinc-600">V19 is Supabase Auth-ready. When Supabase environment variables are configured, passwords and sessions are handled by the auth provider; otherwise this preview uses a non-persistent development session.</p>
+          <p className="mt-6 text-xs leading-6 text-zinc-600">Authentication is Supabase-ready and falls back to a local development session when provider variables are not configured.</p>
         </div>
       </section>
     </ShadowScoreLayout>

@@ -62,8 +62,11 @@ export default function ReportPage() {
         )}
         {report && isReady && (
           <div className="mt-8 rounded-[32px] border border-white/10 bg-black/55 p-8 shadow-[0_0_60px_rgba(120,0,20,0.16)]">
-            <h1 className="text-5xl font-extrabold">{report.title}</h1>
-            <p className="mt-5 max-w-3xl text-lg leading-8 text-zinc-400">{report.reportSummary?.message}</p>
+            <section className="rounded-[28px] border border-red-400/20 bg-red-500/[0.06] p-6">
+              <div className="text-xs uppercase tracking-[0.28em] text-red-200">Business Identity Card</div>
+              <h1 className="mt-4 text-4xl font-extrabold">{report.target || report.entity}</h1>
+              <p className="mt-4 max-w-3xl text-lg leading-8 text-zinc-300">{report.reportSummary?.identityProfile?.identitySummary || report.reportSummary?.message}</p>
+            </section>
             <div className="mt-8 grid gap-4 md:grid-cols-2">
               {[
                 ["Report ID", report.reportId],
@@ -140,10 +143,10 @@ export default function ReportPage() {
                 </div>
               </div>
             ) : null}
-            <div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-              <div className="text-xs uppercase tracking-[0.28em] text-red-300">Provider results</div>
+            <details className="mt-8 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+              <summary className="cursor-pointer text-xs uppercase tracking-[0.28em] text-red-300">Technical Details</summary>
               <pre className="mt-4 overflow-x-auto text-xs leading-6 text-zinc-400">{JSON.stringify(report.providerResults || [], null, 2)}</pre>
-            </div>
+            </details>
             <button className="mt-8 rounded-2xl border border-emerald-400/30 bg-emerald-500/10 px-5 py-4 text-sm font-black text-emerald-100">Download Report placeholder</button>
           </div>
         )}
