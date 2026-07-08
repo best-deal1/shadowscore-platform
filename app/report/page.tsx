@@ -52,6 +52,32 @@ function BusinessCard({ title, body }: { title: string; body: string[] }) {
   );
 }
 
+function DecisionCard({ report }: { report: ShadowScoreReport }) {
+  const decision = report.reportSummary?.decision?.decision || (report.reportSummary?.businessNarrative?.decision?.toUpperCase().includes("FAIL") ? "FAIL" : report.reportSummary?.businessNarrative?.decision?.toUpperCase().includes("PASS") ? "PASS" : "REVIEW");
+  const tone = decision === "PASS"
+    ? "border-emerald-400/35 bg-emerald-500/10 text-emerald-100"
+    : decision === "FAIL"
+      ? "border-red-400/35 bg-red-500/10 text-red-100"
+      : "border-orange-400/35 bg-orange-500/10 text-orange-100";
+  return (
+    <section className={`rounded-[28px] border p-6 shadow-2xl shadow-black/20 ${tone}`}>
+      <div className="text-xs uppercase tracking-[0.28em] opacity-80">Decision</div>
+      <div className="mt-4 flex flex-wrap items-end justify-between gap-5">
+        <div>
+          <div className="text-5xl font-black tracking-tight">{decision}</div>
+          <p className="mt-3 max-w-2xl text-base font-bold opacity-90">{report.reportSummary?.decision?.decisionLabel || report.reportSummary?.businessNarrative?.decision || "Review available evidence"}</p>
+        </div>
+        {report.reportSummary?.decision?.verificationScore ? (
+          <div className="rounded-2xl border border-white/15 bg-black/20 px-5 py-4 text-right">
+            <div className="text-3xl font-black">{report.reportSummary.decision.verificationScore}/100</div>
+            <div className="text-xs font-bold uppercase tracking-[0.2em] opacity-70">Confidence</div>
+          </div>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
 export default function ReportPage() {
   const [reportId, setReportId] = useState("");
   const [reports, setReports] = useState<ShadowScoreReport[]>([]);
@@ -78,17 +104,17 @@ export default function ReportPage() {
   const executiveSummary = report ? findNarrativeSection(report, "executiveSummary") : undefined;
   const evidenceUsed = report ? findNarrativeSection(report, "evidenceUsed") : undefined;
   const narrativeCards = report ? [
-    findNarrativeSection(report, "whatWeFound") || fallbackSection("What We Found", report.reportSummary?.decision?.topReasons || [report.reportSummary?.message]),
-    findNarrativeSection(report, "whatRequiresVerification") || fallbackSection("What Requires Verification", [report.reportSummary?.decision?.whatThisMeans]),
-    findNarrativeSection(report, "recommendedNextSteps") || fallbackSection("Recommended Next Steps", [report.reportSummary?.decision?.recommendedAction]),
+    findNarrativeSection(report, "whatWeFound") || fallbackSection("Key Findings", report.reportSummary?.decision?.topReasons || [report.reportSummary?.message]),
+    findNarrativeSection(report, "whatRequiresVerification") || fallbackSection("Needs Review", [report.reportSummary?.decision?.whatThisMeans]),
+    findNarrativeSection(report, "recommendedNextSteps") || fallbackSection("Next Steps", [report.reportSummary?.decision?.recommendedAction]),
   ] : [];
 
   return (
     <ShadowScoreLayout>
       <section className="mx-auto max-w-5xl px-6 py-16">
         <Link href="/dashboard" className="text-sm font-bold text-red-300 hover:text-red-200">← Back to dashboard</Link>
-        <div className="mt-8 text-xs uppercase tracking-[0.45em] text-red-300">Private Intelligence Report</div>
-        {!loaded && <p className="mt-6 text-zinc-400">Loading report...</p>}
+        <div className="mt-8 text-xs uppercase tracking-[0.45em] text-red-300">Private Report</div>
+        {!loaded && <p className="mt-6 text-zinc-400">Preparing report...</p>}
         {loaded && !report && (
           <div className="mt-8 rounded-[28px] border border-white/10 bg-white/[0.035] p-7">
             <h1 className="text-3xl font-black">Report not found</h1>
@@ -103,8 +129,10 @@ export default function ReportPage() {
         )}
         {report && isReady && (
           <div className="mt-8 rounded-[32px] border border-white/10 bg-black/55 p-8 shadow-[0_0_60px_rgba(120,0,20,0.16)]">
-            <section className="rounded-[28px] border border-red-400/20 bg-red-500/[0.06] p-6">
-              <div className="text-xs uppercase tracking-[0.28em] text-red-200">Business Identity Card</div>
+            <DecisionCard report={report} />
+
+            <section className="mt-8 rounded-[28px] border border-red-400/20 bg-red-500/[0.06] p-6">
+              <div className="text-xs uppercase tracking-[0.28em] text-red-200">Business Identity</div>
               <h1 className="mt-4 text-4xl font-extrabold">{report.reportSummary?.identityProfile?.businessIdentity?.businessName.value || report.target || report.entity}</h1>
               <div className="mt-4 grid gap-3 md:grid-cols-2">
                 <FieldDetail label="Business" field={report.reportSummary?.identityProfile?.businessIdentity?.businessName} />
@@ -118,10 +146,9 @@ export default function ReportPage() {
               {report.reportSummary?.execution ? (
                 <div className="mt-6 grid gap-3 md:grid-cols-4">
                   {[
-                    ["Execution", `${report.reportSummary.execution.completedInSeconds} seconds`],
-                    ["Providers executed", String(report.reportSummary.execution.providersExecuted)],
-                    ["Evidence collected", String(report.reportSummary.execution.evidenceCollected)],
-                    ["Decision confidence", report.reportSummary.execution.decisionConfidence || "Insufficient Public Evidence"],
+                    ["Completed in", `${report.reportSummary.execution.completedInSeconds} seconds`],
+                    ["Evidence", String(report.reportSummary.execution.evidenceCollected)],
+                    ["Confidence", report.reportSummary.execution.decisionConfidence || "Insufficient Public Evidence"],
                   ].map(([label, value]) => (
                     <div key={label} className="rounded-2xl border border-white/10 bg-black/35 p-4">
                       <div className="text-[10px] uppercase tracking-[0.22em] text-zinc-500">{label}</div>
@@ -133,7 +160,7 @@ export default function ReportPage() {
             </section>
 
             <section className="mt-8 rounded-[28px] border border-red-400/20 bg-red-500/[0.06] p-6">
-              <div className="text-xs uppercase tracking-[0.28em] text-red-200">Business Narrative</div>
+              <div className="text-xs uppercase tracking-[0.28em] text-red-200">Why</div>
               <div className="mt-4 flex flex-wrap items-center gap-3">
                 <div className="text-3xl font-black text-white">{report.reportSummary?.businessNarrative?.decision || report.reportSummary?.decision?.decisionLabel || "Review available evidence"}</div>
                 {(report.reportSummary?.businessNarrative?.confidence || report.reportSummary?.decision?.confidenceLevel) ? (
@@ -145,7 +172,7 @@ export default function ReportPage() {
               ) : null}
               {executiveSummary?.body.length ? (
                 <div className="mt-5 rounded-2xl border border-white/10 bg-black/35 p-5">
-                  <div className="text-xs uppercase tracking-[0.28em] text-zinc-400">Executive Summary</div>
+                  <div className="text-xs uppercase tracking-[0.28em] text-zinc-400">Summary</div>
                   <div className="mt-3 space-y-3 text-sm leading-6 text-zinc-300">
                     {executiveSummary.body.map((item) => <p key={item}>{item}</p>)}
                   </div>
@@ -160,11 +187,7 @@ export default function ReportPage() {
               {[
                 ["Report ID", report.reportId],
                 ["Target", report.target || report.entity],
-                ["Scan mode", report.scanMode || "Insufficient Public Evidence"],
                 ["Ready at", formatDate(report.readyAt)],
-                ["Payment status", report.paymentStatus || "paid"],
-                ["Report status", report.reportStatus],
-                ["Engine version", report.engineVersion || "Insufficient Public Evidence"],
                 ["Primary domain", report.reportSummary?.businessNarrative?.primaryDomain || report.reportSummary?.primaryRiskDomain || "Pending"],
               ].map(([label, value]) => (
                 <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
@@ -174,20 +197,9 @@ export default function ReportPage() {
               ))}
             </div>
 
-            {report.reportSummary?.executionFlow?.length ? (
-              <div className="mt-8 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.05] p-5">
-                <div className="text-xs uppercase tracking-[0.28em] text-emerald-200">Execution Flow</div>
-                <div className="mt-4 grid gap-3 md:grid-cols-2">
-                  {report.reportSummary.executionFlow.map((item) => (
-                    <div key={item} className="rounded-2xl border border-white/10 bg-black/40 p-4 text-sm font-bold text-zinc-200">{item}</div>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
             {trustTimeline.length ? (
               <div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-                <div className="text-xs uppercase tracking-[0.28em] text-red-300">Trust Timeline</div>
+                <div className="text-xs uppercase tracking-[0.28em] text-red-300">Timeline</div>
                 <div className="mt-5 space-y-4">
                   {trustTimeline.map((item, index) => (
                     <div key={`${item.title}-${index}`} className="rounded-2xl border border-white/10 bg-black/40 p-5">
@@ -229,7 +241,7 @@ export default function ReportPage() {
               ) : null}
               {report.reportSummary?.insights?.length ? (
                 <section className="mt-5 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.05] p-5">
-                  <div className="text-xs uppercase tracking-[0.28em] text-emerald-200">Insight Engine</div>
+                  <div className="text-xs uppercase tracking-[0.28em] text-emerald-200">Signal Review</div>
                   <div className="mt-5 grid gap-4 md:grid-cols-2">
                     {report.reportSummary.insights.map((insight) => (
                       <div key={insight.category} className="rounded-2xl border border-white/10 bg-black/40 p-5">
@@ -247,7 +259,7 @@ export default function ReportPage() {
               ) : null}
               {report.reportSummary?.technicalDetails ? (
                 <section className="mt-5 rounded-2xl border border-white/10 bg-black/40 p-5">
-                  <div className="text-xs uppercase tracking-[0.28em] text-zinc-400">Provider Execution Status</div>
+                  <div className="text-xs uppercase tracking-[0.28em] text-zinc-400">Developer Execution Status</div>
                   <div className="mt-4 grid gap-4 md:grid-cols-2">
                     {(["executed", "skipped", "pending", "failed"] as const).map((status) => (
                       <div key={status} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">

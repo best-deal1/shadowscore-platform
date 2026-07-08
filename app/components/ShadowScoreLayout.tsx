@@ -8,7 +8,7 @@ const footerLinks = [
   { href: "/terms", label: "Terms" },
   { href: "/security", label: "Security" },
   { href: "/monitoring", label: "Monitoring" },
-  { href: "/upgrade", label: "Upgrade" },
+  { href: "/upgrade", label: "Account" },
   { href: "/contact", label: "Contact" },
 ];
 
@@ -25,13 +25,13 @@ export default function ShadowScoreLayout({ children }: { children: ReactNode })
             </div>
           </Link>
           <nav className="hidden items-center gap-7 text-sm text-zinc-400 md:flex">
-            <Link href="/intake" className="hover:text-white">Scan</Link>
-            <Link href="/dashboard" className="hover:text-white">Dashboard</Link>
+            <Link href="/intake" className="hover:text-white">Investigations</Link>
+            <Link href="/dashboard" className="hover:text-white">Reports</Link>
             <Link href="/monitoring" className="hover:text-white">Monitoring</Link>
-            <Link href="/upgrade" className="hover:text-white">Upgrade</Link>
-            <Link href="/login" className="hover:text-white">Sign in</Link>
+            <Link href="/leads" className="hover:text-white">Workspace</Link>
+            <Link href="/account" className="hover:text-white">Account</Link>
           </nav>
-          <Link href="/intake" className="rounded-full bg-red-600 px-5 py-2 text-sm font-bold text-white shadow-lg shadow-red-950/40 hover:bg-red-500">Search a business</Link>
+          <Link href="/intake" className="rounded-full bg-red-600 px-5 py-2 text-sm font-bold text-white shadow-lg shadow-red-950/40 hover:bg-red-500">Start Investigation</Link>
         </div>
       </header>
 
