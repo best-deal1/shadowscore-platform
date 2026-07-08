@@ -31,7 +31,7 @@ type FreeScanProviderSummary = {
 type TrustInsight = {
   category: "Infrastructure Insight" | "Identity Insight" | "Email/Domain Insight" | "Overall Trust Note";
   insight: string;
-  riskLevel: "Low" | "Medium" | "High" | "Unknown";
+  riskLevel: "Low" | "Medium" | "High" | "Insufficient Public Evidence";
   whyItMatters: string;
   recommendedNextStep: string;
   evidence: string[];
