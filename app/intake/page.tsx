@@ -87,7 +87,7 @@ const SCAN_MODES: Array<{
     label: "Marketplace / Seller",
     eyebrow: "Optional evidence",
     description:
-      "Check a marketplace seller profile, platform account, payout provider or store identity.",
+      "Check a marketplace seller profile, platform account, payout account or store identity.",
   },
   {
     id: "evidence",
@@ -100,10 +100,11 @@ const SCAN_MODES: Array<{
 
 const ANIMATED_SCAN_STEPS = [
   "Identifying target",
-  "Classifying input",
-  "Collecting public evidence",
-  "Building business profile",
-  "Generating business narrative",
+  "Checking infrastructure",
+  "Resolving business identity",
+  "Collecting evidence",
+  "Building investigation",
+  "Preparing report",
 ];
 
 const WEBSITE_PROVIDER_EXECUTION = [
@@ -694,7 +695,7 @@ export default function IntakePage() {
         points: 8,
         detail:
           scanMode === "website"
-            ? "A URL, domain or business name is needed to prepare the future provider checks."
+            ? "A URL, domain or business name is needed to prepare the investigation."
             : "A store URL or seller name helps connect evidence to a marketplace profile.",
         recommendation: "Add the target before requesting manual review.",
       });
@@ -864,12 +865,12 @@ export default function IntakePage() {
       const payload = await response.json();
 
       if (!response.ok) {
-        throw new Error(payload.error || "Unable to run provider checks.");
+        throw new Error(payload.error || "Unable to run investigation checks.");
       }
 
       setFreeScanResult(payload as FreeScanResult);
     } catch (error) {
-      setFreeScanError(error instanceof Error ? error.message : "Unable to run provider checks.");
+      setFreeScanError(error instanceof Error ? error.message : "Unable to run investigation checks.");
     } finally {
       setFreeScanRunning(false);
     }
@@ -948,34 +949,24 @@ export default function IntakePage() {
         <div className="grid gap-10 lg:grid-cols-[.82fr_1.18fr]">
           <div>
             <div className="text-xs uppercase tracking-[0.45em] text-red-300">
-              ShadowScore Trust Engine
+              ShadowScore Investigation
             </div>
             <h1 className="mt-6 text-5xl font-extrabold leading-tight">
-              Trust Intelligence starts here
+              Start with one target
             </h1>
             <p className="mt-6 max-w-xl text-lg leading-8 text-zinc-400">
-              Run a preview for a website, seller profile or evidence package.
-              The free scan only shows intake readiness and visible signal
-              categories; full scoring, recommendations, breakdowns and action
-              plans stay locked until payment succeeds.
+              Enter a website, company, email, phone or seller. ShadowScore prepares a clear trust report before you decide.
             </p>
             <div className="mt-10 rounded-3xl border border-white/10 bg-white/[0.035] p-6">
-              <div className="font-bold">Anti-garbage validation</div>
+              <div className="font-bold">Evidence readiness</div>
               <p className="mt-4 leading-7 text-zinc-400">
-                The intake accepts relevant evidence formats and checks file
-                size, file type, platform requirements and scan-related signals
-                before producing a preview. Unsupported files are blocked, weak
-                evidence is flagged and missing notices are detected without
-                exposing a full risk score.
+                Add files when they help. ShadowScore flags unsupported or weak evidence before you pay for a full report.
               </p>
             </div>
             <div className="mt-6 rounded-3xl border border-red-400/20 bg-red-500/[0.06] p-6">
-              <div className="font-bold text-red-200">Safe positioning</div>
+              <div className="font-bold text-red-200">Private by design</div>
               <p className="mt-3 leading-7 text-zinc-400">
-                ShadowScore does not access internal marketplace systems and
-                does not show demo data to new users. Checkout only creates a
-                payment intent; completed reports are generated after successful
-                payment.
+                We use the target and evidence you provide to prepare a private report after checkout.
               </p>
             </div>
           </div>
@@ -1007,14 +998,11 @@ export default function IntakePage() {
 
             <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
               <div className="text-xs uppercase tracking-[0.28em] text-red-300">
-                Active scan mode
+                Selected investigation
               </div>
               <div className="mt-2 text-xl font-black">{activeMode.label}</div>
               <p className="mt-2 text-sm leading-6 text-zinc-400">
-                This flow is structured so SSL, DNS, WHOIS, security-header,
-                SPF, DMARC, reputation, business-profile and platform evidence
-                providers can be plugged in later. No provider results or demo
-                scores are hardcoded.
+                ShadowScore automatically adapts the investigation based on what you enter.
               </p>
             </div>
 
@@ -1033,7 +1021,7 @@ export default function IntakePage() {
                       resetFreeScan();
                     }}
                     className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white"
-                    placeholder="https://example.com, company.com, support@company.com, Best Buy, best.deal.best.price (eBay)"
+                    placeholder="Website, company, email, phone or marketplace seller..."
                   />
                 </label>
               </div>
@@ -1267,12 +1255,12 @@ export default function IntakePage() {
               onClick={runFreePreview}
               className="mt-6 block w-full rounded-2xl bg-red-600 px-7 py-5 text-center text-sm font-black uppercase tracking-[0.16em] shadow-[0_0_28px_rgba(220,38,38,0.28)] hover:bg-red-500"
             >
-              {freeScanRunning ? "Analyzing..." : "Analyze Now"}
+              {freeScanRunning ? "Investigating..." : "Start Investigation"}
             </button>
 
             {freeScanRunning && (
               <div className="mt-6 rounded-3xl border border-red-400/20 bg-red-500/[0.06] p-5">
-                <div className="text-xs font-black uppercase tracking-[0.24em] text-red-200">Animated progress</div>
+                <div className="text-xs font-black uppercase tracking-[0.24em] text-red-200">Investigation timeline</div>
                 <div className="mt-4 space-y-3">
                   {ANIMATED_SCAN_STEPS.map((step, index) => (
                     <div key={step} className="flex items-center gap-3 text-sm text-zinc-300">
@@ -1287,7 +1275,7 @@ export default function IntakePage() {
             {submitted && canAnalyze && (
               <div className="mt-8 space-y-6">
                 <section className="rounded-[28px] border border-red-400/20 bg-red-500/[0.06] p-6">
-                  <div className="text-xs uppercase tracking-[0.22em] text-red-300">Business Identity Card</div>
+                  <div className="text-xs uppercase tracking-[0.22em] text-red-300">Business Identity</div>
                   <div className="mt-5 grid gap-5 md:grid-cols-3">
                     <div className="rounded-2xl border border-white/10 bg-black/50 p-5">
                       <div className="text-xs uppercase tracking-[0.22em] text-zinc-500">Preview Status</div>
@@ -1295,7 +1283,7 @@ export default function IntakePage() {
                       <p className="mt-2 text-xs leading-5 text-zinc-500">Full score locked until payment.</p>
                     </div>
                     <div className="rounded-2xl border border-white/10 bg-black/50 p-5">
-                      <div className="text-xs uppercase tracking-[0.22em] text-zinc-500">Scan Mode</div>
+                      <div className="text-xs uppercase tracking-[0.22em] text-zinc-500">Investigation</div>
                       <div className="mt-2 text-xl font-black text-white">{activeMode.label}</div>
                       <p className="mt-2 text-xs leading-5 text-zinc-500">{scanMode === "website" ? websiteTarget : activeTarget || displayMarketplace}</p>
                     </div>
@@ -1344,7 +1332,7 @@ export default function IntakePage() {
 
                 <section className="rounded-[28px] border border-yellow-400/20 bg-yellow-500/10 p-6 text-sm leading-7 text-yellow-100">
                   <div className="text-xs uppercase tracking-[0.22em] text-yellow-200">Recommendation</div>
-                  <p className="mt-4">Free scan preview only. Full risk score, recommendations, full breakdown, action plan and completed report are locked until payment succeeds. Checkout starts a payment intent only.</p>
+                  <p className="mt-4">Preview ready. Unlock the full report for the decision, findings, evidence and next steps.</p>
                   <div className="mt-5 rounded-2xl border border-white/10 bg-black/30 p-5">
                     <label>
                       <div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">Email for Unlock Full Report or Save Report</div>
@@ -1381,13 +1369,13 @@ export default function IntakePage() {
                         {freeScanResult.decisionPreview.missingSignals.length ? <div className="mt-4 rounded-xl border border-orange-400/20 bg-orange-500/10 p-3 text-sm leading-6 text-orange-100"><span className="font-bold">Missing signals:</span> {freeScanResult.decisionPreview.missingSignals.join(", ")}</div> : null}
                         <p className="mt-4 text-sm leading-6 text-zinc-300"><span className="font-bold text-zinc-100">What this means:</span> {freeScanResult.decisionPreview.whatThisMeans}</p>
                         <p className="mt-2 text-sm leading-6 text-zinc-300"><span className="font-bold text-zinc-100">Recommended action:</span> {freeScanResult.decisionPreview.recommendedAction}</p>
-                        <div className="mt-4 rounded-xl border border-yellow-400/20 bg-yellow-500/10 p-3 text-xs leading-5 text-yellow-100">Locked advanced breakdown: identity {freeScanResult.decisionPreview.identityScore}/100, infrastructure {freeScanResult.decisionPreview.infrastructureScore}/100, email security {freeScanResult.decisionPreview.emailSecurityScore}/100, reputation {freeScanResult.decisionPreview.reputationScore}, evidence coverage {freeScanResult.decisionPreview.evidenceCoverageScore}/100. Full reasoning and provider technical details unlock in the paid report.</div>
+                        <div className="mt-4 rounded-xl border border-yellow-400/20 bg-yellow-500/10 p-3 text-xs leading-5 text-yellow-100">Locked advanced breakdown: identity {freeScanResult.decisionPreview.identityScore}/100, infrastructure {freeScanResult.decisionPreview.infrastructureScore}/100, email security {freeScanResult.decisionPreview.emailSecurityScore}/100, reputation {freeScanResult.decisionPreview.reputationScore}, evidence coverage {freeScanResult.decisionPreview.evidenceCoverageScore}/100. Full reasoning unlocks in the paid report.</div>
                       </section>
                     ) : null}
 
                     {freeScanResult?.insights?.length ? (
                       <section className="rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.06] p-4">
-                        <div className="text-xs uppercase tracking-[0.22em] text-emerald-200">Insight Engine</div>
+                        <div className="text-xs uppercase tracking-[0.22em] text-emerald-200">Signal Review</div>
                         <div className="mt-3 grid gap-3">{freeScanResult.insights.map((insight) => <div key={insight.category} className="rounded-xl border border-white/10 bg-black/35 p-4"><div className="flex flex-wrap items-center justify-between gap-2"><div className="font-black text-white">{insight.category}</div><span className="rounded-full border border-white/10 px-3 py-1 text-xs font-bold text-zinc-300">{insight.riskLevel}</span></div><p className="mt-3 text-sm leading-6 text-zinc-300">{insight.insight}</p><p className="mt-2 text-xs leading-5 text-zinc-500"><span className="text-zinc-400">Why it matters:</span> {insight.whyItMatters}</p><p className="mt-2 text-xs leading-5 text-zinc-500"><span className="text-zinc-400">Next step:</span> {insight.recommendedNextStep}</p></div>)}</div>
                       </section>
                     ) : null}
@@ -1401,8 +1389,8 @@ export default function IntakePage() {
 
                     {scanMode === "website" && (freeScanRunning || freeScanResult || freeScanError) && (
                       <section className="rounded-2xl border border-white/10 bg-black/50 p-5">
-                        <div className="text-xs uppercase tracking-[0.22em] text-red-300">Provider Results</div>
-                        <div className="mt-4 grid gap-3 md:grid-cols-2">{WEBSITE_PROVIDER_EXECUTION.map((provider) => { const result = freeScanResult?.providers.find((item) => item.providerId === provider.id); return <div key={provider.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"><div className="font-black text-white">{providerStatusIcon(provider.id)} {provider.label}{provider.production ? "" : " (Coming Soon)"}</div>{result && <div className="mt-3 space-y-2 text-sm text-zinc-300">{result.fields.map((field) => <div key={field.label}><span className="text-zinc-500">{field.label}:</span> {renderValue(field.value)}</div>)}{result.status !== "completed" && <div className="text-yellow-100">Provider status: {result.status}. {result.error || "Unavailable"}</div>}</div>}</div>; })}</div>
+                        <div className="text-xs uppercase tracking-[0.22em] text-red-300">Developer Results</div>
+                        <div className="mt-4 grid gap-3 md:grid-cols-2">{WEBSITE_PROVIDER_EXECUTION.map((provider) => { const result = freeScanResult?.providers.find((item) => item.providerId === provider.id); return <div key={provider.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"><div className="font-black text-white">{providerStatusIcon(provider.id)} {provider.label}{provider.production ? "" : " (Coming Soon)"}</div>{result && <div className="mt-3 space-y-2 text-sm text-zinc-300">{result.fields.map((field) => <div key={field.label}><span className="text-zinc-500">{field.label}:</span> {renderValue(field.value)}</div>)}{result.status !== "completed" && <div className="text-yellow-100">Status: {result.status}. {result.error || "Unavailable"}</div>}</div>}</div>; })}</div>
                         {freeScanError && <div className="mt-4 rounded-xl border border-red-400/25 bg-red-500/10 p-3 text-sm text-red-100">{freeScanError}</div>}
                       </section>
                     )}
