@@ -18,6 +18,26 @@ function formatDate(value?: string) {
   }
 }
 
+function findNarrativeSection(report: ShadowScoreReport, id: string) {
+  return report.reportSummary?.businessNarrative?.sections.find((section) => section.id === id);
+}
+
+function fallbackSection(title: string, body: Array<string | undefined>) {
+  return { title, body: body.filter((item): item is string => Boolean(item)) };
+}
+
+function BusinessCard({ title, body }: { title: string; body: string[] }) {
+  if (!body.length) return null;
+  return (
+    <div className="rounded-2xl border border-white/10 bg-black/40 p-5">
+      <div className="text-xs uppercase tracking-[0.28em] text-red-200">{title}</div>
+      <div className="mt-4 space-y-3 text-sm leading-6 text-zinc-300">
+        {body.map((item) => <p key={item}>{item}</p>)}
+      </div>
+    </div>
+  );
+}
+
 export default function ReportPage() {
   const [reportId, setReportId] = useState("");
   const [reports, setReports] = useState<ShadowScoreReport[]>([]);
@@ -41,6 +61,13 @@ export default function ReportPage() {
     insightEngineVersion: report.reportSummary?.insightEngineVersion,
     audience: "paid",
   }) : [], [report]);
+  const executiveSummary = report ? findNarrativeSection(report, "executiveSummary") : undefined;
+  const evidenceUsed = report ? findNarrativeSection(report, "evidenceUsed") : undefined;
+  const narrativeCards = report ? [
+    findNarrativeSection(report, "whatWeFound") || fallbackSection("What We Found", report.reportSummary?.decision?.topReasons || [report.reportSummary?.message]),
+    findNarrativeSection(report, "whatRequiresVerification") || fallbackSection("What Requires Verification", [report.reportSummary?.decision?.whatThisMeans]),
+    findNarrativeSection(report, "recommendedNextSteps") || fallbackSection("Recommended Next Steps", [report.reportSummary?.decision?.recommendedAction]),
+  ] : [];
 
   return (
     <ShadowScoreLayout>
@@ -67,6 +94,31 @@ export default function ReportPage() {
               <h1 className="mt-4 text-4xl font-extrabold">{report.target || report.entity}</h1>
               <p className="mt-4 max-w-3xl text-lg leading-8 text-zinc-300">{report.reportSummary?.identityProfile?.identitySummary || report.reportSummary?.message}</p>
             </section>
+
+            <section className="mt-8 rounded-[28px] border border-red-400/20 bg-red-500/[0.06] p-6">
+              <div className="text-xs uppercase tracking-[0.28em] text-red-200">Business Narrative</div>
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                <div className="text-3xl font-black text-white">{report.reportSummary?.businessNarrative?.decision || report.reportSummary?.decision?.decisionLabel || "Review available evidence"}</div>
+                {(report.reportSummary?.businessNarrative?.confidence || report.reportSummary?.decision?.confidenceLevel) ? (
+                  <span className="rounded-full border border-white/10 px-3 py-1 text-xs font-bold text-zinc-300">{report.reportSummary?.businessNarrative?.confidence || report.reportSummary?.decision?.confidenceLevel} confidence</span>
+                ) : null}
+              </div>
+              {report.reportSummary?.decision?.recommendedAction ? (
+                <p className="mt-5 text-base leading-7 text-zinc-200"><span className="font-bold text-white">Recommendation:</span> {report.reportSummary.decision.recommendedAction}</p>
+              ) : null}
+              {executiveSummary?.body.length ? (
+                <div className="mt-5 rounded-2xl border border-white/10 bg-black/35 p-5">
+                  <div className="text-xs uppercase tracking-[0.28em] text-zinc-400">Executive Summary</div>
+                  <div className="mt-3 space-y-3 text-sm leading-6 text-zinc-300">
+                    {executiveSummary.body.map((item) => <p key={item}>{item}</p>)}
+                  </div>
+                </div>
+              ) : null}
+              <div className="mt-5 grid gap-4 md:grid-cols-3">
+                {narrativeCards.map((section) => <BusinessCard key={section.title} title={section.title} body={section.body} />)}
+              </div>
+            </section>
+
             <div className="mt-8 grid gap-4 md:grid-cols-2">
               {[
                 ["Report ID", report.reportId],
@@ -76,7 +128,7 @@ export default function ReportPage() {
                 ["Payment status", report.paymentStatus || "paid"],
                 ["Report status", report.reportStatus],
                 ["Engine version", report.engineVersion || "Unknown"],
-                ["Primary domain", report.reportSummary?.primaryRiskDomain || "Provider placeholder"],
+                ["Primary domain", report.reportSummary?.businessNarrative?.primaryDomain || report.reportSummary?.primaryRiskDomain || "Pending"],
               ].map(([label, value]) => (
                 <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
                   <div className="text-xs uppercase tracking-[0.28em] text-zinc-500">{label}</div>
@@ -84,47 +136,6 @@ export default function ReportPage() {
                 </div>
               ))}
             </div>
-            {report.reportSummary?.decision ? (
-              <div className="mt-8 rounded-2xl border border-red-400/25 bg-red-500/[0.06] p-5">
-                <div className="text-xs uppercase tracking-[0.28em] text-red-200">Business Decision</div>
-                <div className="mt-4 flex flex-wrap items-center gap-3">
-                  <div className="text-3xl font-black text-white">{report.reportSummary.decision.decisionLabel}</div>
-                  <span className="rounded-full border border-white/10 px-3 py-1 text-xs font-bold text-zinc-300">{report.reportSummary.decision.confidenceLevel} confidence</span>
-                </div>
-                <div className="mt-5 text-sm font-black text-zinc-100">Top reasons</div>
-                <ul className="mt-3 space-y-2 text-sm leading-6 text-zinc-300">
-                  {report.reportSummary.decision.topReasons.map((reason) => <li key={reason}>• {reason}</li>)}
-                </ul>
-                <p className="mt-5 text-sm leading-6 text-zinc-300"><span className="font-bold text-zinc-100">What this means:</span> {report.reportSummary.decision.whatThisMeans}</p>
-                <p className="mt-2 text-sm leading-6 text-zinc-300"><span className="font-bold text-zinc-100">Recommended action:</span> {report.reportSummary.decision.recommendedAction}</p>
-              </div>
-            ) : null}
-
-            {report.reportSummary?.identityProfile?.identitySummary ? (
-              <div className="mt-8 rounded-2xl border border-sky-400/20 bg-sky-500/[0.05] p-5">
-                <div className="text-xs uppercase tracking-[0.28em] text-sky-200">Identity Summary</div>
-                <p className="mt-4 text-sm leading-6 text-zinc-300">{report.reportSummary.identityProfile.identitySummary}</p>
-              </div>
-            ) : null}
-
-            {report.reportSummary?.insights?.length ? (
-              <div className="mt-8 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.05] p-5">
-                <div className="text-xs uppercase tracking-[0.28em] text-emerald-200">Insight Engine</div>
-                <div className="mt-5 grid gap-4 md:grid-cols-2">
-                  {report.reportSummary.insights.map((insight) => (
-                    <div key={insight.category} className="rounded-2xl border border-white/10 bg-black/40 p-5">
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div className="font-black text-white">{insight.category}</div>
-                        <span className="rounded-full border border-white/10 px-3 py-1 text-xs font-bold text-zinc-300">{insight.riskLevel}</span>
-                      </div>
-                      <p className="mt-4 text-sm leading-6 text-zinc-300">{insight.insight}</p>
-                      <p className="mt-3 text-xs leading-5 text-zinc-500"><span className="text-zinc-400">Why it matters:</span> {insight.whyItMatters}</p>
-                      <p className="mt-2 text-xs leading-5 text-zinc-500"><span className="text-zinc-400">Recommended next step:</span> {insight.recommendedNextStep}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : null}
 
             {trustTimeline.length ? (
               <div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
@@ -145,6 +156,32 @@ export default function ReportPage() {
             ) : null}
             <details className="mt-8 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
               <summary className="cursor-pointer text-xs uppercase tracking-[0.28em] text-red-300">Technical Details</summary>
+              {evidenceUsed?.body.length ? (
+                <section className="mt-5 rounded-2xl border border-white/10 bg-black/40 p-5">
+                  <div className="text-xs uppercase tracking-[0.28em] text-zinc-400">Evidence Used</div>
+                  <ul className="mt-3 space-y-2 text-sm leading-6 text-zinc-300">
+                    {evidenceUsed.body.map((item) => <li key={item}>• {item}</li>)}
+                  </ul>
+                </section>
+              ) : null}
+              {report.reportSummary?.insights?.length ? (
+                <section className="mt-5 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.05] p-5">
+                  <div className="text-xs uppercase tracking-[0.28em] text-emerald-200">Insight Engine</div>
+                  <div className="mt-5 grid gap-4 md:grid-cols-2">
+                    {report.reportSummary.insights.map((insight) => (
+                      <div key={insight.category} className="rounded-2xl border border-white/10 bg-black/40 p-5">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div className="font-black text-white">{insight.category}</div>
+                          <span className="rounded-full border border-white/10 px-3 py-1 text-xs font-bold text-zinc-300">{insight.riskLevel}</span>
+                        </div>
+                        <p className="mt-4 text-sm leading-6 text-zinc-300">{insight.insight}</p>
+                        <p className="mt-3 text-xs leading-5 text-zinc-500"><span className="text-zinc-400">Why it matters:</span> {insight.whyItMatters}</p>
+                        <p className="mt-2 text-xs leading-5 text-zinc-500"><span className="text-zinc-400">Recommended next step:</span> {insight.recommendedNextStep}</p>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
               <pre className="mt-4 overflow-x-auto text-xs leading-6 text-zinc-400">{JSON.stringify(report.providerResults || [], null, 2)}</pre>
             </details>
             <button className="mt-8 rounded-2xl border border-emerald-400/30 bg-emerald-500/10 px-5 py-4 text-sm font-black text-emerald-100">Download Report placeholder</button>

@@ -39,7 +39,9 @@ type TrustInsight = {
 type TrustTimelineItem = { title: string; description: string; status: "completed" | "unavailable" | "pending"; evidenceSource: string };
 type DecisionPreview = { decisionLabel: "Safe to proceed" | "Proceed with verification" | "High caution"; confidenceLevel: "Low" | "Medium" | "High"; topReasons: string[]; whatThisMeans: string; recommendedAction: string; limitedPreview: boolean };
 type IdentityProfile = { identitySummary: string };
-type FreeScanResult = { executedAt: string; providers: FreeScanProviderSummary[]; insights: TrustInsight[]; insightEngineVersion?: string; timeline?: TrustTimelineItem[]; decisionPreview?: DecisionPreview; identityProfile?: IdentityProfile };
+type BusinessNarrativeSection = { id: string; title: string; body: string[] };
+type BusinessNarrative = { decision: string; confidence: string; sections: BusinessNarrativeSection[] };
+type FreeScanResult = { executedAt: string; providers: FreeScanProviderSummary[]; insights: TrustInsight[]; insightEngineVersion?: string; timeline?: TrustTimelineItem[]; decisionPreview?: DecisionPreview; identityProfile?: IdentityProfile; businessNarrative?: BusinessNarrative };
 
 const MAX_FILE_SIZE = 15 * 1024 * 1024;
 const MIN_FILE_SIZE = 1024;
@@ -1311,6 +1313,35 @@ export default function IntakePage() {
                   ) : null}
                 </section>
 
+                {freeScanResult?.businessNarrative ? (
+                  <section className="rounded-[28px] border border-red-400/20 bg-red-500/[0.06] p-6">
+                    <div className="text-xs uppercase tracking-[0.22em] text-red-300">Business Narrative</div>
+                    <div className="mt-4 flex flex-wrap items-center gap-3">
+                      <div className="text-2xl font-black text-white">{freeScanResult.businessNarrative.decision}</div>
+                      <span className="rounded-full border border-white/10 px-3 py-1 text-xs font-bold text-zinc-300">{freeScanResult.businessNarrative.confidence} confidence</span>
+                    </div>
+                    {freeScanResult.decisionPreview?.recommendedAction ? (
+                      <p className="mt-4 text-sm leading-6 text-zinc-200"><span className="font-bold text-white">Recommendation:</span> {freeScanResult.decisionPreview.recommendedAction}</p>
+                    ) : null}
+                    {freeScanResult.businessNarrative.sections.find((section) => section.id === "executiveSummary") ? (
+                      <div className="mt-5 rounded-2xl border border-white/10 bg-black/35 p-5">
+                        <div className="text-xs uppercase tracking-[0.22em] text-zinc-400">Executive Summary</div>
+                        <div className="mt-3 space-y-3 text-sm leading-6 text-zinc-300">
+                          {freeScanResult.businessNarrative.sections.find((section) => section.id === "executiveSummary")?.body.map((item) => <p key={item}>{item}</p>)}
+                        </div>
+                      </div>
+                    ) : null}
+                    <div className="mt-5 grid gap-4 md:grid-cols-3">
+                      {freeScanResult.businessNarrative.sections.filter((section) => ["whatWeFound", "whatRequiresVerification", "recommendedNextSteps"].includes(section.id)).map((section) => (
+                        <div key={section.id} className="rounded-2xl border border-white/10 bg-black/40 p-5">
+                          <div className="text-xs uppercase tracking-[0.22em] text-red-200">{section.title}</div>
+                          <div className="mt-3 space-y-3 text-sm leading-6 text-zinc-300">{section.body.map((item) => <p key={item}>{item}</p>)}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                ) : null}
+
                 <section className="rounded-[28px] border border-yellow-400/20 bg-yellow-500/10 p-6 text-sm leading-7 text-yellow-100">
                   <div className="text-xs uppercase tracking-[0.22em] text-yellow-200">Recommendation</div>
                   <p className="mt-4">Free scan preview only. Full risk score, recommendations, full breakdown, action plan and completed report are locked until payment succeeds. Checkout starts a payment intent only.</p>
@@ -1330,6 +1361,15 @@ export default function IntakePage() {
                 <details className="rounded-[28px] border border-white/10 bg-black/50 p-6" open={false}>
                   <summary className="cursor-pointer text-xs uppercase tracking-[0.22em] text-red-300">Technical Details</summary>
                   <div className="mt-5 space-y-5">
+                    {freeScanResult?.businessNarrative?.sections.find((section) => section.id === "evidenceUsed") ? (
+                      <section className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+                        <div className="text-xs uppercase tracking-[0.22em] text-zinc-400">Evidence Used</div>
+                        <ul className="mt-3 space-y-2 text-sm leading-6 text-zinc-300">
+                          {freeScanResult.businessNarrative.sections.find((section) => section.id === "evidenceUsed")?.body.map((item) => <li key={item}>• {item}</li>)}
+                        </ul>
+                      </section>
+                    ) : null}
+
                     {freeScanResult?.decisionPreview ? (
                       <section className="rounded-2xl border border-red-400/25 bg-red-500/[0.07] p-4">
                         <div className="text-xs uppercase tracking-[0.22em] text-red-200">Decision Preview</div>
