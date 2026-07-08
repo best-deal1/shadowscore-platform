@@ -96,6 +96,14 @@ const SCAN_MODES: Array<{
   },
 ];
 
+const ANIMATED_SCAN_STEPS = [
+  "Identifying target",
+  "Classifying business",
+  "Collecting public evidence",
+  "Building business profile",
+  "Generating decision",
+];
+
 const WEBSITE_PROVIDER_EXECUTION = [
   { id: "dns", label: "DNS Intelligence", production: true },
   { id: "whois", label: "WHOIS Intelligence", production: true },
@@ -1259,6 +1267,20 @@ export default function IntakePage() {
             >
               {freeScanRunning ? "Running Provider Checks..." : "Analyze Trust"}
             </button>
+
+            {freeScanRunning && (
+              <div className="mt-6 rounded-3xl border border-red-400/20 bg-red-500/[0.06] p-5">
+                <div className="text-xs font-black uppercase tracking-[0.24em] text-red-200">Animated progress</div>
+                <div className="mt-4 space-y-3">
+                  {ANIMATED_SCAN_STEPS.map((step, index) => (
+                    <div key={step} className="flex items-center gap-3 text-sm text-zinc-300">
+                      <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-400" style={{ animationDelay: `${index * 120}ms` }} />
+                      <span>{step}...</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {submitted && canAnalyze && (
               <div className="mt-8 space-y-6">

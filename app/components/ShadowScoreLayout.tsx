@@ -7,7 +7,8 @@ const footerLinks = [
   { href: "/privacy", label: "Privacy" },
   { href: "/terms", label: "Terms" },
   { href: "/security", label: "Security" },
-  { href: "/example-report", label: "Example Report" },
+  { href: "/monitoring", label: "Monitoring" },
+  { href: "/upgrade", label: "Upgrade" },
   { href: "/contact", label: "Contact" },
 ];
 
@@ -24,14 +25,13 @@ export default function ShadowScoreLayout({ children }: { children: ReactNode })
             </div>
           </Link>
           <nav className="hidden items-center gap-7 text-sm text-zinc-400 md:flex">
-            <Link href="/#risk-categories" className="hover:text-white">Risk Categories</Link>
-            <Link href="/#pricing" className="hover:text-white">Pricing</Link>
-            <Link href="/intake" className="hover:text-white">Free Scan</Link>
-            <Link href="/security" className="hover:text-white">Security</Link>
-            <Link href="/example-report" className="hover:text-white">Example Report</Link>
-            <Link href="/contact" className="hover:text-white">Contact</Link>
+            <Link href="/intake" className="hover:text-white">Scan</Link>
+            <Link href="/dashboard" className="hover:text-white">Dashboard</Link>
+            <Link href="/monitoring" className="hover:text-white">Monitoring</Link>
+            <Link href="/upgrade" className="hover:text-white">Upgrade</Link>
+            <Link href="/login" className="hover:text-white">Sign in</Link>
           </nav>
-          <Link href="/intake" className="rounded-full bg-red-600 px-5 py-2 text-sm font-bold text-white shadow-lg shadow-red-950/40 hover:bg-red-500">Free Risk Scan</Link>
+          <Link href="/intake" className="rounded-full bg-red-600 px-5 py-2 text-sm font-bold text-white shadow-lg shadow-red-950/40 hover:bg-red-500">Search a business</Link>
         </div>
       </header>
 
