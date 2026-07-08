@@ -3,6 +3,7 @@ import { LEGAL_ACCEPTANCE_VERSION } from "./legal";
 import type { DecisionOutput } from "./decisionEngine";
 import type { TrustInsight } from "./insightEngine";
 import type { IdentityProfile } from "./identityEngine";
+import type { BusinessNarrative } from "./narrative/types";
 import type { ProviderResult } from "./providers/types";
 import { supabaseFetch, isSupabaseConfigured } from "./supabase";
 import { cloneWorkspace, getMutableMemoryWorkspace } from "./workspaceStore";
@@ -58,7 +59,7 @@ export type ShadowScoreReport = {
   providerVersions?: Record<string, string>;
   providerResults?: ProviderResult[];
   evidenceSummary?: unknown;
-  reportSummary?: { message: string; primaryRiskDomain?: string; findingCount?: number; insights?: TrustInsight[]; insightEngineVersion?: string; decision?: DecisionOutput; identityProfile?: IdentityProfile };
+  reportSummary?: { message: string; primaryRiskDomain?: string; findingCount?: number; insights?: TrustInsight[]; insightEngineVersion?: string; decision?: DecisionOutput; identityProfile?: IdentityProfile; businessNarrative?: BusinessNarrative };
   topFactors: string[];
 };
 

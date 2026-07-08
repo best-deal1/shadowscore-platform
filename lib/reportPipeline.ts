@@ -1,6 +1,9 @@
 import { buildDecision } from "./decisionEngine";
 import { buildTrustInsights } from "./insightEngine";
 import { buildIdentityProfile } from "./identityEngine";
+import { buildBusinessProfile } from "./businessProfileEngine";
+import { BusinessKnowledgeGraph } from "./knowledgeGraph";
+import { buildBusinessNarrative } from "./narrative";
 import { buildTrustTimeline } from "./trustTimeline";
 import { ProviderManager, createDefaultProviders } from "./providers";
 import type { ProviderExecutionContext } from "./providers/types";
@@ -50,8 +53,27 @@ export async function buildReadyReport(input: {
     providerResults,
   };
   const riskEnginePreview = analyzeRisk(engineInput);
+  const now = new Date().toISOString();
   const insightOutput = buildTrustInsights({ providerResults, riskOutput: riskEnginePreview, audience: "paid" });
   const identityProfile = buildIdentityProfile({ providerResults, insights: insightOutput.insights });
+  const businessProfile = buildBusinessProfile({ providerResults, target: intake.target, generatedAt: now });
+  const knowledgeGraph = new BusinessKnowledgeGraph();
+  knowledgeGraph.applyScan({
+    scanId: `report-${intake.intakeId}`,
+    entities: [
+      { type: "Business", value: businessProfile.businessName === "Unknown" ? intake.target : businessProfile.businessName },
+      { type: "Domain", value: businessProfile.primaryDomain || intake.target },
+      ...(intake.email ? [{ type: "Email" as const, value: intake.email }] : []),
+    ],
+    relationships: [
+      {
+        type: "OWNS",
+        from: { type: "Business", value: businessProfile.businessName === "Unknown" ? intake.target : businessProfile.businessName },
+        to: { type: "Domain", value: businessProfile.primaryDomain || intake.target },
+        context: "Business profile domain relationship",
+      },
+    ],
+  });
   const trustTimeline = buildTrustTimeline({
     providerResults,
     insights: insightOutput.insights,
@@ -65,7 +87,13 @@ export async function buildReadyReport(input: {
     timeline: trustTimeline,
     audience: "paid",
   });
-  const now = new Date().toISOString();
+  const businessNarrative = buildBusinessNarrative({
+    decision,
+    evidence: businessProfile.evidenceItems,
+    businessProfile,
+    knowledgeGraph: knowledgeGraph.snapshot(),
+    generatedAt: now,
+  });
 
   return {
     reportId: input.reportId || `rpt-${Date.now().toString(36)}`,
@@ -98,6 +126,7 @@ export async function buildReadyReport(input: {
       insightEngineVersion: insightOutput.engineVersion,
       decision,
       identityProfile,
+      businessNarrative,
     },
     riskScore: undefined,
     confidenceScore: undefined,

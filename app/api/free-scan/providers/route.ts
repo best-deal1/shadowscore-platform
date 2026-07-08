@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 
 import { buildTrustInsights } from "../../../../lib/insightEngine";
 import { buildIdentityProfile } from "../../../../lib/identityEngine";
+import { buildBusinessProfile } from "../../../../lib/businessProfileEngine";
+import { BusinessKnowledgeGraph } from "../../../../lib/knowledgeGraph";
+import { buildBusinessNarrative } from "../../../../lib/narrative";
 import { buildTrustTimeline } from "../../../../lib/trustTimeline";
 import { buildDecision } from "../../../../lib/decisionEngine";
 import { analyzeRisk } from "../../../../lib/riskEngine";
@@ -115,6 +118,25 @@ export async function POST(request: Request) {
     });
     const insightOutput = buildTrustInsights({ providerResults, riskOutput, audience: "free" });
     const identityProfile = buildIdentityProfile({ providerResults, insights: insightOutput.insights });
+    const generatedAt = new Date().toISOString();
+    const businessProfile = buildBusinessProfile({ providerResults, target: context.target, generatedAt });
+    const knowledgeGraph = new BusinessKnowledgeGraph();
+    knowledgeGraph.applyScan({
+      scanId: `free-scan-${context.intakeId}`,
+      entities: [
+        { type: "Business", value: businessProfile.businessName === "Unknown" ? context.target : businessProfile.businessName },
+        { type: "Domain", value: businessProfile.primaryDomain || context.target },
+        ...(context.email ? [{ type: "Email" as const, value: context.email }] : []),
+      ],
+      relationships: [
+        {
+          type: "OWNS",
+          from: { type: "Business", value: businessProfile.businessName === "Unknown" ? context.target : businessProfile.businessName },
+          to: { type: "Domain", value: businessProfile.primaryDomain || context.target },
+          context: "Business profile domain relationship",
+        },
+      ],
+    });
     const timeline = buildTrustTimeline({
       providerResults,
       insights: insightOutput.insights,
@@ -129,11 +151,19 @@ export async function POST(request: Request) {
       audience: "free",
     });
 
+    const businessNarrative = buildBusinessNarrative({
+      decision: decisionPreview,
+      evidence: businessProfile.evidenceItems,
+      businessProfile,
+      knowledgeGraph: knowledgeGraph.snapshot(),
+      generatedAt,
+    });
+
     const dnsResult = providerResults.find((result) => result.providerId === "dns");
     const whoisResult = providerResults.find((result) => result.providerId === "whois");
 
     return NextResponse.json({
-      executedAt: new Date().toISOString(),
+      executedAt: generatedAt,
       providers: [
         ...(dnsResult ? [summarizeDns(dnsResult)] : []),
         ...(whoisResult ? [summarizeWhois(whoisResult)] : []),
@@ -143,6 +173,7 @@ export async function POST(request: Request) {
       timeline,
       decisionPreview,
       identityProfile,
+      businessNarrative,
     });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to run free provider scan." }, { status: 500 });
