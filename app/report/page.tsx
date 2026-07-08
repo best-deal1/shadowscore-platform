@@ -93,6 +93,21 @@ export default function ReportPage() {
               <div className="text-xs uppercase tracking-[0.28em] text-red-200">Business Identity Card</div>
               <h1 className="mt-4 text-4xl font-extrabold">{report.target || report.entity}</h1>
               <p className="mt-4 max-w-3xl text-lg leading-8 text-zinc-300">{report.reportSummary?.identityProfile?.identitySummary || report.reportSummary?.message}</p>
+              {report.reportSummary?.execution ? (
+                <div className="mt-6 grid gap-3 md:grid-cols-4">
+                  {[
+                    ["Execution", `${report.reportSummary.execution.completedInSeconds} seconds`],
+                    ["Providers executed", String(report.reportSummary.execution.providersExecuted)],
+                    ["Evidence collected", String(report.reportSummary.execution.evidenceCollected)],
+                    ["Decision confidence", report.reportSummary.execution.decisionConfidence || "Unknown"],
+                  ].map(([label, value]) => (
+                    <div key={label} className="rounded-2xl border border-white/10 bg-black/35 p-4">
+                      <div className="text-[10px] uppercase tracking-[0.22em] text-zinc-500">{label}</div>
+                      <div className="mt-2 text-lg font-black text-white">{value}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
             </section>
 
             <section className="mt-8 rounded-[28px] border border-red-400/20 bg-red-500/[0.06] p-6">
@@ -137,6 +152,17 @@ export default function ReportPage() {
               ))}
             </div>
 
+            {report.reportSummary?.executionFlow?.length ? (
+              <div className="mt-8 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.05] p-5">
+                <div className="text-xs uppercase tracking-[0.28em] text-emerald-200">Execution Flow</div>
+                <div className="mt-4 grid gap-3 md:grid-cols-2">
+                  {report.reportSummary.executionFlow.map((item) => (
+                    <div key={item} className="rounded-2xl border border-white/10 bg-black/40 p-4 text-sm font-bold text-zinc-200">{item}</div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
             {trustTimeline.length ? (
               <div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
                 <div className="text-xs uppercase tracking-[0.28em] text-red-300">Trust Timeline</div>
@@ -177,6 +203,23 @@ export default function ReportPage() {
                         <p className="mt-4 text-sm leading-6 text-zinc-300">{insight.insight}</p>
                         <p className="mt-3 text-xs leading-5 text-zinc-500"><span className="text-zinc-400">Why it matters:</span> {insight.whyItMatters}</p>
                         <p className="mt-2 text-xs leading-5 text-zinc-500"><span className="text-zinc-400">Recommended next step:</span> {insight.recommendedNextStep}</p>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+              {report.reportSummary?.technicalDetails ? (
+                <section className="mt-5 rounded-2xl border border-white/10 bg-black/40 p-5">
+                  <div className="text-xs uppercase tracking-[0.28em] text-zinc-400">Provider Execution Status</div>
+                  <div className="mt-4 grid gap-4 md:grid-cols-2">
+                    {(["executed", "skipped", "pending", "failed"] as const).map((status) => (
+                      <div key={status} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                        <div className="text-xs font-black uppercase tracking-[0.22em] text-zinc-300">{status}</div>
+                        <ul className="mt-3 space-y-2 text-sm leading-6 text-zinc-400">
+                          {report.reportSummary?.technicalDetails?.[status].length ? report.reportSummary.technicalDetails[status].map((item) => (
+                            <li key={`${status}-${item.engineId}`}>• {item.label}{item.providerId ? ` (${item.providerId})` : ""}{item.reason ? ` — ${item.reason}` : ""}</li>
+                          )) : <li>• None</li>}
+                        </ul>
                       </div>
                     ))}
                   </div>
