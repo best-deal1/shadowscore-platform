@@ -37,7 +37,7 @@ type TrustInsight = {
   evidence: string[];
 };
 type TrustTimelineItem = { title: string; description: string; status: "completed" | "unavailable" | "pending"; evidenceSource: string };
-type DecisionPreview = { decisionLabel: "Safe to proceed" | "Proceed with verification" | "High caution"; confidenceLevel: "Low" | "Medium" | "High"; topReasons: string[]; whatThisMeans: string; recommendedAction: string; limitedPreview: boolean };
+type DecisionPreview = { decision: "PASS" | "REVIEW" | "FAIL"; decisionLabel: "Verified enough to proceed" | "Additional verification recommended" | "Do not proceed"; decisionColor: "green" | "orange" | "red"; verificationScore: number; confidenceScore: number; identityScore: number; infrastructureScore: number; emailSecurityScore: number; reputationScore: number | "pending"; evidenceCoverageScore: number; confidenceLevel: "Low" | "Medium" | "High"; topReasons: string[]; reasons: string[]; missingSignals: string[]; blockingIssues: string[]; whatThisMeans: string; recommendedAction: string; limitedPreview: boolean };
 type IdentityProfile = { identitySummary: string };
 type BusinessNarrativeSection = { id: string; title: string; body: string[] };
 type BusinessNarrative = { decision: string; confidence: string; sections: BusinessNarrativeSection[] };
@@ -1373,11 +1373,15 @@ export default function IntakePage() {
                     {freeScanResult?.decisionPreview ? (
                       <section className="rounded-2xl border border-red-400/25 bg-red-500/[0.07] p-4">
                         <div className="text-xs uppercase tracking-[0.22em] text-red-200">Decision Preview</div>
-                        <div className="mt-3 flex flex-wrap items-center gap-3"><div className="text-2xl font-black text-white">{freeScanResult.decisionPreview.decisionLabel}</div><span className="rounded-full border border-white/10 px-3 py-1 text-xs font-bold text-zinc-300">{freeScanResult.decisionPreview.confidenceLevel} confidence</span></div>
-                        <div className="mt-4 text-sm font-bold text-zinc-200">Why:</div>
-                        <ul className="mt-2 space-y-2 text-sm leading-6 text-zinc-300">{freeScanResult.decisionPreview.topReasons.map((reason) => <li key={reason}>• {reason}</li>)}</ul>
+                        <div className="mt-3 flex flex-wrap items-center gap-3"><div className="text-2xl font-black text-white">{freeScanResult.decisionPreview.decision}: {freeScanResult.decisionPreview.decisionLabel}</div><span className="rounded-full border border-white/10 px-3 py-1 text-xs font-bold text-zinc-300">{freeScanResult.decisionPreview.confidenceLevel} confidence</span></div>
+                        <div className="mt-3 text-5xl font-black text-white">{freeScanResult.decisionPreview.verificationScore}/100</div>
+                        <div className="mt-1 text-xs uppercase tracking-[0.22em] text-zinc-500">Verification score</div>
+                        <div className="mt-4 text-sm font-bold text-zinc-200">Top reasons:</div>
+                        <ul className="mt-2 space-y-2 text-sm leading-6 text-zinc-300">{freeScanResult.decisionPreview.topReasons.slice(0, 3).map((reason) => <li key={reason}>• {reason}</li>)}</ul>
+                        {freeScanResult.decisionPreview.missingSignals.length ? <div className="mt-4 rounded-xl border border-orange-400/20 bg-orange-500/10 p-3 text-sm leading-6 text-orange-100"><span className="font-bold">Missing signals:</span> {freeScanResult.decisionPreview.missingSignals.join(", ")}</div> : null}
                         <p className="mt-4 text-sm leading-6 text-zinc-300"><span className="font-bold text-zinc-100">What this means:</span> {freeScanResult.decisionPreview.whatThisMeans}</p>
                         <p className="mt-2 text-sm leading-6 text-zinc-300"><span className="font-bold text-zinc-100">Recommended action:</span> {freeScanResult.decisionPreview.recommendedAction}</p>
+                        <div className="mt-4 rounded-xl border border-yellow-400/20 bg-yellow-500/10 p-3 text-xs leading-5 text-yellow-100">Locked advanced breakdown: identity {freeScanResult.decisionPreview.identityScore}/100, infrastructure {freeScanResult.decisionPreview.infrastructureScore}/100, email security {freeScanResult.decisionPreview.emailSecurityScore}/100, reputation {freeScanResult.decisionPreview.reputationScore}, evidence coverage {freeScanResult.decisionPreview.evidenceCoverageScore}/100. Full reasoning and provider technical details unlock in the paid report.</div>
                       </section>
                     ) : null}
 

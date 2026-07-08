@@ -1,12 +1,12 @@
 import { buildNarrativeSections } from "./sections";
 import type { BusinessNarrative, NarrativeDecision, NarrativeEvidence, NarrativeFacts, NarrativeInput } from "./types";
 
-function hasDecisionIntelligenceShape(decision: NarrativeDecision): decision is Extract<NarrativeDecision, { decision: string }> {
-  return "decision" in decision;
+function hasDecisionIntelligenceShape(decision: NarrativeDecision): decision is Extract<NarrativeDecision, { recommendation: string }> {
+  return "recommendation" in decision;
 }
 
 function decisionLabel(decision: NarrativeDecision) {
-  return hasDecisionIntelligenceShape(decision) ? decision.decision : decision.decisionLabel;
+  return hasDecisionIntelligenceShape(decision) ? decision.decision : `${decision.decision}: ${decision.decisionLabel}`;
 }
 
 function confidenceLabel(decision: NarrativeDecision) {
@@ -15,7 +15,7 @@ function confidenceLabel(decision: NarrativeDecision) {
 
 function coverageLabel(input: NarrativeInput) {
   if (hasDecisionIntelligenceShape(input.decision)) return input.decision.evidenceCoverage;
-  return input.businessProfile.investigationCoverage;
+  return `${input.decision.evidenceCoverageScore}/100`;
 }
 
 function recommendation(input: NarrativeInput) {
@@ -58,7 +58,7 @@ function businessFriendlyEvidence(item: NarrativeEvidence) {
 }
 
 function missingEvidence(input: NarrativeInput) {
-  const decisionMissing = hasDecisionIntelligenceShape(input.decision) ? input.decision.missingEvidence : [];
+  const decisionMissing = hasDecisionIntelligenceShape(input.decision) ? input.decision.missingEvidence : input.decision.missingSignals;
   return Array.from(new Set([...input.businessProfile.missingEvidence, ...decisionMissing, ...input.businessProfile.warningSignals]));
 }
 
@@ -83,7 +83,7 @@ function buildFacts(input: NarrativeInput): NarrativeFacts {
     relationshipCount: input.knowledgeGraph.graphSummary.relationshipCount,
     entityCount: input.knowledgeGraph.graphSummary.entityCount,
     stabilitySummary: input.businessMemory?.changeSummary,
-    hasContradictions: input.businessProfile.contradictionSignals.length > 0 || (hasDecisionIntelligenceShape(input.decision) && input.decision.contradictions.length > 0),
+    hasContradictions: input.businessProfile.contradictionSignals.length > 0 || (hasDecisionIntelligenceShape(input.decision) ? input.decision.contradictions.length > 0 : input.decision.blockingIssues.length > 0),
   };
 }
 
