@@ -100,10 +100,10 @@ const SCAN_MODES: Array<{
 
 const ANIMATED_SCAN_STEPS = [
   "Identifying target",
-  "Classifying business",
+  "Classifying input",
   "Collecting public evidence",
   "Building business profile",
-  "Generating decision",
+  "Generating business narrative",
 ];
 
 const WEBSITE_PROVIDER_EXECUTION = [
@@ -1033,7 +1033,7 @@ export default function IntakePage() {
                       resetFreeScan();
                     }}
                     className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white"
-                    placeholder="example.com or Example LLC"
+                    placeholder="https://example.com, company.com, support@company.com, Best Buy, best.deal.best.price (eBay)"
                   />
                 </label>
               </div>
@@ -1267,7 +1267,7 @@ export default function IntakePage() {
               onClick={runFreePreview}
               className="mt-6 block w-full rounded-2xl bg-red-600 px-7 py-5 text-center text-sm font-black uppercase tracking-[0.16em] shadow-[0_0_28px_rgba(220,38,38,0.28)] hover:bg-red-500"
             >
-              {freeScanRunning ? "Running Provider Checks..." : "Analyze Trust"}
+              {freeScanRunning ? "Analyzing..." : "Analyze Now"}
             </button>
 
             {freeScanRunning && (
@@ -1277,7 +1277,7 @@ export default function IntakePage() {
                   {ANIMATED_SCAN_STEPS.map((step, index) => (
                     <div key={step} className="flex items-center gap-3 text-sm text-zinc-300">
                       <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-400" style={{ animationDelay: `${index * 120}ms` }} />
-                      <span>{step}...</span>
+                      <span>✓ {step}</span>
                     </div>
                   ))}
                 </div>
