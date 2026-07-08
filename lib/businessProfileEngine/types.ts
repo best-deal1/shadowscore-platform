@@ -2,7 +2,7 @@ import type { ProviderResult } from "../providers/types";
 
 export type BusinessProfileConfidence = "High" | "Medium" | "Low";
 export type BusinessProfileCoverage = "Complete" | "Partial" | "Limited";
-export type BusinessType = "Marketplace seller" | "Online business" | "Service business" | "Unknown";
+export type BusinessType = "Marketplace seller" | "Online business" | "Service business" | "Insufficient Public Evidence";
 
 export type BusinessEvidenceType =
   | "government_registry"
@@ -16,7 +16,7 @@ export type BusinessEvidenceType =
   | "provider_observation";
 
 export type EvidenceReliability = "Very High" | "High" | "Medium" | "Low";
-export type EvidenceFreshness = "Current" | "Recent" | "Stale" | "Unknown";
+export type EvidenceFreshness = "Current" | "Recent" | "Stale" | "Insufficient Public Evidence";
 
 export type BusinessProfileEngineInput = {
   providerResults?: ProviderResult[];

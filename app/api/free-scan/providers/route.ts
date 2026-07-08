@@ -117,21 +117,21 @@ export async function POST(request: Request) {
       providerResults,
     });
     const insightOutput = buildTrustInsights({ providerResults, riskOutput, audience: "free" });
-    const identityProfile = buildIdentityProfile({ providerResults, insights: insightOutput.insights });
     const generatedAt = new Date().toISOString();
+    const identityProfile = buildIdentityProfile({ providerResults, insights: insightOutput.insights, target: context.target, email: context.email, generatedAt });
     const businessProfile = buildBusinessProfile({ providerResults, target: context.target, generatedAt });
     const knowledgeGraph = new BusinessKnowledgeGraph();
     knowledgeGraph.applyScan({
       scanId: `free-scan-${context.intakeId}`,
       entities: [
-        { type: "Business", value: businessProfile.businessName === "Unknown" ? context.target : businessProfile.businessName },
+        { type: "Business", value: businessProfile.businessName === "Insufficient Public Evidence" ? context.target : businessProfile.businessName },
         { type: "Domain", value: businessProfile.primaryDomain || context.target },
         ...(context.email ? [{ type: "Email" as const, value: context.email }] : []),
       ],
       relationships: [
         {
           type: "OWNS",
-          from: { type: "Business", value: businessProfile.businessName === "Unknown" ? context.target : businessProfile.businessName },
+          from: { type: "Business", value: businessProfile.businessName === "Insufficient Public Evidence" ? context.target : businessProfile.businessName },
           to: { type: "Domain", value: businessProfile.primaryDomain || context.target },
           context: "Business profile domain relationship",
         },

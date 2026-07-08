@@ -71,13 +71,13 @@ function records(result: ProviderResult | undefined, type: string) {
 
 function normalizeDomain(input?: string) {
   const value = clean(input);
-  if (!value) return "Unknown";
+  if (!value) return "Insufficient Public Evidence";
 
   try {
     const parsed = new URL(value.includes("://") ? value : `https://${value}`);
     return parsed.hostname.replace(/^www\./i, "").toLowerCase();
   } catch {
-    return value.replace(/^https?:\/\//i, "").replace(/^www\./i, "").split("/")[0].toLowerCase() || "Unknown";
+    return value.replace(/^https?:\/\//i, "").replace(/^www\./i, "").split("/")[0].toLowerCase() || "Insufficient Public Evidence";
   }
 }
 
@@ -112,7 +112,7 @@ function confidenceFromWeight(weight: number, status: ProviderResult["status"]):
 
 function freshness(result: ProviderResult): EvidenceFreshness {
   const completed = Date.parse(result.completedAt);
-  if (Number.isNaN(completed)) return "Unknown";
+  if (Number.isNaN(completed)) return "Insufficient Public Evidence";
   const ageDays = (Date.now() - completed) / 86_400_000;
   if (ageDays <= 30) return "Current";
   if (ageDays <= 180) return "Recent";
@@ -195,7 +195,7 @@ function businessType(snapshot: BusinessProfileEvidenceSnapshot): BusinessType {
   if (snapshot.evidenceItems.some((item) => item.type === "marketplace_verification")) return "Marketplace seller";
   if (snapshot.hasPublicBusinessEvidence) return "Online business";
   if (snapshot.hasBusinessEmail || snapshot.hasDomainInfrastructure) return "Online business";
-  return "Unknown";
+  return "Insufficient Public Evidence";
 }
 
 function unique(items: Array<string | undefined>) {
@@ -331,11 +331,11 @@ export function buildBusinessProfile(input: BusinessProfileEngineInput): Busines
 
   return {
     engineVersion: BUSINESS_PROFILE_ENGINE_VERSION,
-    generatedAt: input.generatedAt || "Unknown",
-    businessName: snapshot.businessName || "Unknown",
+    generatedAt: input.generatedAt || new Date().toISOString(),
+    businessName: snapshot.businessName || "Insufficient Public Evidence",
     primaryDomain: snapshot.domain,
     businessType: inferredBusinessType,
-    country: snapshot.country || "Unknown",
+    country: snapshot.country || "Insufficient Public Evidence",
     identityConfidence,
     infrastructureConfidence,
     emailConfidence,

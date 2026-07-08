@@ -71,20 +71,20 @@ export async function buildReadyReport(input: {
   const riskEnginePreview = analyzeRisk(engineInput);
   const now = new Date().toISOString();
   const insightOutput = buildTrustInsights({ providerResults, riskOutput: riskEnginePreview, audience: "paid" });
-  const identityProfile = buildIdentityProfile({ providerResults, insights: insightOutput.insights });
+  const identityProfile = buildIdentityProfile({ providerResults, insights: insightOutput.insights, target: intake.target, email: intake.email, generatedAt: now });
   const businessProfile = buildBusinessProfile({ providerResults, target: intake.target, generatedAt: now });
   const knowledgeGraph = new BusinessKnowledgeGraph();
   knowledgeGraph.applyScan({
     scanId: `report-${intake.intakeId}`,
     entities: [
-      { type: "Business", value: businessProfile.businessName === "Unknown" ? intake.target : businessProfile.businessName },
+      { type: "Business", value: businessProfile.businessName === "Insufficient Public Evidence" ? intake.target : businessProfile.businessName },
       { type: "Domain", value: businessProfile.primaryDomain || intake.target },
       ...(intake.email ? [{ type: "Email" as const, value: intake.email }] : []),
     ],
     relationships: [
       {
         type: "OWNS",
-        from: { type: "Business", value: businessProfile.businessName === "Unknown" ? intake.target : businessProfile.businessName },
+        from: { type: "Business", value: businessProfile.businessName === "Insufficient Public Evidence" ? intake.target : businessProfile.businessName },
         to: { type: "Domain", value: businessProfile.primaryDomain || intake.target },
         context: "Business profile domain relationship",
       },
@@ -113,7 +113,7 @@ export async function buildReadyReport(input: {
   const businessMemory = rememberBusinessScan({
     scanId: `report-${intake.intakeId}`,
     identity: {
-      name: businessProfile.businessName === "Unknown" ? intake.target : businessProfile.businessName,
+      name: businessProfile.businessName === "Insufficient Public Evidence" ? intake.target : businessProfile.businessName,
       domain: businessProfile.primaryDomain || intake.target,
       emails: intake.email ? [intake.email] : [],
     },

@@ -26,6 +26,20 @@ function fallbackSection(title: string, body: Array<string | undefined>) {
   return { title, body: body.filter((item): item is string => Boolean(item)) };
 }
 
+
+function FieldDetail({ label, field }: { label: string; field?: { value: string; confidence: string; evidenceSource: string[]; lastVerified: string } }) {
+  if (!field) return null;
+  return (
+    <div className="rounded-2xl border border-white/10 bg-black/35 p-4">
+      <div className="text-[10px] uppercase tracking-[0.22em] text-zinc-500">{label}</div>
+      <div className="mt-2 text-lg font-black text-white">{field.value}</div>
+      <div className="mt-2 text-xs text-red-200">{field.confidence} confidence</div>
+      <div className="mt-2 text-xs leading-5 text-zinc-500">Evidence Source: {field.evidenceSource.length ? field.evidenceSource.join(", ") : "Insufficient Public Evidence"}</div>
+      <div className="mt-1 text-xs leading-5 text-zinc-500">Last Verified: {formatDate(field.lastVerified)}</div>
+    </div>
+  );
+}
+
 function BusinessCard({ title, body }: { title: string; body: string[] }) {
   if (!body.length) return null;
   return (
@@ -91,15 +105,23 @@ export default function ReportPage() {
           <div className="mt-8 rounded-[32px] border border-white/10 bg-black/55 p-8 shadow-[0_0_60px_rgba(120,0,20,0.16)]">
             <section className="rounded-[28px] border border-red-400/20 bg-red-500/[0.06] p-6">
               <div className="text-xs uppercase tracking-[0.28em] text-red-200">Business Identity Card</div>
-              <h1 className="mt-4 text-4xl font-extrabold">{report.target || report.entity}</h1>
-              <p className="mt-4 max-w-3xl text-lg leading-8 text-zinc-300">{report.reportSummary?.identityProfile?.identitySummary || report.reportSummary?.message}</p>
+              <h1 className="mt-4 text-4xl font-extrabold">{report.reportSummary?.identityProfile?.businessIdentity?.businessName.value || report.target || report.entity}</h1>
+              <div className="mt-4 grid gap-3 md:grid-cols-2">
+                <FieldDetail label="Business" field={report.reportSummary?.identityProfile?.businessIdentity?.businessName} />
+                <FieldDetail label="Status" field={{ value: report.reportSummary?.identityProfile?.businessIdentityStatus === "Detected" ? "Likely verified business" : report.reportSummary?.identityProfile?.businessIdentityStatus || "Insufficient Public Evidence", confidence: report.reportSummary?.identityProfile?.identityConfidence || "Low", evidenceSource: ["Public business profile", "DNS", "WHOIS"], lastVerified: report.reportSummary?.identityProfile?.generatedAt || report.readyAt || report.createdAt }} />
+                <FieldDetail label="Industry" field={report.reportSummary?.identityProfile?.businessIdentity?.industry} />
+                <FieldDetail label="Country" field={report.reportSummary?.identityProfile?.businessIdentity?.country} />
+                <FieldDetail label="Public Identity" field={{ value: report.reportSummary?.identityProfile?.businessIdentityStatus || "Insufficient Public Evidence", confidence: report.reportSummary?.identityProfile?.identityConfidence || "Low", evidenceSource: ["Evidence Confidence Matrix"], lastVerified: report.reportSummary?.identityProfile?.generatedAt || report.readyAt || report.createdAt }} />
+                <FieldDetail label="Evidence Coverage" field={{ value: report.reportSummary?.identityProfile?.businessIdentity?.evidenceCoverage.label || "0 of 11 sources", confidence: report.reportSummary?.identityProfile?.businessIdentityStatus || "Insufficient Public Evidence", evidenceSource: ["Evidence Confidence Matrix"], lastVerified: report.reportSummary?.identityProfile?.generatedAt || report.readyAt || report.createdAt }} />
+              </div>
+              <p className="mt-4 max-w-3xl text-lg leading-8 text-zinc-300"><span className="font-bold text-white">Recommendation:</span> {report.reportSummary?.identityProfile?.businessIdentityStatus === "Detected" ? "Business identity appears consistent. Verify ownership for high-value transactions." : report.reportSummary?.identityProfile?.identitySummary || report.reportSummary?.message}</p>
               {report.reportSummary?.execution ? (
                 <div className="mt-6 grid gap-3 md:grid-cols-4">
                   {[
                     ["Execution", `${report.reportSummary.execution.completedInSeconds} seconds`],
                     ["Providers executed", String(report.reportSummary.execution.providersExecuted)],
                     ["Evidence collected", String(report.reportSummary.execution.evidenceCollected)],
-                    ["Decision confidence", report.reportSummary.execution.decisionConfidence || "Unknown"],
+                    ["Decision confidence", report.reportSummary.execution.decisionConfidence || "Insufficient Public Evidence"],
                   ].map(([label, value]) => (
                     <div key={label} className="rounded-2xl border border-white/10 bg-black/35 p-4">
                       <div className="text-[10px] uppercase tracking-[0.22em] text-zinc-500">{label}</div>
@@ -138,11 +160,11 @@ export default function ReportPage() {
               {[
                 ["Report ID", report.reportId],
                 ["Target", report.target || report.entity],
-                ["Scan mode", report.scanMode || "Unknown"],
+                ["Scan mode", report.scanMode || "Insufficient Public Evidence"],
                 ["Ready at", formatDate(report.readyAt)],
                 ["Payment status", report.paymentStatus || "paid"],
                 ["Report status", report.reportStatus],
-                ["Engine version", report.engineVersion || "Unknown"],
+                ["Engine version", report.engineVersion || "Insufficient Public Evidence"],
                 ["Primary domain", report.reportSummary?.businessNarrative?.primaryDomain || report.reportSummary?.primaryRiskDomain || "Pending"],
               ].map(([label, value]) => (
                 <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
@@ -182,6 +204,21 @@ export default function ReportPage() {
             ) : null}
             <details className="mt-8 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
               <summary className="cursor-pointer text-xs uppercase tracking-[0.28em] text-red-300">Technical Details</summary>
+              {report.reportSummary?.identityProfile?.businessIdentity?.evidenceConfidenceMatrix.length ? (
+                <section className="mt-5 rounded-2xl border border-white/10 bg-black/40 p-5">
+                  <div className="text-xs uppercase tracking-[0.28em] text-zinc-400">Business Identity Evidence Confidence Matrix</div>
+                  <div className="mt-4 grid gap-3">
+                    {report.reportSummary.identityProfile.businessIdentity?.evidenceConfidenceMatrix.map((row) => (
+                      <div key={row.field} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-zinc-300">
+                        <div className="font-black text-white">{row.field}: {row.value}</div>
+                        <div className="mt-2 text-xs text-red-200">{row.confidence}</div>
+                        <div className="mt-2 text-xs text-zinc-500">Detected from: {row.detectedFrom.length ? row.detectedFrom.join(", ") : "Insufficient Public Evidence"}</div>
+                        <div className="mt-2 text-xs text-zinc-500">Last Verified: {formatDate(row.lastVerified)}</div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
               {evidenceUsed?.body.length ? (
                 <section className="mt-5 rounded-2xl border border-white/10 bg-black/40 p-5">
                   <div className="text-xs uppercase tracking-[0.28em] text-zinc-400">Evidence Used</div>
