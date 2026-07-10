@@ -27,15 +27,12 @@ function fallbackSection(title: string, body: Array<string | undefined>) {
 }
 
 
-function FieldDetail({ label, field }: { label: string; field?: { value: string; confidence: string; evidenceSource: string[]; lastVerified: string } }) {
-  if (!field) return null;
+function FieldDetail({ label, value }: { label: string; value?: string }) {
+  if (!value) return null;
   return (
     <div className="rounded-2xl border border-white/10 bg-black/35 p-4">
       <div className="text-[10px] uppercase tracking-[0.22em] text-zinc-500">{label}</div>
-      <div className="mt-2 text-lg font-black text-white">{field.value}</div>
-      <div className="mt-2 text-xs text-red-200">{field.confidence} confidence</div>
-      <div className="mt-2 text-xs leading-5 text-zinc-500">Evidence Source: {field.evidenceSource.length ? field.evidenceSource.join(", ") : "Not verified"}</div>
-      <div className="mt-1 text-xs leading-5 text-zinc-500">Last Verified: {formatDate(field.lastVerified)}</div>
+      <div className="mt-2 text-lg font-black text-white">{value}</div>
     </div>
   );
 }
@@ -68,12 +65,10 @@ function DecisionCard({ report }: { report: ShadowScoreReport }) {
           <div className="text-5xl font-black tracking-tight">{decision}</div>
           <p className="mt-3 max-w-2xl text-base font-bold opacity-90">{(report.reportSummary?.decision?.decisionLabel === "Do not proceed" ? "Verified negative indicators detected" : report.reportSummary?.decision?.decisionLabel) || report.reportSummary?.businessNarrative?.decision || "Review available evidence"}</p>
         </div>
-        {report.reportSummary?.decision?.verificationScore ? (
-          <div className="rounded-2xl border border-white/15 bg-black/20 px-5 py-4 text-right">
-            <div className="text-3xl font-black">{report.reportSummary.decision.verificationScore}/100</div>
-            <div className="text-xs font-bold uppercase tracking-[0.2em] opacity-70">Confidence</div>
-          </div>
-        ) : null}
+        <div className="rounded-2xl border border-white/15 bg-black/20 px-5 py-4 text-right">
+          <div className="text-sm font-black uppercase tracking-[0.18em]">Paid executive report</div>
+          <div className="mt-2 text-xs font-bold opacity-75">Decision, rationale, next action and appendix included</div>
+        </div>
       </div>
     </section>
   );
@@ -133,90 +128,102 @@ export default function ReportPage() {
             <DecisionCard report={report} />
 
             <section className="mt-8 rounded-[28px] border border-red-400/20 bg-red-500/[0.06] p-6">
-              <div className="text-xs uppercase tracking-[0.28em] text-red-200">Business Identity</div>
+              <div className="text-xs uppercase tracking-[0.28em] text-red-200">Executive brief</div>
               <h1 className="mt-4 text-4xl font-extrabold">{report.reportSummary?.identityProfile?.businessIdentity?.businessName.value || report.target || report.entity}</h1>
-              <div className="mt-4 grid gap-3 md:grid-cols-2">
-                <FieldDetail label="Business" field={report.reportSummary?.identityProfile?.businessIdentity?.businessName} />
-                <FieldDetail label="Status" field={{ value: report.reportSummary?.identityProfile?.businessIdentityStatus === "Detected" ? "Likely verified business" : report.reportSummary?.identityProfile?.businessIdentityStatus || "Not verified", confidence: report.reportSummary?.identityProfile?.identityConfidence || "Low", evidenceSource: ["Public business profile", "DNS", "WHOIS"], lastVerified: report.reportSummary?.identityProfile?.generatedAt || report.readyAt || report.createdAt }} />
-                <FieldDetail label="Industry" field={report.reportSummary?.identityProfile?.businessIdentity?.industry} />
-                <FieldDetail label="Country" field={report.reportSummary?.identityProfile?.businessIdentity?.country} />
-                <FieldDetail label="Public Identity" field={{ value: report.reportSummary?.identityProfile?.businessIdentityStatus || "Not verified", confidence: report.reportSummary?.identityProfile?.identityConfidence || "Low", evidenceSource: ["Evidence Confidence Matrix"], lastVerified: report.reportSummary?.identityProfile?.generatedAt || report.readyAt || report.createdAt }} />
-                <FieldDetail label="Evidence Coverage" field={{ value: report.reportSummary?.identityProfile?.businessIdentity?.evidenceCoverage.label || "0 of 11 sources", confidence: report.reportSummary?.identityProfile?.businessIdentityStatus || "Not verified", evidenceSource: ["Evidence Confidence Matrix"], lastVerified: report.reportSummary?.identityProfile?.generatedAt || report.readyAt || report.createdAt }} />
+              <p className="mt-4 max-w-3xl text-lg leading-8 text-zinc-200">
+                <span className="font-bold text-white">Commercial answer:</span> {(report.reportSummary?.decision?.recommendedAction || report.reportSummary?.businessNarrative?.decision || "Use the findings below before you proceed.")}
+              </p>
+              <div className="mt-5 grid gap-3 md:grid-cols-3">
+                <FieldDetail label="Business" value={report.reportSummary?.identityProfile?.businessIdentity?.businessName.value || report.target || report.entity} />
+                <FieldDetail label="Status" value={report.reportSummary?.identityProfile?.businessIdentityStatus === "Detected" ? "Public identity found" : report.reportSummary?.identityProfile?.businessIdentityStatus || "Not verified"} />
+                <FieldDetail label="Primary domain" value={report.reportSummary?.businessNarrative?.primaryDomain || report.reportSummary?.primaryRiskDomain || "Not available"} />
               </div>
-              <p className="mt-4 max-w-3xl text-lg leading-8 text-zinc-300"><span className="font-bold text-white">Recommendation:</span> {report.reportSummary?.identityProfile?.businessIdentityStatus === "Detected" ? "Business identity appears consistent. Verify ownership for high-value transactions." : report.reportSummary?.identityProfile?.identitySummary || report.reportSummary?.message}</p>
-              {report.reportSummary?.execution ? (
-                <div className="mt-6 grid gap-3 md:grid-cols-4">
-                  {[
-                    ["Completed in", `${report.reportSummary.execution.completedInSeconds} seconds`],
-                    ["Evidence", String(report.reportSummary.execution.evidenceCollected)],
-                    ["Confidence", report.reportSummary.execution.decisionConfidence || "Not verified"],
-                  ].map(([label, value]) => (
-                    <div key={label} className="rounded-2xl border border-white/10 bg-black/35 p-4">
-                      <div className="text-[10px] uppercase tracking-[0.22em] text-zinc-500">{label}</div>
-                      <div className="mt-2 text-lg font-black text-white">{value}</div>
-                    </div>
-                  ))}
-                </div>
-              ) : null}
             </section>
 
             <section className="mt-8 rounded-[28px] border border-red-400/20 bg-red-500/[0.06] p-6">
-              <div className="text-xs uppercase tracking-[0.28em] text-red-200">Why</div>
-              <div className="mt-4 flex flex-wrap items-center gap-3">
-                <div className="text-3xl font-black text-white">{report.reportSummary?.businessNarrative?.decision || report.reportSummary?.decision?.decisionLabel || "Review available evidence"}</div>
-                {(report.reportSummary?.businessNarrative?.confidence || report.reportSummary?.decision?.confidenceLevel) ? (
-                  <span className="rounded-full border border-white/10 px-3 py-1 text-xs font-bold text-zinc-300">{report.reportSummary?.businessNarrative?.confidence || report.reportSummary?.decision?.confidenceLevel} confidence</span>
-                ) : null}
-              </div>
-              {report.reportSummary?.decision?.recommendedAction ? (
-                <p className="mt-5 text-base leading-7 text-zinc-200"><span className="font-bold text-white">Recommendation:</span> {report.reportSummary.decision.recommendedAction}</p>
-              ) : null}
+              <div className="text-xs uppercase tracking-[0.28em] text-red-200">Board-level rationale</div>
+              <div className="mt-4 text-3xl font-black text-white">{report.reportSummary?.businessNarrative?.decision || report.reportSummary?.decision?.decisionLabel || "Review available evidence"}</div>
               {executiveSummary?.body.length ? (
-                <div className="mt-5 rounded-2xl border border-white/10 bg-black/35 p-5">
-                  <div className="text-xs uppercase tracking-[0.28em] text-zinc-400">Summary</div>
-                  <div className="mt-3 space-y-3 text-sm leading-6 text-zinc-300">
-                    {executiveSummary.body.map((item) => <p key={item}>{item}</p>)}
-                  </div>
+                <div className="mt-5 space-y-3 text-base leading-7 text-zinc-300">
+                  {executiveSummary.body.slice(0, 2).map((item) => <p key={item}>{item}</p>)}
                 </div>
               ) : null}
               <div className="mt-5 grid gap-4 md:grid-cols-3">
-                {narrativeCards.map((section) => <BusinessCard key={section.title} title={section.title} body={section.body} />)}
+                {narrativeCards.map((section) => <BusinessCard key={section.title} title={section.title} body={section.body.slice(0, 2)} />)}
               </div>
             </section>
 
-            <div className="mt-8 grid gap-4 md:grid-cols-2">
-              {[
-                ["Report ID", report.reportId],
-                ["Target", report.target || report.entity],
-                ["Ready at", formatDate(report.readyAt)],
-                ["Primary domain", report.reportSummary?.businessNarrative?.primaryDomain || report.reportSummary?.primaryRiskDomain || "Pending"],
-              ].map(([label, value]) => (
-                <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-                  <div className="text-xs uppercase tracking-[0.28em] text-zinc-500">{label}</div>
-                  <div className="mt-3 break-words text-xl font-bold text-white">{value}</div>
-                </div>
-              ))}
-            </div>
+            <section className="mt-8 rounded-[28px] border border-emerald-400/20 bg-emerald-500/[0.06] p-6">
+              <div className="text-xs uppercase tracking-[0.28em] text-emerald-200">What payment unlocked</div>
+              <h2 className="mt-3 text-2xl font-black text-white">More than the free preview: an action-ready decision pack.</h2>
+              <div className="mt-5 grid gap-3 md:grid-cols-3">
+                {[
+                  ["Executive decision", "A clear proceed / review / do-not-proceed recommendation for commercial action."],
+                  ["Evidence hierarchy", "The supporting source trail is moved into the appendix for auditability without slowing the brief."],
+                  ["Operating next steps", "Practical follow-up actions for payment, onboarding, dispute or supplier decisions."],
+                ].map(([title, body]) => (
+                  <div key={title} className="rounded-2xl border border-white/10 bg-black/35 p-5">
+                    <div className="font-black text-white">{title}</div>
+                    <p className="mt-2 text-sm leading-6 text-zinc-400">{body}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
 
-            {trustTimeline.length ? (
-              <div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-                <div className="text-xs uppercase tracking-[0.28em] text-red-300">Timeline</div>
-                <div className="mt-5 space-y-4">
-                  {trustTimeline.map((item, index) => (
-                    <div key={`${item.title}-${index}`} className="rounded-2xl border border-white/10 bg-black/40 p-5">
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div className="font-black text-white">Step {index + 1}: {item.title}</div>
-                        <span className="rounded-full border border-white/10 px-3 py-1 text-xs font-bold text-zinc-300">{item.status}</span>
-                      </div>
-                      <p className="mt-3 text-sm leading-6 text-zinc-300">{item.description}</p>
-                      <p className="mt-3 text-xs leading-5 text-zinc-500"><span className="text-zinc-400">Evidence source:</span> {item.evidenceSource}</p>
+            <details className="mt-8 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+              <summary className="cursor-pointer text-xs uppercase tracking-[0.28em] text-red-300">Technical Appendix — engineering details</summary>
+              <section className="mt-5 rounded-2xl border border-white/10 bg-black/40 p-5">
+                <div className="text-xs uppercase tracking-[0.28em] text-zinc-400">Report metadata</div>
+                <div className="mt-4 grid gap-3 md:grid-cols-2">
+                  {[
+                    ["Report ID", report.reportId],
+                    ["Target", report.target || report.entity],
+                    ["Ready at", formatDate(report.readyAt)],
+                    ["Created at", formatDate(report.createdAt)],
+                    ["Payment status", report.paymentStatus || "unknown"],
+                    ["Report status", report.reportStatus],
+                  ].map(([label, value]) => (
+                    <div key={label} className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                      <div className="text-[10px] uppercase tracking-[0.22em] text-zinc-500">{label}</div>
+                      <div className="mt-2 break-words text-sm font-bold text-zinc-200">{value}</div>
                     </div>
                   ))}
                 </div>
-              </div>
-            ) : null}
-            <details className="mt-8 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-              <summary className="cursor-pointer text-xs uppercase tracking-[0.28em] text-red-300">Technical Details</summary>
+              </section>
+              {report.reportSummary?.execution ? (
+                <section className="mt-5 rounded-2xl border border-white/10 bg-black/40 p-5">
+                  <div className="text-xs uppercase tracking-[0.28em] text-zinc-400">Execution metrics</div>
+                  <div className="mt-4 grid gap-3 md:grid-cols-3">
+                    {[
+                      ["Completed in", `${report.reportSummary.execution.completedInSeconds} seconds`],
+                      ["Evidence collected", String(report.reportSummary.execution.evidenceCollected)],
+                      ["Decision confidence", report.reportSummary.execution.decisionConfidence || "Not verified"],
+                    ].map(([label, value]) => (
+                      <div key={label} className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                        <div className="text-[10px] uppercase tracking-[0.22em] text-zinc-500">{label}</div>
+                        <div className="mt-2 text-sm font-bold text-zinc-200">{value}</div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+              {trustTimeline.length ? (
+                <section className="mt-5 rounded-2xl border border-white/10 bg-black/40 p-5">
+                  <div className="text-xs uppercase tracking-[0.28em] text-zinc-400">Evidence timeline</div>
+                  <div className="mt-4 space-y-3">
+                    {trustTimeline.map((item, index) => (
+                      <div key={`${item.title}-${index}`} className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div className="font-black text-white">Step {index + 1}: {item.title}</div>
+                          <span className="rounded-full border border-white/10 px-3 py-1 text-xs font-bold text-zinc-300">{item.status}</span>
+                        </div>
+                        <p className="mt-3 text-sm leading-6 text-zinc-300">{item.description}</p>
+                        <p className="mt-3 text-xs leading-5 text-zinc-500"><span className="text-zinc-400">Evidence source:</span> {item.evidenceSource}</p>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
               {report.reportSummary?.identityProfile?.businessIdentity?.evidenceConfidenceMatrix.length ? (
                 <section className="mt-5 rounded-2xl border border-white/10 bg-black/40 p-5">
                   <div className="text-xs uppercase tracking-[0.28em] text-zinc-400">Business Identity Evidence Confidence Matrix</div>
