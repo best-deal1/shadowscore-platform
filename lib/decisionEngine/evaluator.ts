@@ -41,8 +41,18 @@ export function evaluateDecisionEvidence(input: DecisionIntelligenceInput): Deci
 
   return {
     decision,
-    confidenceLevel: decision === "Conflicting evidence detected" ? "Low" : assessment.confidenceLevel,
+    confidenceLevel: decision === "FAIL" ? "Low" : assessment.confidenceLevel,
     evidenceCoverage: assessment.evidenceCoverage,
+    verificationConfidence: assessment.evidenceCompleteness,
+    evidenceCompleteness: assessment.evidenceCompleteness,
+    negativeEvidenceCount: decision === "FAIL" ? input.contradictionSignals.length : assessment.negativeEvidenceCount,
+    positiveEvidenceCount: assessment.positiveEvidenceCount,
+    missingEvidenceCount: assessment.missingEvidenceCount,
+    findings: [
+      ...input.evidenceItems.map((item) => ({ category: "positive" as const, confidence: item.reliabilityWeight, source: item.source, impact: item.label, explanation: String(item.value || item.label) })),
+      ...assessment.missingEvidence.map((item) => ({ category: "missing" as const, confidence: 100, source: "decision-engine", impact: item, explanation: "Missing evidence lowers completeness but is not proof of risk." })),
+      ...input.contradictionSignals.map((signal) => ({ category: "negative" as const, confidence: signal.severity === "high" ? 90 : 70, source: "contradiction-engine", impact: signal.title, explanation: signal.interpretation })),
+    ],
     missingEvidence: assessment.missingEvidence,
     contradictions: input.contradictionSignals,
     reasoning: buildReasoning(input, recommendation),

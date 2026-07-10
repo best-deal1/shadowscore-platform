@@ -1,11 +1,7 @@
 import type { BusinessProfile, BusinessProfileContradictionSignal, BusinessProfileEvidenceItem } from "../businessProfileEngine/types";
 import type { ExecutionPlan } from "../orchestrator/types";
 
-export type DecisionIntelligenceDecision =
-  | "Strong public evidence"
-  | "Limited public evidence"
-  | "Conflicting evidence detected"
-  | "Insufficient evidence";
+export type DecisionIntelligenceDecision = "PASS" | "REVIEW" | "FAIL";
 
 export type DecisionConfidenceLevel = "High" | "Medium" | "Low" | "None";
 
@@ -35,6 +31,12 @@ export type DecisionIntelligenceOutput = {
   decision: DecisionIntelligenceDecision;
   confidenceLevel: DecisionConfidenceLevel;
   evidenceCoverage: DecisionEvidenceCoverage;
+  verificationConfidence: number;
+  evidenceCompleteness: number;
+  negativeEvidenceCount: number;
+  positiveEvidenceCount: number;
+  missingEvidenceCount: number;
+  findings: Array<{ category: "positive" | "missing" | "negative"; confidence: number; source: string; impact: string; explanation: string }>;
   missingEvidence: string[];
   contradictions: ContradictionSignal[];
   reasoning: DecisionReasoningStep[];
@@ -46,6 +48,10 @@ export type EvidenceAssessment = {
   requiredEvidenceCount: number;
   completedRequiredEvidenceCount: number;
   reliableEvidenceCount: number;
+  positiveEvidenceCount: number;
+  missingEvidenceCount: number;
+  negativeEvidenceCount: number;
+  evidenceCompleteness: number;
   evidenceCoverage: DecisionEvidenceCoverage;
   confidenceLevel: DecisionConfidenceLevel;
   missingEvidence: string[];

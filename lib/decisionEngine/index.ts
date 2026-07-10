@@ -7,7 +7,7 @@ import type { TrustTimelineItem } from "../trustTimeline";
 import { buildVerificationDecision } from "./model";
 export type { DecisionColor, ReputationScore, VerificationDecision, VerificationDecisionOutput } from "./model";
 
-export const DECISION_ENGINE_VERSION = "decision-engine-v1";
+export const DECISION_ENGINE_VERSION = "decision-engine-v2";
 
 export type DecisionLabel = "Verified enough to proceed" | "Additional verification recommended" | "Do not proceed";
 export type DecisionConfidence = "Low" | "Medium" | "High";
@@ -43,10 +43,10 @@ export function buildDecision(input: {
     confidenceLevel: model.confidenceScore >= 70 ? "High" : model.confidenceScore >= 40 ? "Medium" : "Low",
     topReasons: model.reasons.slice(0, 3),
     whatThisMeans: model.decision === "PASS"
-      ? "The deterministic verification model found strong infrastructure, usable email or domain evidence, partial identity evidence and no blocking contradiction."
+      ? "Sufficient evidence was collected and no significant negative indicators were detected."
       : model.decision === "REVIEW"
-        ? "The evidence is useful, but missing ownership, registry, reputation or other signals mean additional verification is recommended."
-        : "The deterministic verification model found a blocking issue, failed critical check, known reputation issue or score below the safe threshold.",
+        ? "Additional verification is recommended because public evidence is incomplete. No confirmed negative indicators were detected."
+        : "Confirmed negative indicators require investigation before proceeding.",
     recommendedAction: model.recommendedAction,
     limitedPreview: input.audience === "free",
   };
