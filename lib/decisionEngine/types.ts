@@ -1,3 +1,4 @@
+import type { CorrelationFinding } from "../correlation";
 import type { BusinessProfile, BusinessProfileContradictionSignal, BusinessProfileEvidenceItem } from "../businessProfileEngine/types";
 import type { ExecutionPlan } from "../orchestrator/types";
 
@@ -24,6 +25,7 @@ export type DecisionIntelligenceInput = {
   businessProfile: BusinessProfile;
   executionPlan: ExecutionPlan;
   evidenceItems: EvidenceItem[];
+  correlationFindings?: CorrelationFinding[];
   contradictionSignals: ContradictionSignal[];
 };
 
@@ -38,6 +40,7 @@ export type DecisionIntelligenceOutput = {
   missingEvidenceCount: number;
   findings: Array<{ category: "positive" | "missing" | "negative"; confidence: number; source: string; impact: string; explanation: string }>;
   missingEvidence: string[];
+  correlations: CorrelationFinding[];
   contradictions: ContradictionSignal[];
   reasoning: DecisionReasoningStep[];
   recommendation: string;

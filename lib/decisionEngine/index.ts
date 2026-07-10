@@ -1,5 +1,6 @@
 export * from "./types";
 export { evaluateDecisionEvidence } from "./evaluator";
+import type { CorrelationSummary } from "../correlation";
 import type { EvidenceItem } from "../evidence";
 import type { TrustInsight } from "../insightEngine";
 import type { ProviderResult } from "../providers/types";
@@ -29,6 +30,7 @@ export type DecisionOutput = {
 export function buildDecision(input: {
   providerResults?: ProviderResult[];
   evidenceItems?: EvidenceItem[];
+  correlationSummary?: CorrelationSummary;
   riskOutput?: RiskEngineOutput;
   insights?: TrustInsight[];
   timeline?: TrustTimelineItem[];
