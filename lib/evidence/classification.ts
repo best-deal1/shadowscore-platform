@@ -1,0 +1,11 @@
+import type { ProviderEvidence, ProviderFinding, ProviderResult } from "../providers/types";
+import type { EvidenceCategory, EvidenceStatus, ProviderFindingLike } from "./types";
+
+const NEGATIVE_TERMS = ["confirmed", "verified", "known", "malicious", "phishing", "fraud", "enforcement", "counterfeit", "blocked", "suspended"];
+const MISSING_TERMS = ["missing", "not include", "incomplete", "not observed"];
+
+export function categoryToStatus(category: EvidenceCategory): EvidenceStatus { return category === "Verified" ? "observed" : category === "Missing" ? "missing" : category === "Negative" ? "negative" : category === "Unavailable" ? "unavailable" : "not_checked"; }
+export function classifyProviderEvidence(evidence: ProviderEvidence): EvidenceCategory { const text = `${evidence.id} ${evidence.label} ${evidence.value || ""}`.toLowerCase(); if (evidence.type === "placeholder") return "Not Checked"; if (!evidence.value || evidence.value.toLowerCase() === "unavailable") return "Unavailable"; if (MISSING_TERMS.some((term) => text.includes(term))) return "Missing"; return "Verified"; }
+export function classifyProviderFinding(finding: ProviderFindingLike): EvidenceCategory { const text = `${finding.id} ${finding.title} ${finding.description}`.toLowerCase(); if ((finding.severity === "critical" || finding.severity === "high") && NEGATIVE_TERMS.some((term) => text.includes(term))) return "Negative"; if (MISSING_TERMS.some((term) => text.includes(term))) return "Missing"; return "Verified"; }
+export function classifyProviderResult(result: ProviderResult): EvidenceCategory { if (result.status === "failed") return "Unavailable"; if (result.status === "skipped") return "Not Checked"; if (result.metadata.integrationStatus === "not_connected" || result.metadata.lookupPerformed === false) return "Not Checked"; return "Verified"; }
+export function confidenceFor(category: EvidenceCategory, result?: ProviderResult, severity?: ProviderFinding["severity"]) { if (category === "Negative") return severity === "critical" ? 95 : severity === "high" ? 90 : 75; if (category === "Verified") return result?.status === "completed" ? 85 : 65; return 100; }

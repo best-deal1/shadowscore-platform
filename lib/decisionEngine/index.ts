@@ -1,5 +1,6 @@
 export * from "./types";
 export { evaluateDecisionEvidence } from "./evaluator";
+import type { EvidenceItem } from "../evidence";
 import type { TrustInsight } from "../insightEngine";
 import type { ProviderResult } from "../providers/types";
 import type { RiskEngineOutput } from "../riskEngine";
@@ -27,6 +28,7 @@ export type DecisionOutput = {
 
 export function buildDecision(input: {
   providerResults?: ProviderResult[];
+  evidenceItems?: EvidenceItem[];
   riskOutput?: RiskEngineOutput;
   insights?: TrustInsight[];
   timeline?: TrustTimelineItem[];
