@@ -1,5 +1,7 @@
 import type { TrustInsight } from "../insightEngine";
 import type { EvidenceItem } from "../evidence";
+import { correlateEvidence } from "../correlation";
+import type { CorrelationSummary } from "../correlation";
 import { buildEvidenceItems } from "../evidence";
 import type { ProviderResult } from "../providers/types";
 import type { RiskEngineOutput, RiskSeverity } from "../riskEngine";
@@ -68,6 +70,7 @@ function unique(items: string[]) {
 export function buildVerificationDecision(input: {
   providerResults?: ProviderResult[];
   evidenceItems?: EvidenceItem[];
+  correlationSummary?: CorrelationSummary;
   riskOutput?: RiskEngineOutput;
   insights?: TrustInsight[];
   timeline?: TrustTimelineItem[];
@@ -75,6 +78,8 @@ export function buildVerificationDecision(input: {
 }): VerificationDecisionOutput {
   const providerResults = input.providerResults || [];
   const evidenceItems = input.evidenceItems || buildEvidenceItems(providerResults);
+  const correlationSummary = input.correlationSummary || correlateEvidence({ evidenceItems });
+  const correlationContradictions = correlationSummary.contradictions;
   const insights = input.insights || [];
   const timeline = input.timeline || [];
   const dns = provider("dns", providerResults);
@@ -132,11 +137,32 @@ export function buildVerificationDecision(input: {
     explanation: item.businessImpact,
   }));
 
-  const missingSignals = unique(missingFindings.map((finding) => finding.impact));
-  const blockingIssues = unique(negativeFindings.map((finding) => finding.impact));
-  const positiveEvidenceCount = positiveFindings.length;
-  const missingEvidenceCount = missingFindings.length;
-  const negativeEvidenceCount = negativeFindings.length;
+  const correlationNegativeFindings: DecisionFinding[] = correlationContradictions.map((item) => ({
+    category: "negative",
+    confidence: item.severity === "critical" ? 95 : item.severity === "high" ? 90 : 75,
+    source: "correlation-intelligence",
+    impact: item.title,
+    explanation: item.explanation,
+  }));
+  const positiveCorrelationFindings: DecisionFinding[] = correlationSummary.verifiedRelationships.map((item) => ({
+    category: "positive",
+    confidence: item.confidence,
+    source: "correlation-intelligence",
+    impact: item.title,
+    explanation: item.explanation,
+  }));
+  const missingCorrelationFindings: DecisionFinding[] = [...correlationSummary.missingRelationships, ...correlationSummary.unresolvedRelationships].map((item) => ({
+    category: "missing",
+    confidence: item.confidence,
+    source: "correlation-intelligence",
+    impact: item.title,
+    explanation: item.explanation,
+  }));
+  const missingSignals = unique([...missingFindings, ...missingCorrelationFindings].map((finding) => finding.impact));
+  const blockingIssues = unique([...negativeFindings, ...correlationNegativeFindings].map((finding) => finding.impact));
+  const positiveEvidenceCount = positiveFindings.length + positiveCorrelationFindings.length;
+  const missingEvidenceCount = missingFindings.length + missingCorrelationFindings.length;
+  const negativeEvidenceCount = negativeFindings.length + correlationNegativeFindings.length;
 
   let decision: VerificationDecision = "REVIEW";
   if (negativeEvidenceCount > 0) decision = "FAIL";
@@ -168,7 +194,7 @@ export function buildVerificationDecision(input: {
     negativeEvidenceCount,
     positiveEvidenceCount,
     missingEvidenceCount,
-    findings: [...positiveFindings, ...missingFindings, ...negativeFindings],
+    findings: [...positiveFindings, ...positiveCorrelationFindings, ...missingFindings, ...missingCorrelationFindings, ...negativeFindings, ...correlationNegativeFindings],
     reasons,
     missingSignals,
     blockingIssues,

@@ -1,3 +1,4 @@
+import { correlateEvidence } from "./correlation";
 import { buildDecision, evaluateDecisionEvidence } from "./decisionEngine";
 import { buildEvidenceItems, summarizeEvidence } from "./evidence";
 import { rememberBusinessScan } from "./businessMemory";
@@ -58,6 +59,7 @@ export async function buildReadyReport(input: {
       .filter((record) => record.status === "pending" || record.status === "skipped")
       .map((record) => ({ providerId: record.providerId || record.engineId, reason: record.reason || "Provider was not checked in this execution plan." })),
   });
+  const correlationSummary = correlateEvidence({ evidenceItems });
   const providerCategories = Object.fromEntries(providerManager.listProviders().map((provider) => [provider.id, provider.category]));
   const canonicalEvidenceSummary = summarizeEvidence(evidenceItems, providerCategories);
   executionRecords
@@ -108,6 +110,7 @@ export async function buildReadyReport(input: {
   const decision = buildDecision({
     providerResults,
     evidenceItems,
+    correlationSummary,
     riskOutput: riskEnginePreview,
     insights: insightOutput.insights,
     timeline: trustTimeline,
@@ -117,6 +120,7 @@ export async function buildReadyReport(input: {
     businessProfile,
     executionPlan,
     evidenceItems: businessProfile.evidenceItems,
+    correlationFindings: correlationSummary.findings,
     contradictionSignals: businessProfile.contradictionSignals,
   });
   executionFlow.push("✓ Decision generated");
@@ -175,6 +179,7 @@ export async function buildReadyReport(input: {
       insights: insightOutput.insights,
       insightEngineVersion: insightOutput.engineVersion,
       decision,
+      correlationSummary,
       identityProfile,
       businessNarrative,
       execution: {
