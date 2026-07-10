@@ -1280,7 +1280,7 @@ export default function IntakePage() {
                     <div className="rounded-2xl border border-white/10 bg-black/50 p-5">
                       <div className="text-xs uppercase tracking-[0.22em] text-zinc-500">Preview Status</div>
                       <div className="mt-2 text-xl font-black text-emerald-200">Ready</div>
-                      <p className="mt-2 text-xs leading-5 text-zinc-500">Full evidence hierarchy unlocks after payment.</p>
+                      <p className="mt-2 text-xs leading-5 text-zinc-500">Free preview shows direction only. Paid report unlocks the decision pack.</p>
                     </div>
                     <div className="rounded-2xl border border-white/10 bg-black/50 p-5">
                       <div className="text-xs uppercase tracking-[0.22em] text-zinc-500">Investigation</div>
@@ -1290,7 +1290,7 @@ export default function IntakePage() {
                     <div className="rounded-2xl border border-white/10 bg-black/50 p-5">
                       <div className="text-xs uppercase tracking-[0.22em] text-zinc-500">Report</div>
                       <div className="mt-2 text-xl font-black text-red-100">Locked</div>
-                      <p className="mt-2 text-xs leading-5 text-zinc-500">Generated only after payment succeeds.</p>
+                      <p className="mt-2 text-xs leading-5 text-zinc-500">Executive recommendation, source trail and action plan unlock after payment.</p>
                     </div>
                   </div>
                   {freeScanResult?.identityProfile?.identitySummary ? (
@@ -1306,7 +1306,6 @@ export default function IntakePage() {
                     <div className="text-xs uppercase tracking-[0.22em] text-red-300">Evidence Summary</div>
                     <div className="mt-4 flex flex-wrap items-center gap-3">
                       <div className="text-2xl font-black text-white">{freeScanResult.businessNarrative.decision}</div>
-                      <span className="rounded-full border border-white/10 px-3 py-1 text-xs font-bold text-zinc-300">{freeScanResult.businessNarrative.confidence} confidence</span>
                     </div>
                     {freeScanResult.decisionPreview?.recommendedAction ? (
                       <p className="mt-4 text-sm leading-6 text-zinc-200"><span className="font-bold text-white">Recommendation:</span> {freeScanResult.decisionPreview.recommendedAction}</p>
@@ -1331,19 +1330,22 @@ export default function IntakePage() {
                 ) : null}
 
                 <section className="rounded-[28px] border border-yellow-400/20 bg-yellow-500/10 p-6 text-sm leading-7 text-yellow-100">
-                  <div className="text-xs uppercase tracking-[0.22em] text-yellow-200">Recommendation</div>
-                  <p className="mt-4">Preview ready. Unlock the full report for the complete evidence hierarchy and next steps.</p>
+                  <div className="text-xs uppercase tracking-[0.22em] text-yellow-200">Why unlock?</div>
+                  <p className="mt-4 text-base font-bold text-white">The free preview is a direction check. The paid report is the executive decision product.</p>
+                  <div className="mt-4 grid gap-3 md:grid-cols-3">
+                    {["Final commercial recommendation", "Source-backed appendix", "Action plan for next steps"].map((item) => <div key={item} className="rounded-2xl border border-white/10 bg-black/30 p-4 text-sm font-bold text-yellow-50">✓ {item}</div>)}
+                  </div>
                   <div className="mt-5 rounded-2xl border border-white/10 bg-black/30 p-5">
                     <label>
                       <div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">Email for full report</div>
                       <input value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white" placeholder="you@example.com" />
                     </label>
                     <div className="mt-5 grid gap-3 md:grid-cols-2">
-                      <button type="button" onClick={saveLead} className="rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-4 text-sm font-bold text-white hover:border-red-400/30">Save Report</button>
+                      <button type="button" onClick={saveLead} className="rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-4 text-sm font-bold text-white hover:border-red-400/30">Save Investigation</button>
                       <PaymentButtons planName="Downloadable Trust Intelligence Report" price="$9.90" buttonLabel="Unlock Full Report - $9.90" intakeId={intake?.intakeId} />
                     </div>
                   </div>
-                  {leadSaved && <div className="mt-4 rounded-2xl border border-emerald-400/25 bg-emerald-500/10 p-4 text-sm text-emerald-100">Intake record created with reportStatus=preview. Checkout will create a payment intent and locked placeholder only.</div>}
+                  {leadSaved && <div className="mt-4 rounded-2xl border border-emerald-400/25 bg-emerald-500/10 p-4 text-sm text-emerald-100">Investigation saved. Your full executive report remains locked until payment is confirmed.</div>}
                 </section>
 
                 <details className="rounded-[28px] border border-white/10 bg-black/50 p-6" open={false}>
