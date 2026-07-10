@@ -50,14 +50,22 @@ export function assessEvidence(input: { businessProfile: BusinessProfile; execut
     .map((step) => ENGINE_EVIDENCE_LABELS[step.engineId] ?? `${step.label} evidence`);
   const missingEvidence = Array.from(new Set([...profileMissing, ...missingFromPlan, ...requiredLabels.filter((label) => input.evidenceItems.length === 0 && label)]));
   const reliableEvidenceCount = input.evidenceItems.filter(isReliable).length;
+  const positiveEvidenceCount = reliableEvidenceCount;
+  const missingEvidenceCount = missingEvidence.length;
+  const negativeEvidenceCount = 0;
   const completedRequiredEvidenceCount = Math.max(0, requiredSteps.length - missingFromPlan.length);
   const requiredEvidenceCount = Math.max(requiredSteps.length, 1);
   const evidenceCoverage = coverageFrom(completedRequiredEvidenceCount, requiredEvidenceCount, reliableEvidenceCount);
+  const evidenceCompleteness = Math.max(0, Math.min(100, Math.round((completedRequiredEvidenceCount / requiredEvidenceCount) * 100)));
 
   return {
     requiredEvidenceCount,
     completedRequiredEvidenceCount,
     reliableEvidenceCount,
+    positiveEvidenceCount,
+    missingEvidenceCount,
+    negativeEvidenceCount,
+    evidenceCompleteness,
     evidenceCoverage,
     confidenceLevel: confidenceFrom(evidenceCoverage),
     missingEvidence,

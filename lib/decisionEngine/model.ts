@@ -1,23 +1,38 @@
 import type { TrustInsight } from "../insightEngine";
-import type { ProviderResult } from "../providers/types";
-import type { RiskEngineOutput, RiskSeverity } from "../riskEngine";
+import type { ProviderFinding, ProviderResult } from "../providers/types";
+import type { RiskEngineOutput, RiskFinding, RiskSeverity } from "../riskEngine";
 import type { TrustTimelineItem } from "../trustTimeline";
 
 export type VerificationDecision = "PASS" | "REVIEW" | "FAIL";
 export type DecisionColor = "green" | "orange" | "red";
 export type ReputationScore = number | "pending";
+export type DecisionFindingCategory = "positive" | "missing" | "negative";
+
+export type DecisionFinding = {
+  category: DecisionFindingCategory;
+  confidence: number;
+  source: string;
+  impact: string;
+  explanation: string;
+};
 
 export type VerificationDecisionOutput = {
   decision: VerificationDecision;
   decisionLabel: "Verified enough to proceed" | "Additional verification recommended" | "Do not proceed";
   decisionColor: DecisionColor;
   verificationScore: number;
+  verificationConfidence: number;
   identityScore: number;
   infrastructureScore: number;
   emailSecurityScore: number;
   reputationScore: ReputationScore;
   evidenceCoverageScore: number;
+  evidenceCompleteness: number;
   confidenceScore: number;
+  negativeEvidenceCount: number;
+  positiveEvidenceCount: number;
+  missingEvidenceCount: number;
+  findings: DecisionFinding[];
   reasons: string[];
   missingSignals: string[];
   blockingIssues: string[];
@@ -48,6 +63,25 @@ function unique(items: string[]) {
   return Array.from(new Set(items.filter((item) => item.trim().length > 0)));
 }
 
+function severityConfidence(severity: ProviderFinding["severity"] | RiskFinding["severity"]) {
+  if (severity === "critical" || severity === "Critical") return 95;
+  if (severity === "high" || severity === "High") return 90;
+  if (severity === "medium" || severity === "Medium") return 75;
+  return 55;
+}
+
+function isVerifiedNegativeFinding(finding: ProviderFinding) {
+  const text = `${finding.id} ${finding.title} ${finding.description}`.toLowerCase();
+  const verifiedTerms = ["confirmed", "verified", "known", "deterministic", "malicious", "phishing", "fraud", "enforcement", "blocking", "contradiction", "reputation"];
+  return (finding.severity === "critical" || finding.severity === "high") && verifiedTerms.some((term) => text.includes(term));
+}
+
+function isVerifiedNegativeRisk(finding: RiskFinding) {
+  const text = `${finding.id} ${finding.domain} ${finding.title} ${finding.explanation}`.toLowerCase();
+  const verifiedTerms = ["confirmed", "verified", "known", "deterministic", "malicious", "phishing", "fraud", "enforcement", "blocking", "contradiction", "reputation"];
+  return (finding.severity === "Critical" || finding.severity === "High") && verifiedTerms.some((term) => text.includes(term));
+}
+
 export function buildVerificationDecision(input: {
   providerResults?: ProviderResult[];
   riskOutput?: RiskEngineOutput;
@@ -74,46 +108,74 @@ export function buildVerificationDecision(input: {
   const hasMarketplaceEvidence = marketplace?.status === "completed" && (marketplace.evidence.length > 0 || marketplace.findings.length > 0);
   const completedProviders = providerResults.filter((result) => result.status === "completed").length;
   const attemptedProviders = providerResults.length;
-  const highProviderFindings = providerResults.flatMap((result) => result.findings).filter((finding) => finding.severity === "high" || finding.severity === "critical");
-  const highInsight = insights.some((insight) => insight.riskLevel === "High");
-  const highRisk = hasRiskSeverity(input.riskOutput, ["High", "Critical"]);
-  const failedCriticalChecks = providerResults.some((result) => ["dns", "whois"].includes(result.providerId) && result.status === "failed");
-  const knownReputationIssue = reputation?.findings.some((finding) => finding.severity === "high" || finding.severity === "critical") || input.riskOutput?.primaryRiskDomain === "Reputation Risk" && highRisk;
-  const hasContradiction = highProviderFindings.length > 0 || highInsight || highRisk;
 
+  const negativeFindings = [
+    ...providerResults.flatMap((result) => result.findings.filter(isVerifiedNegativeFinding).map((finding) => ({
+      category: "negative" as const,
+      confidence: severityConfidence(finding.severity),
+      source: result.providerId,
+      impact: finding.title,
+      explanation: finding.description,
+    }))),
+    ...(input.riskOutput?.findings.filter(isVerifiedNegativeRisk).map((finding) => ({
+      category: "negative" as const,
+      confidence: severityConfidence(finding.severity),
+      source: finding.domain,
+      impact: finding.title,
+      explanation: finding.explanation,
+    })) || []),
+  ];
+
+  const highRisk = hasRiskSeverity(input.riskOutput, ["High", "Critical"]);
   const infrastructureScore = clamp((hasDnsInfrastructure ? 55 : 0) + (ns.length > 0 ? 25 : 0) + (a.length > 0 ? 20 : 0));
   const emailSecurityScore = clamp((hasEmailRouting ? 40 : 0) + (hasSpf ? 30 : 0) + (hasDmarc ? 30 : 0));
-  const identityScore = clamp((hasRegistrationContext ? 55 : 0) + (hasMarketplaceEvidence ? 25 : 0) + (insights.some((insight) => insight.category === "Identity Insight" && insight.riskLevel !== "Unknown") ? 20 : 0));
-  const reputationScore: ReputationScore = reputation?.status === "completed" || input.riskOutput ? clamp(100 - (knownReputationIssue ? 70 : highRisk ? 45 : 0) - (highInsight ? 20 : 0)) : "pending";
-  const evidenceCoverageScore = clamp((attemptedProviders > 0 ? (completedProviders / attemptedProviders) * 70 : 0) + (timeline.filter((item) => item.status === "completed").length >= 3 ? 15 : 0) + (insights.filter((insight) => insight.evidence.length > 0).length >= 2 ? 15 : 0));
-  const confidenceScore = clamp((identityScore * 0.25) + (infrastructureScore * 0.25) + (emailSecurityScore * 0.2) + (evidenceCoverageScore * 0.2) + ((reputationScore === "pending" ? 45 : reputationScore) * 0.1));
-  const verificationScore = clamp((identityScore * 0.25) + (infrastructureScore * 0.25) + (emailSecurityScore * 0.2) + ((reputationScore === "pending" ? 50 : reputationScore) * 0.15) + (evidenceCoverageScore * 0.15) - (hasContradiction ? 35 : 0) - (failedCriticalChecks ? 25 : 0));
+  const identityScore = clamp((hasRegistrationContext ? 65 : 0) + (hasMarketplaceEvidence ? 25 : 0) + (insights.some((insight) => insight.category === "Identity Insight" && insight.riskLevel !== "Unknown") ? 10 : 0));
+  const knownReputationIssue = negativeFindings.some((finding) => finding.source.toLowerCase().includes("reputation") || finding.impact.toLowerCase().includes("reputation"));
+  const reputationScore: ReputationScore = reputation?.status === "completed" || input.riskOutput ? clamp(100 - (knownReputationIssue ? 70 : highRisk ? 20 : 0)) : "pending";
+  const providerCompleteness = attemptedProviders > 0 ? (completedProviders / attemptedProviders) * 70 : 0;
+  const supportingCompleteness = (timeline.filter((item) => item.status === "completed").length >= 3 ? 15 : 0) + (insights.filter((insight) => insight.evidence.length > 0).length >= 2 ? 15 : 0);
+  const evidenceCompleteness = clamp(providerCompleteness + supportingCompleteness);
+  const evidenceCoverageScore = evidenceCompleteness;
+  const verificationConfidence = clamp((identityScore * 0.25) + (infrastructureScore * 0.25) + (emailSecurityScore * 0.2) + (evidenceCompleteness * 0.2) + ((reputationScore === "pending" ? 50 : reputationScore) * 0.1));
+  const confidenceScore = verificationConfidence;
+  const verificationScore = clamp((identityScore * 0.3) + (infrastructureScore * 0.3) + (emailSecurityScore * 0.2) + ((reputationScore === "pending" ? 50 : reputationScore) * 0.2));
 
-  const missingSignals = unique([
-    !hasRegistrationContext ? "business ownership or registry evidence" : "",
-    reputationScore === "pending" ? "reputation evidence" : "",
-    !hasEmailRouting ? "business email routing" : "",
-    !hasSpf || !hasDmarc ? "email authentication" : "",
-    !hasDnsInfrastructure ? "domain infrastructure" : "",
-  ]);
-  const blockingIssues = unique([
-    hasContradiction ? "high severity contradiction or elevated risk finding" : "",
-    failedCriticalChecks ? "critical provider check failed" : "",
-    knownReputationIssue ? "known reputation issue" : "",
-  ]);
+  const positiveFindings: DecisionFinding[] = [
+    hasDnsInfrastructure ? { category: "positive", confidence: 90, source: "dns", impact: "Domain resolves to public infrastructure.", explanation: "A or nameserver records were observed." } : undefined,
+    hasRegistrationContext ? { category: "positive", confidence: 85, source: "whois", impact: "Registration context is available.", explanation: "WHOIS registration date or domain age was observed." } : undefined,
+    hasEmailRouting ? { category: "positive", confidence: 80, source: "dns", impact: "Business email routing is configured.", explanation: "MX records were observed for the domain." } : undefined,
+    hasSpf || hasDmarc ? { category: "positive", confidence: 80, source: "dns", impact: "Email authentication evidence is present.", explanation: "SPF or DMARC records were observed." } : undefined,
+    reputationScore !== "pending" && reputationScore >= 70 ? { category: "positive", confidence: 80, source: "reputation", impact: "No confirmed reputation issue was detected.", explanation: "Available reputation evidence did not include a verified negative condition." } : undefined,
+    hasMarketplaceEvidence ? { category: "positive", confidence: 75, source: "marketplace", impact: "Marketplace evidence is present.", explanation: "Marketplace provider returned evidence or findings." } : undefined,
+  ].filter((finding): finding is DecisionFinding => Boolean(finding));
+
+  const missingFindings: DecisionFinding[] = [
+    !hasRegistrationContext ? { category: "missing", confidence: 100, source: "whois", impact: "Business ownership or registry evidence is incomplete.", explanation: "Missing registry context lowers confidence but is not negative evidence." } : undefined,
+    reputationScore === "pending" ? { category: "missing", confidence: 100, source: "reputation", impact: "Reputation evidence is unavailable.", explanation: "Unavailable reputation data requires review but does not prove risk." } : undefined,
+    !hasEmailRouting ? { category: "missing", confidence: 100, source: "dns", impact: "Business email routing was not observed.", explanation: "Missing MX evidence lowers completeness but is not negative evidence." } : undefined,
+    !hasSpf || !hasDmarc ? { category: "missing", confidence: 100, source: "dns", impact: "Email authentication evidence is incomplete.", explanation: "Missing SPF or DMARC evidence is a coverage gap, not proof of abuse." } : undefined,
+    !hasDnsInfrastructure ? { category: "missing", confidence: 100, source: "dns", impact: "Domain infrastructure evidence is incomplete.", explanation: "Missing DNS infrastructure prevents a high-confidence pass but is not a fail condition." } : undefined,
+    attemptedProviders === 0 || completedProviders < attemptedProviders ? { category: "missing", confidence: 100, source: "providers", impact: "Provider coverage is incomplete.", explanation: "Incomplete provider execution routes the decision to review unless negative evidence exists." } : undefined,
+  ].filter((finding): finding is DecisionFinding => Boolean(finding));
+
+  const missingSignals = unique(missingFindings.map((finding) => finding.impact));
+  const blockingIssues = unique(negativeFindings.map((finding) => finding.impact));
+  const positiveEvidenceCount = positiveFindings.length;
+  const missingEvidenceCount = missingFindings.length;
+  const negativeEvidenceCount = negativeFindings.length;
 
   let decision: VerificationDecision = "REVIEW";
-  if (blockingIssues.length > 0 || verificationScore < 40) decision = "FAIL";
-  else if (!hasContradiction && infrastructureScore >= 70 && (hasEmailRouting || hasSpf || hasDmarc) && identityScore >= 40 && reputationScore !== "pending" && verificationScore >= 70) decision = "PASS";
+  if (negativeEvidenceCount > 0) decision = "FAIL";
+  else if (positiveEvidenceCount >= 3 && infrastructureScore >= 70 && identityScore >= 60 && verificationConfidence >= 65) decision = "PASS";
 
   const decisionLabel = decision === "PASS" ? "Verified enough to proceed" : decision === "REVIEW" ? "Additional verification recommended" : "Do not proceed";
   const decisionColor = decision === "PASS" ? "green" : decision === "REVIEW" ? "orange" : "red";
   const reasons = unique([
-    `Infrastructure score is ${infrastructureScore}/100 based on DNS and nameserver evidence.`,
-    `Email security score is ${emailSecurityScore}/100 based on MX, SPF and DMARC evidence.`,
-    `Identity score is ${identityScore}/100 based on ownership, registry or marketplace evidence.`,
-    reputationScore === "pending" ? "Reputation evidence is pending." : `Reputation score is ${reputationScore}/100.`,
-    ...blockingIssues.map((issue) => `Blocking issue: ${issue}.`),
+    `Positive evidence count is ${positiveEvidenceCount}.`,
+    `Missing evidence count is ${missingEvidenceCount}; missing evidence does not count as risk.`,
+    `Negative evidence count is ${negativeEvidenceCount}.`,
+    `Verification confidence is ${verificationConfidence}/100 and evidence completeness is ${evidenceCompleteness}/100.`,
+    ...blockingIssues.map((issue) => `Verified negative issue: ${issue}.`),
   ]);
 
   return {
@@ -121,16 +183,26 @@ export function buildVerificationDecision(input: {
     decisionLabel,
     decisionColor,
     verificationScore,
+    verificationConfidence,
     identityScore,
     infrastructureScore,
     emailSecurityScore,
     reputationScore,
     evidenceCoverageScore,
+    evidenceCompleteness,
     confidenceScore,
+    negativeEvidenceCount,
+    positiveEvidenceCount,
+    missingEvidenceCount,
+    findings: [...positiveFindings, ...missingFindings, ...negativeFindings],
     reasons,
     missingSignals,
     blockingIssues,
-    recommendedAction: decision === "PASS" ? "Proceed with normal business steps while keeping identity, email and transaction records documented." : decision === "REVIEW" ? "Request the missing ownership, registry or reputation evidence before a high-value transaction or account dependency." : "Pause high-value activity until blocking issues are resolved and the scan is rerun.",
+    recommendedAction: decision === "PASS"
+      ? "Sufficient evidence was collected and no significant negative indicators were detected."
+      : decision === "REVIEW"
+        ? "Additional verification is recommended because public evidence is incomplete. No confirmed negative indicators were detected."
+        : "Confirmed negative indicators require investigation before proceeding.",
     limitedPreview: input.audience === "free",
   };
 }
