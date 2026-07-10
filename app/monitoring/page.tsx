@@ -38,7 +38,7 @@ export default function MonitoringPage() {
             <h1 className="mt-4 text-5xl font-black tracking-tight">Watchlist monitoring</h1>
             <p className="mt-4 max-w-3xl text-zinc-400">Review every saved business, marketplace, payment provider, website and supplier from your workspace. Add entities from the dashboard and return here for a focused monitoring view.</p>
           </div>
-          <Link href="/dashboard" className="rounded-full bg-red-600 px-5 py-3 text-sm font-black text-white hover:bg-red-500">Manage watchlist</Link>
+          <Link href="/workspace" className="rounded-full bg-red-600 px-5 py-3 text-sm font-black text-white hover:bg-red-500">Manage watchlist</Link>
         </div>
 
         <div className="mt-10 grid gap-4 md:grid-cols-3">

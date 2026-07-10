@@ -66,7 +66,7 @@ export default function AccountPage() {
           </div>
 
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/dashboard" className="rounded-full bg-red-600 px-5 py-3 text-sm font-black text-white hover:bg-red-500">Open Dashboard</Link>
+            <Link href="/workspace" className="rounded-full bg-red-600 px-5 py-3 text-sm font-black text-white hover:bg-red-500">Open Dashboard</Link>
             <button onClick={signOut} className="rounded-full border border-white/10 px-5 py-3 text-sm font-black text-zinc-300 hover:border-red-400/30 hover:text-white">Sign out</button>
           </div>
 

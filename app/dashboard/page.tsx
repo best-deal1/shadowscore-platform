@@ -224,7 +224,7 @@ export default function DashboardPage() {
                   {report.reportStatus === "ready" && (
                     <div className="mt-4 flex flex-wrap gap-3">
                       <Link href={`/report?reportId=${encodeURIComponent(report.reportId)}`} className="rounded-2xl bg-red-600 px-4 py-3 text-xs font-black text-white hover:bg-red-500">View Report</Link>
-                      <button className="rounded-2xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-xs font-black text-emerald-100">Download Report placeholder</button>
+                      <Link href="/reports" className="rounded-2xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-xs font-black text-emerald-100">Open report center</Link>
                     </div>
                   )}
                 </div>

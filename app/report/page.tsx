@@ -34,7 +34,7 @@ function FieldDetail({ label, field }: { label: string; field?: { value: string;
       <div className="text-[10px] uppercase tracking-[0.22em] text-zinc-500">{label}</div>
       <div className="mt-2 text-lg font-black text-white">{field.value}</div>
       <div className="mt-2 text-xs text-red-200">{field.confidence} confidence</div>
-      <div className="mt-2 text-xs leading-5 text-zinc-500">Evidence Source: {field.evidenceSource.length ? field.evidenceSource.join(", ") : "Insufficient Public Evidence"}</div>
+      <div className="mt-2 text-xs leading-5 text-zinc-500">Evidence Source: {field.evidenceSource.length ? field.evidenceSource.join(", ") : "Not verified"}</div>
       <div className="mt-1 text-xs leading-5 text-zinc-500">Last Verified: {formatDate(field.lastVerified)}</div>
     </div>
   );
@@ -53,10 +53,11 @@ function BusinessCard({ title, body }: { title: string; body: string[] }) {
 }
 
 function DecisionCard({ report }: { report: ShadowScoreReport }) {
-  const decision = report.reportSummary?.decision?.decision || (report.reportSummary?.businessNarrative?.decision?.toUpperCase().includes("FAIL") ? "FAIL" : report.reportSummary?.businessNarrative?.decision?.toUpperCase().includes("PASS") ? "PASS" : "REVIEW");
+  const rawDecision = report.reportSummary?.decision?.decision || (report.reportSummary?.businessNarrative?.decision?.toUpperCase().includes("FAIL") ? "FAIL" : report.reportSummary?.businessNarrative?.decision?.toUpperCase().includes("PASS") ? "PASS" : "REVIEW");
+  const decision = rawDecision === "FAIL" ? "CONFIRMED RISK" : rawDecision;
   const tone = decision === "PASS"
     ? "border-emerald-400/35 bg-emerald-500/10 text-emerald-100"
-    : decision === "FAIL"
+    : decision === "CONFIRMED RISK"
       ? "border-red-400/35 bg-red-500/10 text-red-100"
       : "border-orange-400/35 bg-orange-500/10 text-orange-100";
   return (
@@ -65,7 +66,7 @@ function DecisionCard({ report }: { report: ShadowScoreReport }) {
       <div className="mt-4 flex flex-wrap items-end justify-between gap-5">
         <div>
           <div className="text-5xl font-black tracking-tight">{decision}</div>
-          <p className="mt-3 max-w-2xl text-base font-bold opacity-90">{report.reportSummary?.decision?.decisionLabel || report.reportSummary?.businessNarrative?.decision || "Review available evidence"}</p>
+          <p className="mt-3 max-w-2xl text-base font-bold opacity-90">{(report.reportSummary?.decision?.decisionLabel === "Do not proceed" ? "Verified negative indicators detected" : report.reportSummary?.decision?.decisionLabel) || report.reportSummary?.businessNarrative?.decision || "Review available evidence"}</p>
         </div>
         {report.reportSummary?.decision?.verificationScore ? (
           <div className="rounded-2xl border border-white/15 bg-black/20 px-5 py-4 text-right">
@@ -112,7 +113,7 @@ export default function ReportPage() {
   return (
     <ShadowScoreLayout>
       <section className="mx-auto max-w-5xl px-6 py-16">
-        <Link href="/dashboard" className="text-sm font-bold text-red-300 hover:text-red-200">← Back to dashboard</Link>
+        <Link href="/workspace" className="text-sm font-bold text-red-300 hover:text-red-200">← Back to dashboard</Link>
         <div className="mt-8 text-xs uppercase tracking-[0.45em] text-red-300">Private Report</div>
         {!loaded && <p className="mt-6 text-zinc-400">Preparing report...</p>}
         {loaded && !report && (
@@ -136,11 +137,11 @@ export default function ReportPage() {
               <h1 className="mt-4 text-4xl font-extrabold">{report.reportSummary?.identityProfile?.businessIdentity?.businessName.value || report.target || report.entity}</h1>
               <div className="mt-4 grid gap-3 md:grid-cols-2">
                 <FieldDetail label="Business" field={report.reportSummary?.identityProfile?.businessIdentity?.businessName} />
-                <FieldDetail label="Status" field={{ value: report.reportSummary?.identityProfile?.businessIdentityStatus === "Detected" ? "Likely verified business" : report.reportSummary?.identityProfile?.businessIdentityStatus || "Insufficient Public Evidence", confidence: report.reportSummary?.identityProfile?.identityConfidence || "Low", evidenceSource: ["Public business profile", "DNS", "WHOIS"], lastVerified: report.reportSummary?.identityProfile?.generatedAt || report.readyAt || report.createdAt }} />
+                <FieldDetail label="Status" field={{ value: report.reportSummary?.identityProfile?.businessIdentityStatus === "Detected" ? "Likely verified business" : report.reportSummary?.identityProfile?.businessIdentityStatus || "Not verified", confidence: report.reportSummary?.identityProfile?.identityConfidence || "Low", evidenceSource: ["Public business profile", "DNS", "WHOIS"], lastVerified: report.reportSummary?.identityProfile?.generatedAt || report.readyAt || report.createdAt }} />
                 <FieldDetail label="Industry" field={report.reportSummary?.identityProfile?.businessIdentity?.industry} />
                 <FieldDetail label="Country" field={report.reportSummary?.identityProfile?.businessIdentity?.country} />
-                <FieldDetail label="Public Identity" field={{ value: report.reportSummary?.identityProfile?.businessIdentityStatus || "Insufficient Public Evidence", confidence: report.reportSummary?.identityProfile?.identityConfidence || "Low", evidenceSource: ["Evidence Confidence Matrix"], lastVerified: report.reportSummary?.identityProfile?.generatedAt || report.readyAt || report.createdAt }} />
-                <FieldDetail label="Evidence Coverage" field={{ value: report.reportSummary?.identityProfile?.businessIdentity?.evidenceCoverage.label || "0 of 11 sources", confidence: report.reportSummary?.identityProfile?.businessIdentityStatus || "Insufficient Public Evidence", evidenceSource: ["Evidence Confidence Matrix"], lastVerified: report.reportSummary?.identityProfile?.generatedAt || report.readyAt || report.createdAt }} />
+                <FieldDetail label="Public Identity" field={{ value: report.reportSummary?.identityProfile?.businessIdentityStatus || "Not verified", confidence: report.reportSummary?.identityProfile?.identityConfidence || "Low", evidenceSource: ["Evidence Confidence Matrix"], lastVerified: report.reportSummary?.identityProfile?.generatedAt || report.readyAt || report.createdAt }} />
+                <FieldDetail label="Evidence Coverage" field={{ value: report.reportSummary?.identityProfile?.businessIdentity?.evidenceCoverage.label || "0 of 11 sources", confidence: report.reportSummary?.identityProfile?.businessIdentityStatus || "Not verified", evidenceSource: ["Evidence Confidence Matrix"], lastVerified: report.reportSummary?.identityProfile?.generatedAt || report.readyAt || report.createdAt }} />
               </div>
               <p className="mt-4 max-w-3xl text-lg leading-8 text-zinc-300"><span className="font-bold text-white">Recommendation:</span> {report.reportSummary?.identityProfile?.businessIdentityStatus === "Detected" ? "Business identity appears consistent. Verify ownership for high-value transactions." : report.reportSummary?.identityProfile?.identitySummary || report.reportSummary?.message}</p>
               {report.reportSummary?.execution ? (
@@ -148,7 +149,7 @@ export default function ReportPage() {
                   {[
                     ["Completed in", `${report.reportSummary.execution.completedInSeconds} seconds`],
                     ["Evidence", String(report.reportSummary.execution.evidenceCollected)],
-                    ["Confidence", report.reportSummary.execution.decisionConfidence || "Insufficient Public Evidence"],
+                    ["Confidence", report.reportSummary.execution.decisionConfidence || "Not verified"],
                   ].map(([label, value]) => (
                     <div key={label} className="rounded-2xl border border-white/10 bg-black/35 p-4">
                       <div className="text-[10px] uppercase tracking-[0.22em] text-zinc-500">{label}</div>
@@ -224,7 +225,7 @@ export default function ReportPage() {
                       <div key={row.field} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-zinc-300">
                         <div className="font-black text-white">{row.field}: {row.value}</div>
                         <div className="mt-2 text-xs text-red-200">{row.confidence}</div>
-                        <div className="mt-2 text-xs text-zinc-500">Detected from: {row.detectedFrom.length ? row.detectedFrom.join(", ") : "Insufficient Public Evidence"}</div>
+                        <div className="mt-2 text-xs text-zinc-500">Detected from: {row.detectedFrom.length ? row.detectedFrom.join(", ") : "Not verified"}</div>
                         <div className="mt-2 text-xs text-zinc-500">Last Verified: {formatDate(row.lastVerified)}</div>
                       </div>
                     ))}
@@ -259,7 +260,7 @@ export default function ReportPage() {
               ) : null}
               {report.reportSummary?.technicalDetails ? (
                 <section className="mt-5 rounded-2xl border border-white/10 bg-black/40 p-5">
-                  <div className="text-xs uppercase tracking-[0.28em] text-zinc-400">Developer Execution Status</div>
+                  <div className="text-xs uppercase tracking-[0.28em] text-zinc-400">Provider status</div>
                   <div className="mt-4 grid gap-4 md:grid-cols-2">
                     {(["executed", "skipped", "pending", "failed"] as const).map((status) => (
                       <div key={status} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
@@ -276,7 +277,7 @@ export default function ReportPage() {
               ) : null}
               <pre className="mt-4 overflow-x-auto text-xs leading-6 text-zinc-400">{JSON.stringify(report.providerResults || [], null, 2)}</pre>
             </details>
-            <button className="mt-8 rounded-2xl border border-emerald-400/30 bg-emerald-500/10 px-5 py-4 text-sm font-black text-emerald-100">Download Report placeholder</button>
+            <Link href="/reports" className="mt-8 inline-flex rounded-2xl border border-emerald-400/30 bg-emerald-500/10 px-5 py-4 text-sm font-black text-emerald-100">Back to reports</Link>
           </div>
         )}
       </section>
