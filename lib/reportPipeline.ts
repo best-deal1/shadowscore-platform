@@ -1,4 +1,5 @@
 import { buildDecision, evaluateDecisionEvidence } from "./decisionEngine";
+import { buildEvidenceItems, summarizeEvidence } from "./evidence";
 import { rememberBusinessScan } from "./businessMemory";
 import { classifyTarget } from "./targetClassifier";
 import { planFromClassification } from "./orchestrator";
@@ -51,6 +52,14 @@ export async function buildReadyReport(input: {
   const executionPlan = planFromClassification(classification);
   executionFlow.push("✓ Execution plan created");
   const { providerResults, executionRecords } = await providerManager.runExecutionPlan(providerContext, executionPlan.executionPlan, executionPlan.skippedEngines);
+  const evidenceItems = buildEvidenceItems({
+    providerResults,
+    notCheckedProviders: executionRecords
+      .filter((record) => record.status === "pending" || record.status === "skipped")
+      .map((record) => ({ providerId: record.providerId || record.engineId, reason: record.reason || "Provider was not checked in this execution plan." })),
+  });
+  const providerCategories = Object.fromEntries(providerManager.listProviders().map((provider) => [provider.id, provider.category]));
+  const canonicalEvidenceSummary = summarizeEvidence(evidenceItems, providerCategories);
   executionRecords
     .filter((record) => ["executed", "skipped", "failed"].includes(record.status))
     .forEach((record) => {
@@ -98,6 +107,7 @@ export async function buildReadyReport(input: {
   });
   const decision = buildDecision({
     providerResults,
+    evidenceItems,
     riskOutput: riskEnginePreview,
     insights: insightOutput.insights,
     timeline: trustTimeline,
@@ -156,7 +166,7 @@ export async function buildReadyReport(input: {
     evidenceSummary: {
       fileCount: intake.fileNames.length,
       categories: intake.visibleSignalCategories,
-      missingEvidence: riskEnginePreview.missingEvidence,
+      ...canonicalEvidenceSummary,
     },
     reportSummary: {
       message: "Report generated from paid intake, provider evidence and Insight Engine business-trust analysis.",
@@ -170,7 +180,7 @@ export async function buildReadyReport(input: {
       execution: {
         completedInSeconds: Number(((Date.now() - startedAt) / 1000).toFixed(2)),
         providersExecuted: executionRecords.filter((record) => record.status === "executed").length,
-        evidenceCollected: providerResults.reduce((sum, result) => sum + result.evidence.length, 0),
+        evidenceCollected: evidenceItems.length,
         decisionConfidence: decisionIntelligence.confidenceLevel,
       },
       executionFlow,

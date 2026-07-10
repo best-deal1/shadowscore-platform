@@ -27,6 +27,13 @@ const strongBusiness = (name: string) => ({
 });
 
 export const decisionValidationCases = [
+
+  { label: "Trusted enterprise", providerResults: strongBusiness("Trusted Enterprise").providerResults, expected: ["PASS"] as VerificationDecision[] },
+  { label: "New business", providerResults: [result("dns", { A: ["203.0.113.70"] }), result("whois", {})], expected: ["REVIEW"] as VerificationDecision[] },
+  { label: "Provider failure", providerResults: [result("dns", {}, [], "failed")], expected: ["REVIEW"] as VerificationDecision[] },
+  { label: "Missing ownership", providerResults: [result("dns", { A: ["203.0.113.80"], NS: ["ns1.host.test"] }), result("whois", {})], expected: ["REVIEW"] as VerificationDecision[] },
+  { label: "Known enforcement", providerResults: [result("marketplace", {}, [{ id: "known-enforcement", title: "Known enforcement action", description: "Verified marketplace enforcement notice was supplied.", severity: "high" }])], expected: ["FAIL"] as VerificationDecision[] },
+  { label: "Negative evidence", providerResults: [result("reputation", {}, [{ id: "confirmed-fraud", title: "Confirmed fraud evidence", description: "Confirmed fraud signal from reputation evidence.", severity: "critical" }])], expected: ["FAIL"] as VerificationDecision[] },
   { ...strongBusiness("Apple"), expected: ["PASS"] as VerificationDecision[] },
   { ...strongBusiness("Microsoft"), expected: ["PASS"] as VerificationDecision[] },
   { ...strongBusiness("Amazon"), expected: ["PASS"] as VerificationDecision[] },

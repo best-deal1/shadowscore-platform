@@ -1,6 +1,8 @@
 import type { TrustInsight } from "../insightEngine";
-import type { ProviderFinding, ProviderResult } from "../providers/types";
-import type { RiskEngineOutput, RiskFinding, RiskSeverity } from "../riskEngine";
+import type { EvidenceItem } from "../evidence";
+import { buildEvidenceItems } from "../evidence";
+import type { ProviderResult } from "../providers/types";
+import type { RiskEngineOutput, RiskSeverity } from "../riskEngine";
 import type { TrustTimelineItem } from "../trustTimeline";
 
 export type VerificationDecision = "PASS" | "REVIEW" | "FAIL";
@@ -63,33 +65,16 @@ function unique(items: string[]) {
   return Array.from(new Set(items.filter((item) => item.trim().length > 0)));
 }
 
-function severityConfidence(severity: ProviderFinding["severity"] | RiskFinding["severity"]) {
-  if (severity === "critical" || severity === "Critical") return 95;
-  if (severity === "high" || severity === "High") return 90;
-  if (severity === "medium" || severity === "Medium") return 75;
-  return 55;
-}
-
-function isVerifiedNegativeFinding(finding: ProviderFinding) {
-  const text = `${finding.id} ${finding.title} ${finding.description}`.toLowerCase();
-  const verifiedTerms = ["confirmed", "verified", "known", "deterministic", "malicious", "phishing", "fraud", "enforcement", "blocking", "contradiction", "reputation"];
-  return (finding.severity === "critical" || finding.severity === "high") && verifiedTerms.some((term) => text.includes(term));
-}
-
-function isVerifiedNegativeRisk(finding: RiskFinding) {
-  const text = `${finding.id} ${finding.domain} ${finding.title} ${finding.explanation}`.toLowerCase();
-  const verifiedTerms = ["confirmed", "verified", "known", "deterministic", "malicious", "phishing", "fraud", "enforcement", "blocking", "contradiction", "reputation"];
-  return (finding.severity === "Critical" || finding.severity === "High") && verifiedTerms.some((term) => text.includes(term));
-}
-
 export function buildVerificationDecision(input: {
   providerResults?: ProviderResult[];
+  evidenceItems?: EvidenceItem[];
   riskOutput?: RiskEngineOutput;
   insights?: TrustInsight[];
   timeline?: TrustTimelineItem[];
   audience: "free" | "paid";
 }): VerificationDecisionOutput {
   const providerResults = input.providerResults || [];
+  const evidenceItems = input.evidenceItems || buildEvidenceItems(providerResults);
   const insights = input.insights || [];
   const timeline = input.timeline || [];
   const dns = provider("dns", providerResults);
@@ -109,22 +94,13 @@ export function buildVerificationDecision(input: {
   const completedProviders = providerResults.filter((result) => result.status === "completed").length;
   const attemptedProviders = providerResults.length;
 
-  const negativeFindings = [
-    ...providerResults.flatMap((result) => result.findings.filter(isVerifiedNegativeFinding).map((finding) => ({
-      category: "negative" as const,
-      confidence: severityConfidence(finding.severity),
-      source: result.providerId,
-      impact: finding.title,
-      explanation: finding.description,
-    }))),
-    ...(input.riskOutput?.findings.filter(isVerifiedNegativeRisk).map((finding) => ({
-      category: "negative" as const,
-      confidence: severityConfidence(finding.severity),
-      source: finding.domain,
-      impact: finding.title,
-      explanation: finding.explanation,
-    })) || []),
-  ];
+  const negativeFindings = evidenceItems.filter((item) => item.category === "Negative").map((item) => ({
+    category: "negative" as const,
+    confidence: item.confidence,
+    source: item.provider,
+    impact: item.title,
+    explanation: item.businessImpact,
+  }));
 
   const highRisk = hasRiskSeverity(input.riskOutput, ["High", "Critical"]);
   const infrastructureScore = clamp((hasDnsInfrastructure ? 55 : 0) + (ns.length > 0 ? 25 : 0) + (a.length > 0 ? 20 : 0));
@@ -140,23 +116,21 @@ export function buildVerificationDecision(input: {
   const confidenceScore = verificationConfidence;
   const verificationScore = clamp((identityScore * 0.3) + (infrastructureScore * 0.3) + (emailSecurityScore * 0.2) + ((reputationScore === "pending" ? 50 : reputationScore) * 0.2));
 
-  const positiveFindings: DecisionFinding[] = [
-    hasDnsInfrastructure ? { category: "positive", confidence: 90, source: "dns", impact: "Domain resolves to public infrastructure.", explanation: "A or nameserver records were observed." } : undefined,
-    hasRegistrationContext ? { category: "positive", confidence: 85, source: "whois", impact: "Registration context is available.", explanation: "WHOIS registration date or domain age was observed." } : undefined,
-    hasEmailRouting ? { category: "positive", confidence: 80, source: "dns", impact: "Business email routing is configured.", explanation: "MX records were observed for the domain." } : undefined,
-    hasSpf || hasDmarc ? { category: "positive", confidence: 80, source: "dns", impact: "Email authentication evidence is present.", explanation: "SPF or DMARC records were observed." } : undefined,
-    reputationScore !== "pending" && reputationScore >= 70 ? { category: "positive", confidence: 80, source: "reputation", impact: "No confirmed reputation issue was detected.", explanation: "Available reputation evidence did not include a verified negative condition." } : undefined,
-    hasMarketplaceEvidence ? { category: "positive", confidence: 75, source: "marketplace", impact: "Marketplace evidence is present.", explanation: "Marketplace provider returned evidence or findings." } : undefined,
-  ].filter((finding): finding is DecisionFinding => Boolean(finding));
+  const positiveFindings: DecisionFinding[] = evidenceItems.filter((item) => item.category === "Verified").map((item) => ({
+    category: "positive",
+    confidence: item.confidence,
+    source: item.provider,
+    impact: item.title,
+    explanation: item.businessImpact,
+  }));
 
-  const missingFindings: DecisionFinding[] = [
-    !hasRegistrationContext ? { category: "missing", confidence: 100, source: "whois", impact: "Business ownership or registry evidence is incomplete.", explanation: "Missing registry context lowers confidence but is not negative evidence." } : undefined,
-    reputationScore === "pending" ? { category: "missing", confidence: 100, source: "reputation", impact: "Reputation evidence is unavailable.", explanation: "Unavailable reputation data requires review but does not prove risk." } : undefined,
-    !hasEmailRouting ? { category: "missing", confidence: 100, source: "dns", impact: "Business email routing was not observed.", explanation: "Missing MX evidence lowers completeness but is not negative evidence." } : undefined,
-    !hasSpf || !hasDmarc ? { category: "missing", confidence: 100, source: "dns", impact: "Email authentication evidence is incomplete.", explanation: "Missing SPF or DMARC evidence is a coverage gap, not proof of abuse." } : undefined,
-    !hasDnsInfrastructure ? { category: "missing", confidence: 100, source: "dns", impact: "Domain infrastructure evidence is incomplete.", explanation: "Missing DNS infrastructure prevents a high-confidence pass but is not a fail condition." } : undefined,
-    attemptedProviders === 0 || completedProviders < attemptedProviders ? { category: "missing", confidence: 100, source: "providers", impact: "Provider coverage is incomplete.", explanation: "Incomplete provider execution routes the decision to review unless negative evidence exists." } : undefined,
-  ].filter((finding): finding is DecisionFinding => Boolean(finding));
+  const missingFindings: DecisionFinding[] = evidenceItems.filter((item) => item.category === "Missing" || item.category === "Unavailable" || item.category === "Not Checked").map((item) => ({
+    category: "missing",
+    confidence: item.confidence,
+    source: item.provider,
+    impact: item.title,
+    explanation: item.businessImpact,
+  }));
 
   const missingSignals = unique(missingFindings.map((finding) => finding.impact));
   const blockingIssues = unique(negativeFindings.map((finding) => finding.impact));
