@@ -37,7 +37,7 @@ type TrustInsight = {
   evidence: string[];
 };
 type TrustTimelineItem = { title: string; description: string; status: "completed" | "unavailable" | "pending"; evidenceSource: string };
-type DecisionPreview = { decision: "PASS" | "REVIEW" | "FAIL"; decisionLabel: "Verified enough to proceed" | "Additional verification recommended" | "Do not proceed"; decisionColor: "green" | "orange" | "red"; verificationScore: number; confidenceScore: number; identityScore: number; infrastructureScore: number; emailSecurityScore: number; reputationScore: number | "pending"; evidenceCoverageScore: number; confidenceLevel: "Low" | "Medium" | "High"; topReasons: string[]; reasons: string[]; missingSignals: string[]; blockingIssues: string[]; whatThisMeans: string; recommendedAction: string; limitedPreview: boolean };
+type DecisionPreview = { decision: "PASS" | "REVIEW" | "FAIL" | "CONFIRMED RISK"; decisionLabel: "Evidence supports proceeding" | "Additional verification recommended" | "Verified negative indicators detected" | "Verified enough to proceed" | "Do not proceed"; decisionColor: "green" | "orange" | "red"; verificationScore: number; confidenceScore: number; identityScore: number; infrastructureScore: number; emailSecurityScore: number; reputationScore: number | "pending"; evidenceCoverageScore: number; confidenceLevel: "Low" | "Medium" | "High"; topReasons: string[]; reasons: string[]; missingSignals: string[]; blockingIssues: string[]; whatThisMeans: string; recommendedAction: string; limitedPreview: boolean };
 type IdentityProfile = { identitySummary: string };
 type BusinessNarrativeSection = { id: string; title: string; body: string[] };
 type BusinessNarrative = { decision: string; confidence: string; sections: BusinessNarrativeSection[] };
@@ -1280,7 +1280,7 @@ export default function IntakePage() {
                     <div className="rounded-2xl border border-white/10 bg-black/50 p-5">
                       <div className="text-xs uppercase tracking-[0.22em] text-zinc-500">Preview Status</div>
                       <div className="mt-2 text-xl font-black text-emerald-200">Ready</div>
-                      <p className="mt-2 text-xs leading-5 text-zinc-500">Full score locked until payment.</p>
+                      <p className="mt-2 text-xs leading-5 text-zinc-500">Full evidence hierarchy unlocks after payment.</p>
                     </div>
                     <div className="rounded-2xl border border-white/10 bg-black/50 p-5">
                       <div className="text-xs uppercase tracking-[0.22em] text-zinc-500">Investigation</div>
@@ -1303,7 +1303,7 @@ export default function IntakePage() {
 
                 {freeScanResult?.businessNarrative ? (
                   <section className="rounded-[28px] border border-red-400/20 bg-red-500/[0.06] p-6">
-                    <div className="text-xs uppercase tracking-[0.22em] text-red-300">Business Narrative</div>
+                    <div className="text-xs uppercase tracking-[0.22em] text-red-300">Evidence Summary</div>
                     <div className="mt-4 flex flex-wrap items-center gap-3">
                       <div className="text-2xl font-black text-white">{freeScanResult.businessNarrative.decision}</div>
                       <span className="rounded-full border border-white/10 px-3 py-1 text-xs font-bold text-zinc-300">{freeScanResult.businessNarrative.confidence} confidence</span>
@@ -1313,7 +1313,7 @@ export default function IntakePage() {
                     ) : null}
                     {freeScanResult.businessNarrative.sections.find((section) => section.id === "executiveSummary") ? (
                       <div className="mt-5 rounded-2xl border border-white/10 bg-black/35 p-5">
-                        <div className="text-xs uppercase tracking-[0.22em] text-zinc-400">Executive Summary</div>
+                        <div className="text-xs uppercase tracking-[0.22em] text-zinc-400">Evidence Summary</div>
                         <div className="mt-3 space-y-3 text-sm leading-6 text-zinc-300">
                           {freeScanResult.businessNarrative.sections.find((section) => section.id === "executiveSummary")?.body.map((item) => <p key={item}>{item}</p>)}
                         </div>
@@ -1332,10 +1332,10 @@ export default function IntakePage() {
 
                 <section className="rounded-[28px] border border-yellow-400/20 bg-yellow-500/10 p-6 text-sm leading-7 text-yellow-100">
                   <div className="text-xs uppercase tracking-[0.22em] text-yellow-200">Recommendation</div>
-                  <p className="mt-4">Preview ready. Unlock the full report for the decision, findings, evidence and next steps.</p>
+                  <p className="mt-4">Preview ready. Unlock the full report for the complete evidence hierarchy and next steps.</p>
                   <div className="mt-5 rounded-2xl border border-white/10 bg-black/30 p-5">
                     <label>
-                      <div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">Email for Unlock Full Report or Save Report</div>
+                      <div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">Email for full report</div>
                       <input value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white" placeholder="you@example.com" />
                     </label>
                     <div className="mt-5 grid gap-3 md:grid-cols-2">
@@ -1361,7 +1361,7 @@ export default function IntakePage() {
                     {freeScanResult?.decisionPreview ? (
                       <section className="rounded-2xl border border-red-400/25 bg-red-500/[0.07] p-4">
                         <div className="text-xs uppercase tracking-[0.22em] text-red-200">Decision Preview</div>
-                        <div className="mt-3 flex flex-wrap items-center gap-3"><div className="text-2xl font-black text-white">{freeScanResult.decisionPreview.decision}: {freeScanResult.decisionPreview.decisionLabel}</div><span className="rounded-full border border-white/10 px-3 py-1 text-xs font-bold text-zinc-300">{freeScanResult.decisionPreview.confidenceLevel} confidence</span></div>
+                        <div className="mt-3 flex flex-wrap items-center gap-3"><div className="text-2xl font-black text-white">{(freeScanResult.decisionPreview.decision === "FAIL" ? "CONFIRMED RISK" : freeScanResult.decisionPreview.decision)}: {(freeScanResult.decisionPreview.decisionLabel === "Do not proceed" ? "Verified negative indicators detected" : freeScanResult.decisionPreview.decisionLabel === "Verified enough to proceed" ? "Evidence supports proceeding" : freeScanResult.decisionPreview.decisionLabel)}</div><span className="rounded-full border border-white/10 px-3 py-1 text-xs font-bold text-zinc-300">{freeScanResult.decisionPreview.confidenceLevel} confidence</span></div>
                         <div className="mt-3 text-5xl font-black text-white">{freeScanResult.decisionPreview.verificationScore}/100</div>
                         <div className="mt-1 text-xs uppercase tracking-[0.22em] text-zinc-500">Verification score</div>
                         <div className="mt-4 text-sm font-bold text-zinc-200">Top reasons:</div>
@@ -1369,7 +1369,7 @@ export default function IntakePage() {
                         {freeScanResult.decisionPreview.missingSignals.length ? <div className="mt-4 rounded-xl border border-orange-400/20 bg-orange-500/10 p-3 text-sm leading-6 text-orange-100"><span className="font-bold">Missing signals:</span> {freeScanResult.decisionPreview.missingSignals.join(", ")}</div> : null}
                         <p className="mt-4 text-sm leading-6 text-zinc-300"><span className="font-bold text-zinc-100">What this means:</span> {freeScanResult.decisionPreview.whatThisMeans}</p>
                         <p className="mt-2 text-sm leading-6 text-zinc-300"><span className="font-bold text-zinc-100">Recommended action:</span> {freeScanResult.decisionPreview.recommendedAction}</p>
-                        <div className="mt-4 rounded-xl border border-yellow-400/20 bg-yellow-500/10 p-3 text-xs leading-5 text-yellow-100">Locked advanced breakdown: identity {freeScanResult.decisionPreview.identityScore}/100, infrastructure {freeScanResult.decisionPreview.infrastructureScore}/100, email security {freeScanResult.decisionPreview.emailSecurityScore}/100, reputation {freeScanResult.decisionPreview.reputationScore}, evidence coverage {freeScanResult.decisionPreview.evidenceCoverageScore}/100. Full reasoning unlocks in the paid report.</div>
+                        <div className="mt-4 rounded-xl border border-yellow-400/20 bg-yellow-500/10 p-3 text-xs leading-5 text-yellow-100">Locked advanced breakdown: identity {freeScanResult.decisionPreview.identityScore}/100, infrastructure {freeScanResult.decisionPreview.infrastructureScore}/100, email security {freeScanResult.decisionPreview.emailSecurityScore}/100, reputation {freeScanResult.decisionPreview.reputationScore === "pending" ? "Not checked" : freeScanResult.decisionPreview.reputationScore}, evidence coverage {freeScanResult.decisionPreview.evidenceCoverageScore}/100. Full reasoning unlocks in the paid report.</div>
                       </section>
                     ) : null}
 
@@ -1389,7 +1389,7 @@ export default function IntakePage() {
 
                     {scanMode === "website" && (freeScanRunning || freeScanResult || freeScanError) && (
                       <section className="rounded-2xl border border-white/10 bg-black/50 p-5">
-                        <div className="text-xs uppercase tracking-[0.22em] text-red-300">Developer Results</div>
+                        <div className="text-xs uppercase tracking-[0.22em] text-red-300">Provider status</div>
                         <div className="mt-4 grid gap-3 md:grid-cols-2">{WEBSITE_PROVIDER_EXECUTION.map((provider) => { const result = freeScanResult?.providers.find((item) => item.providerId === provider.id); return <div key={provider.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"><div className="font-black text-white">{providerStatusIcon(provider.id)} {provider.label}{provider.production ? "" : " (Coming Soon)"}</div>{result && <div className="mt-3 space-y-2 text-sm text-zinc-300">{result.fields.map((field) => <div key={field.label}><span className="text-zinc-500">{field.label}:</span> {renderValue(field.value)}</div>)}{result.status !== "completed" && <div className="text-yellow-100">Status: {result.status}. {result.error || "Unavailable"}</div>}</div>}</div>; })}</div>
                         {freeScanError && <div className="mt-4 rounded-xl border border-red-400/25 bg-red-500/10 p-3 text-sm text-red-100">{freeScanError}</div>}
                       </section>

@@ -19,7 +19,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await loginUser(email, password);
-      router.push("/dashboard");
+      router.push("/workspace");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not sign in.");
     } finally {
@@ -53,7 +53,7 @@ export default function LoginPage() {
               <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} className="rounded-2xl border border-white/10 bg-black/60 px-4 py-3 text-white outline-none focus:border-red-400/50" />
             </label>
             {error && <div className="rounded-2xl border border-red-400/30 bg-red-600/10 px-4 py-3 text-sm text-red-100">{error}</div>}
-            <button disabled={loading} className="rounded-2xl bg-red-600 px-5 py-4 text-sm font-black text-white hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50">
+            <button type="submit" disabled={loading} className="rounded-2xl bg-red-600 px-5 py-4 text-sm font-black text-white hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50">
               {loading ? "Signing in..." : "Sign in"}
             </button>
           </form>

@@ -81,7 +81,7 @@ export default function AdminPage() {
             <div className="text-xs font-black uppercase tracking-[0.26em] text-red-300">Admin Console Protected</div>
             <h1 className="mt-3 text-4xl font-black text-white">Access denied</h1>
             <p className="mt-4 text-zinc-400">{error}</p>
-            <Link href="/dashboard" className="mt-6 inline-flex rounded-2xl border border-white/10 px-5 py-3 text-sm font-black text-zinc-200">Return to dashboard</Link>
+            <Link href="/workspace" className="mt-6 inline-flex rounded-2xl border border-white/10 px-5 py-3 text-sm font-black text-zinc-200">Return to dashboard</Link>
           </Panel>
         </main>
       </ShadowScoreLayout>

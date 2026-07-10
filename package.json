@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "validate:decisions": "node scripts/validate-decisions.mjs"
+    "validate:decisions": "node scripts/validate-decisions.mjs",
+    "validate:routes": "node scripts/validate-routes.mjs"
   },
   "dependencies": {
     "next": "16.2.6",

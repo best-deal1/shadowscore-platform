@@ -30,7 +30,7 @@ export default function SignupPage() {
     setLoading(true);
     try {
       await signupUser(name, email, password);
-      router.push("/dashboard");
+      router.push("/workspace");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create account.");
     } finally {
@@ -72,7 +72,7 @@ export default function SignupPage() {
             </label>
 
             {error && <div className="rounded-2xl border border-red-400/30 bg-red-600/10 px-4 py-3 text-sm text-red-100">{error}</div>}
-            <button disabled={loading || !accepted} className="rounded-2xl bg-red-600 px-5 py-4 text-sm font-black text-white hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50">
+            <button type="submit" disabled={loading || !accepted} className="rounded-2xl bg-red-600 px-5 py-4 text-sm font-black text-white hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50">
               {loading ? "Creating account..." : "Create account"}
             </button>
           </form>
