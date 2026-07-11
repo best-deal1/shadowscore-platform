@@ -3,6 +3,7 @@ import type { EvidenceItem } from "../evidence";
 import { correlateEvidence } from "../correlation";
 import type { CorrelationSummary } from "../correlation";
 import { buildEvidenceItems } from "../evidence";
+import { isConfirmedRiskCorrelation, isConfirmedRiskEvidenceItem } from "./riskPolicy";
 import type { ProviderResult } from "../providers/types";
 import type { RiskEngineOutput } from "../riskEngine";
 import type { TrustTimelineItem } from "../trustTimeline";
@@ -123,7 +124,10 @@ export function buildVerificationDecision(input: {
   const completedProviders = providerResults.filter((result) => result.status === "completed").length;
   const attemptedProviders = providerResults.length;
 
-  const negativeFindings = evidenceItems.filter((item) => item.category === "Negative").map((item) => ({
+  const confirmedRiskEvidenceItems = evidenceItems.filter(isConfirmedRiskEvidenceItem);
+  const reviewOnlyNegativeEvidenceItems = evidenceItems.filter((item) => item.category === "Negative" && !isConfirmedRiskEvidenceItem(item));
+
+  const negativeFindings = confirmedRiskEvidenceItems.map((item) => ({
     category: "negative" as const,
     confidence: item.confidence,
     source: item.provider,
@@ -160,7 +164,10 @@ export function buildVerificationDecision(input: {
     explanation: item.businessImpact,
   }));
 
-  const correlationNegativeFindings: DecisionFinding[] = correlationContradictions.map((item) => ({
+  const confirmedRiskCorrelationContradictions = correlationContradictions.filter(isConfirmedRiskCorrelation);
+  const reviewOnlyCorrelationContradictions = correlationContradictions.filter((item) => !isConfirmedRiskCorrelation(item));
+
+  const correlationNegativeFindings: DecisionFinding[] = confirmedRiskCorrelationContradictions.map((item) => ({
     category: "negative",
     confidence: item.severity === "critical" ? 95 : item.severity === "high" ? 90 : 75,
     source: "correlation-intelligence",
@@ -174,6 +181,20 @@ export function buildVerificationDecision(input: {
     impact: item.title,
     explanation: item.explanation,
   }));
+  const reviewOnlyContradictionFindings: DecisionFinding[] = reviewOnlyCorrelationContradictions.map((item) => ({
+    category: "missing",
+    confidence: item.severity === "critical" ? 95 : item.severity === "high" ? 90 : 75,
+    source: "correlation-intelligence",
+    impact: item.title,
+    explanation: `${item.explanation} This is an identity inconsistency that requires review but is not confirmed risk without independent negative evidence.`,
+  }));
+  const reviewOnlyNegativeFindings: DecisionFinding[] = reviewOnlyNegativeEvidenceItems.map((item) => ({
+    category: "missing",
+    confidence: item.confidence,
+    source: item.provider,
+    impact: item.title,
+    explanation: `${item.businessImpact} This negative-looking identity signal requires review but is not confirmed risk without corroboration.`,
+  }));
   const missingCorrelationFindings: DecisionFinding[] = [...correlationSummary.missingRelationships, ...correlationSummary.unresolvedRelationships].map((item) => ({
     category: "missing",
     confidence: item.confidence,
@@ -181,7 +202,7 @@ export function buildVerificationDecision(input: {
     impact: item.title,
     explanation: item.explanation,
   }));
-  const missingSignals = unique([...missingFindings, ...missingCorrelationFindings].map((finding) => finding.impact));
+  const missingSignals = unique([...missingFindings, ...missingCorrelationFindings, ...reviewOnlyContradictionFindings, ...reviewOnlyNegativeFindings].map((finding) => finding.impact));
   const blockingIssues = unique([...negativeFindings, ...correlationNegativeFindings].map((finding) => finding.impact));
   const positiveEvidenceCount = positiveFindings.length + positiveCorrelationFindings.length;
   const missingEvidenceCount = missingFindings.length + missingCorrelationFindings.length;
@@ -219,7 +240,7 @@ export function buildVerificationDecision(input: {
     negativeEvidenceCount,
     positiveEvidenceCount,
     missingEvidenceCount,
-    findings: [...positiveFindings, ...positiveCorrelationFindings, ...missingFindings, ...missingCorrelationFindings, ...negativeFindings, ...correlationNegativeFindings],
+    findings: [...positiveFindings, ...positiveCorrelationFindings, ...missingFindings, ...missingCorrelationFindings, ...reviewOnlyContradictionFindings, ...reviewOnlyNegativeFindings, ...negativeFindings, ...correlationNegativeFindings],
     reasons,
     missingSignals,
     blockingIssues,

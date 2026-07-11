@@ -1,7 +1,8 @@
+import { isConfirmedRiskContradiction } from "./riskPolicy";
 import type { ContradictionSignal, DecisionIntelligenceDecision, EvidenceAssessment } from "./types";
 
 export function selectDecision(input: { assessment: EvidenceAssessment; contradictions: ContradictionSignal[] }): DecisionIntelligenceDecision {
-  const hasVerifiedNegativeEvidence = input.contradictions.some((signal) => signal.severity === "high");
+  const hasVerifiedNegativeEvidence = input.contradictions.some(isConfirmedRiskContradiction);
   if (hasVerifiedNegativeEvidence) return "FAIL";
   if (input.assessment.positiveEvidenceCount >= 3 && input.assessment.negativeEvidenceCount === 0 && input.assessment.confidenceLevel !== "Low" && input.assessment.confidenceLevel !== "None") return "PASS";
   return "REVIEW";
