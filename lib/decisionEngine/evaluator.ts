@@ -1,4 +1,5 @@
 import { assessEvidence } from "./evidence";
+import { isConfirmedRiskCorrelation, isConfirmedRiskContradiction } from "./riskPolicy";
 import { nextActionsFor, recommendationFor, selectDecision } from "./rules";
 import type { DecisionIntelligenceInput, DecisionIntelligenceOutput, DecisionReasoningStep, EvidenceItem } from "./types";
 
@@ -37,8 +38,8 @@ export function evaluateDecisionEvidence(input: DecisionIntelligenceInput): Deci
     evidenceItems: input.evidenceItems,
   });
   const correlationFindings = input.correlationFindings || [];
-  const correlationContradictions = correlationFindings.filter((finding) => finding.classification === "Contradiction");
-  const decision = selectDecision({ assessment, contradictions: [...input.contradictionSignals, ...correlationContradictions.map((finding) => ({ id: finding.id, severity: "high" as const, title: finding.title, evidence: finding.evidence.map((item) => item.value), interpretation: finding.explanation, businessMeaning: "Correlated evidence contradicts the entity relationship." }))] });
+  const correlationContradictions = correlationFindings.flatMap((finding) => finding.contradiction ? [finding.contradiction] : []);
+  const decision = selectDecision({ assessment, contradictions: [...input.contradictionSignals, ...correlationContradictions.map((finding) => ({ id: finding.id, severity: isConfirmedRiskCorrelation(finding) ? "high" as const : "medium" as const, title: finding.title, evidence: finding.evidence.map((item) => item.value), interpretation: finding.explanation, businessMeaning: isConfirmedRiskCorrelation(finding) ? "Verified negative evidence conflicts with a trusted-company conclusion." : "Identity inconsistency requires review but is not confirmed risk without independent negative evidence." }))] });
   const recommendation = recommendationFor(decision);
 
   return {
@@ -47,14 +48,14 @@ export function evaluateDecisionEvidence(input: DecisionIntelligenceInput): Deci
     evidenceCoverage: assessment.evidenceCoverage,
     verificationConfidence: assessment.evidenceCompleteness,
     evidenceCompleteness: assessment.evidenceCompleteness,
-    negativeEvidenceCount: decision === "FAIL" ? input.contradictionSignals.length + correlationContradictions.length : assessment.negativeEvidenceCount,
+    negativeEvidenceCount: input.contradictionSignals.filter(isConfirmedRiskContradiction).length + correlationContradictions.filter(isConfirmedRiskCorrelation).length + assessment.negativeEvidenceCount,
     positiveEvidenceCount: assessment.positiveEvidenceCount,
     missingEvidenceCount: assessment.missingEvidenceCount,
     findings: [
       ...input.evidenceItems.map((item) => ({ category: "positive" as const, confidence: item.reliabilityWeight, source: item.source, impact: item.label, explanation: String(item.value || item.label) })),
       ...assessment.missingEvidence.map((item) => ({ category: "missing" as const, confidence: 100, source: "decision-engine", impact: item, explanation: "Missing evidence lowers completeness but is not proof of risk." })),
-      ...input.contradictionSignals.map((signal) => ({ category: "negative" as const, confidence: signal.severity === "high" ? 90 : 70, source: "contradiction-engine", impact: signal.title, explanation: signal.interpretation })),
-      ...correlationFindings.map((finding) => ({ category: finding.classification === "Contradiction" ? "negative" as const : finding.classification === "Unknown" ? "missing" as const : "positive" as const, confidence: finding.confidence, source: "correlation-intelligence", impact: finding.title, explanation: finding.explanation })),
+      ...input.contradictionSignals.map((signal) => ({ category: isConfirmedRiskContradiction(signal) ? "negative" as const : "missing" as const, confidence: signal.severity === "high" ? 90 : 70, source: "contradiction-engine", impact: signal.title, explanation: signal.interpretation })),
+      ...correlationFindings.map((finding) => ({ category: finding.classification === "Contradiction" && finding.contradiction && isConfirmedRiskCorrelation(finding.contradiction) ? "negative" as const : finding.classification === "Unknown" || finding.classification === "Contradiction" ? "missing" as const : "positive" as const, confidence: finding.confidence, source: "correlation-intelligence", impact: finding.title, explanation: finding.explanation })),
     ],
     missingEvidence: assessment.missingEvidence,
     correlations: correlationFindings,
