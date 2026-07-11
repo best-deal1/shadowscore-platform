@@ -8,15 +8,10 @@ import { buildBusinessNarrative } from "../../../../lib/narrative";
 import { buildTrustTimeline } from "../../../../lib/trustTimeline";
 import { buildDecision } from "../../../../lib/decisionEngine";
 import { analyzeRisk } from "../../../../lib/riskEngine";
-import { DNSProvider } from "../../../../lib/providers/DNSProvider";
-import { WHOISProvider } from "../../../../lib/providers/WHOISProvider";
-import { ProviderManager } from "../../../../lib/providers/ProviderManager";
+import { ProviderManager, createDefaultProviders } from "../../../../lib/providers";
 import type { ProviderExecutionContext, ProviderResult } from "../../../../lib/providers/types";
 
-const productionProviderManager = new ProviderManager().registerMany([
-  new DNSProvider(),
-  new WHOISProvider(),
-]);
+const productionProviderManager = new ProviderManager().registerMany(createDefaultProviders());
 
 type FreeScanRequest = {
   scanMode?: string;
@@ -60,6 +55,23 @@ function summarizeDns(result: ProviderResult) {
       { label: "Name Servers", value: valueOrUnavailable(recordsFromMetadata(result, "NS"), "Not detected") },
       { label: "TXT Records", value: valueOrUnavailable(recordsFromMetadata(result, "TXT"), "Not detected") },
     ],
+  };
+}
+
+function summarizeGenericProvider(result: ProviderResult) {
+  return {
+    providerId: result.providerId,
+    providerName: typeof result.metadata.providerName === "string" ? result.metadata.providerName : result.providerId,
+    providerVersion: result.providerVersion,
+    category: typeof result.metadata.category === "string" ? result.metadata.category : "unknown",
+    status: result.status,
+    duration: result.duration,
+    error: result.errors[0],
+    failureReason: typeof result.metadata.failureReason === "string" ? result.metadata.failureReason : undefined,
+    lookupPerformed: result.metadata.lookupPerformed === true,
+    evidenceCount: result.evidence.length,
+    findingCount: result.findings.length,
+    fields: result.evidence.slice(0, 5).map((item) => ({ label: item.label, value: valueOrUnavailable(item.value, "Unavailable") })),
   };
 }
 
@@ -159,15 +171,15 @@ export async function POST(request: Request) {
       generatedAt,
     });
 
-    const dnsResult = providerResults.find((result) => result.providerId === "dns");
-    const whoisResult = providerResults.find((result) => result.providerId === "whois");
 
     return NextResponse.json({
       executedAt: generatedAt,
-      providers: [
-        ...(dnsResult ? [summarizeDns(dnsResult)] : []),
-        ...(whoisResult ? [summarizeWhois(whoisResult)] : []),
-      ],
+      providerRegistry: productionProviderManager.listProviders(),
+      providers: providerResults.map((result) => {
+        if (result.providerId === "dns") return { ...summarizeGenericProvider(result), ...summarizeDns(result) };
+        if (result.providerId === "whois") return { ...summarizeGenericProvider(result), ...summarizeWhois(result) };
+        return summarizeGenericProvider(result);
+      }),
       insights: insightOutput.insights,
       insightEngineVersion: insightOutput.engineVersion,
       timeline,
