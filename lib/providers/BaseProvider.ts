@@ -1,4 +1,4 @@
-import type { Provider, ProviderCategory, ProviderExecutionContext, ProviderFinding, ProviderHealth, ProviderResult } from "./types";
+import type { Provider, ProviderCategory, ProviderExecutionContext, ProviderEvidence, ProviderFailureReason, ProviderFinding, ProviderHealth, ProviderResult } from "./types";
 
 export abstract class BaseProvider implements Provider {
   abstract readonly id: string;
@@ -35,19 +35,44 @@ export abstract class BaseProvider implements Provider {
       return {
         providerId: this.id,
         providerVersion: this.version,
-        status: "failed",
+        status: "skipped",
         startedAt,
         completedAt: completedAtDate.toISOString(),
         duration: completedAtDate.getTime() - startedAtDate.getTime(),
         findings: [],
-        evidence: [],
+        evidence: [{ id: `${this.id}-unavailable`, type: "observation", label: `${this.name} availability`, value: this.failureReason(error), source: this.id }],
         metadata: {
           category: this.category,
           providerName: this.name,
+          failureReason: this.failureReason(error),
+          lookupPerformed: false,
         },
         errors: [error instanceof Error ? error.message : "Unknown provider execution error"],
       };
     }
+  }
+
+  normalize(context: ProviderExecutionContext): unknown {
+    return context;
+  }
+
+  confidence(result: ProviderResult): number {
+    return result.status === "completed" ? 75 : 0;
+  }
+
+  evidence(result: ProviderResult): ProviderEvidence[] {
+    return result.evidence;
+  }
+
+  correlation(result: ProviderResult): unknown {
+    return result.evidence.map((item) => ({ providerId: result.providerId, evidenceId: item.id, value: item.value }));
+  }
+
+  failureReason(error: unknown): ProviderFailureReason {
+    if (error instanceof Error && (error.name === "AbortError" || /timeout|timed out/i.test(error.message))) return "Timeout";
+    if (error instanceof Error && /429|rate limited/i.test(error.message)) return "Rate Limited";
+    if (error instanceof Error && /not supported|invalid|requires/i.test(error.message)) return "Not Supported";
+    return "Unavailable";
   }
 
   async health(): Promise<ProviderHealth> {

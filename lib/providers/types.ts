@@ -12,6 +12,8 @@ export type ProviderCategory =
 
 export type ProviderStatus = "completed" | "failed" | "skipped";
 
+export type ProviderFailureReason = "Unavailable" | "Rate Limited" | "Not Supported" | "Timeout";
+
 export type ProviderFinding = {
   id: string;
   title: string;
@@ -66,5 +68,10 @@ export interface Provider {
   version: string;
   category: ProviderCategory;
   execute(context: ProviderExecutionContext): Promise<ProviderResult>;
+  normalize(context: ProviderExecutionContext): unknown;
+  confidence(result: ProviderResult): number;
+  evidence(result: ProviderResult): ProviderEvidence[];
+  correlation(result: ProviderResult): unknown;
+  failureReason(error: unknown): ProviderFailureReason;
   health(): Promise<ProviderHealth>;
 }
