@@ -2,7 +2,7 @@ import { promises as dns } from "node:dns";
 import tls from "node:tls";
 
 import { BaseProvider } from "./BaseProvider";
-import type { ProviderExecutionContext, ProviderFinding, ProviderFailureReason, ProviderHealth, ProviderResult } from "./types";
+import type { ProviderEvidence, ProviderExecutionContext, ProviderFinding, ProviderFailureReason, ProviderHealth, ProviderResult } from "./types";
 
 
 type NormalizedTarget = { domain: string; websiteUrl?: string; email?: string; supported: boolean; reason?: ProviderFailureReason };
@@ -12,6 +12,34 @@ const HEADER_SOURCE = "http-response-headers";
 const CERT_SOURCE = "tls-certificate";
 const DNS_SOURCE = "node:dns";
 const WELL_KNOWN_SOCIALS = ["linkedin.com", "facebook.com", "instagram.com", "x.com", "twitter.com", "youtube.com", "tiktok.com"];
+
+type DnsRecordType = "A" | "AAAA" | "MX" | "NS" | "TXT" | "CNAME";
+type DnsRecords = Record<DnsRecordType, string[]>;
+type RdapEvent = { eventAction?: string; eventDate?: string };
+type RdapResponse = { objectClassName?: string; ldhName?: string; handle?: string; status?: string[]; events?: RdapEvent[]; nameservers?: Array<{ ldhName?: string }> };
+
+const DNS_RECORD_TYPES: DnsRecordType[] = ["A", "AAAA", "MX", "NS", "TXT", "CNAME"];
+const RDAP_BASE_URL = "https://rdap.org/domain/";
+
+function formatDnsError(error: unknown) {
+  if (error && typeof error === "object" && "code" in error && typeof error.code === "string") return error.code;
+  return error instanceof Error ? error.message : "Unknown DNS lookup error";
+}
+
+async function resolveRecord(domain: string, recordType: DnsRecordType): Promise<string[]> {
+  switch (recordType) {
+    case "A": return dns.resolve4(domain);
+    case "AAAA": return dns.resolve6(domain);
+    case "MX": return (await dns.resolveMx(domain)).map((record) => `${record.priority} ${record.exchange}`);
+    case "NS": return dns.resolveNs(domain);
+    case "TXT": return (await dns.resolveTxt(domain)).map((record) => record.join(""));
+    case "CNAME": return dns.resolveCname(domain);
+  }
+}
+
+function findEventDate(events: RdapEvent[] = [], action: string) { return events.find((event) => event.eventAction?.toLowerCase() === action)?.eventDate; }
+function domainAgeDays(registrationDate?: string) { if (!registrationDate) return undefined; const registeredAt = new Date(registrationDate).getTime(); if (Number.isNaN(registeredAt)) return undefined; return Math.max(0, Math.floor((Date.now() - registeredAt) / 86_400_000)); }
+
 
 export function normalizeProviderTarget(context: ProviderExecutionContext): NormalizedTarget {
   const raw = (context.target || context.email || "").trim();
@@ -67,6 +95,35 @@ export class SSLProvider extends ProductionProvider {
     const validToMs = Date.parse(cert.valid_to); const days = Number.isNaN(validToMs) ? undefined : Math.ceil((validToMs - Date.now()) / 86_400_000);
     const findings: ProviderFinding[] = days !== undefined && days < 14 ? [{ id: "ssl-expiring", title: "SSL certificate expires soon", description: `Certificate expires in ${days} days.`, severity: days < 0 ? "high" : "medium" }] : [];
     return { findings, evidence: [{ id: "ssl-domain", type: "observation", label: "SSL certificate domain", value: target.domain, source: CERT_SOURCE }, { id: "ssl-issuer", type: "document", label: "SSL certificate issuer", value: String(cert.issuer?.O || cert.issuer?.CN || "unavailable"), source: CERT_SOURCE }, { id: "ssl-valid-to", type: "document", label: "SSL certificate expiration", value: cert.valid_to || "unavailable", source: CERT_SOURCE }, { id: "ssl-subject-alt-names", type: "document", label: "SSL subject alternative names", value: Array.isArray(cert.subjectaltname) ? cert.subjectaltname.join(", ") : cert.subjectaltname || "unavailable", source: CERT_SOURCE }], metadata: { integrationStatus: "connected", lookupPerformed: true, domain: target.domain, validToDays: days } };
+  }
+}
+
+
+export class DNSProvider extends ProductionProvider {
+  readonly id = "dns"; readonly name = "DNS Provider"; readonly version = "1.0.0"; readonly category = "dns" as const;
+  async health(): Promise<ProviderHealth> { return { providerId: this.id, providerVersion: this.version, status: "healthy", checkedAt: new Date().toISOString(), metadata: { category: this.category, providerName: this.name, integration: DNS_SOURCE, recordTypes: DNS_RECORD_TYPES } }; }
+  protected async collect(context: ProviderExecutionContext): Promise<Pick<ProviderResult, "findings" | "evidence" | "metadata">> {
+    const target = this.normalize(context); if (!target.supported) throw new Error("DNS lookup requires a domain target.");
+    const records = {} as DnsRecords; const lookupErrors: Partial<Record<DnsRecordType, string>> = {};
+    await Promise.all(DNS_RECORD_TYPES.map(async (recordType) => { try { records[recordType] = await resolveRecord(target.domain, recordType); } catch (error) { records[recordType] = []; lookupErrors[recordType] = formatDnsError(error); } }));
+    const evidence: ProviderEvidence[] = [{ id: "dns-domain", type: "observation", label: "Normalized domain", value: target.domain, source: DNS_SOURCE }, ...DNS_RECORD_TYPES.map((recordType) => ({ id: `dns-${recordType.toLowerCase()}-records`, type: "observation" as const, label: `${recordType} records`, value: records[recordType].join(", ") || "unavailable", source: DNS_SOURCE }))];
+    return { findings: [], evidence, metadata: { integrationStatus: "connected", lookupPerformed: true, lookupProtocol: "dns", domain: target.domain, recordTypes: DNS_RECORD_TYPES, records, lookupErrors, scanMode: context.scanMode, platform: context.platform, intakeId: context.intakeId } };
+  }
+}
+
+export class WHOISProvider extends ProductionProvider {
+  readonly id = "whois"; readonly name = "WHOIS Provider"; readonly version = "1.0.0"; readonly category = "whois" as const;
+  async health(): Promise<ProviderHealth> { return { providerId: this.id, providerVersion: this.version, status: "healthy", checkedAt: new Date().toISOString(), metadata: { category: this.category, providerName: this.name, integration: "rdap", endpoint: RDAP_BASE_URL } }; }
+  protected async collect(context: ProviderExecutionContext): Promise<Pick<ProviderResult, "findings" | "evidence" | "metadata">> {
+    const target = this.normalize(context); if (!target.supported) throw new Error("WHOIS lookup requires a domain target.");
+    const response = await fetch(`${RDAP_BASE_URL}${encodeURIComponent(target.domain)}`, { headers: { accept: "application/rdap+json, application/json" } });
+    if (!response.ok) throw new Error(`RDAP lookup failed for ${target.domain}: ${response.status}`);
+    const payload = (await response.json()) as RdapResponse; const registrationDate = findEventDate(payload.events, "registration"); const expirationDate = findEventDate(payload.events, "expiration"); const ageDays = domainAgeDays(registrationDate); const statuses = payload.status || []; const nameservers = (payload.nameservers || []).map((nameserver) => nameserver.ldhName).filter(Boolean) as string[];
+    const findings: ProviderFinding[] = [];
+    if (ageDays !== undefined && ageDays < 90) findings.push({ id: "whois-new-domain", title: "Domain registration is recent", description: `The domain appears to be ${ageDays} day${ageDays === 1 ? "" : "s"} old based on RDAP registration data.`, severity: ageDays < 30 ? "medium" : "low" });
+    if (!registrationDate) findings.push({ id: "whois-registration-date-missing", title: "Domain registration date unavailable", description: "The RDAP response did not include a registration event date, reducing ownership-age validation confidence.", severity: "low" });
+    const evidence: ProviderEvidence[] = [{ id: "whois-domain", type: "observation", label: "Normalized domain", value: target.domain, source: RDAP_BASE_URL }, { id: "whois-registration-date", type: "observation", label: "Registration date", value: registrationDate || "unavailable", source: RDAP_BASE_URL }, { id: "whois-expiration-date", type: "observation", label: "Expiration date", value: expirationDate || "unavailable", source: RDAP_BASE_URL }, { id: "whois-statuses", type: "observation", label: "Domain statuses", value: statuses.join(", ") || "unavailable", source: RDAP_BASE_URL }];
+    return { findings, evidence, metadata: { integrationStatus: "connected", lookupPerformed: true, lookupProtocol: "rdap", domain: target.domain, registrationDate, expirationDate, ageDays, statuses, nameservers, rdapHandle: payload.handle, scanMode: context.scanMode, platform: context.platform, intakeId: context.intakeId } };
   }
 }
 

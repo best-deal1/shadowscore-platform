@@ -1,7 +1,4 @@
-import { DNSProvider } from "./DNSProvider";
-import { WHOISProvider } from "./WHOISProvider";
-import { createPlaceholderProviders } from "./placeholderProviders";
-import { BusinessProfileProvider, ContactDiscoveryProvider, DMARCProvider, ReputationProvider, SecurityHeadersProvider, SocialProfileProvider, SPFProvider, SSLProvider, WebsiteMetadataProvider } from "./productionProviders";
+import { BusinessProfileProvider, ContactDiscoveryProvider, DMARCProvider, DNSProvider, ReputationProvider, SecurityHeadersProvider, SocialProfileProvider, SPFProvider, SSLProvider, WebsiteMetadataProvider, WHOISProvider } from "./productionProviders";
 
 export function createDefaultProviders() {
   return [
@@ -16,6 +13,5 @@ export function createDefaultProviders() {
     new WebsiteMetadataProvider(),
     new ContactDiscoveryProvider(),
     new SocialProfileProvider(),
-    ...createPlaceholderProviders(),
   ];
 }
