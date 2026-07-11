@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "validate:decisions": "node scripts/validate-decisions.mjs",
-    "validate:routes": "node scripts/validate-routes.mjs"
+    "validate:routes": "node scripts/validate-routes.mjs",
+    "validate:decision-integrity": "node scripts/validate-decision-integrity.mjs",
+    "validate:providers": "node scripts/validate-providers.mjs"
   },
   "dependencies": {
     "next": "16.2.6",

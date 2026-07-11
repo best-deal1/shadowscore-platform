@@ -26,7 +26,7 @@ function anyDifferent(left: CorrelationEndpoint[], right: CorrelationEndpoint[],
   return !anySame(left, right, normalizer);
 }
 
-export function evaluateCorrelationRules(facts: EvidenceFacts): CorrelationFinding[] {
+export function evaluateCorrelationRules(facts: EvidenceFacts, options: { targetType?: string } = {}): CorrelationFinding[] {
   const findings: CorrelationFinding[] = [];
 
   if (facts.businessNames.length && facts.registryNames.length) {
@@ -61,16 +61,18 @@ export function evaluateCorrelationRules(facts: EvidenceFacts): CorrelationFindi
     }
   } else findings.push(finding("dns_ssl", "DNS-to-SSL relationship missing", "Unknown", [...facts.dnsHosts, ...facts.sslHosts], "DNS and SSL evidence were not both present."));
 
-  if (facts.marketplaceSellers.length && (facts.businessNames.length || facts.registryNames.length)) {
+  const marketplaceApplicable = options.targetType === "marketplaceSeller" || facts.marketplaceSellers.some((item) => /marketplace|seller|store/i.test(item.source) && !/business-profile|website-metadata|http-response|node:dns|tls-certificate/i.test(item.source));
+  if (marketplaceApplicable && facts.marketplaceSellers.length && (facts.businessNames.length || facts.registryNames.length)) {
     const names = [...facts.businessNames, ...facts.registryNames];
-    if (anyDifferent(facts.marketplaceSellers, names)) {
+    if (facts.marketplaceSellers.length >= 1 && names.length >= 1 && anyDifferent(facts.marketplaceSellers, names)) {
       const c = contradiction("marketplace_seller_company", "Marketplace seller differs from company", [...facts.marketplaceSellers, ...names], "Marketplace seller evidence does not align with company evidence.");
       findings.push(finding("marketplace_seller_company", c.title, "Contradiction", c.evidence, c.explanation, c));
     } else findings.push(finding("marketplace_seller_company", "Marketplace seller matches company", "Confirmed", [...facts.marketplaceSellers, ...names], "Marketplace seller evidence aligns with company evidence."));
-  } else findings.push(finding("marketplace_seller_company", "Marketplace seller relationship missing", "Unknown", facts.marketplaceSellers, "Marketplace seller and company evidence were not both present."));
+  } else if (marketplaceApplicable) findings.push(finding("marketplace_seller_company", "Marketplace seller relationship missing", "Unknown", facts.marketplaceSellers, "Marketplace seller and company evidence were not both present."));
 
-  if (facts.paymentAccounts.length && (facts.businessNames.length || facts.registryNames.length)) findings.push(finding("payment_account_entity", "Payment account belongs to same entity", "Likely", [...facts.paymentAccounts, ...facts.businessNames, ...facts.registryNames], "Payment account evidence appears connected to the same named entity."));
-  else findings.push(finding("payment_account_entity", "Payment account relationship missing", "Unknown", facts.paymentAccounts, "Payment account evidence could not be correlated to entity evidence."));
+  const paymentApplicable = facts.paymentAccounts.length > 0 || options.targetType === "payment";
+  if (paymentApplicable && facts.paymentAccounts.length && (facts.businessNames.length || facts.registryNames.length)) findings.push(finding("payment_account_entity", "Payment account belongs to same entity", "Likely", [...facts.paymentAccounts, ...facts.businessNames, ...facts.registryNames], "Payment account evidence appears connected to the same named entity."));
+  else if (paymentApplicable) findings.push(finding("payment_account_entity", "Payment account relationship missing", "Unknown", facts.paymentAccounts, "Payment account evidence could not be correlated to entity evidence."));
 
   if (facts.fraudSignals.length || facts.negativeSignals.length) {
     const c = contradiction("fraud_reputation", "Known fraud or negative reputation evidence present", [...facts.fraudSignals, ...facts.negativeSignals], "Negative evidence conflicts with a trusted-company conclusion.", "critical");

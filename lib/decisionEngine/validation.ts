@@ -32,7 +32,7 @@ export const decisionValidationCases = [
   { label: "New business", providerResults: [result("dns", { A: ["203.0.113.70"] }), result("whois", {})], expected: ["REVIEW"] as VerificationDecision[] },
   { label: "Provider failure", providerResults: [result("dns", {}, [], "failed")], expected: ["REVIEW"] as VerificationDecision[] },
   { label: "Missing ownership", providerResults: [result("dns", { A: ["203.0.113.80"], NS: ["ns1.host.test"] }), result("whois", {})], expected: ["REVIEW"] as VerificationDecision[] },
-  { label: "Known enforcement", providerResults: [result("marketplace", {}, [{ id: "known-enforcement", title: "Known enforcement action", description: "Verified marketplace enforcement notice was supplied.", severity: "high" }])], expected: ["FAIL"] as VerificationDecision[] },
+  { label: "Known enforcement", targetType: "marketplaceSeller", providerResults: [result("marketplace", {}, [{ id: "known-enforcement", title: "Known enforcement action", description: "Verified marketplace enforcement notice was supplied.", severity: "high" }])], expected: ["FAIL"] as VerificationDecision[] },
   { label: "Negative evidence", providerResults: [result("reputation", {}, [{ id: "confirmed-fraud", title: "Confirmed fraud evidence", description: "Confirmed fraud signal from reputation evidence.", severity: "critical" }])], expected: ["FAIL"] as VerificationDecision[] },
   { ...strongBusiness("Apple"), expected: ["PASS"] as VerificationDecision[] },
   { ...strongBusiness("Microsoft"), expected: ["PASS"] as VerificationDecision[] },
@@ -49,7 +49,7 @@ export const decisionValidationCases = [
 
 export function runDecisionValidationSuite() {
   return decisionValidationCases.map((testCase) => {
-    const output = buildVerificationDecision({ providerResults: [...testCase.providerResults], audience: "paid" });
+    const output = buildVerificationDecision({ providerResults: [...testCase.providerResults], audience: "paid", targetType: "targetType" in testCase ? testCase.targetType : "website" });
     const passed = testCase.expected.includes(output.decision);
     return {
       label: testCase.label,

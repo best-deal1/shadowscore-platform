@@ -44,7 +44,7 @@ export function confidenceTemplate(facts: NarrativeFacts): string[] {
 export function verificationTemplate(facts: NarrativeFacts): string[] {
   const needs = facts.verificationNeeds.length > 0 ? facts.verificationNeeds : ["independent business identity and transaction documentation"];
   return [
-    facts.hasContradictions ? "The review found inconsistent information that should be resolved before relying on the business profile." : "No direct contradiction was highlighted, but incomplete public information still limits certainty.",
+    facts.hasContradictions ? "Inconsistent information was found." : "Some public information could not be independently verified.",
     ...needs.slice(0, 5),
   ].map(sentence);
 }

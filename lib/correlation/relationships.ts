@@ -35,7 +35,16 @@ function values(item: EvidenceItem) {
 }
 
 function extractEmail(text: string) { return text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi) || []; }
-function extractPhone(text: string) { return text.match(/\+?\d[\d\s().-]{7,}\d/g) || []; }
+export function isValidPhoneCandidate(value: string) {
+  const trimmed = value.trim();
+  if (/\b\d{4}-\d{2}-\d{2}\b/.test(trimmed)) return false;
+  const digits = trimmed.replace(/\D/g, "");
+  if (digits.length < 7 || digits.length > 15) return false;
+  if (/^\d{8,}$/.test(trimmed) && !/^\+/.test(trimmed)) return false;
+  if (/(?:id|ga|gtm|analytics|timestamp|date)\s*[:=]/i.test(trimmed)) return false;
+  return /(?:^|[\s:(-])\+?\d[\d\s().-]{5,}\d(?:$|[\s).,-])/.test(trimmed);
+}
+function extractPhone(text: string) { return (text.match(/\+?\d[\d\s().-]{5,}\d/g) || []).filter(isValidPhoneCandidate); }
 function extractDomains(text: string) { return text.match(/(?:https?:\/\/)?(?:www\.)?[a-z0-9-]+(?:\.[a-z0-9-]+)+/gi) || []; }
 
 export function extractEvidenceFacts(evidenceItems: EvidenceItem[]): EvidenceFacts {
@@ -62,7 +71,7 @@ export function extractEvidenceFacts(evidenceItems: EvidenceItem[]): EvidenceFac
     if (lower.includes("website") || lower.includes("domain")) for (const domain of domainMatches) addUnique(facts.websites, endpoint("website", domain, item));
     if (source.includes("registry") || lower.includes("registry") || lower.includes("legal name")) for (const value of explicitValues) addUnique(facts.registryNames, endpoint("registry", value, item));
     if (lower.includes("business name") || lower.includes("company") || lower.includes("legal name")) for (const value of explicitValues) addUnique(facts.businessNames, endpoint("business", value, item));
-    if (source.includes("marketplace") || lower.includes("seller") || lower.includes("store name")) for (const value of explicitValues.length ? explicitValues : [item.title]) addUnique(facts.marketplaceSellers, endpoint("marketplace seller", value, item));
+    if (source.includes("marketplace") || lower.includes("explicit marketplace seller") || lower.includes("marketplace seller") || lower.includes("store name")) for (const value of explicitValues.length ? explicitValues : [item.title]) addUnique(facts.marketplaceSellers, endpoint("marketplace seller", value, item));
     if (source.includes("payment") || lower.includes("payment account") || lower.includes("payout") || lower.includes("paypal") || lower.includes("stripe")) for (const value of explicitValues.length ? explicitValues : [item.title]) addUnique(facts.paymentAccounts, endpoint("payment account", value, item));
     if (item.category === "Negative") addUnique(facts.negativeSignals, endpoint("negative", item.title, item));
     if (lower.includes("fraud") || lower.includes("scam") || lower.includes("blacklist")) addUnique(facts.fraudSignals, endpoint("fraud", item.title, item));

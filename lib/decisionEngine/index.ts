@@ -35,6 +35,7 @@ export function buildDecision(input: {
   insights?: TrustInsight[];
   timeline?: TrustTimelineItem[];
   audience: DecisionAudience;
+  targetType?: string;
 }): DecisionOutput {
   const model = buildVerificationDecision(input);
 

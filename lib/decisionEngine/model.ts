@@ -4,7 +4,7 @@ import { correlateEvidence } from "../correlation";
 import type { CorrelationSummary } from "../correlation";
 import { buildEvidenceItems } from "../evidence";
 import type { ProviderResult } from "../providers/types";
-import type { RiskEngineOutput, RiskSeverity } from "../riskEngine";
+import type { RiskEngineOutput } from "../riskEngine";
 import type { TrustTimelineItem } from "../trustTimeline";
 
 export type VerificationDecision = "PASS" | "REVIEW" | "FAIL";
@@ -59,12 +59,33 @@ function records(result: ProviderResult | undefined, type: string) {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && item.trim().length > 0) : [];
 }
 
-function hasRiskSeverity(output: RiskEngineOutput | undefined, severities: RiskSeverity[]) {
-  return Boolean(output?.findings.some((finding) => severities.includes(finding.severity)));
-}
-
 function unique(items: string[]) {
   return Array.from(new Set(items.filter((item) => item.trim().length > 0)));
+}
+
+function isApplicableEvidence(item: EvidenceItem, targetType: string) {
+  const providerId = item.provider.toLowerCase();
+  const title = item.title.toLowerCase();
+  const isWebsite = targetType === "website" || targetType === "business" || targetType === "Website" || targetType === "Business";
+  if (isWebsite && ["marketplace", "payment", "compliance"].includes(providerId)) return false;
+  if (isWebsite && /(marketplace|seller-to-company|payout|payment processor|compliance authority|regulatory relationship)/i.test(title)) return false;
+  if ((item.category === "Missing" || item.category === "Unavailable" || item.category === "Not Checked") && /\b(aaaa|cname) records?\b/i.test(item.title)) return false;
+  if ((item.category === "Missing" || item.category === "Unavailable") && /http header/i.test(item.title)) return false;
+  return item.category !== "Not Applicable";
+}
+
+function gapKey(title: string) {
+  return title.toLowerCase().replace(/\s+missing$/, "").replace(/\s+record$/, " record").replace(/ provider (not checked|unavailable|availability)$/, " provider").trim();
+}
+
+function dedupeEvidence(items: EvidenceItem[]) {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    const key = `${item.provider}:${item.category}:${gapKey(item.title)}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 export function buildVerificationDecision(input: {
@@ -75,16 +96,19 @@ export function buildVerificationDecision(input: {
   insights?: TrustInsight[];
   timeline?: TrustTimelineItem[];
   audience: "free" | "paid";
+  targetType?: string;
 }): VerificationDecisionOutput {
   const providerResults = input.providerResults || [];
-  const evidenceItems = input.evidenceItems || buildEvidenceItems(providerResults);
-  const correlationSummary = input.correlationSummary || correlateEvidence({ evidenceItems });
+  const rawEvidenceItems = input.evidenceItems || buildEvidenceItems(providerResults);
+  const targetType = input.targetType || "website";
+  const applicableEvidenceItems = rawEvidenceItems.filter((item) => isApplicableEvidence(item, targetType));
+  const evidenceItems = dedupeEvidence(applicableEvidenceItems);
+  const correlationSummary = input.correlationSummary || correlateEvidence({ evidenceItems, targetType });
   const correlationContradictions = correlationSummary.contradictions;
   const insights = input.insights || [];
   const timeline = input.timeline || [];
   const dns = provider("dns", providerResults);
   const whois = provider("whois", providerResults);
-  const reputation = provider("reputation", providerResults);
   const marketplace = provider("marketplace", providerResults);
   const a = records(dns, "A");
   const ns = records(dns, "NS");
@@ -107,19 +131,18 @@ export function buildVerificationDecision(input: {
     explanation: item.businessImpact,
   }));
 
-  const highRisk = hasRiskSeverity(input.riskOutput, ["High", "Critical"]);
   const infrastructureScore = clamp((hasDnsInfrastructure ? 55 : 0) + (ns.length > 0 ? 25 : 0) + (a.length > 0 ? 20 : 0));
   const emailSecurityScore = clamp((hasEmailRouting ? 40 : 0) + (hasSpf ? 30 : 0) + (hasDmarc ? 30 : 0));
   const identityScore = clamp((hasRegistrationContext ? 65 : 0) + (hasMarketplaceEvidence ? 25 : 0) + (insights.some((insight) => insight.category === "Identity Insight" && insight.riskLevel !== "Unknown") ? 10 : 0));
   const knownReputationIssue = negativeFindings.some((finding) => finding.source.toLowerCase().includes("reputation") || finding.impact.toLowerCase().includes("reputation"));
-  const reputationScore: ReputationScore = reputation?.status === "completed" || input.riskOutput ? clamp(100 - (knownReputationIssue ? 70 : highRisk ? 20 : 0)) : "pending";
+  const reputationScore: ReputationScore = knownReputationIssue ? 30 : "pending";
   const providerCompleteness = attemptedProviders > 0 ? (completedProviders / attemptedProviders) * 70 : 0;
   const supportingCompleteness = (timeline.filter((item) => item.status === "completed").length >= 3 ? 15 : 0) + (insights.filter((insight) => insight.evidence.length > 0).length >= 2 ? 15 : 0);
   const evidenceCompleteness = clamp(providerCompleteness + supportingCompleteness);
   const evidenceCoverageScore = evidenceCompleteness;
-  const verificationConfidence = clamp((identityScore * 0.25) + (infrastructureScore * 0.25) + (emailSecurityScore * 0.2) + (evidenceCompleteness * 0.2) + ((reputationScore === "pending" ? 50 : reputationScore) * 0.1));
+  const verificationConfidence = clamp((identityScore * 0.25) + (infrastructureScore * 0.25) + (emailSecurityScore * 0.2) + (evidenceCompleteness * 0.2) + 0);
   const confidenceScore = verificationConfidence;
-  const verificationScore = clamp((identityScore * 0.3) + (infrastructureScore * 0.3) + (emailSecurityScore * 0.2) + ((reputationScore === "pending" ? 50 : reputationScore) * 0.2));
+  const verificationScore = clamp((identityScore * 0.3) + (infrastructureScore * 0.3) + (emailSecurityScore * 0.2) + 0);
 
   const positiveFindings: DecisionFinding[] = evidenceItems.filter((item) => item.category === "Verified").map((item) => ({
     category: "positive",
@@ -163,9 +186,11 @@ export function buildVerificationDecision(input: {
   const positiveEvidenceCount = positiveFindings.length + positiveCorrelationFindings.length;
   const missingEvidenceCount = missingFindings.length + missingCorrelationFindings.length;
   const negativeEvidenceCount = negativeFindings.length + correlationNegativeFindings.length;
+  const deterministicBlockingRule: DecisionFinding[] = [];
+  const confirmedRiskEligible = negativeEvidenceCount > 0 || deterministicBlockingRule.length > 0;
 
   let decision: VerificationDecision = "REVIEW";
-  if (negativeEvidenceCount > 0) decision = "FAIL";
+  if (confirmedRiskEligible) decision = "FAIL";
   else if (positiveEvidenceCount >= 3 && infrastructureScore >= 70 && identityScore >= 60 && verificationConfidence >= 65) decision = "PASS";
 
   const decisionLabel = decision === "PASS" ? "Verified enough to proceed" : decision === "REVIEW" ? "Additional verification recommended" : "Do not proceed";
