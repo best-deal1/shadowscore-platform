@@ -1,0 +1,1674 @@
+{
+  "decisionValidationCases": [
+    {
+      "label": "Trusted enterprise",
+      "snapshot": "strong-business",
+      "expected": [
+        "PASS"
+      ]
+    },
+    {
+      "label": "New business",
+      "snapshot": "new-business",
+      "expected": [
+        "REVIEW"
+      ]
+    },
+    {
+      "label": "Provider failure",
+      "snapshot": "provider-failure",
+      "expected": [
+        "REVIEW"
+      ]
+    },
+    {
+      "label": "Missing ownership",
+      "snapshot": "missing-ownership",
+      "expected": [
+        "REVIEW"
+      ]
+    },
+    {
+      "label": "Known enforcement",
+      "targetType": "marketplaceSeller",
+      "snapshot": "known-enforcement",
+      "expected": [
+        "FAIL"
+      ]
+    },
+    {
+      "label": "Negative evidence",
+      "snapshot": "negative-evidence",
+      "expected": [
+        "FAIL"
+      ]
+    },
+    {
+      "label": "Apple",
+      "snapshot": "strong-business",
+      "expected": [
+        "PASS"
+      ]
+    },
+    {
+      "label": "Microsoft",
+      "snapshot": "strong-business",
+      "expected": [
+        "PASS"
+      ]
+    },
+    {
+      "label": "Amazon",
+      "snapshot": "strong-business",
+      "expected": [
+        "PASS"
+      ]
+    },
+    {
+      "label": "Cloudflare",
+      "snapshot": "strong-business",
+      "expected": [
+        "PASS"
+      ]
+    },
+    {
+      "label": "KSP",
+      "snapshot": "ksp",
+      "expected": [
+        "REVIEW",
+        "PASS"
+      ]
+    },
+    {
+      "label": "C-Data",
+      "snapshot": "c-data",
+      "expected": [
+        "REVIEW"
+      ]
+    },
+    {
+      "label": "GadgetDeals",
+      "snapshot": "gadget-deals",
+      "expected": [
+        "REVIEW"
+      ]
+    },
+    {
+      "label": "New domain",
+      "snapshot": "new-domain",
+      "expected": [
+        "REVIEW"
+      ]
+    },
+    {
+      "label": "Missing data only",
+      "snapshot": "missing-data-only",
+      "expected": [
+        "REVIEW"
+      ]
+    },
+    {
+      "label": "Known phishing domain",
+      "snapshot": "known-phishing-domain",
+      "expected": [
+        "FAIL"
+      ]
+    },
+    {
+      "label": "Known malicious domain",
+      "snapshot": "known-malicious-domain",
+      "expected": [
+        "FAIL"
+      ]
+    }
+  ],
+  "fixtureOutputs": {
+    "knownStrongSite": {
+      "label": "known strong site",
+      "snapshot": "strong-business"
+    },
+    "knownSmallBusiness": {
+      "label": "known small business",
+      "snapshot": "ksp"
+    },
+    "dnsOnlyDomain": {
+      "label": "DNS-only domain",
+      "snapshot": "c-data"
+    },
+    "fakeNewDomain": {
+      "label": "fake/new domain",
+      "snapshot": "known-phishing-domain"
+    },
+    "marketplaceSeller": {
+      "label": "marketplace seller",
+      "snapshot": "marketplace-seller"
+    },
+    "emailOnlyInput": {
+      "label": "email-only input",
+      "snapshot": "email-only-input"
+    }
+  },
+  "integrityCases": {
+    "stripe.com": {
+      "name": "Stripe",
+      "snapshot": "integrity-stripe"
+    },
+    "ynet.co.il": {
+      "name": "Ynet",
+      "snapshot": "integrity-ynet"
+    },
+    "bankhapoalim.co.il": {
+      "name": "Bank Hapoalim",
+      "snapshot": "integrity-bankhapoalim"
+    },
+    "gadgetdeals.co.il": {
+      "name": "Gadget Deals",
+      "snapshot": "integrity-gadgetdeals"
+    },
+    "negativeMarketplace": "integrity-negative-marketplace",
+    "missingDmarc": "integrity-missing-dmarc"
+  },
+  "snapshots": {
+    "strong-business": [
+      {
+        "providerId": "dns",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "completed",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [],
+        "evidence": [
+          {
+            "id": "dns-A",
+            "type": "configuration",
+            "label": "A record",
+            "value": "203.0.113.10",
+            "source": "reference-capture"
+          },
+          {
+            "id": "dns-NS",
+            "type": "configuration",
+            "label": "NS record",
+            "value": "ns1.example.com",
+            "source": "reference-capture"
+          },
+          {
+            "id": "dns-MX",
+            "type": "configuration",
+            "label": "MX record",
+            "value": "mail.example.com",
+            "source": "reference-capture"
+          },
+          {
+            "id": "dns-TXT",
+            "type": "configuration",
+            "label": "TXT record",
+            "value": "v=spf1 include:_spf.example.com -all, v=DMARC1; p=reject",
+            "source": "reference-capture"
+          }
+        ],
+        "metadata": {
+          "category": "validation",
+          "providerName": "dns Provider",
+          "integrationStatus": "connected",
+          "lookupPerformed": true,
+          "records": {
+            "A": [
+              "203.0.113.10"
+            ],
+            "NS": [
+              "ns1.example.com"
+            ],
+            "MX": [
+              "mail.example.com"
+            ],
+            "TXT": [
+              "v=spf1 include:_spf.example.com -all",
+              "v=DMARC1; p=reject"
+            ]
+          }
+        },
+        "errors": []
+      },
+      {
+        "providerId": "reputation",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "completed",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [],
+        "evidence": [],
+        "metadata": {
+          "category": "validation",
+          "providerName": "reputation Provider",
+          "integrationStatus": "connected",
+          "lookupPerformed": true,
+          "records": {}
+        },
+        "errors": []
+      },
+      {
+        "providerId": "whois",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "completed",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [],
+        "evidence": [],
+        "metadata": {
+          "category": "validation",
+          "providerName": "whois Provider",
+          "integrationStatus": "connected",
+          "lookupPerformed": true,
+          "records": {},
+          "registrationDate": "2015-01-01",
+          "ageDays": 4200
+        },
+        "errors": []
+      }
+    ],
+    "new-business": [
+      {
+        "providerId": "dns",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "completed",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [],
+        "evidence": [
+          {
+            "id": "dns-A",
+            "type": "configuration",
+            "label": "A record",
+            "value": "203.0.113.70",
+            "source": "reference-capture"
+          }
+        ],
+        "metadata": {
+          "category": "validation",
+          "providerName": "dns Provider",
+          "integrationStatus": "connected",
+          "lookupPerformed": true,
+          "records": {
+            "A": [
+              "203.0.113.70"
+            ]
+          }
+        },
+        "errors": []
+      },
+      {
+        "providerId": "whois",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "completed",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [],
+        "evidence": [],
+        "metadata": {
+          "category": "validation",
+          "providerName": "whois Provider",
+          "integrationStatus": "connected",
+          "lookupPerformed": true,
+          "records": {},
+          "registrationDate": "2015-01-01",
+          "ageDays": 4200
+        },
+        "errors": []
+      }
+    ],
+    "provider-failure": [
+      {
+        "providerId": "dns",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "skipped",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [],
+        "evidence": [
+          {
+            "id": "dns-unavailable",
+            "type": "observation",
+            "label": "dns Provider availability",
+            "value": "Unavailable",
+            "source": "dns"
+          }
+        ],
+        "metadata": {
+          "category": "validation",
+          "providerName": "dns Provider",
+          "failureReason": "Unavailable",
+          "lookupPerformed": false
+        },
+        "errors": [
+          "provider unavailable"
+        ]
+      }
+    ],
+    "missing-ownership": [
+      {
+        "providerId": "dns",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "completed",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [],
+        "evidence": [
+          {
+            "id": "dns-A",
+            "type": "configuration",
+            "label": "A record",
+            "value": "203.0.113.80",
+            "source": "reference-capture"
+          },
+          {
+            "id": "dns-NS",
+            "type": "configuration",
+            "label": "NS record",
+            "value": "ns1.host.test",
+            "source": "reference-capture"
+          }
+        ],
+        "metadata": {
+          "category": "validation",
+          "providerName": "dns Provider",
+          "integrationStatus": "connected",
+          "lookupPerformed": true,
+          "records": {
+            "A": [
+              "203.0.113.80"
+            ],
+            "NS": [
+              "ns1.host.test"
+            ]
+          }
+        },
+        "errors": []
+      },
+      {
+        "providerId": "whois",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "completed",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [],
+        "evidence": [],
+        "metadata": {
+          "category": "validation",
+          "providerName": "whois Provider",
+          "integrationStatus": "connected",
+          "lookupPerformed": true,
+          "records": {},
+          "registrationDate": "2015-01-01",
+          "ageDays": 4200
+        },
+        "errors": []
+      }
+    ],
+    "known-enforcement": [
+      {
+        "providerId": "marketplace",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "completed",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [
+          {
+            "id": "known-enforcement",
+            "title": "Known enforcement action",
+            "description": "Verified marketplace enforcement notice was supplied.",
+            "severity": "high"
+          }
+        ],
+        "evidence": [],
+        "metadata": {
+          "category": "validation",
+          "providerName": "marketplace Provider",
+          "integrationStatus": "connected",
+          "lookupPerformed": true,
+          "records": {}
+        },
+        "errors": []
+      }
+    ],
+    "negative-evidence": [
+      {
+        "providerId": "reputation",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "completed",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [
+          {
+            "id": "confirmed-fraud",
+            "title": "Confirmed fraud evidence",
+            "description": "Confirmed fraud signal from reputation evidence.",
+            "severity": "critical"
+          }
+        ],
+        "evidence": [],
+        "metadata": {
+          "category": "validation",
+          "providerName": "reputation Provider",
+          "integrationStatus": "connected",
+          "lookupPerformed": true,
+          "records": {}
+        },
+        "errors": []
+      }
+    ],
+    "ksp": [
+      {
+        "providerId": "dns",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "completed",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [],
+        "evidence": [
+          {
+            "id": "dns-A",
+            "type": "configuration",
+            "label": "A record",
+            "value": "203.0.113.20",
+            "source": "reference-capture"
+          },
+          {
+            "id": "dns-NS",
+            "type": "configuration",
+            "label": "NS record",
+            "value": "ns1.host.test",
+            "source": "reference-capture"
+          },
+          {
+            "id": "dns-MX",
+            "type": "configuration",
+            "label": "MX record",
+            "value": "mail.host.test",
+            "source": "reference-capture"
+          },
+          {
+            "id": "dns-TXT",
+            "type": "configuration",
+            "label": "TXT record",
+            "value": "v=spf1 include:host.test ~all",
+            "source": "reference-capture"
+          }
+        ],
+        "metadata": {
+          "category": "validation",
+          "providerName": "dns Provider",
+          "integrationStatus": "connected",
+          "lookupPerformed": true,
+          "records": {
+            "A": [
+              "203.0.113.20"
+            ],
+            "NS": [
+              "ns1.host.test"
+            ],
+            "MX": [
+              "mail.host.test"
+            ],
+            "TXT": [
+              "v=spf1 include:host.test ~all"
+            ]
+          }
+        },
+        "errors": []
+      },
+      {
+        "providerId": "whois",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "completed",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [],
+        "evidence": [],
+        "metadata": {
+          "category": "validation",
+          "providerName": "whois Provider",
+          "integrationStatus": "connected",
+          "lookupPerformed": true,
+          "records": {},
+          "registrationDate": "2015-01-01",
+          "ageDays": 4200
+        },
+        "errors": []
+      }
+    ],
+    "c-data": [
+      {
+        "providerId": "dns",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "completed",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [],
+        "evidence": [
+          {
+            "id": "dns-A",
+            "type": "configuration",
+            "label": "A record",
+            "value": "203.0.113.30",
+            "source": "reference-capture"
+          },
+          {
+            "id": "dns-NS",
+            "type": "configuration",
+            "label": "NS record",
+            "value": "ns1.host.test",
+            "source": "reference-capture"
+          }
+        ],
+        "metadata": {
+          "category": "validation",
+          "providerName": "dns Provider",
+          "integrationStatus": "connected",
+          "lookupPerformed": true,
+          "records": {
+            "A": [
+              "203.0.113.30"
+            ],
+            "NS": [
+              "ns1.host.test"
+            ]
+          }
+        },
+        "errors": []
+      },
+      {
+        "providerId": "reputation",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "completed",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [],
+        "evidence": [],
+        "metadata": {
+          "category": "validation",
+          "providerName": "reputation Provider",
+          "integrationStatus": "connected",
+          "lookupPerformed": true,
+          "records": {}
+        },
+        "errors": []
+      }
+    ],
+    "gadget-deals": [
+      {
+        "providerId": "dns",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "completed",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [],
+        "evidence": [
+          {
+            "id": "dns-A",
+            "type": "configuration",
+            "label": "A record",
+            "value": "203.0.113.40",
+            "source": "reference-capture"
+          },
+          {
+            "id": "dns-MX",
+            "type": "configuration",
+            "label": "MX record",
+            "value": "mail.host.test",
+            "source": "reference-capture"
+          }
+        ],
+        "metadata": {
+          "category": "validation",
+          "providerName": "dns Provider",
+          "integrationStatus": "connected",
+          "lookupPerformed": true,
+          "records": {
+            "A": [
+              "203.0.113.40"
+            ],
+            "MX": [
+              "mail.host.test"
+            ]
+          }
+        },
+        "errors": []
+      }
+    ],
+    "new-domain": [
+      {
+        "providerId": "dns",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "completed",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [],
+        "evidence": [
+          {
+            "id": "dns-A",
+            "type": "configuration",
+            "label": "A record",
+            "value": "203.0.113.50",
+            "source": "reference-capture"
+          }
+        ],
+        "metadata": {
+          "category": "validation",
+          "providerName": "dns Provider",
+          "integrationStatus": "connected",
+          "lookupPerformed": true,
+          "records": {
+            "A": [
+              "203.0.113.50"
+            ]
+          }
+        },
+        "errors": []
+      },
+      {
+        "providerId": "whois",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "completed",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [],
+        "evidence": [],
+        "metadata": {
+          "category": "validation",
+          "providerName": "whois Provider",
+          "integrationStatus": "connected",
+          "lookupPerformed": true,
+          "records": {},
+          "registrationDate": "2015-01-01",
+          "ageDays": 4200
+        },
+        "errors": []
+      }
+    ],
+    "missing-data-only": [],
+    "known-phishing-domain": [
+      {
+        "providerId": "dns",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "completed",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [
+          {
+            "id": "known-phishing",
+            "title": "Known phishing infrastructure",
+            "description": "Verified phishing signal from reputation evidence.",
+            "severity": "critical"
+          }
+        ],
+        "evidence": [
+          {
+            "id": "dns-A",
+            "type": "configuration",
+            "label": "A record",
+            "value": "203.0.113.60",
+            "source": "reference-capture"
+          }
+        ],
+        "metadata": {
+          "category": "validation",
+          "providerName": "dns Provider",
+          "integrationStatus": "connected",
+          "lookupPerformed": true,
+          "records": {
+            "A": [
+              "203.0.113.60"
+            ]
+          }
+        },
+        "errors": []
+      }
+    ],
+    "known-malicious-domain": [
+      {
+        "providerId": "reputation",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "completed",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [
+          {
+            "id": "known-malicious",
+            "title": "Known malicious infrastructure",
+            "description": "Confirmed malicious infrastructure reputation issue.",
+            "severity": "high"
+          }
+        ],
+        "evidence": [],
+        "metadata": {
+          "category": "validation",
+          "providerName": "reputation Provider",
+          "integrationStatus": "connected",
+          "lookupPerformed": true,
+          "records": {}
+        },
+        "errors": []
+      }
+    ],
+    "marketplace-seller": [
+      {
+        "providerId": "dns",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "completed",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [],
+        "evidence": [
+          {
+            "id": "dns-A",
+            "type": "configuration",
+            "label": "A record",
+            "value": "203.0.113.50",
+            "source": "reference-capture"
+          },
+          {
+            "id": "dns-NS",
+            "type": "configuration",
+            "label": "NS record",
+            "value": "ns1.market.test",
+            "source": "reference-capture"
+          },
+          {
+            "id": "dns-MX",
+            "type": "configuration",
+            "label": "MX record",
+            "value": "mail.market.test",
+            "source": "reference-capture"
+          },
+          {
+            "id": "dns-TXT",
+            "type": "configuration",
+            "label": "TXT record",
+            "value": "v=spf1 include:market.test -all",
+            "source": "reference-capture"
+          }
+        ],
+        "metadata": {
+          "category": "validation",
+          "providerName": "dns Provider",
+          "integrationStatus": "connected",
+          "lookupPerformed": true,
+          "records": {
+            "A": [
+              "203.0.113.50"
+            ],
+            "NS": [
+              "ns1.market.test"
+            ],
+            "MX": [
+              "mail.market.test"
+            ],
+            "TXT": [
+              "v=spf1 include:market.test -all"
+            ]
+          }
+        },
+        "errors": []
+      },
+      {
+        "providerId": "marketplace",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "completed",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [],
+        "evidence": [
+          {
+            "id": "marketplace-Seller",
+            "type": "configuration",
+            "label": "Seller record",
+            "value": "verified seller profile",
+            "source": "reference-capture"
+          }
+        ],
+        "metadata": {
+          "category": "validation",
+          "providerName": "marketplace Provider",
+          "integrationStatus": "connected",
+          "lookupPerformed": true,
+          "records": {
+            "Seller": [
+              "verified seller profile"
+            ]
+          }
+        },
+        "errors": []
+      }
+    ],
+    "email-only-input": [
+      {
+        "providerId": "dns",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "completed",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [],
+        "evidence": [
+          {
+            "id": "dns-MX",
+            "type": "configuration",
+            "label": "MX record",
+            "value": "mail.email.test",
+            "source": "reference-capture"
+          },
+          {
+            "id": "dns-TXT",
+            "type": "configuration",
+            "label": "TXT record",
+            "value": "v=spf1 include:email.test ~all",
+            "source": "reference-capture"
+          }
+        ],
+        "metadata": {
+          "category": "validation",
+          "providerName": "dns Provider",
+          "integrationStatus": "connected",
+          "lookupPerformed": true,
+          "records": {
+            "MX": [
+              "mail.email.test"
+            ],
+            "TXT": [
+              "v=spf1 include:email.test ~all"
+            ]
+          }
+        },
+        "errors": []
+      }
+    ],
+    "integrity-stripe": [
+      {
+        "providerId": "business-profile",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "completed",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [],
+        "evidence": [
+          {
+            "id": "profile-domain",
+            "type": "observation",
+            "label": "Business website domain",
+            "value": "stripe.com",
+            "source": "https://stripe.com"
+          },
+          {
+            "id": "profile-organization",
+            "type": "document",
+            "label": "Business name",
+            "value": "Stripe",
+            "source": "https://stripe.com"
+          }
+        ],
+        "metadata": {
+          "category": "validation",
+          "providerName": "business-profile Provider",
+          "integrationStatus": "connected",
+          "lookupPerformed": true,
+          "records": {}
+        },
+        "errors": []
+      },
+      {
+        "providerId": "dns",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "completed",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [],
+        "evidence": [
+          {
+            "id": "dns-domain",
+            "type": "observation",
+            "label": "Normalized domain",
+            "value": "stripe.com",
+            "source": "node:dns"
+          },
+          {
+            "id": "dns-a-records",
+            "type": "observation",
+            "label": "A records",
+            "value": "203.0.113.10",
+            "source": "node:dns"
+          },
+          {
+            "id": "dns-aaaa-records",
+            "type": "observation",
+            "label": "AAAA records",
+            "value": "unavailable",
+            "source": "node:dns"
+          },
+          {
+            "id": "dns-cname-records",
+            "type": "observation",
+            "label": "CNAME records",
+            "value": "unavailable",
+            "source": "node:dns"
+          }
+        ],
+        "metadata": {
+          "category": "validation",
+          "providerName": "dns Provider",
+          "integrationStatus": "connected",
+          "lookupPerformed": true,
+          "records": {
+            "A": [
+              "203.0.113.10"
+            ],
+            "NS": [
+              "ns1.test"
+            ],
+            "MX": [
+              "mail.test"
+            ],
+            "TXT": [
+              "v=spf1 include:test -all"
+            ],
+            "AAAA": [],
+            "CNAME": []
+          }
+        },
+        "errors": []
+      },
+      {
+        "providerId": "reputation",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "completed",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [],
+        "evidence": [
+          {
+            "id": "reputation-signal",
+            "type": "placeholder",
+            "label": "Reputation source not checked",
+            "value": "Not Checked",
+            "source": "local-reputation-abstraction"
+          }
+        ],
+        "metadata": {
+          "category": "validation",
+          "providerName": "reputation Provider",
+          "integrationStatus": "not_connected",
+          "lookupPerformed": false,
+          "records": {},
+          "abstraction": true
+        },
+        "errors": []
+      },
+      {
+        "providerId": "whois",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "completed",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [],
+        "evidence": [
+          {
+            "id": "whois-created",
+            "type": "document",
+            "label": "WHOIS creation date",
+            "value": "2015-01-01",
+            "source": "rdap"
+          }
+        ],
+        "metadata": {
+          "category": "validation",
+          "providerName": "whois Provider",
+          "integrationStatus": "connected",
+          "lookupPerformed": true,
+          "records": {},
+          "registrationDate": "2015-01-01",
+          "ageDays": 4200
+        },
+        "errors": []
+      }
+    ],
+    "integrity-ynet": [
+      {
+        "providerId": "business-profile",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "completed",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [],
+        "evidence": [
+          {
+            "id": "profile-domain",
+            "type": "observation",
+            "label": "Business website domain",
+            "value": "ynet.co.il",
+            "source": "https://ynet.co.il"
+          },
+          {
+            "id": "profile-organization",
+            "type": "document",
+            "label": "Business name",
+            "value": "Ynet",
+            "source": "https://ynet.co.il"
+          }
+        ],
+        "metadata": {
+          "category": "validation",
+          "providerName": "business-profile Provider",
+          "integrationStatus": "connected",
+          "lookupPerformed": true,
+          "records": {}
+        },
+        "errors": []
+      },
+      {
+        "providerId": "dns",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "completed",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [],
+        "evidence": [
+          {
+            "id": "dns-domain",
+            "type": "observation",
+            "label": "Normalized domain",
+            "value": "ynet.co.il",
+            "source": "node:dns"
+          },
+          {
+            "id": "dns-a-records",
+            "type": "observation",
+            "label": "A records",
+            "value": "203.0.113.10",
+            "source": "node:dns"
+          },
+          {
+            "id": "dns-aaaa-records",
+            "type": "observation",
+            "label": "AAAA records",
+            "value": "unavailable",
+            "source": "node:dns"
+          },
+          {
+            "id": "dns-cname-records",
+            "type": "observation",
+            "label": "CNAME records",
+            "value": "unavailable",
+            "source": "node:dns"
+          }
+        ],
+        "metadata": {
+          "category": "validation",
+          "providerName": "dns Provider",
+          "integrationStatus": "connected",
+          "lookupPerformed": true,
+          "records": {
+            "A": [
+              "203.0.113.10"
+            ],
+            "NS": [
+              "ns1.test"
+            ],
+            "MX": [
+              "mail.test"
+            ],
+            "TXT": [
+              "v=spf1 include:test -all"
+            ],
+            "AAAA": [],
+            "CNAME": []
+          }
+        },
+        "errors": []
+      },
+      {
+        "providerId": "reputation",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "completed",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [],
+        "evidence": [
+          {
+            "id": "reputation-signal",
+            "type": "placeholder",
+            "label": "Reputation source not checked",
+            "value": "Not Checked",
+            "source": "local-reputation-abstraction"
+          }
+        ],
+        "metadata": {
+          "category": "validation",
+          "providerName": "reputation Provider",
+          "integrationStatus": "not_connected",
+          "lookupPerformed": false,
+          "records": {},
+          "abstraction": true
+        },
+        "errors": []
+      },
+      {
+        "providerId": "whois",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "completed",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [],
+        "evidence": [
+          {
+            "id": "whois-created",
+            "type": "document",
+            "label": "WHOIS creation date",
+            "value": "2015-01-01",
+            "source": "rdap"
+          }
+        ],
+        "metadata": {
+          "category": "validation",
+          "providerName": "whois Provider",
+          "integrationStatus": "connected",
+          "lookupPerformed": true,
+          "records": {},
+          "registrationDate": "2015-01-01",
+          "ageDays": 4200
+        },
+        "errors": []
+      }
+    ],
+    "integrity-bankhapoalim": [
+      {
+        "providerId": "business-profile",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "completed",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [],
+        "evidence": [
+          {
+            "id": "profile-domain",
+            "type": "observation",
+            "label": "Business website domain",
+            "value": "bankhapoalim.co.il",
+            "source": "https://bankhapoalim.co.il"
+          },
+          {
+            "id": "profile-organization",
+            "type": "document",
+            "label": "Business name",
+            "value": "Bank Hapoalim",
+            "source": "https://bankhapoalim.co.il"
+          }
+        ],
+        "metadata": {
+          "category": "validation",
+          "providerName": "business-profile Provider",
+          "integrationStatus": "connected",
+          "lookupPerformed": true,
+          "records": {}
+        },
+        "errors": []
+      },
+      {
+        "providerId": "dns",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "completed",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [],
+        "evidence": [
+          {
+            "id": "dns-domain",
+            "type": "observation",
+            "label": "Normalized domain",
+            "value": "bankhapoalim.co.il",
+            "source": "node:dns"
+          },
+          {
+            "id": "dns-a-records",
+            "type": "observation",
+            "label": "A records",
+            "value": "203.0.113.10",
+            "source": "node:dns"
+          },
+          {
+            "id": "dns-aaaa-records",
+            "type": "observation",
+            "label": "AAAA records",
+            "value": "unavailable",
+            "source": "node:dns"
+          },
+          {
+            "id": "dns-cname-records",
+            "type": "observation",
+            "label": "CNAME records",
+            "value": "unavailable",
+            "source": "node:dns"
+          }
+        ],
+        "metadata": {
+          "category": "validation",
+          "providerName": "dns Provider",
+          "integrationStatus": "connected",
+          "lookupPerformed": true,
+          "records": {
+            "A": [
+              "203.0.113.10"
+            ],
+            "NS": [
+              "ns1.test"
+            ],
+            "MX": [
+              "mail.test"
+            ],
+            "TXT": [
+              "v=spf1 include:test -all"
+            ],
+            "AAAA": [],
+            "CNAME": []
+          }
+        },
+        "errors": []
+      },
+      {
+        "providerId": "reputation",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "completed",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [],
+        "evidence": [
+          {
+            "id": "reputation-signal",
+            "type": "placeholder",
+            "label": "Reputation source not checked",
+            "value": "Not Checked",
+            "source": "local-reputation-abstraction"
+          }
+        ],
+        "metadata": {
+          "category": "validation",
+          "providerName": "reputation Provider",
+          "integrationStatus": "not_connected",
+          "lookupPerformed": false,
+          "records": {},
+          "abstraction": true
+        },
+        "errors": []
+      },
+      {
+        "providerId": "whois",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "completed",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [],
+        "evidence": [
+          {
+            "id": "whois-created",
+            "type": "document",
+            "label": "WHOIS creation date",
+            "value": "2015-01-01",
+            "source": "rdap"
+          }
+        ],
+        "metadata": {
+          "category": "validation",
+          "providerName": "whois Provider",
+          "integrationStatus": "connected",
+          "lookupPerformed": true,
+          "records": {},
+          "registrationDate": "2015-01-01",
+          "ageDays": 4200
+        },
+        "errors": []
+      }
+    ],
+    "integrity-gadgetdeals": [
+      {
+        "providerId": "business-profile",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "completed",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [],
+        "evidence": [
+          {
+            "id": "profile-domain",
+            "type": "observation",
+            "label": "Business website domain",
+            "value": "gadgetdeals.co.il",
+            "source": "https://gadgetdeals.co.il"
+          },
+          {
+            "id": "profile-organization",
+            "type": "document",
+            "label": "Business name",
+            "value": "Gadget Deals",
+            "source": "https://gadgetdeals.co.il"
+          }
+        ],
+        "metadata": {
+          "category": "validation",
+          "providerName": "business-profile Provider",
+          "integrationStatus": "connected",
+          "lookupPerformed": true,
+          "records": {}
+        },
+        "errors": []
+      },
+      {
+        "providerId": "dns",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "completed",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [],
+        "evidence": [
+          {
+            "id": "dns-domain",
+            "type": "observation",
+            "label": "Normalized domain",
+            "value": "gadgetdeals.co.il",
+            "source": "node:dns"
+          },
+          {
+            "id": "dns-a-records",
+            "type": "observation",
+            "label": "A records",
+            "value": "203.0.113.10",
+            "source": "node:dns"
+          },
+          {
+            "id": "dns-aaaa-records",
+            "type": "observation",
+            "label": "AAAA records",
+            "value": "unavailable",
+            "source": "node:dns"
+          },
+          {
+            "id": "dns-cname-records",
+            "type": "observation",
+            "label": "CNAME records",
+            "value": "unavailable",
+            "source": "node:dns"
+          }
+        ],
+        "metadata": {
+          "category": "validation",
+          "providerName": "dns Provider",
+          "integrationStatus": "connected",
+          "lookupPerformed": true,
+          "records": {
+            "A": [
+              "203.0.113.10"
+            ],
+            "NS": [
+              "ns1.test"
+            ],
+            "MX": [
+              "mail.test"
+            ],
+            "TXT": [
+              "v=spf1 include:test -all"
+            ],
+            "AAAA": [],
+            "CNAME": []
+          }
+        },
+        "errors": []
+      },
+      {
+        "providerId": "reputation",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "completed",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [],
+        "evidence": [
+          {
+            "id": "reputation-signal",
+            "type": "placeholder",
+            "label": "Reputation source not checked",
+            "value": "Not Checked",
+            "source": "local-reputation-abstraction"
+          }
+        ],
+        "metadata": {
+          "category": "validation",
+          "providerName": "reputation Provider",
+          "integrationStatus": "not_connected",
+          "lookupPerformed": false,
+          "records": {},
+          "abstraction": true
+        },
+        "errors": []
+      },
+      {
+        "providerId": "whois",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "completed",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [],
+        "evidence": [
+          {
+            "id": "whois-created",
+            "type": "document",
+            "label": "WHOIS creation date",
+            "value": "2015-01-01",
+            "source": "rdap"
+          }
+        ],
+        "metadata": {
+          "category": "validation",
+          "providerName": "whois Provider",
+          "integrationStatus": "connected",
+          "lookupPerformed": true,
+          "records": {},
+          "registrationDate": "2015-01-01",
+          "ageDays": 4200
+        },
+        "errors": []
+      }
+    ],
+    "integrity-negative-marketplace": [
+      {
+        "providerId": "business-profile",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "completed",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [],
+        "evidence": [
+          {
+            "id": "profile-domain",
+            "type": "observation",
+            "label": "Business website domain",
+            "value": "market.example",
+            "source": "https://market.example"
+          },
+          {
+            "id": "profile-organization",
+            "type": "document",
+            "label": "Business name",
+            "value": "Example LLC",
+            "source": "https://market.example"
+          }
+        ],
+        "metadata": {
+          "category": "validation",
+          "providerName": "business-profile Provider",
+          "integrationStatus": "connected",
+          "lookupPerformed": true,
+          "records": {}
+        },
+        "errors": []
+      },
+      {
+        "providerId": "marketplace",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "completed",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [],
+        "evidence": [
+          {
+            "id": "seller",
+            "type": "document",
+            "label": "Marketplace seller identity",
+            "value": "Different Seller",
+            "source": "explicit-marketplace-evidence"
+          }
+        ],
+        "metadata": {
+          "category": "validation",
+          "providerName": "marketplace Provider",
+          "integrationStatus": "connected",
+          "lookupPerformed": true,
+          "records": {}
+        },
+        "errors": []
+      }
+    ],
+    "integrity-missing-dmarc": [
+      {
+        "providerId": "dmarc",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "completed",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [
+          {
+            "id": "dmarc-missing",
+            "title": "DMARC record missing",
+            "description": "No DMARC",
+            "severity": "medium"
+          }
+        ],
+        "evidence": [
+          {
+            "id": "dmarc-record",
+            "type": "configuration",
+            "label": "DMARC record",
+            "value": "unavailable",
+            "source": "node:dns"
+          }
+        ],
+        "metadata": {
+          "category": "validation",
+          "providerName": "dmarc Provider",
+          "integrationStatus": "connected",
+          "lookupPerformed": true,
+          "records": {}
+        },
+        "errors": []
+      },
+      {
+        "providerId": "dns",
+        "providerVersion": "reference-snapshot-v1",
+        "status": "completed",
+        "startedAt": "2026-07-11T00:00:00.000Z",
+        "completedAt": "2026-07-11T00:00:00.000Z",
+        "duration": 0,
+        "findings": [],
+        "evidence": [
+          {
+            "id": "dns-domain",
+            "type": "observation",
+            "label": "Normalized domain",
+            "value": "missing-dmarc.example",
+            "source": "node:dns"
+          },
+          {
+            "id": "dns-a-records",
+            "type": "observation",
+            "label": "A records",
+            "value": "203.0.113.10",
+            "source": "node:dns"
+          },
+          {
+            "id": "dns-aaaa-records",
+            "type": "observation",
+            "label": "AAAA records",
+            "value": "unavailable",
+            "source": "node:dns"
+          },
+          {
+            "id": "dns-cname-records",
+            "type": "observation",
+            "label": "CNAME records",
+            "value": "unavailable",
+            "source": "node:dns"
+          }
+        ],
+        "metadata": {
+          "category": "validation",
+          "providerName": "dns Provider",
+          "integrationStatus": "connected",
+          "lookupPerformed": true,
+          "records": {
+            "A": [
+              "203.0.113.10"
+            ],
+            "NS": [
+              "ns1.test"
+            ],
+            "MX": [
+              "mail.test"
+            ],
+            "TXT": [
+              "v=spf1 include:test -all"
+            ],
+            "AAAA": [],
+            "CNAME": []
+          }
+        },
+        "errors": []
+      }
+    ]
+  }
+}
