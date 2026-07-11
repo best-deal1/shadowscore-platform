@@ -5,6 +5,6 @@ import type { CorrelationInput, CorrelationSummary } from "./types";
 
 export function correlateEvidence(input: CorrelationInput): CorrelationSummary {
   const facts = extractEvidenceFacts(input.evidenceItems);
-  const findings = evaluateCorrelationRules(facts);
+  const findings = evaluateCorrelationRules(facts, { targetType: input.targetType });
   return summarizeCorrelation(findings, input.generatedAt);
 }

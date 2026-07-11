@@ -161,6 +161,7 @@ export async function POST(request: Request) {
       insights: insightOutput.insights,
       timeline,
       audience: "free",
+      targetType: context.scanMode === "marketplace" ? "marketplaceSeller" : "website",
     });
 
     const businessNarrative = buildBusinessNarrative({

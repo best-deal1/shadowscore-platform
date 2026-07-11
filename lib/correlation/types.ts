@@ -54,6 +54,7 @@ export type CorrelationSummary = {
 export type CorrelationInput = {
   evidenceItems: EvidenceItem[];
   generatedAt?: string;
+  targetType?: string;
 };
 
 export type EvidenceFacts = {
