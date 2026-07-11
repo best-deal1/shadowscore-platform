@@ -10,7 +10,9 @@
     "validate:decisions": "node scripts/validate-decisions.mjs",
     "validate:routes": "node scripts/validate-routes.mjs",
     "validate:decision-integrity": "node scripts/validate-decision-integrity.mjs",
-    "validate:providers": "node scripts/validate-providers.mjs"
+    "validate:providers": "node scripts/validate-providers.mjs",
+    "validate:identity": "node scripts/validate-identity.mjs",
+    "validate:entity": "node scripts/validate-entity.mjs"
   },
   "dependencies": {
     "next": "16.2.6",
