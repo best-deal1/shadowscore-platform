@@ -23,9 +23,15 @@ type FileIssue = { file: string; issue: string; severity: "Block" | "Warning" };
 type FreeScanProviderSummary = {
   providerId: string;
   providerName: string;
+  providerVersion?: string;
+  category?: string;
   status: "completed" | "failed" | "skipped";
   duration: number;
   error?: string;
+  failureReason?: string;
+  lookupPerformed?: boolean;
+  evidenceCount?: number;
+  findingCount?: number;
   fields: Array<{ label: string; value: string }>;
 };
 type TrustInsight = {
@@ -41,7 +47,8 @@ type DecisionPreview = { decision: "PASS" | "REVIEW" | "FAIL" | "CONFIRMED RISK"
 type IdentityProfile = { identitySummary: string };
 type BusinessNarrativeSection = { id: string; title: string; body: string[] };
 type BusinessNarrative = { decision: string; confidence: string; sections: BusinessNarrativeSection[] };
-type FreeScanResult = { executedAt: string; providers: FreeScanProviderSummary[]; insights: TrustInsight[]; insightEngineVersion?: string; timeline?: TrustTimelineItem[]; decisionPreview?: DecisionPreview; identityProfile?: IdentityProfile; businessNarrative?: BusinessNarrative };
+type ProviderRegistryItem = { id: string; name: string; version: string; category: string };
+type FreeScanResult = { executedAt: string; providerRegistry?: ProviderRegistryItem[]; providers: FreeScanProviderSummary[]; insights: TrustInsight[]; insightEngineVersion?: string; timeline?: TrustTimelineItem[]; decisionPreview?: DecisionPreview; identityProfile?: IdentityProfile; businessNarrative?: BusinessNarrative };
 
 const MAX_FILE_SIZE = 15 * 1024 * 1024;
 const MIN_FILE_SIZE = 1024;
@@ -107,18 +114,7 @@ const ANIMATED_SCAN_STEPS = [
   "Preparing report",
 ];
 
-const WEBSITE_PROVIDER_EXECUTION = [
-  { id: "dns", label: "DNS Intelligence", production: true },
-  { id: "whois", label: "WHOIS Intelligence", production: true },
-  { id: "ssl", label: "SSL", production: false },
-  { id: "security-headers", label: "Security Headers", production: false },
-  { id: "spf", label: "SPF", production: false },
-  { id: "dmarc", label: "DMARC", production: false },
-  { id: "reputation", label: "Reputation", production: false },
-  { id: "business-profile", label: "Business Profile", production: false },
-];
-
-const FUTURE_WEBSITE_PROVIDERS = WEBSITE_PROVIDER_EXECUTION.map((provider) => provider.label);
+const WEBSITE_SIGNAL_CATEGORIES = ["DNS Intelligence", "WHOIS Intelligence", "SSL Certificate Provider", "HTTP Security Headers Provider", "SPF Provider", "DMARC Provider", "Public Business Profile Provider", "Reputation Provider", "Website Metadata Provider", "Contact Discovery Provider", "Social Profile Discovery Provider"];
 
 const MARKETPLACE_REQUIREMENTS: Record<string, Requirement[]> = {
   eBay: [
@@ -834,7 +830,7 @@ export default function IntakePage() {
       target: activeTarget,
       email,
       fileNames: files.map((file) => file.name),
-      visibleSignalCategories: scanMode === "website" ? FUTURE_WEBSITE_PROVIDERS : (detectedSignals.length ? detectedSignals.map((item) => item.title) : ["Marketplace identity", "Evidence readiness", "Payment or policy categories"]),
+      visibleSignalCategories: scanMode === "website" ? WEBSITE_SIGNAL_CATEGORIES : (detectedSignals.length ? detectedSignals.map((item) => item.title) : ["Marketplace identity", "Evidence readiness", "Payment or policy categories"]),
     });
 
   const resetFreeScan = () => {
@@ -876,12 +872,21 @@ export default function IntakePage() {
     }
   };
 
-  const providerStatusIcon = (providerId: string) => {
-    if (!WEBSITE_PROVIDER_EXECUTION.find((provider) => provider.id === providerId)?.production) return "⏳";
-    if (freeScanRunning) return "⏳";
-    const result = freeScanResult?.providers.find((provider) => provider.providerId === providerId);
-    if (!result) return "⏳";
-    return result.status === "completed" ? "✓" : "!";
+  const providerStatusLabel = (result?: FreeScanProviderSummary) => {
+    if (freeScanRunning) return "Not Checked";
+    if (!result) return "Not Checked";
+    if (result.status === "completed" && result.lookupPerformed === false) return "Not Applicable";
+    if (result.status === "completed") return "Completed";
+    if (result.failureReason === "Timeout") return "Timeout";
+    if (result.failureReason === "Not Supported") return "Not Supported";
+    return "Unavailable";
+  };
+
+  const providerStatusIcon = (status: string) => {
+    if (status === "Completed") return "✓";
+    if (status === "Timeout") return "⏱";
+    if (status === "Not Checked") return "⏳";
+    return "!";
   };
 
   const renderValue = (value: string): ReactNode => value || "Unavailable";
@@ -1363,15 +1368,15 @@ export default function IntakePage() {
                     {freeScanResult?.decisionPreview ? (
                       <section className="rounded-2xl border border-red-400/25 bg-red-500/[0.07] p-4">
                         <div className="text-xs uppercase tracking-[0.22em] text-red-200">Decision Preview</div>
-                        <div className="mt-3 flex flex-wrap items-center gap-3"><div className="text-2xl font-black text-white">{(freeScanResult.decisionPreview.decision === "FAIL" ? "CONFIRMED RISK" : freeScanResult.decisionPreview.decision)}: {(freeScanResult.decisionPreview.decisionLabel === "Do not proceed" ? "Verified negative indicators detected" : freeScanResult.decisionPreview.decisionLabel === "Verified enough to proceed" ? "Evidence supports proceeding" : freeScanResult.decisionPreview.decisionLabel)}</div><span className="rounded-full border border-white/10 px-3 py-1 text-xs font-bold text-zinc-300">{freeScanResult.decisionPreview.confidenceLevel} confidence</span></div>
-                        <div className="mt-3 text-5xl font-black text-white">{freeScanResult.decisionPreview.verificationScore}/100</div>
-                        <div className="mt-1 text-xs uppercase tracking-[0.22em] text-zinc-500">Verification score</div>
-                        <div className="mt-4 text-sm font-bold text-zinc-200">Top reasons:</div>
-                        <ul className="mt-2 space-y-2 text-sm leading-6 text-zinc-300">{freeScanResult.decisionPreview.topReasons.slice(0, 3).map((reason) => <li key={reason}>• {reason}</li>)}</ul>
-                        {freeScanResult.decisionPreview.missingSignals.length ? <div className="mt-4 rounded-xl border border-orange-400/20 bg-orange-500/10 p-3 text-sm leading-6 text-orange-100"><span className="font-bold">Missing signals:</span> {freeScanResult.decisionPreview.missingSignals.join(", ")}</div> : null}
+                        <div className="mt-3 flex flex-wrap items-center gap-3"><div className="text-2xl font-black text-white">Decision: {(freeScanResult.decisionPreview.decision === "FAIL" ? "CONFIRMED RISK" : freeScanResult.decisionPreview.decision)} — {(freeScanResult.decisionPreview.decisionLabel === "Do not proceed" ? "Verified negative indicators detected" : freeScanResult.decisionPreview.decisionLabel === "Verified enough to proceed" ? "Evidence supports proceeding" : freeScanResult.decisionPreview.decisionLabel)}</div><span className="rounded-full border border-white/10 px-3 py-1 text-xs font-bold text-zinc-300">{freeScanResult.decisionPreview.confidenceLevel} confidence</span></div>
                         <p className="mt-4 text-sm leading-6 text-zinc-300"><span className="font-bold text-zinc-100">What this means:</span> {freeScanResult.decisionPreview.whatThisMeans}</p>
                         <p className="mt-2 text-sm leading-6 text-zinc-300"><span className="font-bold text-zinc-100">Recommended action:</span> {freeScanResult.decisionPreview.recommendedAction}</p>
-                        <div className="mt-4 rounded-xl border border-yellow-400/20 bg-yellow-500/10 p-3 text-xs leading-5 text-yellow-100">Locked advanced breakdown: identity {freeScanResult.decisionPreview.identityScore}/100, infrastructure {freeScanResult.decisionPreview.infrastructureScore}/100, email security {freeScanResult.decisionPreview.emailSecurityScore}/100, reputation {freeScanResult.decisionPreview.reputationScore === "pending" ? "Not checked" : freeScanResult.decisionPreview.reputationScore}, evidence coverage {freeScanResult.decisionPreview.evidenceCoverageScore}/100. Full reasoning unlocks in the paid report.</div>
+                        <div className="mt-5 grid gap-3 md:grid-cols-2">
+                          <div className="rounded-xl border border-emerald-400/20 bg-emerald-500/10 p-3"><div className="text-xs uppercase tracking-[0.2em] text-emerald-200">Verified Signals</div><ul className="mt-2 space-y-2 text-sm leading-6 text-zinc-200">{freeScanResult.decisionPreview.topReasons.slice(0, 4).map((reason) => <li key={reason}>• {reason}</li>)}</ul></div>
+                          <div className="rounded-xl border border-orange-400/20 bg-orange-500/10 p-3"><div className="text-xs uppercase tracking-[0.2em] text-orange-200">Verification Gaps</div>{freeScanResult.decisionPreview.missingSignals.length ? <ul className="mt-2 space-y-2 text-sm leading-6 text-orange-100">{freeScanResult.decisionPreview.missingSignals.map((signal) => <li key={signal}>• {signal}</li>)}</ul> : <p className="mt-2 text-sm text-zinc-300">No major verification gaps detected in the free preview.</p>}</div>
+                          <div className="rounded-xl border border-red-400/20 bg-red-500/10 p-3"><div className="text-xs uppercase tracking-[0.2em] text-red-200">Confirmed Risks</div>{freeScanResult.decisionPreview.blockingIssues.length ? <ul className="mt-2 space-y-2 text-sm leading-6 text-red-100">{freeScanResult.decisionPreview.blockingIssues.map((issue) => <li key={issue}>• {issue}</li>)}</ul> : <p className="mt-2 text-sm text-zinc-300">No confirmed blocking risk was found in the free preview.</p>}</div>
+                          <div className="rounded-xl border border-white/10 bg-black/30 p-3"><div className="text-xs uppercase tracking-[0.2em] text-zinc-400">Unavailable Sources</div><ul className="mt-2 space-y-2 text-sm leading-6 text-zinc-300">{freeScanResult.providers.filter((provider) => providerStatusLabel(provider) !== "Completed").map((provider) => <li key={provider.providerId}>• {provider.providerName}: {providerStatusLabel(provider)}</li>)}</ul></div>
+                        </div>
                       </section>
                     ) : null}
 
@@ -1392,7 +1397,8 @@ export default function IntakePage() {
                     {scanMode === "website" && (freeScanRunning || freeScanResult || freeScanError) && (
                       <section className="rounded-2xl border border-white/10 bg-black/50 p-5">
                         <div className="text-xs uppercase tracking-[0.22em] text-red-300">Provider status</div>
-                        <div className="mt-4 grid gap-3 md:grid-cols-2">{WEBSITE_PROVIDER_EXECUTION.map((provider) => { const result = freeScanResult?.providers.find((item) => item.providerId === provider.id); return <div key={provider.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"><div className="font-black text-white">{providerStatusIcon(provider.id)} {provider.label}{provider.production ? "" : " (Coming Soon)"}</div>{result && <div className="mt-3 space-y-2 text-sm text-zinc-300">{result.fields.map((field) => <div key={field.label}><span className="text-zinc-500">{field.label}:</span> {renderValue(field.value)}</div>)}{result.status !== "completed" && <div className="text-yellow-100">Status: {result.status}. {result.error || "Unavailable"}</div>}</div>}</div>; })}</div>
+                        <div className="mt-4 grid gap-3 md:grid-cols-2">{(freeScanResult?.providerRegistry || []).map((provider) => { const result = freeScanResult?.providers.find((item) => item.providerId === provider.id); const status = providerStatusLabel(result); return <div key={provider.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"><div className="font-black text-white">{providerStatusIcon(status)} {provider.name}</div><div className="mt-1 text-xs uppercase tracking-[0.18em] text-zinc-500">{provider.category} · v{provider.version} · {status}</div>{result && <div className="mt-3 space-y-2 text-sm text-zinc-300">{result.fields.map((field) => <div key={field.label}><span className="text-zinc-500">{field.label}:</span> {renderValue(field.value)}</div>)}{status !== "Completed" && <div className="text-yellow-100">Status: {status}. {result.error || result.failureReason || "Unavailable"}</div>}</div>}</div>; })}</div>
+                        {freeScanResult?.providerRegistry?.length ? <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] p-3 text-xs leading-5 text-zinc-400">Provider Coverage: {freeScanResult.providers.filter((provider) => providerStatusLabel(provider) === "Completed").length} of {freeScanResult.providerRegistry.length} registry providers completed.</div> : null}
                         {freeScanError && <div className="mt-4 rounded-xl border border-red-400/25 bg-red-500/10 p-3 text-sm text-red-100">{freeScanError}</div>}
                       </section>
                     )}
