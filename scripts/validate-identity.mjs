@@ -5,11 +5,18 @@ const require = createRequire(import.meta.url);
 const { resolveBusinessIdentity, CANONICAL_IDENTITY_TYPES, VERIFIED_RELATIONSHIP_TYPES } = require("../lib/businessIdentityResolver.js");
 
 const observedAt = "2026-01-01T00:00:00.000Z";
-const fixtureSeeds = [
+const discoveredRegistryEvidence = [
   { id: "registry-alpha", domain: "fixture-alpha.example", legalName: "Fixture Alpha LLC", brandName: "Alpha Store", verified: true, source: "official_business_registry", observedAt },
 ];
 
-const domainLinked = resolveBusinessIdentity("fixture-alpha.example", { seeds: fixtureSeeds, observedAt });
+const seedOnly = resolveBusinessIdentity("fixture-alpha.example", {
+  seeds: discoveredRegistryEvidence,
+  observedAt,
+});
+assert.equal(seedOnly.identityResolutionStatus, "unresolved");
+assert.ok(seedOnly.limitations.some((item) => item.includes("seeds are intentionally ignored")));
+
+const domainLinked = resolveBusinessIdentity("fixture-alpha.example", { registryEvidence: discoveredRegistryEvidence, observedAt });
 assert.ok(CANONICAL_IDENTITY_TYPES.includes("LegalEntity"));
 assert.ok(VERIFIED_RELATIONSHIP_TYPES.includes("USES_DOMAIN"));
 assert.equal(domainLinked.canonicalOrganization.label, "Fixture Alpha LLC");
