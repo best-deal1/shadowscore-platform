@@ -29,7 +29,7 @@ export type {
   EvidenceReliability,
 } from "./types";
 
-export const BUSINESS_PROFILE_ENGINE_VERSION = "business-profile-engine-v41";
+export const BUSINESS_PROFILE_ENGINE_VERSION = "business-profile-engine-v42";
 
 const EVIDENCE_RELIABILITY: Record<BusinessEvidenceType, { reliability: EvidenceReliability; weight: number }> = {
   government_registry: { reliability: "Very High", weight: 0.98 },
@@ -43,7 +43,6 @@ const EVIDENCE_RELIABILITY: Record<BusinessEvidenceType, { reliability: Evidence
   provider_observation: { reliability: "Low", weight: 0.35 },
 };
 
-const CONSUMER_EMAIL_DOMAINS = new Set(["gmail.com", "googlemail.com", "yahoo.com", "outlook.com", "hotmail.com", "live.com", "icloud.com", "aol.com", "proton.me", "protonmail.com"]);
 
 function provider(providerResults: ProviderResult[], id: string) {
   return providerResults.find((result) => result.providerId === id);
@@ -58,6 +57,16 @@ function metadataString(result: ProviderResult | undefined, keys: string[]) {
   for (const key of keys) {
     const value = clean(result.metadata[key]);
     if (value) return value;
+  }
+  return undefined;
+}
+
+function evidenceValue(result: ProviderResult | undefined, labelPatterns: RegExp[]) {
+  if (!result) return undefined;
+  for (const item of result.evidence) {
+    const value = clean(item.value);
+    if (!value || value.toLowerCase() === "unavailable") continue;
+    if (labelPatterns.some((pattern) => pattern.test(item.label))) return value;
   }
   return undefined;
 }
@@ -159,8 +168,8 @@ export function buildBusinessProfileEvidenceSnapshot(input: BusinessProfileEngin
     completedProviderCount: providerResults.filter((result) => result.status === "completed").length,
     attemptedProviderCount: providerResults.length,
     domain: normalizeDomain(input.target || metadataString(dns, ["domain", "target", "hostname"]) || metadataString(whois, ["domain", "target", "hostname"])),
-    businessName: metadataString(businessProfile, ["businessName", "name", "legalName"]) || metadataString(marketplace, ["businessName", "sellerName", "storeName"]),
-    country: metadataString(businessProfile, ["country", "countryCode"]) || metadataString(whois, ["country", "registrantCountry"]),
+    businessName: metadataString(businessProfile, ["businessName", "name", "legalName"]) || metadataString(marketplace, ["businessName", "sellerName", "storeName"]) || evidenceValue(businessProfile, [/business name/i, /organization/i, /profile title/i]) || evidenceValue(marketplace, [/seller/i, /store/i, /business name/i]),
+    country: metadataString(businessProfile, ["country", "countryCode"]) || metadataString(whois, ["country", "registrantCountry"]) || evidenceValue(businessProfile, [/country/i, /jurisdiction/i]) || evidenceValue(whois, [/country/i, /jurisdiction/i]),
     contactEmail: metadataString(businessProfile, ["email", "contactEmail"]) || metadataString(marketplace, ["email", "contactEmail"]),
     hasDomainInfrastructure: dns?.status === "completed" && (a.length > 0 || aaaa.length > 0 || ns.length > 0),
     hasNameServerRecords: dns?.status === "completed" && ns.length > 0,
@@ -192,20 +201,36 @@ function coverage(snapshot: BusinessProfileEvidenceSnapshot): BusinessProfileCov
 }
 
 function businessType(snapshot: BusinessProfileEvidenceSnapshot): BusinessType {
+  const text = `${snapshot.businessName || ""} ${snapshot.domain} ${snapshot.evidenceItems.map((item) => `${item.label} ${item.value} ${item.source}`).join(" ")}`.toLowerCase();
+  if (/\b(bank|banking|banco|leumi|hapoalim)\b/.test(text)) return "Regulated bank";
+  if (/\b(government|ministry|municipality|agency|\.gov)\b/.test(text)) return "Government";
+  if (/\b(inc|corp|corporation|plc|public company|nasdaq|nyse|lse)\b/.test(text)) return "Public company";
   if (snapshot.evidenceItems.some((item) => item.type === "marketplace_verification")) return "Marketplace seller";
+  if (/\b(startup|seed|venture-backed|stealth)\b/.test(text)) return "Startup";
+  if (snapshot.hasPublicBusinessEvidence && snapshot.hasDomainInfrastructure) return "Small business";
   if (snapshot.hasPublicBusinessEvidence) return "Online business";
   if (snapshot.hasBusinessEmail || snapshot.hasDomainInfrastructure) return "Online business";
   return "Insufficient Public Evidence";
+}
+
+function missingEvidenceForEntity(snapshot: BusinessProfileEvidenceSnapshot, type: BusinessType) {
+  const needsRegistry = type === "Regulated bank" || type === "Public company" || type === "Government";
+  const needsCountry = needsRegistry || type === "Marketplace seller";
+  const needsDomainControl = type !== "Marketplace seller" && type !== "Government" && type !== "Insufficient Public Evidence";
+  return unique([
+    snapshot.businessName || type === "Insufficient Public Evidence" ? undefined : "Business name evidence is missing.",
+    snapshot.country || !needsCountry ? undefined : "Business country evidence is missing.",
+    snapshot.hasDomainRegistrationContext || !needsDomainControl ? undefined : "Domain registration or ownership context is missing.",
+    snapshot.hasPublicBusinessEvidence || type === "Insufficient Public Evidence" ? undefined : "Public business profile evidence is missing.",
+    snapshot.hasEmailAuthentication || type === "Marketplace seller" || type === "Insufficient Public Evidence" ? undefined : "Email authentication evidence is missing.",
+    needsRegistry && !snapshot.evidenceItems.some((item) => item.type === "government_registry" || item.type === "official_business_registry") ? "Authoritative registry or regulator evidence is missing." : undefined,
+  ]);
 }
 
 function unique(items: Array<string | undefined>) {
   return Array.from(new Set(items.filter((item): item is string => Boolean(item))));
 }
 
-function emailDomain(email?: string) {
-  const [, domain] = (email || "").toLowerCase().split("@");
-  return domain;
-}
 
 function detectContradictions(snapshot: BusinessProfileEvidenceSnapshot, providerResults: ProviderResult[]): BusinessProfileContradictionSignal[] {
   const providerNames = unique(providerResults.map((result) => metadataString(result, ["businessName", "name", "legalName", "sellerName", "storeName"])));
@@ -218,40 +243,6 @@ function detectContradictions(snapshot: BusinessProfileEvidenceSnapshot, provide
       evidence: providerNames,
       interpretation: "Multiple provider sources expose different business names for the same target.",
       businessMeaning: "The profile needs manual reconciliation before the identity can be treated as consistent.",
-      severity: "high",
-    });
-  }
-
-  if (snapshot.hasPublicBusinessEvidence && Boolean(snapshot.businessName) && !snapshot.hasDomainRegistrationContext) {
-    signals.push({
-      id: "missing-ownership-high-confidence",
-      title: "High identity confidence lacks ownership context.",
-      evidence: ["Public business evidence exists", "Domain ownership or registration context is missing"],
-      interpretation: "Business identity evidence is present, but domain ownership evidence is absent.",
-      businessMeaning: "The business may be real while control of the investigated domain remains unproven.",
-      severity: "medium",
-    });
-  }
-
-  const contactDomain = emailDomain(snapshot.contactEmail);
-  if (contactDomain && CONSUMER_EMAIL_DOMAINS.has(contactDomain)) {
-    signals.push({
-      id: "consumer-email-business-contact",
-      title: "Consumer email is used as business contact.",
-      evidence: [snapshot.contactEmail || "Consumer email contact"],
-      interpretation: "The contact address uses a consumer mailbox instead of the investigated business domain.",
-      businessMeaning: "This weakens business identity continuity and should be verified with domain-controlled contact evidence.",
-      severity: "medium",
-    });
-  }
-
-  if (snapshot.hasDomainInfrastructure && !snapshot.businessName && !snapshot.hasPublicBusinessEvidence) {
-    signals.push({
-      id: "active-domain-no-business-identity",
-      title: "Domain is active but business identity is absent.",
-      evidence: ["DNS infrastructure is active", "No business name or public business evidence was found"],
-      interpretation: "The domain appears technically operational without matching business identity evidence.",
-      businessMeaning: "The profile can describe infrastructure, but cannot attribute it to a business entity.",
       severity: "high",
     });
   }
@@ -310,14 +301,10 @@ export function buildBusinessProfile(input: BusinessProfileEngineInput): Busines
     contradictionSignals.length > 0 ? `${contradictionSignals.length} contradiction signal(s) require review.` : undefined,
     !snapshot.hasDomainInfrastructure ? "Domain infrastructure was not confirmed from provider evidence." : undefined,
     !snapshot.hasBusinessEmail ? "Business email routing was not confirmed from provider evidence." : undefined,
+    snapshot.hasPublicBusinessEvidence && Boolean(snapshot.businessName) && !snapshot.hasDomainRegistrationContext ? "Public business evidence exists, but domain ownership or registration context is missing." : undefined,
+    snapshot.hasDomainInfrastructure && !snapshot.businessName && !snapshot.hasPublicBusinessEvidence ? "Domain is active, but public business identity evidence was not found." : undefined,
   ]);
-  const missingEvidence = unique([
-    snapshot.businessName ? undefined : "Business name evidence is missing.",
-    snapshot.country ? undefined : "Business country evidence is missing.",
-    snapshot.hasDomainRegistrationContext ? undefined : "Domain registration or ownership context is missing.",
-    snapshot.hasPublicBusinessEvidence ? undefined : "Public business profile evidence is missing.",
-    snapshot.hasEmailAuthentication ? undefined : "Email authentication evidence is missing.",
-  ]);
+  const missingEvidence = missingEvidenceForEntity(snapshot, inferredBusinessType);
 
   const investigationSummary = investigationCoverage === "Complete"
     ? "Provider evidence gives a broad business profile with identity, infrastructure and email signals available."

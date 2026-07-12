@@ -2,7 +2,7 @@ import type { ProviderResult } from "../providers/types";
 
 export type BusinessProfileConfidence = "High" | "Medium" | "Low";
 export type BusinessProfileCoverage = "Complete" | "Partial" | "Limited";
-export type BusinessType = "Marketplace seller" | "Online business" | "Service business" | "Insufficient Public Evidence";
+export type BusinessType = "Startup" | "Small business" | "Marketplace seller" | "Government" | "Regulated bank" | "Public company" | "Online business" | "Service business" | "Insufficient Public Evidence";
 
 export type BusinessEvidenceType =
   | "government_registry"
