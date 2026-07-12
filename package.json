@@ -15,7 +15,8 @@
     "validate:entity": "node scripts/validate-entity.mjs",
     "validate:reasoning": "node scripts/validate-reasoning.mjs",
     "validate:decision": "npm run validate:decisions",
-    "validate:real-world": "node scripts/validate-real-world.mjs"
+    "validate:real-world": "node scripts/validate-real-world.mjs",
+    "validate:production-telemetry": "node scripts/validate-production-pipeline-telemetry.mjs"
   },
   "dependencies": {
     "next": "16.2.6",
