@@ -26,8 +26,19 @@ function anyDifferent(left: CorrelationEndpoint[], right: CorrelationEndpoint[],
   return !anySame(left, right, normalizer);
 }
 
+function requiresRegistryRelationship(facts: EvidenceFacts, targetType?: string) {
+  if (targetType === "regulatedBank" || targetType === "publicCompany" || targetType === "government") return true;
+  const text = [...facts.businessNames, ...facts.registryNames].map((item) => `${item.value} ${item.source}`).join(" ").toLowerCase();
+  return /\b(bank|banking|regulator|registry|public company|nasdaq|nyse|government|ministry)\b/.test(text) || facts.registryNames.length > 0;
+}
+
+function requiresPhoneBusinessRelationship(facts: EvidenceFacts, targetType?: string) {
+  return facts.phones.length > 0 && targetType !== "website";
+}
+
 export function evaluateCorrelationRules(facts: EvidenceFacts, options: { targetType?: string } = {}): CorrelationFinding[] {
   const findings: CorrelationFinding[] = [];
+  const registryApplicable = requiresRegistryRelationship(facts, options.targetType);
 
   if (facts.businessNames.length && facts.registryNames.length) {
     const same = anySame(facts.businessNames, facts.registryNames);
@@ -36,7 +47,7 @@ export function evaluateCorrelationRules(facts: EvidenceFacts, options: { target
       const c = contradiction("company_name_consistency", "Company name differs across providers", [...facts.businessNames, ...facts.registryNames], "Business name evidence and registry evidence point to different company names.");
       findings.push(finding("company_name_consistency", c.title, "Contradiction", c.evidence, c.explanation, c));
     }
-  } else findings.push(finding("business_registry", "Business registry relationship missing", "Unknown", [...facts.businessNames, ...facts.registryNames], "Business name and registry evidence were not both present."));
+  } else if (registryApplicable) findings.push(finding("business_registry", "Business registry relationship missing", "Unknown", [...facts.businessNames, ...facts.registryNames], "Business name and registry evidence were not both present for an entity class where registry evidence is material."));
 
   const emailDomains = facts.emails.map((item) => ({ ...item, value: emailDomain(item.value) })).filter((item) => item.value);
   const websiteDomains = [...facts.websites, ...facts.domains].map((item) => ({ ...item, value: normalizeDomain(item.value) })).filter((item) => item.value);
@@ -50,7 +61,7 @@ export function evaluateCorrelationRules(facts: EvidenceFacts, options: { target
   } else findings.push(finding("email_domain_website", "Email-to-website relationship missing", "Unknown", [...emailDomains, ...websiteDomains], "Email and website evidence were not both present."));
 
   if (facts.phones.length && (facts.businessNames.length || facts.registryNames.length)) findings.push(finding("phone_business", "Phone matches Business", "Likely", [...facts.phones, ...facts.businessNames, ...facts.registryNames], "Phone evidence appears alongside business identity evidence."));
-  else findings.push(finding("phone_business", "Phone-to-business relationship missing", "Unknown", facts.phones, "Phone evidence was not correlated with business identity evidence."));
+  else if (requiresPhoneBusinessRelationship(facts, options.targetType)) findings.push(finding("phone_business", "Phone-to-business relationship missing", "Unknown", facts.phones, "Phone evidence was not correlated with business identity evidence where phone identity was material."));
 
   if (facts.dnsHosts.length && facts.sslHosts.length) {
     const same = anySame(facts.dnsHosts, facts.sslHosts, normalizeDomain);

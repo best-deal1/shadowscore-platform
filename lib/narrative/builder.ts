@@ -83,7 +83,7 @@ function buildFacts(input: NarrativeInput): NarrativeFacts {
     relationshipCount: input.knowledgeGraph.graphSummary.relationshipCount,
     entityCount: input.knowledgeGraph.graphSummary.entityCount,
     stabilitySummary: input.businessMemory?.changeSummary,
-    hasContradictions: input.businessProfile.contradictionSignals.length > 0 || (hasDecisionIntelligenceShape(input.decision) ? input.decision.contradictions.length > 0 : input.decision.blockingIssues.length > 0),
+    hasContradictions: input.businessProfile.contradictionSignals.length > 0 || (hasDecisionIntelligenceShape(input.decision) ? input.decision.contradictions.length > 0 : false),
   };
 }
 

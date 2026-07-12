@@ -14,7 +14,8 @@
     "validate:identity": "node scripts/validate-identity.mjs",
     "validate:entity": "node scripts/validate-entity.mjs",
     "validate:reasoning": "node scripts/validate-reasoning.mjs",
-    "validate:decision": "npm run validate:decisions"
+    "validate:decision": "npm run validate:decisions",
+    "validate:real-world": "node scripts/validate-real-world.mjs"
   },
   "dependencies": {
     "next": "16.2.6",
