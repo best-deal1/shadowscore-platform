@@ -10,6 +10,7 @@ import { buildBusinessProfile } from "./businessProfileEngine";
 import { BusinessKnowledgeGraph } from "./knowledgeGraph";
 import { buildBusinessNarrative } from "./narrative";
 import { buildTrustTimeline } from "./trustTimeline";
+import { buildReasoning } from "./reasoning";
 import { ProviderManager, createDefaultProviders } from "./providers";
 import type { ProviderExecutionContext } from "./providers/types";
 import { analyzeRisk } from "./riskEngine";
@@ -116,6 +117,7 @@ export async function buildReadyReport(input: {
     timeline: trustTimeline,
     audience: "paid",
   });
+  const reasoning = buildReasoning({ evidenceItems, providerResults, decision });
   const decisionIntelligence = evaluateDecisionEvidence({
     businessProfile,
     executionPlan,
@@ -179,6 +181,7 @@ export async function buildReadyReport(input: {
       insights: insightOutput.insights,
       insightEngineVersion: insightOutput.engineVersion,
       decision,
+      reasoning,
       correlationSummary,
       identityProfile,
       businessNarrative,
