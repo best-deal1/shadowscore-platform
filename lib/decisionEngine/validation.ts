@@ -5,6 +5,7 @@ import { confirmedRiskDecisionMatrix } from "./riskPolicy";
 import { loadReferenceProviderSnapshots, referenceProviderSnapshot } from "./snapshots";
 
 export const decisionValidationCases = loadReferenceProviderSnapshots().decisionValidationCases;
+export const truthDatasetMetadata = loadReferenceProviderSnapshots().truthDataset;
 
 function item(partial: Pick<EvidenceItem, "id" | "provider" | "category" | "status" | "title" | "description" | "businessImpact"> & { value?: string; source?: string; confidence?: number }): EvidenceItem {
   return {
@@ -40,6 +41,40 @@ const identityMismatchRegressionCases = [
     ],
   },
 ];
+
+function validateTruthDatasetIndependence() {
+  const representedEnvironments = truthDatasetMetadata.independentExecutionEnvironments.filter((environment) => environment.status === "represented");
+  const representedEnvironmentIds = new Set(representedEnvironments.map((environment) => environment.id));
+  const representedIndependenceClasses = new Set(representedEnvironments.map((environment) => environment.independenceClass));
+  const representativeObservations = truthDatasetMetadata.calibrationObservations.filter((observation) => representedEnvironmentIds.has(observation.environmentId));
+  const observationsReferenceExistingSnapshots = truthDatasetMetadata.calibrationObservations.every((observation) =>
+    decisionValidationCases.some((testCase) => testCase.snapshot === observation.snapshot) ||
+    Object.values(loadReferenceProviderSnapshots().integrityCases).some((integrityCase) => (typeof integrityCase === "string" ? integrityCase : integrityCase.snapshot) === observation.snapshot)
+  );
+
+  return {
+    label: "Truth Dataset independent execution environments",
+    expected: `${truthDatasetMetadata.independencePolicy.minimumIndependentExecutionStacks}+ independent represented runtime stacks and ${truthDatasetMetadata.independencePolicy.minimumRepresentativeObservations}+ representative observations`,
+    actual: `${representedIndependenceClasses.size} independent represented runtime stacks and ${representativeObservations.length} representative observations`,
+    passed:
+      representedIndependenceClasses.size >= truthDatasetMetadata.independencePolicy.minimumIndependentExecutionStacks &&
+      representativeObservations.length >= truthDatasetMetadata.independencePolicy.minimumRepresentativeObservations &&
+      observationsReferenceExistingSnapshots,
+    why: [
+      truthDatasetMetadata.independencePolicy.principle,
+      truthDatasetMetadata.independencePolicy.purpose,
+      `Represented environments: ${representedEnvironments.map((environment) => environment.label).join(", ")}`,
+      `Promotion gate: ${truthDatasetMetadata.promotionGate.readyForEngineOptimization ? "ready" : "not ready"} — ${truthDatasetMetadata.promotionGate.reason}`,
+    ],
+    counts: {
+      positiveEvidenceCount: representedIndependenceClasses.size,
+      missingEvidenceCount: truthDatasetMetadata.independentExecutionEnvironments.filter((environment) => environment.status === "planned").length,
+      negativeEvidenceCount: observationsReferenceExistingSnapshots ? 0 : 1,
+      verificationConfidence: truthDatasetMetadata.promotionGate.readyForEngineOptimization ? "optimization-ready" : "foundation-ready",
+      evidenceCompleteness: representativeObservations.length,
+    },
+  };
+}
 
 export function runDecisionValidationSuite() {
   const snapshotResults = decisionValidationCases.map((testCase) => {
@@ -79,7 +114,7 @@ export function runDecisionValidationSuite() {
     };
   });
 
-  return [...snapshotResults, ...regressionResults];
+  return [...snapshotResults, ...regressionResults, validateTruthDatasetIndependence()];
 }
 
 export { confirmedRiskDecisionMatrix };
