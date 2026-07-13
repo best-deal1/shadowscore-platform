@@ -4,10 +4,12 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createRequire } from "node:module";
 
+const require = createRequire(import.meta.url);
+const tscPath = require.resolve("typescript/bin/tsc");
+
 const outDir = join(tmpdir(), "shadowscore-reasoning-validation");
 rmSync(outDir, { recursive: true, force: true });
-execFileSync("npx", ["tsc", "scripts/validate-reasoning.ts", "--outDir", outDir, "--module", "commonjs", "--target", "es2020", "--esModuleInterop", "--skipLibCheck", "--moduleResolution", "node", "--noEmit", "false"], { stdio: "inherit" });
-const require = createRequire(import.meta.url);
+execFileSync(process.execPath, [tscPath, "scripts/validate-reasoning.ts", "--outDir", outDir, "--module", "commonjs", "--target", "es2020", "--esModuleInterop", "--skipLibCheck", "--moduleResolution", "node", "--noEmit", "false"], { stdio: "inherit" });
 const { runReasoningValidationSuite } = require(join(outDir, "scripts", "validate-reasoning.js"));
 const results = runReasoningValidationSuite();
 console.table(results.map((result) => ({ case: result.label, passed: result.passed, steps: result.steps, graphNodes: result.graphNodes, graphEdges: result.graphEdges, decision: result.decision, confidence: result.confidence })));

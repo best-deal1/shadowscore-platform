@@ -2,8 +2,12 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { createServer } from 'node:http';
 import { rmSync } from 'node:fs';
+import { createRequire } from 'node:module';
 
-execFileSync('npx', ['tsc', '--module', 'commonjs', '--target', 'es2022', '--esModuleInterop', '--skipLibCheck', '--outDir', '.tmp-provider-tests', 'lib/providers/productionProviders.ts', 'lib/providers/BaseProvider.ts', 'lib/providers/types.ts'], { stdio: 'inherit' });
+const require = createRequire(import.meta.url);
+const tscPath = require.resolve('typescript/bin/tsc');
+
+execFileSync(process.execPath, [tscPath, '--module', 'commonjs', '--target', 'es2022', '--esModuleInterop', '--skipLibCheck', '--outDir', '.tmp-provider-tests', 'lib/providers/productionProviders.ts', 'lib/providers/BaseProvider.ts', 'lib/providers/types.ts'], { stdio: 'inherit' });
 const providers = await import('../.tmp-provider-tests/productionProviders.js');
 const { SPFProvider, DMARCProvider, SecurityHeadersProvider, BusinessProfileProvider, ReputationProvider } = providers;
 
