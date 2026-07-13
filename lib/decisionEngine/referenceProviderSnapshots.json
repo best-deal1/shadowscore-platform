@@ -1670,5 +1670,102 @@
         "errors": []
       }
     ]
+  },
+  "truthDataset": {
+    "calibrationCohortVersion": "truth-foundation-v1",
+    "independencePolicy": {
+      "principle": "Repeated executions from the same runtime are not counted as independent observations.",
+      "purpose": "Separate website behavior from environment-specific runtime, network, DNS, and hosting behavior before engine optimization.",
+      "minimumIndependentExecutionStacks": 3,
+      "minimumRepresentativeObservations": 5
+    },
+    "independentExecutionEnvironments": [
+      {
+        "id": "local-windows-01",
+        "label": "Local Windows",
+        "runtimeStack": "Windows workstation / Node.js / residential ISP",
+        "independenceClass": "local-windows",
+        "networkBoundary": "independent-local-network",
+        "status": "represented",
+        "evidence": "Manual calibration capture from a Windows workstation outside the primary deployment stack."
+      },
+      {
+        "id": "local-linux-01",
+        "label": "Local Linux",
+        "runtimeStack": "Linux workstation / Node.js / independent resolver",
+        "independenceClass": "local-linux",
+        "networkBoundary": "independent-local-network",
+        "status": "represented",
+        "evidence": "Manual calibration capture from a Linux runtime outside the primary deployment stack."
+      },
+      {
+        "id": "github-actions-ubuntu-01",
+        "label": "GitHub Actions Ubuntu",
+        "runtimeStack": "GitHub-hosted Ubuntu runner / Node.js",
+        "independenceClass": "github-actions",
+        "networkBoundary": "github-hosted-runner-network",
+        "status": "represented",
+        "evidence": "CI calibration capture from GitHub Actions to represent hosted runner behavior."
+      },
+      {
+        "id": "vercel-edge-01",
+        "label": "Vercel",
+        "runtimeStack": "Vercel deployment runtime",
+        "independenceClass": "vercel",
+        "networkBoundary": "vercel-platform-network",
+        "status": "planned",
+        "evidence": "Reserved Truth Dataset slot; promote after Vercel capture is attached."
+      },
+      {
+        "id": "external-network-01",
+        "label": "Independent external network",
+        "runtimeStack": "External runtime or network not controlled by the primary stack",
+        "independenceClass": "external-network",
+        "networkBoundary": "third-party-network",
+        "status": "planned",
+        "evidence": "Reserved Truth Dataset slot for another independent network/runtime."
+      }
+    ],
+    "calibrationObservations": [
+      {
+        "id": "obs-stripe-windows",
+        "snapshot": "integrity-stripe",
+        "environmentId": "local-windows-01",
+        "target": "stripe.com",
+        "expected": "PASS"
+      },
+      {
+        "id": "obs-ynet-linux",
+        "snapshot": "integrity-ynet",
+        "environmentId": "local-linux-01",
+        "target": "ynet.co.il",
+        "expected": "PASS"
+      },
+      {
+        "id": "obs-bankhapoalim-github",
+        "snapshot": "integrity-bankhapoalim",
+        "environmentId": "github-actions-ubuntu-01",
+        "target": "bankhapoalim.co.il",
+        "expected": "PASS"
+      },
+      {
+        "id": "obs-gadgetdeals-windows",
+        "snapshot": "integrity-gadgetdeals",
+        "environmentId": "local-windows-01",
+        "target": "gadgetdeals.co.il",
+        "expected": "REVIEW"
+      },
+      {
+        "id": "obs-missing-dmarc-linux",
+        "snapshot": "integrity-missing-dmarc",
+        "environmentId": "local-linux-01",
+        "target": "missing-dmarc.example",
+        "expected": "REVIEW"
+      }
+    ],
+    "promotionGate": {
+      "readyForEngineOptimization": false,
+      "reason": "Independent environments are represented, but planned Vercel and external-network captures should be promoted before broad threshold optimization."
+    }
   }
 }
