@@ -1,0 +1,18 @@
+import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { rmSync, readFileSync } from "node:fs";
+import { createRequire } from "node:module";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+const source = readFileSync("lib/providers/productionProviders.ts","utf8");
+assert.equal((source.match(/const r = await acquireSharedHttp\(context\)/g) || []).length, 5, "All five HTTP providers must consume shared acquisition result");
+assert.equal((source.match(/await fetchText\(/g) || []).length, 1, "Shared acquisition must be the only website fetchText caller");
+assert.ok(source.includes("acquireSharedHttp(context)"), "HTTP providers must consume shared acquisition result");
+const require = createRequire(import.meta.url); const tscPath = require.resolve("typescript/bin/tsc"); const outDir = join(tmpdir(), "shadowscore-http-reuse-validation"); rmSync(outDir,{recursive:true,force:true});
+execFileSync(process.execPath,[tscPath,"lib/providers/productionProviders.ts","--outDir",outDir,"--module","commonjs","--target","es2020","--esModuleInterop","--skipLibCheck","--moduleResolution","node","--noEmit","false"],{stdio:"inherit"});
+const providers = require(join(outDir,"productionProviders.js"));
+const context = { intakeId:"http-reuse", scanMode:"website", target:"ksp.co.il", platform:"web", fileNames:[], visibleSignalCategories:[] };
+for (const provider of [new providers.SecurityHeadersProvider(), new providers.BusinessProfileProvider(), new providers.WebsiteMetadataProvider(), new providers.ContactDiscoveryProvider(), new providers.SocialProfileProvider()]) await provider.execute(context);
+assert.equal(context.sharedHttpFetchCount, 1, "Multiple HTTP providers performed duplicate website fetches");
+assert.ok(context.sharedHttpResult?.diagnostics, "shared HTTP diagnostics are missing");
+console.log("http reuse validation passed", { sharedHttpFetchCount: context.sharedHttpFetchCount, outcome: context.sharedHttpResult.outcome, failureStage: context.sharedHttpResult.diagnostics.failureStage });
