@@ -4,10 +4,13 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createRequire } from "node:module";
 
+const require = createRequire(import.meta.url);
+const tscPath = require.resolve("typescript/bin/tsc");
+
 const outDir = join(tmpdir(), "shadowscore-real-world-validation");
 rmSync(outDir, { recursive: true, force: true });
-execFileSync("npx", [
-  "tsc",
+execFileSync(process.execPath, [
+  tscPath,
   "lib/decisionEngine/validation.ts",
   "lib/businessProfileEngine/index.ts",
   "lib/narrative/templates.ts",
@@ -25,7 +28,6 @@ execFileSync("npx", [
   "false",
 ], { stdio: "inherit" });
 
-const require = createRequire(import.meta.url);
 const { buildVerificationDecision } = require(join(outDir, "decisionEngine", "model.js"));
 const { referenceProviderSnapshot } = require(join(outDir, "decisionEngine", "snapshots.js"));
 const { buildBusinessProfile } = require(join(outDir, "businessProfileEngine", "index.js"));

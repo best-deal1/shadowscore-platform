@@ -4,9 +4,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createRequire } from "node:module";
 
-const outDir = join(tmpdir(), "shadowscore-snapshot-generator");
-execFileSync("npx", ["tsc", "lib/providers/ProviderManager.ts", "lib/providers/BaseProvider.ts", "lib/providers/types.ts", "--outDir", outDir, "--module", "commonjs", "--target", "es2020", "--esModuleInterop", "--skipLibCheck", "--moduleResolution", "node", "--noEmit", "false"], { stdio: "inherit" });
 const require = createRequire(import.meta.url);
+const tscPath = require.resolve("typescript/bin/tsc");
+
+const outDir = join(tmpdir(), "shadowscore-snapshot-generator");
+execFileSync(process.execPath, [tscPath, "lib/providers/ProviderManager.ts", "lib/providers/BaseProvider.ts", "lib/providers/types.ts", "--outDir", outDir, "--module", "commonjs", "--target", "es2020", "--esModuleInterop", "--skipLibCheck", "--moduleResolution", "node", "--noEmit", "false"], { stdio: "inherit" });
 const { ProviderManager } = require(join(outDir, "providers", "ProviderManager.js"));
 const { BaseProvider } = require(join(outDir, "providers", "BaseProvider.js"));
 

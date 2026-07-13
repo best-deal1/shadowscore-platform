@@ -4,10 +4,13 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createRequire } from "node:module";
 
+const require = createRequire(import.meta.url);
+const tscPath = require.resolve("typescript/bin/tsc");
+
 const outDir = join(tmpdir(), "shadowscore-decision-validation");
 rmSync(outDir, { recursive: true, force: true });
-execFileSync("npx", [
-  "tsc",
+execFileSync(process.execPath, [
+  tscPath,
   "lib/decisionEngine/validation.ts",
   "--outDir",
   outDir,
@@ -23,7 +26,6 @@ execFileSync("npx", [
   "false",
 ], { stdio: "inherit" });
 
-const require = createRequire(import.meta.url);
 const { runDecisionValidationSuite } = require(join(outDir, "decisionEngine", "validation.js"));
 const results = runDecisionValidationSuite();
 console.table(results.map((result) => ({
