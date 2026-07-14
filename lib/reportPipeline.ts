@@ -192,6 +192,7 @@ export async function buildReadyReport(input: {
         decisionConfidence: decisionIntelligence.confidenceLevel,
       },
       executionFlow,
+      knowledgeGraph: knowledgeGraph.snapshot(),
       technicalDetails: {
         executed: executionRecords.filter((record) => record.status === "executed"),
         skipped: executionRecords.filter((record) => record.status === "skipped"),
