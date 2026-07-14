@@ -18,9 +18,10 @@ export function runDecisionIntegrityValidationSuite() {
     return { domain, before: "CONFIRMED RISK from Marketplace seller differs from company", after: output.decision, blockingIssues: output.blockingIssues };
   });
 
-  const negative = buildVerificationDecision({ providerResults: referenceProviderSnapshot(snapshots.integrityCases.negativeMarketplace), audience: "paid", targetType: "marketplaceSeller" });
-  assert.equal(negative.decision, "FAIL", "explicit marketplace contradiction must still block");
-  assert.ok(negative.blockingIssues.includes("Marketplace seller differs from company"));
+  const marketplaceIdentityMismatch = buildVerificationDecision({ providerResults: referenceProviderSnapshot(snapshots.integrityCases.negativeMarketplace), audience: "paid", targetType: "marketplaceSeller" });
+  assert.equal(marketplaceIdentityMismatch.decision, "REVIEW", "marketplace identity mismatch without enforcement evidence routes to REVIEW");
+  assert.ok(marketplaceIdentityMismatch.missingSignals.includes("Marketplace seller differs from company"));
+  assert.ok(!marketplaceIdentityMismatch.blockingIssues.includes("Marketplace seller differs from company"));
 
   const missingDmarc = buildVerificationDecision({ providerResults: referenceProviderSnapshot(snapshots.integrityCases.missingDmarc), audience: "free", targetType: "website" });
   assert.notEqual(missingDmarc.decision, "FAIL", "DMARC absence alone must not be CONFIRMED RISK");
@@ -30,5 +31,5 @@ export function runDecisionIntegrityValidationSuite() {
 
   const websiteCorrelation = correlateEvidence({ evidenceItems: [], targetType: "website" });
   assert.equal(websiteCorrelation.contradictions.some((c) => c.title === "Marketplace seller differs from company"), false);
-  return { rows, negativeFixture: { decision: negative.decision, blockingIssues: negative.blockingIssues }, missingDmarc: missingDmarc.decision };
+  return { rows, marketplaceIdentityMismatchFixture: { decision: marketplaceIdentityMismatch.decision, missingSignals: marketplaceIdentityMismatch.missingSignals, blockingIssues: marketplaceIdentityMismatch.blockingIssues }, missingDmarc: missingDmarc.decision };
 }
