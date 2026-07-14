@@ -23,20 +23,41 @@ const mobilePublicNav = [
 ];
 
 const footerGroups = [
-  { title: "Product", links: [
+  { title: "Platform", links: [
     { href: "/intake", label: "Start Investigation" },
-    { href: "/investigations", label: "Investigations" },
+    { href: "/investigations", label: "Investigation Workspace" },
     { href: "/reports", label: "Reports" },
     { href: "/monitoring", label: "Monitoring" },
+    { href: "/radar", label: "Risk Radar" },
+  ]},
+  { title: "Trust Center", links: [
+    { href: "/security", label: "Security" },
+    { href: "/privacy", label: "Privacy" },
+    { href: "/terms", label: "Legal Terms" },
+    { href: "/contact", label: "Report a Concern" },
+  ]},
+  { title: "Resources", links: [
+    { href: "/example-report", label: "Example Report" },
+    { href: "/about", label: "Digital Trust Guide" },
+    { href: "/contact", label: "Talk to an Analyst" },
+    { href: "/upgrade", label: "Plans" },
+  ]},
+  { title: "Documentation", links: [
+    { href: "/intake", label: "Investigation Intake" },
+    { href: "/workspace", label: "Workspace Guide" },
+    { href: "/account", label: "Account Settings" },
+    { href: "/dashboard", label: "Dashboard" },
   ]},
   { title: "Company", links: [
     { href: "/about", label: "About" },
-    { href: "/security", label: "Security" },
     { href: "/contact", label: "Contact" },
+    { href: "/login", label: "Customer Login" },
+    { href: "/signup", label: "Create Account" },
   ]},
   { title: "Legal", links: [
-    { href: "/privacy", label: "Privacy" },
-    { href: "/terms", label: "Terms" },
+    { href: "/privacy", label: "Privacy Policy" },
+    { href: "/terms", label: "Terms of Service" },
+    { href: "/security", label: "Security Practices" },
   ]},
 ];
 
@@ -91,8 +112,22 @@ export default function ShadowScoreLayout({ children }: { children: ReactNode })
 
       <main>{children}</main>
 
-      <footer className="border-t border-white/10 bg-black px-6 py-12">
-        <div className="mx-auto grid max-w-7xl gap-8 md:grid-cols-5">
+      <footer className="border-t border-white/10 bg-black px-6 py-14">
+        <div className="mx-auto grid max-w-7xl gap-10 border-b border-white/10 pb-10 lg:grid-cols-[1.2fr_0.8fr]">
+          <div>
+            <div className="flex items-center gap-3">
+              <img src="/shadowscore-shield-v8.png" alt="" className="h-10 w-10 rounded-xl bg-black object-contain p-1" />
+              <div className="text-2xl font-black tracking-tight">Shadow<span className="text-red-500">Score</span></div>
+            </div>
+            <p className="mt-5 max-w-xl text-sm leading-7 text-zinc-400">Enterprise-grade Digital Trust Intelligence for investigating digital business identities, online reputation signals and evidence-backed risk before critical decisions.</p>
+          </div>
+          <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-6">
+            <div className="text-xs font-black uppercase tracking-[0.24em] text-red-200">Ready to investigate?</div>
+            <p className="mt-3 text-sm leading-6 text-zinc-400">Start with a website, company, seller, email or phone number.</p>
+            <Link href="/intake" className="mt-5 inline-flex rounded-full bg-red-600 px-5 py-3 text-xs font-black uppercase tracking-[0.14em] text-white hover:bg-red-500">Start Investigation</Link>
+          </div>
+        </div>
+        <div className="mx-auto mt-10 grid max-w-7xl gap-8 sm:grid-cols-2 lg:grid-cols-7">
           {footerGroups.map((group) => (
             <nav key={group.title} aria-label={`${group.title} footer`} className="space-y-3">
               <h2 className="text-xs font-black uppercase tracking-[0.24em] text-zinc-500">{group.title}</h2>
@@ -104,8 +139,8 @@ export default function ShadowScoreLayout({ children }: { children: ReactNode })
             {socialLinks.map((link) => <a key={link.label} href={link.href} target="_blank" rel="noreferrer" className="block text-sm font-bold text-zinc-300 hover:text-white focus:outline-none focus:ring-2 focus:ring-red-300">{link.label}</a>)}
           </nav>
         </div>
-        <div className="mx-auto mt-10 flex max-w-7xl flex-wrap gap-3 text-xs text-zinc-500">
-          <a href={`mailto:${CONTACT_EMAIL}`} className="hover:text-white">{CONTACT_EMAIL}</a><span>•</span><a href={`mailto:${SUPPORT_EMAIL}`} className="hover:text-white">{SUPPORT_EMAIL}</a>
+        <div className="mx-auto mt-10 flex max-w-7xl flex-wrap items-center gap-3 text-xs text-zinc-500">
+          <span>© 2026 ShadowScore</span><span>•</span><a href={`mailto:${CONTACT_EMAIL}`} className="hover:text-white">{CONTACT_EMAIL}</a><span>•</span><a href={`mailto:${SUPPORT_EMAIL}`} className="hover:text-white">{SUPPORT_EMAIL}</a>
         </div>
         <p className="mx-auto mt-5 max-w-7xl text-xs leading-6 text-zinc-600">ShadowScore provides independent digital business identity intelligence. It does not guarantee account recovery, payment release, legal outcomes or third-party decisions.</p>
       </footer>
