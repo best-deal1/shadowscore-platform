@@ -67,4 +67,19 @@ const conflictingOwnership = resolveBusinessIdentity("fixture-conflict.example",
 assert.equal(conflictingOwnership.identityResolutionStatus, "resolved_with_conflicts");
 assert.equal(conflictingOwnership.primaryIdentity.conflicts[0].field, "ownership");
 
+const unresolvedDomainOnly = resolveBusinessIdentity("shopify-looking.example", { observedAt });
+assert.equal(unresolvedDomainOnly.primaryIdentity.displayName, "Unknown");
+assert.equal(unresolvedDomainOnly.primaryIdentity.kind, "unknown");
+assert.equal(unresolvedDomainOnly.attributeConfidence.domains.confidence, "Low");
+
+const corroborated = resolveBusinessIdentity("fixture-alpha.example", {
+  registryEvidence: discoveredRegistryEvidence,
+  businessProfileEvidence: [{ id: "profile-alpha", domain: "fixture-alpha.example", legalName: "Fixture Alpha LLC", verified: true, source: "public_business_profile", observedAt }],
+  observedAt,
+});
+assert.equal(corroborated.attributeConfidence.domains.corroboratedByIndependentProviders, true);
+assert.ok(corroborated.attributeConfidence.domains.sources.includes("official_business_registry"));
+assert.ok(corroborated.attributeConfidence.domains.sources.includes("public_business_profile"));
+assert.notEqual(corroborated.attributeConfidence.legalName.confidence, corroborated.attributeConfidence.emails.confidence);
+
 console.log("canonical identity validation passed");
