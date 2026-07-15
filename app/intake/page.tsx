@@ -46,7 +46,7 @@ type TrustTimelineItem = { title: string; description: string; status: "complete
 type DecisionPreview = { decision: "PASS" | "REVIEW" | "FAIL" | "CONFIRMED RISK"; decisionLabel: "Evidence supports proceeding" | "Additional verification recommended" | "Verified negative indicators detected" | "Verified enough to proceed" | "Do not proceed"; decisionColor: "green" | "orange" | "red"; verificationScore: number; confidenceScore: number; identityScore: number; infrastructureScore: number; emailSecurityScore: number; reputationScore: number | "pending"; evidenceCoverageScore: number; confidenceLevel: "Low" | "Medium" | "High"; topReasons: string[]; reasons: string[]; missingSignals: string[]; blockingIssues: string[]; whatThisMeans: string; recommendedAction: string; limitedPreview: boolean };
 type IdentityProfile = { identitySummary: string };
 type BusinessNarrativeSection = { id: string; title: string; body: string[] };
-type BusinessNarrative = { decision: string; confidence: string; sections: BusinessNarrativeSection[] };
+type BusinessNarrative = { decision: string; confidence: string; decisionMode?: { proceed: "YES" | "REVIEW" | "NO"; confidence: string; mainRemainingUncertainty: string; recommendedNextAction: string; estimatedEffort: string; businessImpactIfSkipped: "Low" | "Medium" | "High" }; sections: BusinessNarrativeSection[] };
 type ProviderRegistryItem = { id: string; name: string; version: string; category: string };
 type FreeScanResult = { executedAt: string; providerRegistry?: ProviderRegistryItem[]; providers: FreeScanProviderSummary[]; insights: TrustInsight[]; insightEngineVersion?: string; timeline?: TrustTimelineItem[]; decisionPreview?: DecisionPreview; identityProfile?: IdentityProfile; businessNarrative?: BusinessNarrative };
 
@@ -1308,9 +1308,20 @@ export default function IntakePage() {
 
                 {freeScanResult?.businessNarrative ? (
                   <section className="rounded-[28px] border border-red-400/20 bg-red-500/[0.06] p-6">
-                    <div className="text-xs uppercase tracking-[0.22em] text-red-300">Evidence Summary</div>
-                    <div className="mt-4 flex flex-wrap items-center gap-3">
-                      <div className="text-2xl font-black text-white">{freeScanResult.businessNarrative.decision}</div>
+                    <div className="text-xs uppercase tracking-[0.22em] text-red-300">Decision preview</div>
+                    <div className="mt-4 grid gap-3 md:grid-cols-3">
+                      <div className="rounded-2xl border border-white/10 bg-black/40 p-4">
+                        <div className="text-xs uppercase tracking-[0.2em] text-zinc-500">Proceed?</div>
+                        <div className="mt-2 text-3xl font-black text-white">{freeScanResult.businessNarrative.decisionMode?.proceed || freeScanResult.businessNarrative.decision}</div>
+                      </div>
+                      <div className="rounded-2xl border border-white/10 bg-black/40 p-4">
+                        <div className="text-xs uppercase tracking-[0.2em] text-zinc-500">Main uncertainty</div>
+                        <div className="mt-2 text-lg font-black text-white">{freeScanResult.businessNarrative.decisionMode?.mainRemainingUncertainty || "Business identity"}</div>
+                      </div>
+                      <div className="rounded-2xl border border-white/10 bg-black/40 p-4">
+                        <div className="text-xs uppercase tracking-[0.2em] text-zinc-500">Impact if skipped</div>
+                        <div className="mt-2 text-lg font-black text-white">{freeScanResult.businessNarrative.decisionMode?.businessImpactIfSkipped || "Medium"}</div>
+                      </div>
                     </div>
                     {freeScanResult.decisionPreview?.recommendedAction ? (
                       <p className="mt-4 text-sm leading-6 text-zinc-200"><span className="font-bold text-white">Recommendation:</span> {freeScanResult.decisionPreview.recommendedAction}</p>
@@ -1324,7 +1335,7 @@ export default function IntakePage() {
                       </div>
                     ) : null}
                     <div className="mt-5 grid gap-4 md:grid-cols-3">
-                      {freeScanResult.businessNarrative.sections.filter((section) => ["whatWeFound", "whatRequiresVerification", "recommendedNextSteps"].includes(section.id)).map((section) => (
+                      {freeScanResult.businessNarrative.sections.filter((section) => ["whatWeFound", "whatRequiresVerification", "recommendedNextSteps", "decisionCost", "investigationStory"].includes(section.id)).map((section) => (
                         <div key={section.id} className="rounded-2xl border border-white/10 bg-black/40 p-5">
                           <div className="text-xs uppercase tracking-[0.22em] text-red-200">{section.title}</div>
                           <div className="mt-3 space-y-3 text-sm leading-6 text-zinc-300">{section.body.map((item) => <p key={item}>{item}</p>)}</div>
@@ -1336,7 +1347,7 @@ export default function IntakePage() {
 
                 <section className="rounded-[28px] border border-yellow-400/20 bg-yellow-500/10 p-6 text-sm leading-7 text-yellow-100">
                   <div className="text-xs uppercase tracking-[0.22em] text-yellow-200">Why unlock?</div>
-                  <p className="mt-4 text-base font-bold text-white">The free preview is a direction check. The paid report is the executive decision product.</p>
+                  <p className="mt-4 text-base font-bold text-white">The free preview is a direction check. The paid report is the executive decision product: what to do, why it matters, and what uncertainty costs if ignored.</p>
                   <div className="mt-4 grid gap-3 md:grid-cols-3">
                     {["Final commercial recommendation", "Source-backed appendix", "Action plan for next steps"].map((item) => <div key={item} className="rounded-2xl border border-white/10 bg-black/30 p-4 text-sm font-bold text-yellow-50">✓ {item}</div>)}
                   </div>
