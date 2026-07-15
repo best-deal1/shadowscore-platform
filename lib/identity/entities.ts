@@ -15,6 +15,6 @@ export function buildIdentity(signals: IdentitySignal[], contradictions: Identit
   const marketplaceAccounts = uniqueSorted(signals.filter((s) => s.type === "marketplace_account").map((s) => s.normalizedValue));
   const paymentAccounts = uniqueSorted(signals.filter((s) => s.type === "payment_account").map((s) => s.normalizedValue));
   const evidenceRefs = uniqueSorted(signals.flatMap((s) => [s.evidenceRef, s.evidenceItemId]));
-  const displayName = aliases[0] || domains[0] || emails[0] || phones[0] || socialProfiles[0] || marketplaceAccounts[0] || paymentAccounts[0] || "Unknown identity";
+  const displayName = aliases[0] || "Unknown";
   return { identityId: identityId(displayName), displayName, aliases, domains, emails, phones, socialProfiles, marketplaceAccounts, paymentAccounts, evidenceRefs, contradictions };
 }
