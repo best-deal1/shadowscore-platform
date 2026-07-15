@@ -49,6 +49,38 @@ function BusinessCard({ title, body }: { title: string; body: string[] }) {
   );
 }
 
+function DecisionModePanel({ report }: { report: ShadowScoreReport }) {
+  const mode = report.reportSummary?.businessNarrative?.decisionMode;
+  const decision = report.reportSummary?.decision;
+  const proceed = mode?.proceed || (decision?.decision === "PASS" ? "YES" : decision?.decision === "FAIL" ? "NO" : "REVIEW");
+  const confidence = mode?.confidence || decision?.confidenceLevel || "Not verified";
+  const uncertainty = mode?.mainRemainingUncertainty || "Business ownership";
+  const action = mode?.recommendedNextAction || decision?.recommendedAction || "Verify the highest-value evidence before committing funds.";
+  const effort = mode?.estimatedEffort || "3 minutes";
+  const impact = mode?.businessImpactIfSkipped || (proceed === "NO" ? "High" : "Medium");
+
+  return (
+    <section className="mt-8 rounded-[28px] border border-emerald-400/25 bg-emerald-500/[0.07] p-6">
+      <div className="text-xs uppercase tracking-[0.28em] text-emerald-200">Decision mode</div>
+      <div className="mt-5 grid gap-4 md:grid-cols-3">
+        <div className="rounded-3xl border border-white/10 bg-black/45 p-6 md:col-span-1">
+          <div className="text-xs uppercase tracking-[0.22em] text-zinc-500">Proceed?</div>
+          <div className="mt-3 text-5xl font-black text-white">{proceed}</div>
+          <div className="mt-4 text-sm font-bold text-emerald-100">Confidence: {confidence}</div>
+        </div>
+        <div className="rounded-3xl border border-white/10 bg-black/45 p-6 md:col-span-2">
+          <div className="grid gap-4 md:grid-cols-2">
+            <FieldDetail label="Main remaining uncertainty" value={uncertainty} />
+            <FieldDetail label="Estimated effort" value={effort} />
+            <FieldDetail label="Recommended next action" value={action} />
+            <FieldDetail label="Business impact if skipped" value={impact} />
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function DecisionCard({ report }: { report: ShadowScoreReport }) {
   const rawDecision = report.reportSummary?.decision?.decision || (report.reportSummary?.businessNarrative?.decision?.toUpperCase().includes("FAIL") ? "FAIL" : report.reportSummary?.businessNarrative?.decision?.toUpperCase().includes("PASS") ? "PASS" : "REVIEW");
   const decision = rawDecision === "FAIL" ? "CONFIRMED RISK" : rawDecision;
@@ -103,6 +135,8 @@ export default function ReportPage() {
     findNarrativeSection(report, "whatWeFound") || fallbackSection("Key Findings", report.reportSummary?.decision?.topReasons || [report.reportSummary?.message]),
     findNarrativeSection(report, "whatRequiresVerification") || fallbackSection("Needs Review", [report.reportSummary?.decision?.whatThisMeans]),
     findNarrativeSection(report, "recommendedNextSteps") || fallbackSection("Next Steps", [report.reportSummary?.decision?.recommendedAction]),
+    findNarrativeSection(report, "decisionCost") || fallbackSection("Cost of Uncertainty", [report.reportSummary?.decision?.whatThisMeans]),
+    findNarrativeSection(report, "investigationStory") || fallbackSection("Investigation Story", [report.reportSummary?.message]),
   ] : [];
 
   return (
@@ -126,6 +160,7 @@ export default function ReportPage() {
         {report && isReady && (
           <div className="mt-8 rounded-[32px] border border-white/10 bg-black/55 p-8 shadow-[0_0_60px_rgba(120,0,20,0.16)]">
             <DecisionCard report={report} />
+            <DecisionModePanel report={report} />
 
             <section className="mt-8 rounded-[28px] border border-red-400/20 bg-red-500/[0.06] p-6">
               <div className="text-xs uppercase tracking-[0.28em] text-red-200">Executive brief</div>

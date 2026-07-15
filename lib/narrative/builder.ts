@@ -38,11 +38,11 @@ function businessFriendlyEvidence(item: NarrativeEvidence) {
     case "dns":
       return "The business has a functioning public web presence.";
     case "email_authentication":
-      return "Professional email protections are visible for the domain.";
+      return "Business email authenticity can be independently checked for the domain.";
     case "ssl":
       return "The public website supports secure visitor connections.";
     case "whois":
-      return "Domain registration context is available for review.";
+      return "Domain registration context is available for ownership review.";
     case "business_website":
       return "A public website is available for customers or partners to inspect.";
     case "marketplace_verification":
@@ -62,11 +62,42 @@ function missingEvidence(input: NarrativeInput) {
   return Array.from(new Set([...input.businessProfile.missingEvidence, ...decisionMissing, ...input.businessProfile.warningSignals]));
 }
 
+function proceedLabel(decision: NarrativeDecision): "YES" | "REVIEW" | "NO" {
+  const raw = hasDecisionIntelligenceShape(decision) ? decision.decision : decision.decision;
+  if (raw === "PASS") return "YES";
+  if (raw === "FAIL") return "NO";
+  return "REVIEW";
+}
+
+function uncertaintyLabel(verificationNeeds: string[]) {
+  const first = verificationNeeds[0];
+  if (!first) return "Routine documentation";
+  const normalized = first.toLowerCase();
+  if (normalized.includes("owner") || normalized.includes("identity") || normalized.includes("registration")) return "Business ownership";
+  if (normalized.includes("payment") || normalized.includes("bank") || normalized.includes("payout")) return "Payment identity";
+  if (normalized.includes("email")) return "Business email authenticity";
+  if (normalized.includes("domain") || normalized.includes("website")) return "Website ownership";
+  return first;
+}
+
+function effortLabel(verificationNeeds: string[]) {
+  return verificationNeeds.length > 2 ? "10 minutes" : verificationNeeds.length > 0 ? "3 minutes" : "2 minutes";
+}
+
+function impactLabel(proceed: "YES" | "REVIEW" | "NO", verificationNeeds: string[]): "Low" | "Medium" | "High" {
+  if (proceed === "NO") return "High";
+  if (proceed === "REVIEW" || verificationNeeds.length > 1) return "Medium";
+  return "Low";
+}
+
 function buildFacts(input: NarrativeInput): NarrativeFacts {
   const positiveFindings = Array.from(new Set([
     ...input.businessProfile.trustSignals,
     ...input.evidence.filter((item) => item.reliabilityWeight >= 60 || item.confidence === "High").map(businessFriendlyEvidence),
   ])).filter(Boolean);
+
+  const verificationNeeds = missingEvidence(input);
+  const proceed = proceedLabel(input.decision);
 
   return {
     businessName: input.businessProfile.businessName || input.businessProfile.primaryDomain || "The business",
@@ -78,12 +109,16 @@ function buildFacts(input: NarrativeInput): NarrativeFacts {
     recommendation: recommendation(input),
     nextActions: nextActions(input),
     positiveFindings,
-    verificationNeeds: missingEvidence(input),
+    verificationNeeds,
     evidenceUsed: input.evidence.map(evidenceLabel),
     relationshipCount: input.knowledgeGraph.graphSummary.relationshipCount,
     entityCount: input.knowledgeGraph.graphSummary.entityCount,
     stabilitySummary: input.businessMemory?.changeSummary,
     hasContradictions: input.businessProfile.contradictionSignals.length > 0 || (hasDecisionIntelligenceShape(input.decision) ? input.decision.contradictions.length > 0 : false),
+    proceed,
+    mainRemainingUncertainty: uncertaintyLabel(verificationNeeds),
+    estimatedEffort: effortLabel(verificationNeeds),
+    businessImpactIfSkipped: impactLabel(proceed, verificationNeeds),
   };
 }
 
@@ -96,6 +131,14 @@ export function buildBusinessNarrative(input: NarrativeInput): BusinessNarrative
     primaryDomain: facts.primaryDomain,
     decision: facts.decision,
     confidence: facts.confidence,
+    decisionMode: {
+      proceed: facts.proceed,
+      confidence: facts.confidence,
+      mainRemainingUncertainty: facts.mainRemainingUncertainty,
+      recommendedNextAction: facts.recommendation,
+      estimatedEffort: facts.estimatedEffort,
+      businessImpactIfSkipped: facts.businessImpactIfSkipped,
+    },
     sections: buildNarrativeSections(facts),
   };
 }

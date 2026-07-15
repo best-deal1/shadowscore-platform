@@ -13,6 +13,8 @@ export type BusinessNarrativeSectionId =
   | "whatIncreasesConfidence"
   | "whatRequiresVerification"
   | "recommendedNextSteps"
+  | "decisionCost"
+  | "investigationStory"
   | "evidenceUsed";
 
 export type BusinessNarrativeSection = {
@@ -27,6 +29,14 @@ export type BusinessNarrative = {
   primaryDomain: string;
   decision: string;
   confidence: string;
+  decisionMode: {
+    proceed: "YES" | "REVIEW" | "NO";
+    confidence: string;
+    mainRemainingUncertainty: string;
+    recommendedNextAction: string;
+    estimatedEffort: string;
+    businessImpactIfSkipped: "Low" | "Medium" | "High";
+  };
   sections: BusinessNarrativeSection[];
 };
 
@@ -55,4 +65,8 @@ export type NarrativeFacts = {
   entityCount: number;
   stabilitySummary?: string;
   hasContradictions: boolean;
+  proceed: "YES" | "REVIEW" | "NO";
+  mainRemainingUncertainty: string;
+  estimatedEffort: string;
+  businessImpactIfSkipped: "Low" | "Medium" | "High";
 };

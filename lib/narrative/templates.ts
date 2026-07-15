@@ -51,7 +51,26 @@ export function verificationTemplate(facts: NarrativeFacts): string[] {
 
 export function nextStepsTemplate(facts: NarrativeFacts): string[] {
   const nextActions = facts.nextActions.length > 0 ? facts.nextActions : [facts.recommendation];
-  return Array.from(new Set(nextActions.filter(Boolean))).slice(0, 5).map(sentence);
+  return Array.from(new Set(nextActions.filter(Boolean))).slice(0, 5).map((action) => sentence(`${action} This matters because it reduces the remaining uncertainty before money, access or reputation is put at risk`));
+}
+
+export function decisionCostTemplate(facts: NarrativeFacts): string[] {
+  const uncertainty = facts.mainRemainingUncertainty.toLowerCase();
+  return [
+    `Proceeding without resolving ${uncertainty} leaves the decision exposed to avoidable commercial risk`,
+    `If skipped, the expected business impact is ${facts.businessImpactIfSkipped.toLowerCase()} because the buyer may rely on incomplete proof before paying, onboarding or signing`,
+    `The recommended check is estimated at ${facts.estimatedEffort}, so the cost of verification is small compared with a wrong supplier, seller or partner decision`,
+  ].map(sentence);
+}
+
+export function investigationStoryTemplate(facts: NarrativeFacts): string[] {
+  const found = facts.positiveFindings.length > 0 ? facts.positiveFindings.slice(0, 3) : ["We found limited public evidence that can support a confident business decision"];
+  return [
+    `We identified ${facts.businessName} and connected it to ${facts.primaryDomain}`,
+    ...found,
+    facts.hasContradictions ? "We found inconsistent signals that should be resolved before proceeding" : "No verified contradiction was strong enough to override the current recommendation",
+    `The remaining uncertainty relates to ${facts.mainRemainingUncertainty.toLowerCase()}`,
+  ].map(sentence);
 }
 
 export function evidenceUsedTemplate(facts: NarrativeFacts): string[] {
