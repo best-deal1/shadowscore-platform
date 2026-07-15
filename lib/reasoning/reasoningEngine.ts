@@ -63,7 +63,7 @@ function detectContradictions(items: EvidenceItem[]): ReasoningContradiction[] {
       conflictingEvidence: evidence.map(ref),
       strongerEvidence: ref(stronger),
       affectsDecision: true,
-      explanation: `${stronger.title} is strongest because it has ${stronger.confidence}/100 confidence; confirmed negative evidence affects the final decision while missing or unknown evidence does not.`,
+      explanation: `${stronger.title} is strongest because it has ${stronger.confidence >= 85 ? "Very High" : stronger.confidence >= 65 ? "High" : stronger.confidence >= 40 ? "Medium" : "Low"} inferred confidence; confirmed negative evidence affects the final decision while missing or unknown evidence does not.`,
     };
   });
 }

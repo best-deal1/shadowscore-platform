@@ -6,6 +6,7 @@ import Link from "next/link";
 import ShadowScoreLayout from "../components/ShadowScoreLayout";
 import { getCurrentSession, getCurrentUser } from "../../lib/auth";
 import { getWorkspace, type ShadowScoreEntity } from "../../lib/workspace";
+import { metricProvenance, qualitativeFromRisk } from "../../lib/metricDisplay";
 
 function statusClass(status: ShadowScoreEntity["status"]) {
   if (status === "High Risk") return "border-red-400/30 bg-red-500/10 text-red-100";
@@ -51,7 +52,22 @@ export default function MonitoringPage() {
           {!loaded && <div className="text-zinc-400">Loading monitored businesses...</div>}
           {loaded && entities.length === 0 && <div className="rounded-3xl border border-white/10 bg-white/[0.035] p-6"><div className="text-xl font-black">No monitored businesses yet</div><p className="mt-2 text-zinc-500">Use the dashboard watchlist form to add your first business. This is an empty state, not placeholder data.</p></div>}
           <div className="grid gap-4 md:grid-cols-2">
-            {entities.map((entity) => <div key={entity.id} className="rounded-3xl border border-white/10 bg-white/[0.035] p-5"><div className="flex items-start justify-between gap-4"><div><div className="text-xl font-black">{entity.name}</div><div className="mt-1 text-sm text-zinc-500">{entity.type}</div></div><span className={`rounded-full border px-3 py-1 text-xs font-black ${statusClass(entity.status)}`}>{entity.status}</span></div><div className="mt-5 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-yellow-300 to-red-500" style={{ width: `${entity.lastScore}%` }} /></div><div className="mt-3 text-sm text-zinc-400">Risk index: <span className="font-black text-white">{entity.lastScore}/100</span></div></div>)}
+            {entities.map((entity) => (
+              <div key={entity.id} className="rounded-3xl border border-white/10 bg-white/[0.035] p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="text-xl font-black">{entity.name}</div>
+                    <div className="mt-1 text-sm text-zinc-500">{entity.type}</div>
+                  </div>
+                  <span className={`rounded-full border px-3 py-1 text-xs font-black ${statusClass(entity.status)}`}>{entity.status}</span>
+                </div>
+                <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/10">
+                  <div className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-yellow-300 to-red-500" style={{ width: `${entity.lastScore}%` }} />
+                </div>
+                <div className="mt-3 text-sm text-zinc-400">Risk level: <span className="font-black text-white">{qualitativeFromRisk(entity.lastScore)}</span></div>
+                <p className="mt-2 text-xs text-zinc-500">{metricProvenance("estimated")}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>

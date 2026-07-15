@@ -15,7 +15,7 @@ function confidenceLabel(decision: NarrativeDecision) {
 
 function coverageLabel(input: NarrativeInput) {
   if (hasDecisionIntelligenceShape(input.decision)) return input.decision.evidenceCoverage;
-  return `${input.decision.evidenceCoverageScore}/100`;
+  return input.decision.confidenceLevel || "Unknown";
 }
 
 function recommendation(input: NarrativeInput) {

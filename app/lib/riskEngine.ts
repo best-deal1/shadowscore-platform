@@ -333,7 +333,7 @@ function buildTimeline(stage: HealthStage, primaryRiskDomain: string, score: num
   if (stage === "Suspended") {
     return [
       { label: "Before", status: "Restricted or reviewed", detail: "The account likely passed through a review or warning stage." },
-      { label: "Now", status: "Suspended", detail: `Detected score ${score}/100 with ${primaryRiskDomain} as the leading risk domain.` },
+      { label: "Now", status: "Suspended", detail: `Detected ${restrictionProbabilityFromScore(score).toLowerCase()} risk level with ${primaryRiskDomain} as the leading risk domain.` },
       { label: "Next", status: "Appeal or post-mortem", detail: "The outcome depends on root cause clarity, evidence quality and platform severity." },
     ];
   }
