@@ -13,6 +13,7 @@ import {
   workspaceModeLabel,
 } from "../../lib/workspace";
 import { ShadowScoreUser, getCurrentSession, getCurrentUser, logoutUser } from "../../lib/auth";
+import { metricProvenance, qualitativeFromRisk, qualitativeFromScore } from "../../lib/metricDisplay";
 
 const stageClass: Record<ShadowScoreReport["stage"], string> = {
   Healthy: "border-emerald-400/30 bg-emerald-500/10 text-emerald-200",
@@ -98,7 +99,8 @@ export default function DashboardPage() {
     setReports(workspace.reports);
   }
   const readyReports = useMemo(() => reports.filter((item) => item.reportStatus === "ready"), [reports]);
-  const avgRisk = useMemo(() => Math.round(readyReports.reduce((sum, item) => sum + (item.riskScore || 0), 0) / Math.max(readyReports.filter((item) => typeof item.riskScore === "number").length, 1)), [readyReports]);
+  const measuredRiskReports = useMemo(() => readyReports.filter((item) => typeof item.riskScore === "number"), [readyReports]);
+  const avgRiskLevel = useMemo(() => qualitativeFromRisk(measuredRiskReports.length ? Math.round(measuredRiskReports.reduce((sum, item) => sum + (item.riskScore || 0), 0) / measuredRiskReports.length) : null), [measuredRiskReports]);
   const highRiskCount = useMemo(() => readyReports.filter((item) => (item.riskScore || 0) >= 70).length, [readyReports]);
 
   if (!authChecked || !user) {
@@ -139,14 +141,15 @@ export default function DashboardPage() {
         <div className="mt-10 grid gap-4 md:grid-cols-4">
           {[
             ["Ready Reports", readyReports.length.toString(), "Payment-unlocked reports"],
-            ["Average Risk", `${avgRisk}/100`, "Across unlocked reports only"],
-            ["High Risk", highRiskCount.toString(), "Unlocked reports above 70 risk score"],
+            ["Average Risk Level", avgRiskLevel, `Estimated from ${measuredRiskReports.length} unlocked reports`],
+            ["High Risk", highRiskCount.toString(), "Measured count of unlocked reports above the high-risk threshold"],
             ["Acceptances", acceptances.length.toString(), "Legal acceptance records for paid reports"],
           ].map(([label, value, body]) => (
             <Panel key={label}>
               <div className="text-xs font-bold uppercase tracking-[0.24em] text-zinc-600">{label}</div>
               <div className="mt-3 text-4xl font-black text-white">{value}</div>
               <p className="mt-3 text-sm leading-6 text-zinc-500">{body}</p>
+              <p className="mt-2 text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-600">{label === "Ready Reports" || label === "High Risk" || label === "Acceptances" ? "Measured" : "Estimated"}</p>
             </Panel>
           ))}
         </div>
@@ -181,12 +184,14 @@ export default function DashboardPage() {
 
                   <div className="mt-5 grid gap-3 sm:grid-cols-2">
                     <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                      <div className="text-xs uppercase tracking-[0.22em] text-zinc-600">Risk Score</div>
-                      <div className="mt-2 text-3xl font-black text-white">{report.riskScore ?? "Provider pending"}</div>
+                      <div className="text-xs uppercase tracking-[0.22em] text-zinc-600">Risk Level</div>
+                      <div className="mt-2 text-3xl font-black text-white">{qualitativeFromRisk(report.riskScore)}</div>
+                      <p className="mt-2 text-xs text-zinc-500">{metricProvenance("estimated")}</p>
                     </div>
                     <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                      <div className="text-xs uppercase tracking-[0.22em] text-zinc-600">Confidence</div>
-                      <div className="mt-2 text-3xl font-black text-white">{report.confidenceScore ? `${report.confidenceScore}%` : "Provider pending"}</div>
+                      <div className="text-xs uppercase tracking-[0.22em] text-zinc-600">Evidence Confidence</div>
+                      <div className="mt-2 text-3xl font-black text-white">{qualitativeFromScore(report.confidenceScore)}</div>
+                      <p className="mt-2 text-xs text-zinc-500">{metricProvenance("inferred")}</p>
                     </div>
                   </div>
 
@@ -253,8 +258,8 @@ export default function DashboardPage() {
                         <div className="mt-1 text-xs text-zinc-600">{entity.type} • Updated {formatDate(entity.updatedAt)}</div>
                       </div>
                       <div className="text-right">
-                        <div className="text-xl font-black text-white">{entity.lastScore}</div>
-                        <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-600">Risk</div>
+                        <div className="text-xl font-black text-white">{qualitativeFromRisk(entity.lastScore)}</div>
+                        <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-600">Estimated risk</div>
                       </div>
                     </div>
                     <div className="mt-3 text-xs font-bold text-zinc-500">{entity.status}</div>
@@ -296,7 +301,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="pb-5">
                       <div className="text-sm font-bold text-white">{report.title}</div>
-                      <div className="mt-1 text-xs text-zinc-600">Risk {report.riskScore} • Confidence {report.confidenceScore}% • {formatDate(report.createdAt)}</div>
+                      <div className="mt-1 text-xs text-zinc-600">Risk {qualitativeFromRisk(report.riskScore)} • Confidence {qualitativeFromScore(report.confidenceScore)} • {formatDate(report.createdAt)}</div>
                     </div>
                   </div>
                 ))}

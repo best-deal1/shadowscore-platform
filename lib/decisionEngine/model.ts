@@ -220,7 +220,7 @@ export function buildVerificationDecision(input: {
     `Positive evidence count is ${positiveEvidenceCount}.`,
     `Missing evidence count is ${missingEvidenceCount}; missing evidence does not count as risk.`,
     `Negative evidence count is ${negativeEvidenceCount}.`,
-    `Verification confidence is ${verificationConfidence}/100 and evidence completeness is ${evidenceCompleteness}/100.`,
+    `Verification confidence is ${verificationConfidence >= 70 ? "High" : verificationConfidence >= 40 ? "Medium" : "Low"} and evidence completeness is ${evidenceCompleteness >= 70 ? "High" : evidenceCompleteness >= 40 ? "Medium" : "Low"}; both are inferred from available evidence.`,
     ...blockingIssues.map((issue) => `Verified negative issue: ${issue}.`),
   ]);
 

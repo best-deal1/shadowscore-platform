@@ -4,31 +4,31 @@ const signals = [
   {
     name: "Tracking Integrity",
     severity: "Elevated",
-    confidence: "84%",
+    confidence: "High",
     finding: "Delayed label creation and weak delivery proof patterns detected.",
   },
   {
     name: "Operational Drift",
     severity: "Watchlist",
-    confidence: "71%",
+    confidence: "High",
     finding: "Fulfillment timing and order handling show inconsistent behavior.",
   },
   {
     name: "Payout Exposure",
     severity: "Moderate",
-    confidence: "66%",
+    confidence: "Medium",
     finding: "Patterns may increase probability of payout review or reserve friction.",
   },
   {
     name: "Trust Decay",
     severity: "Elevated",
-    confidence: "79%",
+    confidence: "High",
     finding: "Refund, cancellation or tracking inconsistency may weaken account posture.",
   },
   {
     name: "Enforcement Similarity",
     severity: "Watchlist",
-    confidence: "63%",
+    confidence: "Medium",
     finding: "Some activity resembles accounts that later entered marketplace review.",
   },
 ];
@@ -58,17 +58,17 @@ export default function AnalysisPage() {
             Marketplace Exposure Analysis Console
           </h1>
           <p className="mt-5 max-w-3xl leading-8 text-zinc-400">
-            This console translates submitted evidence into operational exposure signals, confidence levels and recommended stabilization priorities.
+            This console translates submitted evidence into operational exposure signals, qualitative confidence levels and recommended stabilization priorities. Inferred signals are not displayed as percentages.
           </p>
         </section>
 
         <section className="mt-10 grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
           <div className="rounded-[32px] border border-white/10 bg-white/[0.03] p-7">
             <div className="text-sm uppercase tracking-[0.28em] text-red-300">
-              Exposure Score
+              Exposure Level
             </div>
-            <div className="mt-6 text-7xl font-bold">78</div>
-            <div className="mt-3 text-xl text-red-300">Elevated</div>
+            <div className="mt-6 text-7xl font-bold">High</div>
+            <div className="mt-3 text-xl text-red-300">Estimated from submitted evidence</div>
             <p className="mt-6 leading-7 text-zinc-400">
               The account shows elevated operational exposure. The strongest signals are tracking integrity and trust posture drift.
             </p>
