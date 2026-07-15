@@ -1,0 +1,122 @@
+[
+  {
+    "domain": "microsoft.com",
+    "category": "Global enterprise / public company",
+    "expectedIdentity": "Microsoft Corporation",
+    "expectedOrganizationClass": "Public Company",
+    "expectedTrustOutcome": "Resolved only with corroborated registry and business-profile evidence; no size inference from domain.",
+    "expectedEvidenceAvailability": ["registry", "business_profile", "ssl", "website_metadata"],
+    "expectedProviderAvailability": ["registry", "business_profile", "ssl", "security_headers", "dns"],
+    "knownInfrastructureLimitations": ["CDN and regional hosts may present certificates that do not expose legal identity."],
+    "knownProviderLimitations": ["WHOIS may redact registrant organization."],
+    "fixtureEvidence": { "legalName": "Microsoft Corporation", "exchange": "NASDAQ", "ticker": "MSFT" }
+  },
+  {
+    "domain": "bankhapoalim.co.il",
+    "category": "Israeli bank",
+    "expectedIdentity": "Bank Hapoalim B.M.",
+    "expectedOrganizationClass": "Regulated Financial Institution",
+    "expectedTrustOutcome": "Resolved only with registry/profile plus banking regulator evidence.",
+    "expectedEvidenceAvailability": ["registry", "business_profile", "regulatory"],
+    "expectedProviderAvailability": ["registry", "business_profile", "regulatory", "ssl", "dns"],
+    "knownInfrastructureLimitations": ["Hebrew/English legal-name variants require explicit evidence, not fuzzy invention."],
+    "knownProviderLimitations": ["Public business profiles may use brand names instead of legal names."],
+    "fixtureEvidence": { "legalName": "Bank Hapoalim B.M.", "regulatorName": "Bank of Israel", "licenseCategory": "bank" }
+  },
+  {
+    "domain": "cloudflare.com",
+    "category": "SaaS / public company",
+    "expectedIdentity": "Cloudflare, Inc.",
+    "expectedOrganizationClass": "Public Company",
+    "expectedTrustOutcome": "Resolved when independent sources agree; SaaS label must come from evidence if shown.",
+    "expectedEvidenceAvailability": ["registry", "business_profile", "ssl", "website_metadata"],
+    "expectedProviderAvailability": ["registry", "business_profile", "ssl", "security_headers", "dns"],
+    "knownInfrastructureLimitations": ["Cloud infrastructure evidence can describe the platform, not the customer under investigation."],
+    "knownProviderLimitations": ["Certificate fields may be absent or generic."],
+    "fixtureEvidence": { "legalName": "Cloudflare, Inc.", "exchange": "NYSE", "ticker": "NET" }
+  },
+  {
+    "domain": "amazon.com",
+    "category": "Global enterprise / public company",
+    "expectedIdentity": "Amazon.com, Inc.",
+    "expectedOrganizationClass": "Public Company",
+    "expectedTrustOutcome": "Resolved only from corroborated evidence; do not infer marketplace, retailer, or size from domain alone.",
+    "expectedEvidenceAvailability": ["registry", "business_profile", "ssl", "website_metadata"],
+    "expectedProviderAvailability": ["registry", "business_profile", "ssl", "security_headers", "dns"],
+    "knownInfrastructureLimitations": ["Multiple subsidiaries and services may share infrastructure."],
+    "knownProviderLimitations": ["WHOIS and SSL may identify infrastructure operators rather than legal ownership."],
+    "fixtureEvidence": { "legalName": "Amazon.com, Inc.", "exchange": "NASDAQ", "ticker": "AMZN" }
+  },
+  {
+    "domain": "usa.gov",
+    "category": "Government website",
+    "expectedIdentity": "U.S. General Services Administration",
+    "expectedOrganizationClass": "Unknown",
+    "expectedTrustOutcome": "Resolved only when an official government source supports the operator; government classification remains Unknown unless a verified classification relationship exists.",
+    "expectedEvidenceAvailability": ["official_government_source", "website_metadata"],
+    "expectedProviderAvailability": ["website_metadata", "security_headers", "dns"],
+    "knownInfrastructureLimitations": ["A .gov domain indicates eligibility, not the exact operating agency without evidence."],
+    "knownProviderLimitations": ["Business registries are often not applicable to government sites."],
+    "fixtureEvidence": { "legalName": "U.S. General Services Administration", "source": "official_government_source" }
+  },
+  {
+    "domain": "harvard.edu",
+    "category": "University",
+    "expectedIdentity": "President and Fellows of Harvard College",
+    "expectedOrganizationClass": "Unknown",
+    "expectedTrustOutcome": "Identity may resolve with evidence; university classification must not be invented unless supported by a dedicated verified class source.",
+    "expectedEvidenceAvailability": ["registry", "website_metadata"],
+    "expectedProviderAvailability": ["website_metadata", "ssl", "dns"],
+    "knownInfrastructureLimitations": ["Educational domains can include schools, departments, services, and vendors."],
+    "knownProviderLimitations": ["Registry evidence may use legal names unfamiliar to end users."],
+    "fixtureEvidence": { "legalName": "President and Fellows of Harvard College" }
+  },
+  {
+    "domain": "wikipedia.org",
+    "category": "Nonprofit",
+    "expectedIdentity": "Wikimedia Foundation, Inc.",
+    "expectedOrganizationClass": "Unknown",
+    "expectedTrustOutcome": "Identity may resolve with evidence; nonprofit status must not be shown unless explicitly supported.",
+    "expectedEvidenceAvailability": ["registry", "business_profile", "website_metadata"],
+    "expectedProviderAvailability": ["website_metadata", "ssl", "dns"],
+    "knownInfrastructureLimitations": ["Project/brand domains can differ from the operating legal entity."],
+    "knownProviderLimitations": ["Not all providers expose nonprofit status."],
+    "fixtureEvidence": { "legalName": "Wikimedia Foundation, Inc." }
+  },
+  {
+    "domain": "example-small-business.test",
+    "category": "Small business",
+    "expectedIdentity": "Unknown",
+    "expectedOrganizationClass": "Unknown",
+    "expectedTrustOutcome": "Unknown until corroborated evidence exists; never call it a small business from weak or missing evidence.",
+    "expectedEvidenceAvailability": [],
+    "expectedProviderAvailability": [],
+    "knownInfrastructureLimitations": ["Local or brochure sites may have sparse public records."],
+    "knownProviderLimitations": ["Provider absence is not evidence of size or legitimacy."],
+    "fixtureEvidence": null
+  },
+  {
+    "domain": "personal-site.example",
+    "category": "Personal website",
+    "expectedIdentity": "Unknown",
+    "expectedOrganizationClass": "Unknown",
+    "expectedTrustOutcome": "Unknown; do not convert a personal domain into an organization.",
+    "expectedEvidenceAvailability": [],
+    "expectedProviderAvailability": [],
+    "knownInfrastructureLimitations": ["Personal domains often lack organization records."],
+    "knownProviderLimitations": ["Business providers may correctly return no match."],
+    "fixtureEvidence": null
+  },
+  {
+    "domain": "contradiction.example",
+    "category": "Contradiction control",
+    "expectedIdentity": "Unknown",
+    "expectedOrganizationClass": "Unknown",
+    "expectedTrustOutcome": "Resolved-with-conflicts or unresolved; never silently choose between conflicting organization names.",
+    "expectedEvidenceAvailability": ["registry", "website_metadata"],
+    "expectedProviderAvailability": ["registry", "website_metadata"],
+    "knownInfrastructureLimitations": ["Parked or compromised sites can expose mismatched metadata."],
+    "knownProviderLimitations": ["A provider can report stale data."],
+    "fixtureEvidence": { "contradictoryLegalNames": ["Microsoft Corporation", "Google LLC"] }
+  }
+]
