@@ -116,9 +116,14 @@ export async function POST(request: Request) {
       email: body.email,
       fileNames: body.fileNames || [],
       visibleSignalCategories: body.visibleSignalCategories || [],
+      executionProfile: "free_preview",
+      providerTimeoutMs: { http: 2_500, ssl: 2_000, whois: 2_500, dns: 1_000 },
     };
 
-    const providerResults = await productionProviderManager.runProviders(context);
+    const previewStartedAt = Date.now();
+    const previewRun = await productionProviderManager.runFreePreview(context, { budgetMs: 8_000, concurrencyLimit: 4 });
+    const providerResults = previewRun.providerResults;
+    const completedProviderResults = providerResults.filter((result) => result.status === "completed" || result.evidence.length > 0);
 
     const riskOutput = analyzeRisk({
       marketplace: context.platform,
@@ -126,12 +131,12 @@ export async function POST(request: Request) {
       store: context.target,
       email: context.email,
       fileNames: context.fileNames,
-      providerResults,
+      providerResults: completedProviderResults,
     });
-    const insightOutput = buildTrustInsights({ providerResults, riskOutput, audience: "free" });
+    const insightOutput = buildTrustInsights({ providerResults: completedProviderResults, riskOutput, audience: "free" });
     const generatedAt = new Date().toISOString();
-    const identityProfile = buildIdentityProfile({ providerResults, insights: insightOutput.insights, target: context.target, email: context.email, generatedAt });
-    const businessProfile = buildBusinessProfile({ providerResults, target: context.target, generatedAt });
+    const identityProfile = buildIdentityProfile({ providerResults: completedProviderResults, insights: insightOutput.insights, target: context.target, email: context.email, generatedAt });
+    const businessProfile = buildBusinessProfile({ providerResults: completedProviderResults, target: context.target, generatedAt });
     const knowledgeGraph = new BusinessKnowledgeGraph();
     knowledgeGraph.applyScan({
       scanId: `free-scan-${context.intakeId}`,
@@ -150,13 +155,13 @@ export async function POST(request: Request) {
       ],
     });
     const timeline = buildTrustTimeline({
-      providerResults,
+      providerResults: completedProviderResults,
       insights: insightOutput.insights,
       insightEngineVersion: insightOutput.engineVersion,
       audience: "free",
     });
     const decisionPreview = buildDecision({
-      providerResults,
+      providerResults: completedProviderResults,
       riskOutput,
       insights: insightOutput.insights,
       timeline,
@@ -164,6 +169,7 @@ export async function POST(request: Request) {
       targetType: context.scanMode === "marketplace" ? "marketplaceSeller" : "website",
     });
 
+    const responseSerializationStartedAt = Date.now();
     const businessNarrative = buildBusinessNarrative({
       decision: decisionPreview,
       evidence: businessProfile.evidenceItems,
@@ -175,9 +181,25 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       status: "ready",
+      message: "Preview ready. Additional sources are checked in the full report.",
       reportReadyEvent: { type: "free-preview-ready", status: "ready", ready: true, emittedAt: generatedAt },
       executedAt: generatedAt,
       providerRegistry: productionProviderManager.listProviders(),
+      executionBudget: { budgetMs: previewRun.telemetry.budgetMs, elapsedMs: previewRun.telemetry.elapsedMs, hardMaximumMs: 12_000 },
+      telemetry: {
+        ...previewRun.telemetry,
+        phases: {
+          dns: previewRun.telemetry.providerTimings.filter((item) => item.providerId === "dns").reduce((total, item) => total + item.duration, 0),
+          whoisRdap: previewRun.telemetry.providerTimings.filter((item) => item.providerId === "whois").reduce((total, item) => total + item.duration, 0),
+          ssl: previewRun.telemetry.providerTimings.filter((item) => item.providerId === "ssl").reduce((total, item) => total + item.duration, 0),
+          httpAcquisition: Math.max(...completedProviderResults.flatMap((result) => Array.isArray(result.metadata.httpAttempts) ? result.metadata.httpAttempts.map((attempt) => typeof attempt === "object" && attempt && "durationMs" in attempt && typeof attempt.durationMs === "number" ? attempt.durationMs : 0) : [0]), 0),
+          businessProfileExtraction: previewRun.telemetry.providerTimings.filter((item) => ["business-profile", "website-metadata", "contact-discovery", "social-profile"].includes(item.providerId)).reduce((total, item) => total + item.duration, 0),
+          identityResolution: Math.max(0, responseSerializationStartedAt - new Date(generatedAt).getTime()),
+          decisionGeneration: Math.max(0, Date.now() - responseSerializationStartedAt),
+          responseSerialization: Math.max(0, Date.now() - responseSerializationStartedAt),
+        },
+        requestDurationMs: Date.now() - previewStartedAt,
+      },
       providers: providerResults.map((result) => {
         if (result.providerId === "dns") return { ...summarizeGenericProvider(result), ...summarizeDns(result) };
         if (result.providerId === "whois") return { ...summarizeGenericProvider(result), ...summarizeWhois(result) };
