@@ -7,6 +7,7 @@ import { planFromClassification } from "./orchestrator";
 import { buildTrustInsights } from "./insightEngine";
 import { buildIdentityProfile } from "./identityEngine";
 import { buildBusinessProfile } from "./businessProfileEngine";
+import { buildBusinessIdentityIntelligence } from "./businessIdentityIntelligence";
 import { BusinessKnowledgeGraph } from "./knowledgeGraph";
 import { buildBusinessNarrative } from "./narrative";
 import { buildTrustTimeline } from "./trustTimeline";
@@ -85,6 +86,7 @@ export async function buildReadyReport(input: {
   const insightOutput = buildTrustInsights({ providerResults, riskOutput: riskEnginePreview, audience: "paid" });
   const identityProfile = buildIdentityProfile({ providerResults, insights: insightOutput.insights, target: intake.target, email: intake.email, generatedAt: now });
   const businessProfile = buildBusinessProfile({ providerResults, target: intake.target, generatedAt: now });
+  const businessIdentityIntelligence = buildBusinessIdentityIntelligence({ providerResults, target: intake.target, claimedBusinessName: businessProfile.businessName, generatedAt: now });
   const knowledgeGraph = new BusinessKnowledgeGraph();
   knowledgeGraph.applyScan({
     scanId: `report-${intake.intakeId}`,
@@ -185,6 +187,7 @@ export async function buildReadyReport(input: {
       correlationSummary,
       identityProfile,
       businessNarrative,
+      businessIdentityIntelligence,
       execution: {
         completedInSeconds: Number(((Date.now() - startedAt) / 1000).toFixed(2)),
         providersExecuted: executionRecords.filter((record) => record.status === "executed").length,
