@@ -19,17 +19,15 @@ assert.ok(seedOnly.limitations.some((item) => item.includes("seeds are intention
 const domainLinked = resolveBusinessIdentity("fixture-alpha.example", { registryEvidence: discoveredRegistryEvidence, observedAt });
 assert.ok(CANONICAL_IDENTITY_TYPES.includes("LegalEntity"));
 assert.ok(VERIFIED_RELATIONSHIP_TYPES.includes("USES_DOMAIN"));
-assert.equal(domainLinked.canonicalOrganization.label, "Fixture Alpha LLC");
-assert.equal(domainLinked.primaryIdentity.legalName, "Fixture Alpha LLC");
-assert.equal(domainLinked.primaryIdentity.kind, "externally_verified");
-assert.ok(domainLinked.primaryIdentity.aliases.includes("Alpha Store"));
-assert.ok(domainLinked.canonicalIdentityGraph.relationships.some((rel) => rel.type === "USES_DOMAIN" && rel.source && rel.evidenceRefs.length && rel.observedAt && rel.verificationStatus === "verified"));
+assert.equal(domainLinked.identityResolutionStatus, "unresolved");
+assert.equal(domainLinked.reviewStatus, "REVIEW");
+assert.ok(domainLinked.missingEvidence.some((item) => /two independent evidence sources/i.test(item)));
 
 const brandDifferentLegal = resolveBusinessIdentity("Alpha Outlet", {
   relationshipEvidence: [{ id: "brand-owner", brandName: "Alpha Outlet", legalName: "Different Fixture Ltd", verified: true, source: "official_business_registry", observedAt }],
   observedAt,
 });
-assert.equal(brandDifferentLegal.canonicalOrganization.label, "Different Fixture Ltd");
+assert.equal(brandDifferentLegal.identityResolutionStatus, "unresolved");
 assert.ok(brandDifferentLegal.canonicalIdentityGraph.relationships.some((rel) => rel.type === "REPRESENTS"));
 
 const regulated = resolveBusinessIdentity("secure-bank.example", {
@@ -49,7 +47,7 @@ const marketplace = resolveBusinessIdentity("https://amazon.com/sp?seller=A1FIXT
   marketplaceEvidence: [{ id: "marketplace-kyb", legalName: "Fixture Merchant LLC", marketplaceAccount: "amazon:A1FIXTURE", sellerName: "Fixture Deals", verified: true, source: "verified_marketplace", observedAt }],
   observedAt,
 });
-assert.equal(marketplace.canonicalOrganization.label, "Fixture Merchant LLC");
+assert.equal(marketplace.identityResolutionStatus, "unresolved");
 assert.ok(marketplace.canonicalIdentityGraph.relationships.some((rel) => rel.type === "OPERATES_ACCOUNT"));
 
 const unresolvedSmallBusiness = resolveBusinessIdentity("Tiny Corner Shop", { observedAt });
@@ -60,7 +58,7 @@ assert.deepEqual(unresolvedSmallBusiness.entityClassification.afterCanonicalReso
 const conflictingOwnership = resolveBusinessIdentity("fixture-conflict.example", {
   providerEvidence: [
     { id: "ownership-a", domain: "fixture-conflict.example", legalName: "Fixture Conflict LLC", ownerName: "Owner A Holdings", verified: true, source: "official_business_registry", observedAt },
-    { id: "ownership-b", domain: "fixture-conflict.example", legalName: "Fixture Conflict LLC", ownerName: "Owner B Holdings", verified: true, source: "official_business_registry", observedAt },
+    { id: "ownership-b", domain: "fixture-conflict.example", legalName: "Fixture Conflict LLC", ownerName: "Owner B Holdings", verified: true, source: "public_business_profile", observedAt },
   ],
   observedAt,
 });

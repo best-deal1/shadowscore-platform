@@ -24,7 +24,8 @@
     "validate:live-truth": "node --experimental-strip-types scripts/validate-live-truth.mjs",
     "quality:generate": "node scripts/quality-generate.mjs",
     "quality:dashboard": "node scripts/quality-dashboard.mjs",
-    "quality:check": "node scripts/quality-check.mjs"
+    "quality:check": "node scripts/quality-check.mjs",
+    "validate:private-business-identity": "node scripts/validate-private-business-identity.mjs"
   },
   "dependencies": {
     "next": "16.2.6",

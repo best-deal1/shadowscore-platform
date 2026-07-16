@@ -9,7 +9,8 @@ const observedAt = "2026-01-01T00:00:00.000Z";
 const identifierOnly = resolveBusinessIdentity("bank-looking.example", { observedAt });
 assert.equal(identifierOnly.entityClassification.beforeCanonicalResolution, "Identifier or evidence object only");
 assert.deepEqual(identifierOnly.entityClassification.afterCanonicalResolution, []);
-assert.equal(identifierOnly.unresolvedIdentityBehavior, "Returns unresolved identity, low confidence, and no inferred regulated or public-company class.");
+assert.match(identifierOnly.unresolvedIdentityBehavior, /Returns REVIEW with unresolved identity/);
+assert.ok(identifierOnly.missingEvidence.length > 0);
 
 const canonical = resolveBusinessIdentity("bank-looking.example", {
   providerEvidence: [{ id: "reg-evidence", domain: "bank-looking.example", legalName: "Bank Looking NA", licenseNumber: "BK-9", regulatorName: "National Bank Regulator", licenseCategory: "bank", verified: true, source: "bank_regulator", observedAt }],
