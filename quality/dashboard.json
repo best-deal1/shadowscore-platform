@@ -1,9 +1,9 @@
 {
   "latest": {
     "run": {
-      "id": "quality-2026-07-16T10:57:40.789Z",
-      "startedAt": "2026-07-16T10:57:40.789Z",
-      "completedAt": "2026-07-16T10:57:50.931Z",
+      "id": "quality-2026-07-16T12:01:33.876Z",
+      "startedAt": "2026-07-16T12:01:33.876Z",
+      "completedAt": "2026-07-16T12:01:49.022Z",
       "environment": "local",
       "validationSources": [
         "validate:live-truth",
@@ -12,7 +12,7 @@
         "provider diagnostics",
         "organization resolution results"
       ],
-      "executionTimeMs": 10142
+      "executionTimeMs": 15146
     },
     "targets": [
       {
@@ -36,7 +36,7 @@
             "Live SEC fetch unavailable; used recorded SEC fixture for deterministic validation."
           ]
         },
-        "executionTimeMs": 96
+        "executionTimeMs": 103
       },
       {
         "target": "AAPL",
@@ -59,7 +59,7 @@
             "Live SEC fetch unavailable; used recorded SEC fixture for deterministic validation."
           ]
         },
-        "executionTimeMs": 5012
+        "executionTimeMs": 5011
       },
       {
         "target": "AMZN",
@@ -105,7 +105,7 @@
             "Live SEC fetch unavailable; used recorded SEC fixture for deterministic validation."
           ]
         },
-        "executionTimeMs": 5011
+        "executionTimeMs": 5010
       },
       {
         "target": "0000320193",
@@ -128,26 +128,30 @@
             "Live SEC fetch unavailable; used recorded SEC fixture for deterministic validation."
           ]
         },
-        "executionTimeMs": 18
+        "executionTimeMs": 8
       },
       {
         "target": "microsoft.com",
-        "expectedResult": "Unknown",
-        "currentResult": "Unknown",
+        "expectedResult": "Microsoft Corporation",
+        "currentResult": "Microsoft Corporation",
         "decision": "PASS",
-        "providerStatus": "not_required",
-        "organizationResolved": false,
-        "evidenceCoverage": null,
-        "providerCompleted": null,
+        "providerStatus": "completed",
+        "organizationResolved": true,
+        "evidenceCoverage": 100,
+        "providerCompleted": true,
         "httpAcquisitionSucceeded": null,
         "identityContradictions": [],
         "unsupportedStatements": [],
-        "environmentFailures": [],
+        "environmentFailures": [
+          "authoritative_public_source_unavailable_recorded_fixture_used"
+        ],
         "diagnostics": {
-          "source": "none-domain-not-inferred",
-          "errors": []
+          "source": "https://www.sec.gov/files/company_tickers_exchange.json",
+          "errors": [
+            "Live SEC fetch unavailable; used recorded SEC fixture for deterministic validation."
+          ]
         },
-        "executionTimeMs": 0
+        "executionTimeMs": 5009
       }
     ],
     "summary": {
@@ -156,22 +160,38 @@
       "reviewCount": 0,
       "confirmedRiskCount": 0,
       "passRate": 100,
-      "organizationResolutionSuccessRate": 83.3,
+      "organizationResolutionSuccessRate": 100,
       "averageEvidenceCoverage": 100,
       "providerCompletionRate": 100,
       "httpAcquisitionSuccessRate": null,
       "identityContradictionCount": 0,
       "unsupportedStatementCount": 0,
-      "environmentOrNetworkFailureCount": 5,
+      "environmentOrNetworkFailureCount": 6,
       "productionPipelineFailed": false,
       "regressionCount": 0
     },
     "regressions": [],
-    "environmentAlerts": [],
+    "environmentAlerts": [
+      {
+        "target": "microsoft.com",
+        "type": "Temporary public-source outage",
+        "classification": "environment_failure",
+        "previous": [],
+        "current": [
+          "authoritative_public_source_unavailable_recorded_fixture_used"
+        ],
+        "exactChange": "environment failure count increased"
+      }
+    ],
     "manualReviewQueue": []
   },
   "comparisons": {
-    "previousSuccessfulRun": null,
+    "previousSuccessfulRun": {
+      "runId": "quality-2026-07-16T10:57:40.789Z",
+      "passRateDelta": 0,
+      "evidenceCoverageDelta": 0,
+      "providerCompletionDelta": 0
+    },
     "lastMergedRelease": {
       "runId": "quality-2026-07-16T10:57:40.789Z",
       "passRateDelta": 0,
@@ -179,7 +199,7 @@
     },
     "sevenDayTrend": {
       "days": 7,
-      "runCount": 1,
+      "runCount": 2,
       "passRate": 100,
       "evidenceCoverage": 100,
       "httpSuccessRate": null,
@@ -187,7 +207,7 @@
     },
     "thirtyDayTrend": {
       "days": 30,
-      "runCount": 1,
+      "runCount": 2,
       "passRate": 100,
       "evidenceCoverage": 100,
       "httpSuccessRate": null,
@@ -195,7 +215,7 @@
     }
   },
   "dashboard": {
-    "generatedAt": "2026-07-16T10:57:51.327Z",
+    "generatedAt": "2026-07-16T12:01:59.681Z",
     "metrics": {
       "currentPassRate": {
         "value": 100,
@@ -203,12 +223,12 @@
         "unit": "percent"
       },
       "previousPassRate": {
-        "value": null,
+        "value": 100,
         "label": "derived",
         "unit": "percent"
       },
       "organizationResolutionRate": {
-        "value": 83.3,
+        "value": 100,
         "label": "measured",
         "unit": "percent"
       },
@@ -233,7 +253,7 @@
         "label": "derived"
       },
       "unresolvedIdentityCount": {
-        "value": 1,
+        "value": 0,
         "label": "measured"
       },
       "unsupportedStatementCount": {
@@ -246,7 +266,12 @@
       }
     },
     "comparisons": {
-      "previousSuccessfulRun": null,
+      "previousSuccessfulRun": {
+        "runId": "quality-2026-07-16T10:57:40.789Z",
+        "passRateDelta": 0,
+        "evidenceCoverageDelta": 0,
+        "providerCompletionDelta": 0
+      },
       "lastMergedRelease": {
         "runId": "quality-2026-07-16T10:57:40.789Z",
         "passRateDelta": 0,
@@ -254,7 +279,7 @@
       },
       "sevenDayTrend": {
         "days": 7,
-        "runCount": 1,
+        "runCount": 2,
         "passRate": 100,
         "evidenceCoverage": 100,
         "httpSuccessRate": null,
@@ -262,7 +287,7 @@
       },
       "thirtyDayTrend": {
         "days": 30,
-        "runCount": 1,
+        "runCount": 2,
         "passRate": 100,
         "evidenceCoverage": 100,
         "httpSuccessRate": null,
@@ -270,7 +295,18 @@
       }
     },
     "manualReviewQueue": [],
-    "environmentAlerts": [],
+    "environmentAlerts": [
+      {
+        "target": "microsoft.com",
+        "type": "Temporary public-source outage",
+        "classification": "environment_failure",
+        "previous": [],
+        "current": [
+          "authoritative_public_source_unavailable_recorded_fixture_used"
+        ],
+        "exactChange": "environment failure count increased"
+      }
+    ],
     "targets": [
       {
         "target": "MSFT",
@@ -293,7 +329,7 @@
             "Live SEC fetch unavailable; used recorded SEC fixture for deterministic validation."
           ]
         },
-        "executionTimeMs": 96
+        "executionTimeMs": 103
       },
       {
         "target": "AAPL",
@@ -316,7 +352,7 @@
             "Live SEC fetch unavailable; used recorded SEC fixture for deterministic validation."
           ]
         },
-        "executionTimeMs": 5012
+        "executionTimeMs": 5011
       },
       {
         "target": "AMZN",
@@ -362,7 +398,7 @@
             "Live SEC fetch unavailable; used recorded SEC fixture for deterministic validation."
           ]
         },
-        "executionTimeMs": 5011
+        "executionTimeMs": 5010
       },
       {
         "target": "0000320193",
@@ -385,26 +421,30 @@
             "Live SEC fetch unavailable; used recorded SEC fixture for deterministic validation."
           ]
         },
-        "executionTimeMs": 18
+        "executionTimeMs": 8
       },
       {
         "target": "microsoft.com",
-        "expectedResult": "Unknown",
-        "currentResult": "Unknown",
+        "expectedResult": "Microsoft Corporation",
+        "currentResult": "Microsoft Corporation",
         "decision": "PASS",
-        "providerStatus": "not_required",
-        "organizationResolved": false,
-        "evidenceCoverage": null,
-        "providerCompleted": null,
+        "providerStatus": "completed",
+        "organizationResolved": true,
+        "evidenceCoverage": 100,
+        "providerCompleted": true,
         "httpAcquisitionSucceeded": null,
         "identityContradictions": [],
         "unsupportedStatements": [],
-        "environmentFailures": [],
+        "environmentFailures": [
+          "authoritative_public_source_unavailable_recorded_fixture_used"
+        ],
         "diagnostics": {
-          "source": "none-domain-not-inferred",
-          "errors": []
+          "source": "https://www.sec.gov/files/company_tickers_exchange.json",
+          "errors": [
+            "Live SEC fetch unavailable; used recorded SEC fixture for deterministic validation."
+          ]
         },
-        "executionTimeMs": 0
+        "executionTimeMs": 5009
       }
     ]
   }

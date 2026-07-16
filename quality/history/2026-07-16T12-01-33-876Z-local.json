@@ -168,5 +168,19 @@
     "environmentOrNetworkFailureCount": 6,
     "productionPipelineFailed": false,
     "regressionCount": 0
-  }
+  },
+  "regressions": [],
+  "environmentAlerts": [
+    {
+      "target": "microsoft.com",
+      "type": "Temporary public-source outage",
+      "classification": "environment_failure",
+      "previous": [],
+      "current": [
+        "authoritative_public_source_unavailable_recorded_fixture_used"
+      ],
+      "exactChange": "environment failure count increased"
+    }
+  ],
+  "manualReviewQueue": []
 }
