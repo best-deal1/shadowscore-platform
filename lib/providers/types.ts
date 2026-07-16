@@ -39,6 +39,8 @@ export type ProviderExecutionContext = {
   fileNames: string[];
   visibleSignalCategories: string[];
   paymentIntentId?: string;
+  executionProfile?: "free_preview" | "paid_report";
+  providerTimeoutMs?: Partial<Record<ProviderCategory | "http", number>>;
 };
 
 export type ProviderHealth = {

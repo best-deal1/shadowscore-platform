@@ -49,7 +49,7 @@ type IdentityProfile = { identitySummary: string };
 type BusinessNarrativeSection = { id: string; title: string; body: string[] };
 type BusinessNarrative = { decision: string; confidence: string; decisionMode?: { proceed: "YES" | "REVIEW" | "NO"; confidence: string; mainRemainingUncertainty: string; recommendedNextAction: string; estimatedEffort: string; businessImpactIfSkipped: "Low" | "Medium" | "High" }; sections: BusinessNarrativeSection[] };
 type ProviderRegistryItem = { id: string; name: string; version: string; category: string };
-type FreeScanResult = { status?: "ready"; reportReadyEvent?: { type: "free-preview-ready"; status: "ready"; ready: true; emittedAt: string }; executedAt: string; providerRegistry?: ProviderRegistryItem[]; providers: FreeScanProviderSummary[]; insights: TrustInsight[]; insightEngineVersion?: string; timeline?: TrustTimelineItem[]; decisionPreview?: DecisionPreview; identityProfile?: IdentityProfile; businessNarrative?: BusinessNarrative };
+type FreeScanResult = { status?: "ready"; message?: string; reportReadyEvent?: { type: "free-preview-ready"; status: "ready"; ready: true; emittedAt: string }; executedAt: string; providerRegistry?: ProviderRegistryItem[]; providers: FreeScanProviderSummary[]; insights: TrustInsight[]; insightEngineVersion?: string; timeline?: TrustTimelineItem[]; decisionPreview?: DecisionPreview; identityProfile?: IdentityProfile; businessNarrative?: BusinessNarrative };
 
 const MAX_FILE_SIZE = 15 * 1024 * 1024;
 const MIN_FILE_SIZE = 1024;
@@ -1331,6 +1331,9 @@ export default function IntakePage() {
                         <div className="mt-2 text-lg font-black text-white">{freeScanResult.businessNarrative.decisionMode?.businessImpactIfSkipped || "Medium"}</div>
                       </div>
                     </div>
+                    {freeScanResult.message ? (
+                      <p className="mt-4 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 p-3 text-sm font-bold leading-6 text-emerald-100">{freeScanResult.message}</p>
+                    ) : null}
                     {freeScanResult.decisionPreview?.recommendedAction ? (
                       <p className="mt-4 text-sm leading-6 text-zinc-200"><span className="font-bold text-white">Recommendation:</span> {freeScanResult.decisionPreview.recommendedAction}</p>
                     ) : null}
