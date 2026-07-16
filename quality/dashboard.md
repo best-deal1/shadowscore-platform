@@ -1,6 +1,6 @@
 # ShadowScore Investigation Quality Dashboard
 
-Generated: 2026-07-16T12:01:59.681Z
+Generated: 2026-07-16T13:34:34.158Z
 
 ## Current system health
 - currentPassRate: 100% (derived)
