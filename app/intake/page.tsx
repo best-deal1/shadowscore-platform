@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import PaymentButtons from "../../components/PaymentButtons";
 import { getCurrentSession } from "../../lib/auth";
+import { isPreviewReadyResponse, nextPreviewStatus, readPreviewJson } from "../../lib/freeScanPreviewFlow";
 import { createIntake, ShadowScoreIntake } from "../../lib/workspace";
 
 type Severity = "Low" | "Medium" | "High" | "Critical";
@@ -48,7 +49,7 @@ type IdentityProfile = { identitySummary: string };
 type BusinessNarrativeSection = { id: string; title: string; body: string[] };
 type BusinessNarrative = { decision: string; confidence: string; decisionMode?: { proceed: "YES" | "REVIEW" | "NO"; confidence: string; mainRemainingUncertainty: string; recommendedNextAction: string; estimatedEffort: string; businessImpactIfSkipped: "Low" | "Medium" | "High" }; sections: BusinessNarrativeSection[] };
 type ProviderRegistryItem = { id: string; name: string; version: string; category: string };
-type FreeScanResult = { executedAt: string; providerRegistry?: ProviderRegistryItem[]; providers: FreeScanProviderSummary[]; insights: TrustInsight[]; insightEngineVersion?: string; timeline?: TrustTimelineItem[]; decisionPreview?: DecisionPreview; identityProfile?: IdentityProfile; businessNarrative?: BusinessNarrative };
+type FreeScanResult = { status?: "ready"; reportReadyEvent?: { type: "free-preview-ready"; status: "ready"; ready: true; emittedAt: string }; executedAt: string; providerRegistry?: ProviderRegistryItem[]; providers: FreeScanProviderSummary[]; insights: TrustInsight[]; insightEngineVersion?: string; timeline?: TrustTimelineItem[]; decisionPreview?: DecisionPreview; identityProfile?: IdentityProfile; businessNarrative?: BusinessNarrative };
 
 const MAX_FILE_SIZE = 15 * 1024 * 1024;
 const MIN_FILE_SIZE = 1024;
@@ -579,6 +580,7 @@ export default function IntakePage() {
   const [intake, setIntake] = useState<ShadowScoreIntake | null>(null);
   const [freeScanResult, setFreeScanResult] = useState<FreeScanResult | null>(null);
   const [freeScanRunning, setFreeScanRunning] = useState(false);
+  const [previewStatus, setPreviewStatus] = useState<"idle" | "loading" | "ready" | "failed">("idle");
   const [freeScanError, setFreeScanError] = useState("");
 
   useEffect(() => {
@@ -835,21 +837,25 @@ export default function IntakePage() {
 
   const resetFreeScan = () => {
     setFreeScanResult(null);
+    setPreviewStatus("idle");
     setFreeScanError("");
   };
 
   const runFreePreview = async () => {
     setSubmitted(true);
     setFreeScanError("");
+    setPreviewStatus("idle");
 
     if (!canAnalyze) return;
 
     if (scanMode !== "website") {
       setFreeScanResult(null);
+      setPreviewStatus("ready");
       return;
     }
 
     setFreeScanRunning(true);
+    setPreviewStatus("loading");
     setFreeScanResult(null);
 
     try {
@@ -858,14 +864,16 @@ export default function IntakePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(intakeRecord()),
       });
-      const payload = await response.json();
+      const payload = await readPreviewJson(response);
 
-      if (!response.ok) {
-        throw new Error(payload.error || "Unable to run investigation checks.");
+      if (!isPreviewReadyResponse(payload)) {
+        throw new Error("Investigation checks finished, but the preview-ready event was missing from the API response.");
       }
 
       setFreeScanResult(payload as FreeScanResult);
+      setPreviewStatus(nextPreviewStatus(payload));
     } catch (error) {
+      setPreviewStatus("failed");
       setFreeScanError(error instanceof Error ? error.message : "Unable to run investigation checks.");
     } finally {
       setFreeScanRunning(false);
@@ -1260,10 +1268,10 @@ export default function IntakePage() {
               onClick={runFreePreview}
               className="mt-6 block w-full rounded-2xl bg-red-600 px-7 py-5 text-center text-sm font-black uppercase tracking-[0.16em] shadow-[0_0_28px_rgba(220,38,38,0.28)] hover:bg-red-500"
             >
-              {freeScanRunning ? "Investigating..." : "Start Investigation"}
+              {freeScanRunning ? "Investigating..." : previewStatus === "ready" ? "Preview Ready" : "Start Investigation"}
             </button>
 
-            {freeScanRunning && (
+            {previewStatus === "loading" && (
               <div className="mt-6 rounded-3xl border border-red-400/20 bg-red-500/[0.06] p-5">
                 <div className="text-xs font-black uppercase tracking-[0.24em] text-red-200">Investigation timeline</div>
                 <div className="mt-4 space-y-3">
@@ -1277,7 +1285,7 @@ export default function IntakePage() {
               </div>
             )}
 
-            {submitted && canAnalyze && (
+            {submitted && canAnalyze && previewStatus !== "loading" && (
               <div className="mt-8 space-y-6">
                 <section className="rounded-[28px] border border-red-400/20 bg-red-500/[0.06] p-6">
                   <div className="text-xs uppercase tracking-[0.22em] text-red-300">Business Identity</div>

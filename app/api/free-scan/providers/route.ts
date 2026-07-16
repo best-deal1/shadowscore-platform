@@ -174,6 +174,8 @@ export async function POST(request: Request) {
 
 
     return NextResponse.json({
+      status: "ready",
+      reportReadyEvent: { type: "free-preview-ready", status: "ready", ready: true, emittedAt: generatedAt },
       executedAt: generatedAt,
       providerRegistry: productionProviderManager.listProviders(),
       providers: providerResults.map((result) => {
