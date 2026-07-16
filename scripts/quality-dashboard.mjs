@@ -1,0 +1,11 @@
+import { readFileSync, writeFileSync } from "node:fs";
+import { compareQuality, dashboardModel } from "../lib/quality/compareQuality.mjs";
+import { DASHBOARD_JSON_PATH, DASHBOARD_MD_PATH, LATEST_PATH, readHistory, readJson, writeJson } from "../lib/quality/qualityStore.mjs";
+let compared = readJson(DASHBOARD_JSON_PATH);
+if (!compared) compared = compareQuality(readJson(LATEST_PATH), readHistory());
+const model = dashboardModel(compared); writeJson(DASHBOARD_JSON_PATH, { ...compared, dashboard: model });
+const m = model.metrics;
+const fmt = (x) => x?.value === null || x?.value === undefined ? "unavailable" : `${x.value}${x.unit === "percent" ? "%" : ""} (${x.label})`;
+const lines = ["# ShadowScore Investigation Quality Dashboard", "", `Generated: ${model.generatedAt}`, "", "## Current system health", ...Object.entries(m).map(([k,v])=>`- ${k}: ${fmt(v)}${v.note ? ` — ${v.note}` : ""}`), "", "## Manual review queue", ...(model.manualReviewQueue.length ? model.manualReviewQueue.map((q)=>`- ${q.target}: ${q.exactChange}; suspected cause: ${q.suspectedCause}; next: ${q.recommendedNextInvestigationStep}`) : ["- No meaningful product regressions detected."]), "", "## Environment alerts", ...(model.environmentAlerts.length ? model.environmentAlerts.map((a)=>`- ${a.target}: ${a.type} (${a.exactChange})`) : ["- None."]), "", "## Targets", ...model.targets.map((t)=>`- ${t.target}: ${t.decision}; identity=${t.currentResult}; evidenceCoverage=${t.evidenceCoverage ?? "unavailable"}; provider=${t.providerStatus}`), ""];
+writeFileSync(DASHBOARD_MD_PATH, lines.join("\n"));
+console.log(readFileSync(DASHBOARD_MD_PATH, "utf8"));

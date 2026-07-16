@@ -1,0 +1,171 @@
+{
+  "run": {
+    "id": "quality-2026-07-16T10:57:40.789Z",
+    "startedAt": "2026-07-16T10:57:40.789Z",
+    "completedAt": "2026-07-16T10:57:50.931Z",
+    "environment": "local",
+    "validationSources": [
+      "validate:live-truth",
+      "validate:live-customer-journey (not present in this repository)",
+      "Truth Benchmark history",
+      "provider diagnostics",
+      "organization resolution results"
+    ],
+    "executionTimeMs": 10142
+  },
+  "targets": [
+    {
+      "target": "MSFT",
+      "expectedResult": "MICROSOFT CORP",
+      "currentResult": "MICROSOFT CORP",
+      "decision": "PASS",
+      "providerStatus": "completed",
+      "organizationResolved": true,
+      "evidenceCoverage": 100,
+      "providerCompleted": true,
+      "httpAcquisitionSucceeded": null,
+      "identityContradictions": [],
+      "unsupportedStatements": [],
+      "environmentFailures": [
+        "authoritative_public_source_unavailable_recorded_fixture_used"
+      ],
+      "diagnostics": {
+        "source": "https://www.sec.gov/files/company_tickers_exchange.json",
+        "errors": [
+          "Live SEC fetch unavailable; used recorded SEC fixture for deterministic validation."
+        ]
+      },
+      "executionTimeMs": 96
+    },
+    {
+      "target": "AAPL",
+      "expectedResult": "Apple Inc.",
+      "currentResult": "Apple Inc.",
+      "decision": "PASS",
+      "providerStatus": "completed",
+      "organizationResolved": true,
+      "evidenceCoverage": 100,
+      "providerCompleted": true,
+      "httpAcquisitionSucceeded": null,
+      "identityContradictions": [],
+      "unsupportedStatements": [],
+      "environmentFailures": [
+        "authoritative_public_source_unavailable_recorded_fixture_used"
+      ],
+      "diagnostics": {
+        "source": "https://www.sec.gov/files/company_tickers_exchange.json",
+        "errors": [
+          "Live SEC fetch unavailable; used recorded SEC fixture for deterministic validation."
+        ]
+      },
+      "executionTimeMs": 5012
+    },
+    {
+      "target": "AMZN",
+      "expectedResult": "AMAZON COM INC",
+      "currentResult": "AMAZON COM INC",
+      "decision": "PASS",
+      "providerStatus": "completed",
+      "organizationResolved": true,
+      "evidenceCoverage": 100,
+      "providerCompleted": true,
+      "httpAcquisitionSucceeded": null,
+      "identityContradictions": [],
+      "unsupportedStatements": [],
+      "environmentFailures": [
+        "authoritative_public_source_unavailable_recorded_fixture_used"
+      ],
+      "diagnostics": {
+        "source": "https://www.sec.gov/files/company_tickers_exchange.json",
+        "errors": [
+          "Live SEC fetch unavailable; used recorded SEC fixture for deterministic validation."
+        ]
+      },
+      "executionTimeMs": 5
+    },
+    {
+      "target": "NET",
+      "expectedResult": "Cloudflare, Inc.",
+      "currentResult": "Cloudflare, Inc.",
+      "decision": "PASS",
+      "providerStatus": "completed",
+      "organizationResolved": true,
+      "evidenceCoverage": 100,
+      "providerCompleted": true,
+      "httpAcquisitionSucceeded": null,
+      "identityContradictions": [],
+      "unsupportedStatements": [],
+      "environmentFailures": [
+        "authoritative_public_source_unavailable_recorded_fixture_used"
+      ],
+      "diagnostics": {
+        "source": "https://www.sec.gov/files/company_tickers_exchange.json",
+        "errors": [
+          "Live SEC fetch unavailable; used recorded SEC fixture for deterministic validation."
+        ]
+      },
+      "executionTimeMs": 5011
+    },
+    {
+      "target": "0000320193",
+      "expectedResult": "Apple Inc.",
+      "currentResult": "Apple Inc.",
+      "decision": "PASS",
+      "providerStatus": "completed",
+      "organizationResolved": true,
+      "evidenceCoverage": 100,
+      "providerCompleted": true,
+      "httpAcquisitionSucceeded": null,
+      "identityContradictions": [],
+      "unsupportedStatements": [],
+      "environmentFailures": [
+        "authoritative_public_source_unavailable_recorded_fixture_used"
+      ],
+      "diagnostics": {
+        "source": "https://www.sec.gov/files/company_tickers_exchange.json",
+        "errors": [
+          "Live SEC fetch unavailable; used recorded SEC fixture for deterministic validation."
+        ]
+      },
+      "executionTimeMs": 18
+    },
+    {
+      "target": "microsoft.com",
+      "expectedResult": "Unknown",
+      "currentResult": "Unknown",
+      "decision": "PASS",
+      "providerStatus": "not_required",
+      "organizationResolved": false,
+      "evidenceCoverage": null,
+      "providerCompleted": null,
+      "httpAcquisitionSucceeded": null,
+      "identityContradictions": [],
+      "unsupportedStatements": [],
+      "environmentFailures": [],
+      "diagnostics": {
+        "source": "none-domain-not-inferred",
+        "errors": []
+      },
+      "executionTimeMs": 0
+    }
+  ],
+  "summary": {
+    "targetCount": 6,
+    "passCount": 6,
+    "reviewCount": 0,
+    "confirmedRiskCount": 0,
+    "passRate": 100,
+    "organizationResolutionSuccessRate": 83.3,
+    "averageEvidenceCoverage": 100,
+    "providerCompletionRate": 100,
+    "httpAcquisitionSuccessRate": null,
+    "identityContradictionCount": 0,
+    "unsupportedStatementCount": 0,
+    "environmentOrNetworkFailureCount": 5,
+    "productionPipelineFailed": false,
+    "regressionCount": 0
+  },
+  "regressions": [],
+  "environmentAlerts": [],
+  "manualReviewQueue": []
+}

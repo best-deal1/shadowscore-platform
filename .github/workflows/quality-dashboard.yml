@@ -1,0 +1,36 @@
+name: Investigation Quality Dashboard
+
+on:
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  QUALITY_ENV: github-actions
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run quality:generate
+      - run: npm run quality:dashboard
+      - run: npm run quality:check
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: investigation-quality-${{ github.run_id }}
+          path: |
+            quality/latest.json
+            quality/dashboard.json
+            quality/dashboard.md
+            quality/history/*.json
+          retention-days: 90
