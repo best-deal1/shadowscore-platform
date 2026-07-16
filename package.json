@@ -20,7 +20,8 @@
     "validate:http-diagnostics": "node scripts/validate-http-diagnostics.mjs",
     "validate:http-reuse": "node scripts/validate-http-reuse.mjs",
     "validate:identity-truth-20": "node scripts/validate-identity-truth-20.mjs",
-    "validate:trust-certification": "node scripts/validate-trust-certification.mjs"
+    "validate:trust-certification": "node scripts/validate-trust-certification.mjs",
+    "validate:live-truth": "node --experimental-strip-types scripts/validate-live-truth.mjs"
   },
   "dependencies": {
     "next": "16.2.6",
