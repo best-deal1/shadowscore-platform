@@ -40,11 +40,12 @@ export abstract class BaseProvider implements Provider {
         completedAt: completedAtDate.toISOString(),
         duration: completedAtDate.getTime() - startedAtDate.getTime(),
         findings: [],
-        evidence: [{ id: `${this.id}-unavailable`, type: "observation", label: `${this.name} availability`, value: this.failureReason(error), source: this.id }],
+        evidence: [],
         metadata: {
           category: this.category,
           providerName: this.name,
           failureReason: this.failureReason(error),
+          failureKind: this.failureReason(error) === "Timeout" ? "network_failure" : "provider_failure",
           lookupPerformed: false,
         },
         errors: [error instanceof Error ? error.message : "Unknown provider execution error"],

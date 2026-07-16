@@ -133,6 +133,8 @@ function makeEvidenceItem(result: ProviderResult, evidence: ProviderEvidence): B
   if (!value || value.toLowerCase() === "unavailable") return undefined;
   const type = evidenceTypeFor(result.providerId, evidence);
   const model = EVIDENCE_RELIABILITY[type];
+  const providerWeight = typeof result.metadata.providerConfidenceWeight === "number" ? Math.max(0, Math.min(1, result.metadata.providerConfidenceWeight)) : 1;
+  const weightedReliability = Number((model.weight * providerWeight).toFixed(2));
   return {
     id: `${result.providerId}:${evidence.id}`,
     type,
@@ -140,8 +142,8 @@ function makeEvidenceItem(result: ProviderResult, evidence: ProviderEvidence): B
     value,
     source: evidence.source || result.providerId,
     reliability: model.reliability,
-    reliabilityWeight: model.weight,
-    confidence: confidenceFromWeight(model.weight, result.status),
+    reliabilityWeight: weightedReliability,
+    confidence: confidenceFromWeight(weightedReliability, result.status),
     freshness: freshness(result),
     observedAt: result.completedAt,
   };
@@ -180,7 +182,7 @@ export function buildBusinessProfileEvidenceSnapshot(input: BusinessProfileEngin
     }),
     hasDomainRegistrationContext: whois?.status === "completed" && (typeof whois.metadata.registrationDate === "string" || typeof whois.metadata.ageDays === "number" || statuses.length > 0),
     hasPublicBusinessEvidence: hasNonPlaceholderEvidence(businessProfile) || hasNonPlaceholderEvidence(marketplace),
-    hasProviderFailures: providerResults.some((result) => result.status === "failed"),
+    hasProviderFailures: providerResults.some((result) => result.status !== "completed"),
     placeholderOnlyProviders: providerResults.filter(isPlaceholderOnly).map((result) => result.providerId),
     evidenceItems: buildEvidenceItems(providerResults),
   };
@@ -296,7 +298,7 @@ export function buildBusinessProfile(input: BusinessProfileEngineInput): Busines
     snapshot.hasPublicBusinessEvidence ? "Public business evidence is available." : undefined,
   ]);
   const warningSignals = unique([
-    snapshot.hasProviderFailures ? "One or more providers failed during investigation." : undefined,
+    snapshot.hasProviderFailures ? "One or more providers failed during acquisition; business evidence is evaluated separately from provider availability." : undefined,
     snapshot.placeholderOnlyProviders.length > 0 ? `Placeholder-only evidence returned by: ${snapshot.placeholderOnlyProviders.join(", ")}.` : undefined,
     contradictionSignals.length > 0 ? `${contradictionSignals.length} contradiction signal(s) require review.` : undefined,
     !snapshot.hasDomainInfrastructure ? "Domain infrastructure was not confirmed from provider evidence." : undefined,

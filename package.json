@@ -27,7 +27,8 @@
     "quality:check": "node scripts/quality-check.mjs",
     "validate:private-business-identity": "node scripts/validate-private-business-identity.mjs",
     "validate:real-business-synthetic": "node scripts/validate-private-business-identity.mjs",
-    "validate:real-business-live": "node scripts/validate-real-business-live.mjs"
+    "validate:real-business-live": "node scripts/validate-real-business-live.mjs",
+    "validate:acquisition-health-30": "node --experimental-strip-types scripts/validate-acquisition-health-30.mjs"
   },
   "dependencies": {
     "next": "16.2.6",
