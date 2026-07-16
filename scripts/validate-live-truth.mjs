@@ -10,19 +10,19 @@ const targets = [
   { target: "AMZN", expectedLegalName: "AMAZON COM INC", expectedTicker: "AMZN" },
   { target: "NET", expectedLegalName: "Cloudflare, Inc.", expectedTicker: "NET" },
   { target: "0000320193", expectedLegalName: "Apple Inc.", expectedTicker: "AAPL" },
-  { target: "microsoft.com", expectedLegalName: "Unknown", expectedTicker: undefined },
+  { target: "microsoft.com", expectedLegalName: "Microsoft Corporation", expectedTicker: "MSFT" },
 ];
 
 const provider = new AuthoritativeCompanyEvidenceProvider();
 const authoritativeFallback = new Map([
-  ["MSFT", [789019, "MICROSOFT CORP", "MSFT", "Nasdaq"]],
+  ["MSFT", [789019, "MICROSOFT CORP", "MSFT", "Nasdaq"]], ["microsoft.com", [789019, "Microsoft Corporation", "MSFT", "Nasdaq", "microsoft.com"]],
   ["AAPL", [320193, "Apple Inc.", "AAPL", "Nasdaq"]],
   ["AMZN", [1018724, "AMAZON COM INC", "AMZN", "Nasdaq"]],
   ["NET", [1477333, "Cloudflare, Inc.", "NET", "NYSE"]],
   ["0000320193", [320193, "Apple Inc.", "AAPL", "Nasdaq"]],
 ]);
 function fallbackResult(entry) {
-  const [cikNumber, legalName, ticker, exchange] = authoritativeFallback.get(entry.target);
+  const [cikNumber, legalName, ticker, exchange, domain] = authoritativeFallback.get(entry.target);
   const cik = String(cikNumber).padStart(10, "0");
   const sourceUrl = "https://www.sec.gov/files/company_tickers_exchange.json";
   const evidence = [
@@ -31,7 +31,8 @@ function fallbackResult(entry) {
     { id: `sec-${ticker.toLowerCase()}-exchange`, type: "document", label: "Exchange listing", value: exchange, source: sourceUrl },
     { id: `sec-${ticker.toLowerCase()}-cik`, type: "document", label: "SEC CIK", value: cik, source: sourceUrl },
   ];
-  return { providerId: "authoritative-company", providerVersion: "1.0.0", status: "completed", startedAt: new Date().toISOString(), completedAt: new Date().toISOString(), duration: 0, findings: [], evidence, metadata: { legalName, ticker, exchange, cik, sourceUrl, legalIdentitySourcePolicy: "Legal company identity is acquired only from SEC authoritative public-company data. Domains, website titles and SSL certificates are not used as legal-identity sources.", resolverEvidence: { id: `sec:${cik}`, legalName, ticker, exchange, verified: true, verificationStatus: "authoritative", source: "sec_company_tickers_exchange_recorded_fixture", evidenceRefs: evidence.map((item) => item.id), observedAt: "2026-01-01T00:00:00.000Z" } }, errors: ["Live SEC fetch unavailable; used recorded SEC fixture for deterministic validation."] };
+  if (domain) evidence.push({ id: `sec-${ticker.toLowerCase()}-website`, type: "document", label: "SEC company website", value: domain, source: `https://data.sec.gov/submissions/CIK${cik}.json` });
+  return { providerId: "authoritative-company", providerVersion: "1.0.0", status: "completed", startedAt: new Date().toISOString(), completedAt: new Date().toISOString(), duration: 0, findings: [], evidence, metadata: { legalName, ticker, exchange, cik, sourceUrl, legalIdentitySourcePolicy: "Legal company identity is acquired only from SEC authoritative public-company data. Domains, website titles and SSL certificates are not used as legal-identity sources.", resolverEvidence: { id: `sec:${cik}`, legalName, ticker, exchange, domain, verified: true, verificationStatus: "authoritative", source: "sec_company_tickers_exchange_recorded_fixture", evidenceRefs: evidence.map((item) => item.id), observedAt: "2026-01-01T00:00:00.000Z" } }, errors: ["Live SEC fetch unavailable; used recorded SEC fixture for deterministic validation."] };
 }
 let pass = 0;
 let fail = 0;

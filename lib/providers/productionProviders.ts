@@ -27,9 +27,10 @@ const SEC_HEADERS = { "user-agent": "ShadowScore evidence provider contact@shado
 
 type SecCompanyRow = [number, string, string, string];
 type SecCompanyTickerExchange = { fields: string[]; data: SecCompanyRow[] };
-type PublicCompanyTarget = { ticker?: string; cik?: string; supported: boolean; reason?: ProviderFailureReason };
+type PublicCompanyTarget = { ticker?: string; cik?: string; domain?: string; supported: boolean; reason?: ProviderFailureReason };
 
 function normalizeTicker(value: string) { return value.trim().replace(/^ticker:/i, "").toUpperCase(); }
+function normalizeSecDomain(value: string | undefined) { return String(value || "").trim().toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").split(/[/?#:]/)[0].replace(/\.$/, ""); }
 function normalizeCik(value: string) { const raw = value.trim().replace(/^cik:/i, "").replace(/^0+/, ""); return /^\d+$/.test(raw) ? raw.padStart(10, "0") : ""; }
 function publicCompanyTarget(context: ProviderExecutionContext): PublicCompanyTarget {
   const raw = (context.target || "").trim();
@@ -37,6 +38,8 @@ function publicCompanyTarget(context: ProviderExecutionContext): PublicCompanyTa
   const cikMatch = raw.match(/^(?:cik:)?(\d{1,10})$/i);
   if (cikMatch) return { cik: normalizeCik(cikMatch[1]), supported: true };
   if (tickerMatch && !raw.includes(".")) return { ticker: normalizeTicker(tickerMatch[1]), supported: true };
+  const domain = normalizeSecDomain(raw);
+  if (domain && domain.includes(".")) return { domain, supported: true };
   return { supported: false, reason: "Not Supported" };
 }
 async function fetchSecJson<T>(url: string): Promise<T> {
@@ -180,11 +183,18 @@ export class AuthoritativeCompanyEvidenceProvider extends ProductionProvider { r
   protected async collect(context: ProviderExecutionContext): Promise<Pick<ProviderResult, "findings" | "evidence" | "metadata">> {
     const target = publicCompanyTarget(context); if (!target.supported) throw new Error("Authoritative public-company lookup requires a ticker or CIK; domains, page titles and SSL certificates are not legal-identity sources.");
     const dataset = await fetchSecJson<SecCompanyTickerExchange>(SEC_COMPANY_TICKERS_EXCHANGE_URL);
-    const row = dataset.data.find(([cik, , ticker]) => (target.cik && String(cik).padStart(10, "0") === target.cik) || (target.ticker && ticker.toUpperCase() === target.ticker));
-    if (!row) throw new Error(`SEC authoritative company lookup found no public-company row for ${target.ticker || target.cik}`);
+    let row = dataset.data.find(([cik, , ticker]) => (target.cik && String(cik).padStart(10, "0") === target.cik) || (target.ticker && ticker.toUpperCase() === target.ticker));
+    let submissions: { name?: string; website?: string; sic?: string; stateOfIncorporation?: string } | undefined;
+    if (!row && target.domain) {
+      for (const candidate of dataset.data) {
+        const candidateCik = String(candidate[0]).padStart(10, "0");
+        try { const candidateSubmissions = await fetchSecJson<typeof submissions>(`${SEC_SUBMISSIONS_URL}${candidateCik}.json`); if (normalizeSecDomain(candidateSubmissions?.website) === target.domain) { row = candidate; submissions = candidateSubmissions; break; } } catch {}
+      }
+    }
+    if (!row) throw new Error(`SEC authoritative company lookup found no public-company row for ${target.ticker || target.cik || target.domain}`);
     const [cikNumber, legalName, ticker, exchange] = row; const cik = String(cikNumber).padStart(10, "0"); const submissionsUrl = `${SEC_SUBMISSIONS_URL}${cik}.json`;
-    let sic: string | undefined; let stateOfIncorporation: string | undefined;
-    try { const submissions = await fetchSecJson<{ sic?: string; stateOfIncorporation?: string }>(submissionsUrl); sic = submissions.sic; stateOfIncorporation = submissions.stateOfIncorporation; } catch {}
+    if (!submissions) { try { submissions = await fetchSecJson<typeof submissions>(submissionsUrl); } catch {} }
+    const sic = submissions?.sic; const stateOfIncorporation = submissions?.stateOfIncorporation;
     const evidence: ProviderEvidence[] = [
       { id: `sec-${ticker.toLowerCase()}-legal-name`, type: "document", label: "Authoritative legal company name", value: legalName, source: SEC_COMPANY_TICKERS_EXCHANGE_URL },
       { id: `sec-${ticker.toLowerCase()}-ticker`, type: "document", label: "SEC ticker", value: ticker, source: SEC_COMPANY_TICKERS_EXCHANGE_URL },
@@ -192,7 +202,9 @@ export class AuthoritativeCompanyEvidenceProvider extends ProductionProvider { r
       { id: `sec-${ticker.toLowerCase()}-cik`, type: "document", label: "SEC CIK", value: cik, source: SEC_COMPANY_TICKERS_EXCHANGE_URL },
     ];
     if (stateOfIncorporation) evidence.push({ id: `sec-${ticker.toLowerCase()}-incorporation-state`, type: "document", label: "State of incorporation", value: stateOfIncorporation, source: submissionsUrl });
-    return { findings: [], evidence, metadata: { integrationStatus: "connected", lookupPerformed: true, authoritative: true, authority: "U.S. Securities and Exchange Commission", legalIdentitySourcePolicy: "Legal company identity is acquired only from SEC authoritative public-company data. Domains, website titles and SSL certificates are not used as legal-identity sources.", legalName, ticker, exchange, cik, sic, stateOfIncorporation, sourceUrl: SEC_COMPANY_TICKERS_EXCHANGE_URL, submissionsUrl, resolverEvidence: { id: `sec:${cik}`, legalName, ticker, exchange, verified: true, verificationStatus: "authoritative", source: "sec_company_tickers_exchange", evidenceRefs: evidence.map((item) => item.id), observedAt: new Date().toISOString() } } };
+    const reportedWebsite = normalizeSecDomain(submissions?.website);
+    if (reportedWebsite) evidence.push({ id: `sec-${ticker.toLowerCase()}-website`, type: "document", label: "SEC company website", value: reportedWebsite, source: submissionsUrl });
+    return { findings: [], evidence, metadata: { integrationStatus: "connected", lookupPerformed: true, authoritative: true, authority: "U.S. Securities and Exchange Commission", legalIdentitySourcePolicy: "Legal company identity is acquired only from SEC authoritative public-company data. Domains, website titles and SSL certificates are not used as legal-identity sources.", legalName: submissions?.name || legalName, ticker, exchange, cik, sic, stateOfIncorporation, sourceUrl: SEC_COMPANY_TICKERS_EXCHANGE_URL, submissionsUrl, resolverEvidence: { id: `sec:${cik}`, legalName: submissions?.name || legalName, ticker, exchange, domain: reportedWebsite || undefined, verified: true, verificationStatus: "authoritative", source: "sec_company_tickers_exchange_and_submissions", evidenceRefs: evidence.map((item) => item.id), observedAt: new Date().toISOString() } } };
   }
 }
 
