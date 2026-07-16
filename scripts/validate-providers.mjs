@@ -17,6 +17,7 @@ const expectedProviderClasses = [
   "WebsiteMetadataProvider",
   "ContactDiscoveryProvider",
   "SocialProfileProvider",
+  "AuthoritativeCompanyEvidenceProvider",
 ];
 
 const legacyProviderFiles = [
@@ -56,9 +57,9 @@ if (legacyFilesFound.length) console.error(`Legacy provider files still present:
 if (placeholderModulesFound.length) console.error(`Placeholder modules still present: ${placeholderModulesFound.join(", ")}`);
 
 if (
-  classMatches.length !== 11 ||
-  classCounts.size !== 11 ||
-  providerIdCounts.size !== 11 ||
+  classMatches.length !== expectedProviderClasses.length ||
+  classCounts.size !== expectedProviderClasses.length ||
+  providerIdCounts.size !== expectedProviderClasses.length ||
   duplicateImplementations !== 0 ||
   missingClasses.length ||
   unexpectedClasses.length ||
