@@ -21,6 +21,30 @@ type RdapResponse = { objectClassName?: string; ldhName?: string; handle?: strin
 const DNS_RECORD_TYPES: DnsRecordType[] = ["A", "AAAA", "MX", "NS", "TXT", "CNAME"];
 const RDAP_BASE_URL = "https://rdap.org/domain/";
 
+const SEC_COMPANY_TICKERS_EXCHANGE_URL = "https://www.sec.gov/files/company_tickers_exchange.json";
+const SEC_SUBMISSIONS_URL = "https://data.sec.gov/submissions/CIK";
+const SEC_HEADERS = { "user-agent": "ShadowScore evidence provider contact@shadowscore.io", accept: "application/json" };
+
+type SecCompanyRow = [number, string, string, string];
+type SecCompanyTickerExchange = { fields: string[]; data: SecCompanyRow[] };
+type PublicCompanyTarget = { ticker?: string; cik?: string; supported: boolean; reason?: ProviderFailureReason };
+
+function normalizeTicker(value: string) { return value.trim().replace(/^ticker:/i, "").toUpperCase(); }
+function normalizeCik(value: string) { const raw = value.trim().replace(/^cik:/i, "").replace(/^0+/, ""); return /^\d+$/.test(raw) ? raw.padStart(10, "0") : ""; }
+function publicCompanyTarget(context: ProviderExecutionContext): PublicCompanyTarget {
+  const raw = (context.target || "").trim();
+  const tickerMatch = raw.match(/^(?:ticker:)?([A-Z.\-]{1,8})$/i);
+  const cikMatch = raw.match(/^(?:cik:)?(\d{1,10})$/i);
+  if (cikMatch) return { cik: normalizeCik(cikMatch[1]), supported: true };
+  if (tickerMatch && !raw.includes(".")) return { ticker: normalizeTicker(tickerMatch[1]), supported: true };
+  return { supported: false, reason: "Not Supported" };
+}
+async function fetchSecJson<T>(url: string): Promise<T> {
+  const response = await fetch(url, { headers: SEC_HEADERS });
+  if (!response.ok) throw new Error(`SEC authoritative company lookup failed: ${response.status}`);
+  return await response.json() as T;
+}
+
 function formatDnsError(error: unknown) {
   if (error && typeof error === "object" && "code" in error && typeof error.code === "string") return error.code;
   return error instanceof Error ? error.message : "Unknown DNS lookup error";
@@ -148,6 +172,27 @@ export class WHOISProvider extends ProductionProvider {
     if (!registrationDate) findings.push({ id: "whois-registration-date-missing", title: "Domain registration date unavailable", description: "The RDAP response did not include a registration event date, reducing ownership-age validation confidence.", severity: "low" });
     const evidence: ProviderEvidence[] = [{ id: "whois-domain", type: "observation", label: "Normalized domain", value: target.domain, source: RDAP_BASE_URL }, { id: "whois-registration-date", type: "observation", label: "Registration date", value: registrationDate || "unavailable", source: RDAP_BASE_URL }, { id: "whois-expiration-date", type: "observation", label: "Expiration date", value: expirationDate || "unavailable", source: RDAP_BASE_URL }, { id: "whois-statuses", type: "observation", label: "Domain statuses", value: statuses.join(", ") || "unavailable", source: RDAP_BASE_URL }];
     return { findings, evidence, metadata: { integrationStatus: "connected", lookupPerformed: true, lookupProtocol: "rdap", domain: target.domain, registrationDate, expirationDate, ageDays, statuses, nameservers, rdapHandle: payload.handle, scanMode: context.scanMode, platform: context.platform, intakeId: context.intakeId } };
+  }
+}
+
+export class AuthoritativeCompanyEvidenceProvider extends ProductionProvider { readonly id = "authoritative-company"; readonly name = "Authoritative Company Evidence Provider"; readonly version = "1.0.0"; readonly category = "business_profile" as const;
+  async health(): Promise<ProviderHealth> { return { providerId: this.id, providerVersion: this.version, status: "healthy", checkedAt: new Date().toISOString(), metadata: { category: this.category, providerName: this.name, integration: "sec-company-tickers-exchange", authoritativeSource: SEC_COMPANY_TICKERS_EXCHANGE_URL } }; }
+  protected async collect(context: ProviderExecutionContext): Promise<Pick<ProviderResult, "findings" | "evidence" | "metadata">> {
+    const target = publicCompanyTarget(context); if (!target.supported) throw new Error("Authoritative public-company lookup requires a ticker or CIK; domains, page titles and SSL certificates are not legal-identity sources.");
+    const dataset = await fetchSecJson<SecCompanyTickerExchange>(SEC_COMPANY_TICKERS_EXCHANGE_URL);
+    const row = dataset.data.find(([cik, , ticker]) => (target.cik && String(cik).padStart(10, "0") === target.cik) || (target.ticker && ticker.toUpperCase() === target.ticker));
+    if (!row) throw new Error(`SEC authoritative company lookup found no public-company row for ${target.ticker || target.cik}`);
+    const [cikNumber, legalName, ticker, exchange] = row; const cik = String(cikNumber).padStart(10, "0"); const submissionsUrl = `${SEC_SUBMISSIONS_URL}${cik}.json`;
+    let sic: string | undefined; let stateOfIncorporation: string | undefined;
+    try { const submissions = await fetchSecJson<{ sic?: string; stateOfIncorporation?: string }>(submissionsUrl); sic = submissions.sic; stateOfIncorporation = submissions.stateOfIncorporation; } catch {}
+    const evidence: ProviderEvidence[] = [
+      { id: `sec-${ticker.toLowerCase()}-legal-name`, type: "document", label: "Authoritative legal company name", value: legalName, source: SEC_COMPANY_TICKERS_EXCHANGE_URL },
+      { id: `sec-${ticker.toLowerCase()}-ticker`, type: "document", label: "SEC ticker", value: ticker, source: SEC_COMPANY_TICKERS_EXCHANGE_URL },
+      { id: `sec-${ticker.toLowerCase()}-exchange`, type: "document", label: "Exchange listing", value: exchange, source: SEC_COMPANY_TICKERS_EXCHANGE_URL },
+      { id: `sec-${ticker.toLowerCase()}-cik`, type: "document", label: "SEC CIK", value: cik, source: SEC_COMPANY_TICKERS_EXCHANGE_URL },
+    ];
+    if (stateOfIncorporation) evidence.push({ id: `sec-${ticker.toLowerCase()}-incorporation-state`, type: "document", label: "State of incorporation", value: stateOfIncorporation, source: submissionsUrl });
+    return { findings: [], evidence, metadata: { integrationStatus: "connected", lookupPerformed: true, authoritative: true, authority: "U.S. Securities and Exchange Commission", legalIdentitySourcePolicy: "Legal company identity is acquired only from SEC authoritative public-company data. Domains, website titles and SSL certificates are not used as legal-identity sources.", legalName, ticker, exchange, cik, sic, stateOfIncorporation, sourceUrl: SEC_COMPANY_TICKERS_EXCHANGE_URL, submissionsUrl, resolverEvidence: { id: `sec:${cik}`, legalName, ticker, exchange, verified: true, verificationStatus: "authoritative", source: "sec_company_tickers_exchange", evidenceRefs: evidence.map((item) => item.id), observedAt: new Date().toISOString() } } };
   }
 }
 
