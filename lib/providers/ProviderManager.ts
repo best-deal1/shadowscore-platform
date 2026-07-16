@@ -1,4 +1,5 @@
 import type { EnginePlanStep, SkippedEngine } from "../orchestrator/types";
+import { classifyAcquisitionFailure, providerConfidenceWeight } from "../acquisitionHealth";
 import type { Provider, ProviderExecutionContext, ProviderResult } from "./types";
 
 export type ProviderExecutionState = "executed" | "skipped" | "pending" | "failed";
@@ -14,6 +15,8 @@ export type ProviderExecutionRecord = {
   evidenceCount: number;
   findingCount: number;
   errors: string[];
+  failureKind?: string;
+  confidenceWeight?: number;
 };
 
 export type ProviderExecutionRun = {
@@ -84,6 +87,9 @@ export class ProviderManager {
       }
 
       const result = await provider.execute(context);
+      result.metadata.providerConfidenceWeight = providerConfidenceWeight(result);
+      const failureKind = classifyAcquisitionFailure(result);
+      if (failureKind) result.metadata.acquisitionFailureKind = failureKind;
       providerResults.push(result);
       executionRecords.push({
         engineId: step.engineId,
@@ -96,6 +102,8 @@ export class ProviderManager {
         evidenceCount: result.evidence.length,
         findingCount: result.findings.length,
         errors: result.errors,
+        failureKind,
+        confidenceWeight: providerConfidenceWeight(result),
       });
     }
 

@@ -11,6 +11,7 @@ import { BusinessKnowledgeGraph } from "./knowledgeGraph";
 import { buildBusinessNarrative } from "./narrative";
 import { buildTrustTimeline } from "./trustTimeline";
 import { buildReasoning } from "./reasoning";
+import { buildAcquisitionHealthReport } from "./acquisitionHealth";
 import { ProviderManager, createDefaultProviders } from "./providers";
 import type { ProviderExecutionContext } from "./providers/types";
 import { analyzeRisk } from "./riskEngine";
@@ -54,6 +55,7 @@ export async function buildReadyReport(input: {
   const executionPlan = planFromClassification(classification);
   executionFlow.push("✓ Execution plan created");
   const { providerResults, executionRecords } = await providerManager.runExecutionPlan(providerContext, executionPlan.executionPlan, executionPlan.skippedEngines);
+  const acquisitionHealth = buildAcquisitionHealthReport(providerResults);
   const evidenceItems = buildEvidenceItems({
     providerResults,
     notCheckedProviders: executionRecords
@@ -183,6 +185,7 @@ export async function buildReadyReport(input: {
       decision,
       reasoning,
       correlationSummary,
+      acquisitionHealth,
       identityProfile,
       businessNarrative,
       execution: {
@@ -194,6 +197,7 @@ export async function buildReadyReport(input: {
       executionFlow,
       knowledgeGraph: knowledgeGraph.snapshot(),
       technicalDetails: {
+        acquisitionHealth,
         executed: executionRecords.filter((record) => record.status === "executed"),
         skipped: executionRecords.filter((record) => record.status === "skipped"),
         pending: executionRecords.filter((record) => record.status === "pending"),
