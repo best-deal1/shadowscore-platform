@@ -52,20 +52,22 @@ function BusinessCard({ title, body }: { title: string; body: string[] }) {
 function DecisionModePanel({ report }: { report: ShadowScoreReport }) {
   const mode = report.reportSummary?.businessNarrative?.decisionMode;
   const decision = report.reportSummary?.decision;
-  const proceed = mode?.proceed || (decision?.decision === "PASS" ? "YES" : decision?.decision === "FAIL" ? "NO" : "REVIEW");
+  const canonical = decision?.canonicalDecision || mode;
+  const proceed = canonical?.headline || (mode?.proceed === "YES" ? "Proceed" : mode?.proceed === "NO" ? "Do not proceed" : "Proceed with verification");
   const confidence = mode?.confidence || decision?.confidenceLevel || "Not verified";
-  const uncertainty = mode?.mainRemainingUncertainty || "Business ownership";
-  const action = mode?.recommendedNextAction || decision?.recommendedAction || "Verify the highest-value evidence before committing funds.";
+  const uncertainty = mode?.mainRemainingUncertainty || (canonical as { primaryUncertainty?: string } | undefined)?.primaryUncertainty || "Business ownership";
+  const action = mode?.recommendedNextAction || canonical?.userMeaning || decision?.recommendedAction || "Verify the highest-value evidence before committing funds.";
   const effort = mode?.estimatedEffort || "3 minutes";
-  const impact = mode?.businessImpactIfSkipped || (proceed === "NO" ? "High" : "Medium");
+  const impact = mode?.businessImpactIfSkipped || (canonical?.riskLevel === "HIGH" ? "High" : canonical?.riskLevel === "LOW" ? "Low" : "Medium");
 
   return (
     <section className="mt-8 rounded-[28px] border border-emerald-400/25 bg-emerald-500/[0.07] p-6">
       <div className="text-xs uppercase tracking-[0.28em] text-emerald-200">Decision mode</div>
       <div className="mt-5 grid gap-4 md:grid-cols-3">
         <div className="rounded-3xl border border-white/10 bg-black/45 p-6 md:col-span-1">
-          <div className="text-xs uppercase tracking-[0.22em] text-zinc-500">Proceed?</div>
-          <div className="mt-3 text-5xl font-black text-white">{proceed}</div>
+          <div className="text-xs uppercase tracking-[0.22em] text-zinc-500">Decision</div>
+          <div className="mt-3 text-4xl font-black text-white">{proceed}</div>
+          <div className="mt-3 text-sm font-black uppercase text-emerald-200">{canonical?.decisionLight || "YELLOW"}</div>
           <div className="mt-4 text-sm font-bold text-emerald-100">Confidence: {confidence}</div>
         </div>
         <div className="rounded-3xl border border-white/10 bg-black/45 p-6 md:col-span-2">
@@ -82,20 +84,22 @@ function DecisionModePanel({ report }: { report: ShadowScoreReport }) {
 }
 
 function DecisionCard({ report }: { report: ShadowScoreReport }) {
-  const rawDecision = report.reportSummary?.decision?.decision || (report.reportSummary?.businessNarrative?.decision?.toUpperCase().includes("FAIL") ? "FAIL" : report.reportSummary?.businessNarrative?.decision?.toUpperCase().includes("PASS") ? "PASS" : "REVIEW");
-  const decision = rawDecision === "FAIL" ? "CONFIRMED RISK" : rawDecision;
-  const tone = decision === "PASS"
+  const canonical = report.reportSummary?.decision?.canonicalDecision || report.reportSummary?.businessNarrative?.decisionMode;
+  const decision = canonical?.headline || report.reportSummary?.businessNarrative?.decision || "Proceed with verification";
+  const light = canonical?.decisionLight || "YELLOW";
+  const tone = light === "GREEN"
     ? "border-emerald-400/35 bg-emerald-500/10 text-emerald-100"
-    : decision === "CONFIRMED RISK"
+    : light === "RED"
       ? "border-red-400/35 bg-red-500/10 text-red-100"
-      : "border-orange-400/35 bg-orange-500/10 text-orange-100";
+      : light === "ORANGE" ? "border-orange-400/35 bg-orange-500/10 text-orange-100" : "border-yellow-400/35 bg-yellow-500/10 text-yellow-100";
   return (
     <section className={`rounded-[28px] border p-6 shadow-2xl shadow-black/20 ${tone}`}>
       <div className="text-xs uppercase tracking-[0.28em] opacity-80">Decision</div>
       <div className="mt-4 flex flex-wrap items-end justify-between gap-5">
         <div>
           <div className="text-5xl font-black tracking-tight">{decision}</div>
-          <p className="mt-3 max-w-2xl text-base font-bold opacity-90">{(report.reportSummary?.decision?.decisionLabel === "Do not proceed" ? "Verified negative indicators detected" : report.reportSummary?.decision?.decisionLabel) || report.reportSummary?.businessNarrative?.decision || "Review available evidence"}</p>
+          <p className="mt-3 max-w-2xl text-base font-bold opacity-90">{canonical?.userMeaning || report.reportSummary?.businessNarrative?.decision || "Review available evidence"}</p>
+          <p className="mt-3 text-sm font-black uppercase tracking-[0.18em] opacity-80">{light}</p>
         </div>
         <div className="rounded-2xl border border-white/15 bg-black/20 px-5 py-4 text-right">
           <div className="text-sm font-black uppercase tracking-[0.18em]">Paid executive report</div>

@@ -2,6 +2,8 @@ import type { CorrelationFinding } from "../correlation";
 import type { BusinessProfile, BusinessProfileContradictionSignal, BusinessProfileEvidenceItem } from "../businessProfileEngine/types";
 import type { ExecutionPlan } from "../orchestrator/types";
 
+import type { CanonicalDecision } from "../canonicalDecision";
+
 export type DecisionIntelligenceDecision = "PASS" | "REVIEW" | "FAIL";
 
 export type DecisionConfidenceLevel = "High" | "Medium" | "Low" | "None";
@@ -45,6 +47,7 @@ export type DecisionIntelligenceOutput = {
   reasoning: DecisionReasoningStep[];
   recommendation: string;
   nextActions: string[];
+  canonicalDecision: CanonicalDecision;
 };
 
 export type EvidenceAssessment = {

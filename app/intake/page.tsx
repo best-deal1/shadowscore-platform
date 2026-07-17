@@ -47,7 +47,7 @@ type TrustTimelineItem = { title: string; description: string; status: "complete
 type DecisionPreview = { decision: "PASS" | "REVIEW" | "FAIL" | "CONFIRMED RISK"; decisionLabel: "Evidence supports proceeding" | "Additional verification recommended" | "Verified negative indicators detected" | "Verified enough to proceed" | "Do not proceed"; decisionColor: "green" | "orange" | "red"; verificationScore: number; confidenceScore: number; identityScore: number; infrastructureScore: number; emailSecurityScore: number; reputationScore: number | "pending"; evidenceCoverageScore: number; confidenceLevel: "Low" | "Medium" | "High"; topReasons: string[]; reasons: string[]; missingSignals: string[]; blockingIssues: string[]; whatThisMeans: string; recommendedAction: string; limitedPreview: boolean };
 type IdentityProfile = { identitySummary: string };
 type BusinessNarrativeSection = { id: string; title: string; body: string[] };
-type BusinessNarrative = { decision: string; confidence: string; decisionMode?: { proceed: "YES" | "REVIEW" | "NO"; confidence: string; mainRemainingUncertainty: string; recommendedNextAction: string; estimatedEffort: string; businessImpactIfSkipped: "Low" | "Medium" | "High" }; sections: BusinessNarrativeSection[] };
+type BusinessNarrative = { decision: string; confidence: string; decisionMode?: { proceed: "YES" | "REVIEW" | "NO"; decisionOutcome?: string; decisionLight?: string; riskLevel?: string; headline?: string; userMeaning?: string; allowedActions?: string[]; blockedActions?: string[]; confidence: string; mainRemainingUncertainty: string; recommendedNextAction: string; estimatedEffort: string; businessImpactIfSkipped: "Low" | "Medium" | "High" }; sections: BusinessNarrativeSection[] };
 type ProviderRegistryItem = { id: string; name: string; version: string; category: string };
 type FreeScanResult = { status?: "ready"; message?: string; reportReadyEvent?: { type: "free-preview-ready"; status: "ready"; ready: true; emittedAt: string }; executedAt: string; providerRegistry?: ProviderRegistryItem[]; providers: FreeScanProviderSummary[]; insights: TrustInsight[]; insightEngineVersion?: string; timeline?: TrustTimelineItem[]; decisionPreview?: DecisionPreview; identityProfile?: IdentityProfile; businessNarrative?: BusinessNarrative };
 
@@ -1319,8 +1319,9 @@ export default function IntakePage() {
                     <div className="text-xs uppercase tracking-[0.22em] text-red-300">Decision preview</div>
                     <div className="mt-4 grid gap-3 md:grid-cols-3">
                       <div className="rounded-2xl border border-white/10 bg-black/40 p-4">
-                        <div className="text-xs uppercase tracking-[0.2em] text-zinc-500">Proceed?</div>
-                        <div className="mt-2 text-3xl font-black text-white">{freeScanResult.businessNarrative.decisionMode?.proceed || freeScanResult.businessNarrative.decision}</div>
+                        <div className="text-xs uppercase tracking-[0.2em] text-zinc-500">Decision</div>
+                        <div className="mt-2 text-3xl font-black text-white">{freeScanResult.businessNarrative.decisionMode?.headline || freeScanResult.businessNarrative.decision}</div>
+                        <div className="mt-2 text-xs font-black uppercase tracking-[0.18em] text-yellow-200">{freeScanResult.businessNarrative.decisionMode?.decisionLight || "YELLOW"}</div>
                       </div>
                       <div className="rounded-2xl border border-white/10 bg-black/40 p-4">
                         <div className="text-xs uppercase tracking-[0.2em] text-zinc-500">Main uncertainty</div>
@@ -1334,7 +1335,9 @@ export default function IntakePage() {
                     {freeScanResult.message ? (
                       <p className="mt-4 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 p-3 text-sm font-bold leading-6 text-emerald-100">{freeScanResult.message}</p>
                     ) : null}
-                    {freeScanResult.decisionPreview?.recommendedAction ? (
+                    {freeScanResult.businessNarrative.decisionMode?.userMeaning ? (
+                      <p className="mt-4 text-sm leading-6 text-zinc-200"><span className="font-bold text-white">What this means:</span> {freeScanResult.businessNarrative.decisionMode.userMeaning}</p>
+                    ) : freeScanResult.decisionPreview?.recommendedAction ? (
                       <p className="mt-4 text-sm leading-6 text-zinc-200"><span className="font-bold text-white">Recommendation:</span> {freeScanResult.decisionPreview.recommendedAction}</p>
                     ) : null}
                     {freeScanResult.businessNarrative.sections.find((section) => section.id === "executiveSummary") ? (

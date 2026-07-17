@@ -8,6 +8,7 @@ import { buildBusinessNarrative } from "../../../../lib/narrative";
 import { buildTrustTimeline } from "../../../../lib/trustTimeline";
 import { buildDecision } from "../../../../lib/decisionEngine";
 import { analyzeRisk } from "../../../../lib/riskEngine";
+import { resolveBusinessIdentity } from "../../../../lib/businessIdentityResolver";
 import { ProviderManager, createDefaultProviders } from "../../../../lib/providers";
 import type { ProviderExecutionContext, ProviderResult } from "../../../../lib/providers/types";
 
@@ -137,19 +138,27 @@ export async function POST(request: Request) {
     const generatedAt = new Date().toISOString();
     const identityProfile = buildIdentityProfile({ providerResults: completedProviderResults, insights: insightOutput.insights, target: context.target, email: context.email, generatedAt });
     const businessProfile = buildBusinessProfile({ providerResults: completedProviderResults, target: context.target, generatedAt });
+    const businessIdentityResolution = resolveBusinessIdentity(context.target, { providerResults: completedProviderResults, businessProfile, observedAt: generatedAt, generatedAt });
+    const canonicalIdentity = businessIdentityResolution.canonicalIdentity;
+    const canonicalBusinessProfile = {
+      ...businessProfile,
+      businessName: canonicalIdentity?.canonicalDisplayName || businessProfile.businessName,
+      businessType: canonicalIdentity?.companyType === "PUBLIC_COMPANY" ? "Public company" : canonicalIdentity?.companyType === "BANK" || canonicalIdentity?.companyType === "REGULATED_FINANCIAL_INSTITUTION" ? "Regulated bank" : businessProfile.businessType,
+      missingEvidence: canonicalIdentity?.identityStatus === "SUPPORTED" ? businessProfile.missingEvidence.filter((item) => !/business name evidence is missing/i.test(item)) : businessProfile.missingEvidence,
+    } as typeof businessProfile;
     const knowledgeGraph = new BusinessKnowledgeGraph();
     knowledgeGraph.applyScan({
       scanId: `free-scan-${context.intakeId}`,
       entities: [
-        { type: "Business", value: businessProfile.businessName === "Insufficient Public Evidence" ? context.target : businessProfile.businessName },
-        { type: "Domain", value: businessProfile.primaryDomain || context.target },
+        { type: "Business", value: canonicalBusinessProfile.businessName === "Insufficient Public Evidence" ? context.target : canonicalBusinessProfile.businessName },
+        { type: "Domain", value: canonicalBusinessProfile.primaryDomain || context.target },
         ...(context.email ? [{ type: "Email" as const, value: context.email }] : []),
       ],
       relationships: [
         {
           type: "OWNS",
-          from: { type: "Business", value: businessProfile.businessName === "Insufficient Public Evidence" ? context.target : businessProfile.businessName },
-          to: { type: "Domain", value: businessProfile.primaryDomain || context.target },
+          from: { type: "Business", value: canonicalBusinessProfile.businessName === "Insufficient Public Evidence" ? context.target : canonicalBusinessProfile.businessName },
+          to: { type: "Domain", value: canonicalBusinessProfile.primaryDomain || context.target },
           context: "Business profile domain relationship",
         },
       ],
@@ -172,8 +181,8 @@ export async function POST(request: Request) {
     const responseSerializationStartedAt = Date.now();
     const businessNarrative = buildBusinessNarrative({
       decision: decisionPreview,
-      evidence: businessProfile.evidenceItems,
-      businessProfile,
+      evidence: canonicalBusinessProfile.evidenceItems,
+      businessProfile: canonicalBusinessProfile,
       knowledgeGraph: knowledgeGraph.snapshot(),
       generatedAt,
     });
@@ -211,6 +220,7 @@ export async function POST(request: Request) {
       decisionPreview,
       identityProfile,
       businessNarrative,
+      businessIdentityResolution,
     });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to run free provider scan." }, { status: 500 });
