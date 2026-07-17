@@ -16,6 +16,7 @@ import { ProviderManager, createDefaultProviders } from "./providers";
 import type { ProviderExecutionContext } from "./providers/types";
 import { analyzeRisk } from "./riskEngine";
 import type { PaymentIntent, ShadowScoreIntake, ShadowScoreReport } from "./workspace";
+import { resolveBusinessIdentity } from "./businessIdentityResolver";
 
 export const REPORT_ENGINE_VERSION = "report-pipeline-v22";
 
@@ -86,6 +87,7 @@ export async function buildReadyReport(input: {
   const insightOutput = buildTrustInsights({ providerResults, riskOutput: riskEnginePreview, audience: "paid" });
   const identityProfile = buildIdentityProfile({ providerResults, insights: insightOutput.insights, target: intake.target, email: intake.email, generatedAt: now });
   const businessProfile = buildBusinessProfile({ providerResults, target: intake.target, generatedAt: now });
+  const businessIdentityResolution = resolveBusinessIdentity(intake.target, { providerResults, businessProfile, observedAt: now, generatedAt: now });
   const businessIdentityIntelligence = buildBusinessIdentityIntelligence({ providerResults, target: intake.target, claimedBusinessName: businessProfile.businessName, generatedAt: now });
   const knowledgeGraph = new BusinessKnowledgeGraph();
   knowledgeGraph.applyScan({
@@ -187,6 +189,7 @@ export async function buildReadyReport(input: {
       correlationSummary,
       identityProfile,
       businessNarrative,
+      businessIdentityResolution,
       businessIdentityIntelligence,
       execution: {
         completedInSeconds: Number(((Date.now() - startedAt) / 1000).toFixed(2)),

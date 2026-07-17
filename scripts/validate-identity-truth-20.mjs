@@ -1,8 +1,5 @@
 import assert from "node:assert/strict";
-import { createRequire } from "node:module";
-
-const require = createRequire(import.meta.url);
-const { resolveBusinessIdentity } = require("../lib/businessIdentityResolver.js");
+import { resolveBusinessIdentity } from "../lib/businessIdentityResolver.ts";
 
 const observedAt = "2026-01-01T00:00:00.000Z";
 const organizations = [

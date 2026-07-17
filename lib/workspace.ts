@@ -64,7 +64,7 @@ export type ShadowScoreReport = {
   providerVersions?: Record<string, string>;
   providerResults?: ProviderResult[];
   evidenceSummary?: unknown;
-  reportSummary?: { message: string; primaryRiskDomain?: string; findingCount?: number; insights?: TrustInsight[]; insightEngineVersion?: string; decision?: DecisionOutput; reasoning?: ReasoningOutput; correlationSummary?: CorrelationSummary; identityProfile?: IdentityProfile; businessNarrative?: BusinessNarrative; businessIdentityIntelligence?: BusinessIdentityIntelligenceResult; execution?: { completedInSeconds: number; providersExecuted: number; evidenceCollected: number; decisionConfidence?: string }; executionFlow?: string[]; knowledgeGraph?: KnowledgeGraphSnapshot; technicalDetails?: { executed: ProviderExecutionRecord[]; skipped: ProviderExecutionRecord[]; pending: ProviderExecutionRecord[]; failed: ProviderExecutionRecord[] } };
+  reportSummary?: { message: string; primaryRiskDomain?: string; findingCount?: number; insights?: TrustInsight[]; insightEngineVersion?: string; decision?: DecisionOutput; reasoning?: ReasoningOutput; correlationSummary?: CorrelationSummary; identityProfile?: IdentityProfile; businessNarrative?: BusinessNarrative; businessIdentityResolution?: unknown; businessIdentityIntelligence?: BusinessIdentityIntelligenceResult; execution?: { completedInSeconds: number; providersExecuted: number; evidenceCollected: number; decisionConfidence?: string }; executionFlow?: string[]; knowledgeGraph?: KnowledgeGraphSnapshot; technicalDetails?: { executed: ProviderExecutionRecord[]; skipped: ProviderExecutionRecord[]; pending: ProviderExecutionRecord[]; failed: ProviderExecutionRecord[] } };
   topFactors: string[];
 };
 

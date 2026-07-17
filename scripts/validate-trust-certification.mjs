@@ -1,9 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { createRequire } from "node:module";
-
-const require = createRequire(import.meta.url);
-const { resolveBusinessIdentity } = require("../lib/businessIdentityResolver.js");
+import { resolveBusinessIdentity } from "../lib/businessIdentityResolver.ts";
 
 const observedAt = "2026-01-01T00:00:00.000Z";
 const benchmark = JSON.parse(readFileSync(new URL("../trust-certification-benchmark.json", import.meta.url), "utf8"));
