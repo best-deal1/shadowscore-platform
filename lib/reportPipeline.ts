@@ -17,6 +17,7 @@ import type { ProviderExecutionContext } from "./providers/types";
 import { analyzeRisk } from "./riskEngine";
 import type { PaymentIntent, ShadowScoreIntake, ShadowScoreReport } from "./workspace";
 import { resolveBusinessIdentity } from "./businessIdentityResolver";
+import { applyCanonicalIdentityToBusinessProfile, applyCanonicalIdentityToIdentityProfile } from "./canonicalReportIdentity";
 
 export const REPORT_ENGINE_VERSION = "report-pipeline-v22";
 
@@ -85,7 +86,7 @@ export async function buildReadyReport(input: {
   const riskEnginePreview = analyzeRisk(engineInput);
   const now = new Date().toISOString();
   const insightOutput = buildTrustInsights({ providerResults, riskOutput: riskEnginePreview, audience: "paid" });
-  const identityProfile = buildIdentityProfile({ providerResults, insights: insightOutput.insights, target: intake.target, email: intake.email, generatedAt: now });
+  const baseIdentityProfile = buildIdentityProfile({ providerResults, insights: insightOutput.insights, target: intake.target, email: intake.email, generatedAt: now });
   const businessProfile = buildBusinessProfile({ providerResults, target: intake.target, generatedAt: now });
   const businessIdentityResolution = resolveBusinessIdentity(intake.target, { providerResults, businessProfile, observedAt: now, generatedAt: now });
   const canonicalIdentity = businessIdentityResolution.canonicalIdentity;
@@ -93,15 +94,9 @@ export async function buildReadyReport(input: {
     ...result,
     evidence: result.evidence.some((item) => /business name|profile title|organization/i.test(item.label) && String(item.value || "").trim() && String(item.value).toLowerCase() !== "unavailable") ? result.evidence : [...result.evidence, { id: "canonical-business-name", type: "document" as const, label: "Business name", value: canonicalIdentity.canonicalDisplayName, source: "canonical-identity-resolution" }],
   } : result);
-  const canonicalBusinessProfile = {
-    ...businessProfile,
-    businessName: canonicalIdentity?.canonicalDisplayName || businessProfile.businessName,
-    businessType: canonicalIdentity?.companyType === "PUBLIC_COMPANY" ? "Public company" : canonicalIdentity?.companyType === "BANK" || canonicalIdentity?.companyType === "REGULATED_FINANCIAL_INSTITUTION" ? "Regulated bank" : businessProfile.businessType,
-    identityConfidence: canonicalIdentity?.identityConfidence?.label === "High" ? "High" : canonicalIdentity?.identityConfidence?.label === "Medium" ? "Medium" : businessProfile.identityConfidence,
-    missingEvidence: (canonicalIdentity?.identityStatus === "SUPPORTED" || canonicalIdentity?.identityStatus === "CONFLICTED") ? businessProfile.missingEvidence.filter((item) => !/business name evidence is missing/i.test(item)) : businessProfile.missingEvidence,
-    warningSignals: businessProfile.warningSignals.filter((item) => !(canonicalIdentity?.identityStatus === "SUPPORTED" && /domain ownership|public business identity|identity evidence/i.test(item))),
-  } as typeof businessProfile;
-  const businessIdentityIntelligence = buildBusinessIdentityIntelligence({ providerResults, target: intake.target, claimedBusinessName: businessProfile.businessName, generatedAt: now });
+  const canonicalBusinessProfile = applyCanonicalIdentityToBusinessProfile(businessProfile, canonicalIdentity);
+  const identityProfile = applyCanonicalIdentityToIdentityProfile(baseIdentityProfile, canonicalIdentity);
+  const businessIdentityIntelligence = buildBusinessIdentityIntelligence({ providerResults: providerResultsWithCanonicalIdentity, target: intake.target, claimedBusinessName: canonicalBusinessProfile.businessName, generatedAt: now });
   const knowledgeGraph = new BusinessKnowledgeGraph();
   knowledgeGraph.applyScan({
     scanId: `report-${intake.intakeId}`,

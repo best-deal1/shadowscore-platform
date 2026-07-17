@@ -9,6 +9,7 @@ import { buildTrustTimeline } from "../../../../lib/trustTimeline";
 import { buildDecision } from "../../../../lib/decisionEngine";
 import { analyzeRisk } from "../../../../lib/riskEngine";
 import { resolveBusinessIdentity } from "../../../../lib/businessIdentityResolver";
+import { applyCanonicalIdentityToBusinessProfile, applyCanonicalIdentityToIdentityProfile } from "../../../../lib/canonicalReportIdentity";
 import { ProviderManager, createDefaultProviders } from "../../../../lib/providers";
 import type { ProviderExecutionContext, ProviderResult } from "../../../../lib/providers/types";
 
@@ -136,16 +137,12 @@ export async function POST(request: Request) {
     });
     const insightOutput = buildTrustInsights({ providerResults: completedProviderResults, riskOutput, audience: "free" });
     const generatedAt = new Date().toISOString();
-    const identityProfile = buildIdentityProfile({ providerResults: completedProviderResults, insights: insightOutput.insights, target: context.target, email: context.email, generatedAt });
+    const baseIdentityProfile = buildIdentityProfile({ providerResults: completedProviderResults, insights: insightOutput.insights, target: context.target, email: context.email, generatedAt });
     const businessProfile = buildBusinessProfile({ providerResults: completedProviderResults, target: context.target, generatedAt });
     const businessIdentityResolution = resolveBusinessIdentity(context.target, { providerResults: completedProviderResults, businessProfile, observedAt: generatedAt, generatedAt });
     const canonicalIdentity = businessIdentityResolution.canonicalIdentity;
-    const canonicalBusinessProfile = {
-      ...businessProfile,
-      businessName: canonicalIdentity?.canonicalDisplayName || businessProfile.businessName,
-      businessType: canonicalIdentity?.companyType === "PUBLIC_COMPANY" ? "Public company" : canonicalIdentity?.companyType === "BANK" || canonicalIdentity?.companyType === "REGULATED_FINANCIAL_INSTITUTION" ? "Regulated bank" : businessProfile.businessType,
-      missingEvidence: canonicalIdentity?.identityStatus === "SUPPORTED" ? businessProfile.missingEvidence.filter((item) => !/business name evidence is missing/i.test(item)) : businessProfile.missingEvidence,
-    } as typeof businessProfile;
+    const canonicalBusinessProfile = applyCanonicalIdentityToBusinessProfile(businessProfile, canonicalIdentity);
+    const identityProfile = applyCanonicalIdentityToIdentityProfile(baseIdentityProfile, canonicalIdentity);
     const knowledgeGraph = new BusinessKnowledgeGraph();
     knowledgeGraph.applyScan({
       scanId: `free-scan-${context.intakeId}`,
