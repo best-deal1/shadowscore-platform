@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 const { AuthoritativeCompanyEvidenceProvider } = require("../lib/providers/authoritativeCompanyEvidenceProvider.js");
-const { resolveBusinessIdentity } = require("../lib/businessIdentityResolver.js");
+import { resolveBusinessIdentity } from "../lib/businessIdentityResolver.ts";
 
 const targets = [
   { target: "MSFT", expectedLegalName: "MICROSOFT CORP", expectedTicker: "MSFT" },

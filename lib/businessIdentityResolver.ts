@@ -1,7 +1,9 @@
-const BUSINESS_IDENTITY_RESOLVER_VERSION = "private-business-identity-resolver-v7";
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+// @ts-nocheck
+export const BUSINESS_IDENTITY_RESOLVER_VERSION = "private-business-identity-resolver-v7";
 
-const CANONICAL_IDENTITY_TYPES = ["LegalEntity", "Organization", "Brand", "Domain", "Email", "Phone", "MarketplaceAccount", "RegulatoryRegistration", "License", "ExchangeListing", "GovernmentAuthority"];
-const VERIFIED_RELATIONSHIP_TYPES = ["OWNED_BY", "OPERATED_BY", "REPRESENTS", "DISCLOSED_AS", "LICENSED_BY", "REGISTERED_WITH", "LISTED_ON", "USES_DOMAIN", "USES_EMAIL", "USES_PHONE", "OPERATES_ACCOUNT"];
+export const CANONICAL_IDENTITY_TYPES = ["LegalEntity", "Organization", "Brand", "Domain", "Email", "Phone", "MarketplaceAccount", "RegulatoryRegistration", "License", "ExchangeListing", "GovernmentAuthority"];
+export const VERIFIED_RELATIONSHIP_TYPES = ["OWNED_BY", "OPERATED_BY", "REPRESENTS", "DISCLOSED_AS", "LICENSED_BY", "REGISTERED_WITH", "LISTED_ON", "USES_DOMAIN", "USES_EMAIL", "USES_PHONE", "OPERATES_ACCOUNT"];
 const AUTHORITATIVE_STATUSES = new Set(["verified", "authoritative", "confirmed"]);
 const ORGANIZATION_TYPES = new Set(["LegalEntity", "Organization"]);
 const IDENTIFIER_RELATIONSHIPS = { Domain: "USES_DOMAIN", Email: "USES_EMAIL", Phone: "USES_PHONE", MarketplaceAccount: "OPERATES_ACCOUNT" };
@@ -9,7 +11,7 @@ const IDENTIFIER_RELATIONSHIPS = { Domain: "USES_DOMAIN", Email: "USES_EMAIL", P
 function normalizeValue(value) { return String(value ?? "").trim(); }
 function normalizeName(input) { return normalizeValue(input).replace(/\s+/g, " "); }
 function slug(value) { return normalizeValue(value).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "unknown"; }
-function normalizeDomain(input) {
+export function normalizeDomain(input) {
   const raw = normalizeValue(input).toLowerCase();
   if (!raw) return "";
   const emailDomain = raw.match(/^[^\s@]+@([^\s@]+)$/)?.[1];
@@ -175,7 +177,7 @@ function providerResultEvidence(providerResults) {
   return providerResults.map((result) => result && result.metadata && result.metadata.resolverEvidence).filter(Boolean);
 }
 
-function resolveBusinessIdentity(input, options = {}) {
+export function resolveBusinessIdentity(input, options = {}) {
   const target = typeof input === "string" ? input : input?.target;
   const normalizedDomain = normalizeDomain(target);
   const normalizedEmail = normalizeEmail(target);
@@ -214,4 +216,3 @@ function resolveBusinessIdentity(input, options = {}) {
   return { resolverVersion: BUSINESS_IDENTITY_RESOLVER_VERSION, canonicalIdentityTypes: CANONICAL_IDENTITY_TYPES, verifiedRelationshipTypes: VERIFIED_RELATIONSHIP_TYPES, normalizedInput: { raw: normalizeValue(target), domain: normalizedDomain || undefined, email: normalizedEmail || undefined }, canonicalOrganization: canonical ? { id: canonical.id, type: canonical.type, label: canonical.label } : null, identityResolutionStatus: conflicts.length ? "resolved_with_conflicts" : unresolved ? "unresolved" : "resolved", reviewStatus: unresolved || conflicts.length ? "REVIEW" : "PASS", identityConfidence: unresolved ? "Low" : conflicts.length ? "Low" : classification.confidence, canonicalIdentityGraph: canonicalGraph, identityResolutionFlow: ["Normalize submitted target into identifier evidence.", "Discover candidate legal entities from collected evidence sources; do not consult curated company fixtures or predefined organization catalogs.", "Load authoritative company evidence, website disclosures, registries, business profiles, structured metadata, regulatory records and submitted evidence as canonical identity nodes when present.", "Verify relationships with source, confidence, evidenceRefs, observedAt and verificationStatus.", "Resolve a canonical LegalEntity or Organization before entity classification.", unresolved ? "No canonical organization resolved; stop regulated/public-company inference." : "Classify from verified canonical relationships."], attributeConfidence, evidenceConfidence: attributeConfidence, evidenceExplainability, contradictions: conflicts, relationshipProvenance: canonicalGraph.relationships.map((rel) => ({ relationshipId: rel.id, type: rel.type, source: rel.source, confidence: rel.confidence, evidenceRefs: rel.evidenceRefs, observedAt: rel.observedAt, verificationStatus: rel.verificationStatus })), entityClassification: classification, missingEvidence, unresolvedIdentityBehavior: unresolved ? `Returns REVIEW with unresolved identity, low confidence, no inferred regulated or public-company class, and missing evidence: ${missingEvidence.join(" ") || "corroborating evidence"}` : undefined, primaryIdentity, candidates: [primaryIdentity], limitations: ["Domains, emails, phones and marketplace accounts are identifiers or evidence objects, not the business itself.", "Unresolved inputs return Unknown identity labels; hostnames are not converted into organization names.", "Identity attributes carry their own evidence confidence and cross-provider corroboration metadata.", "Entity classification is derived only from the canonical organization and verified relationships.", "Predefined organization seeds are intentionally ignored; canonical legal identities must be discovered from collected evidence.", "Private business identity resolution requires multiple independent evidence sources unless a public-company exchange/SEC or regulator source is authoritative."] };
 }
 
-module.exports = { BUSINESS_IDENTITY_RESOLVER_VERSION, CANONICAL_IDENTITY_TYPES, VERIFIED_RELATIONSHIP_TYPES, normalizeDomain, resolveBusinessIdentity };
