@@ -6,6 +6,7 @@ import Link from "next/link";
 import ShadowScoreLayout from "../../components/ShadowScoreLayout";
 import { getCurrentSession } from "../../lib/auth";
 import { buildTrustTimeline } from "../../lib/trustTimeline";
+import { decisionLightDisplayLabel, decisionRiskDisplayLabel } from "../../lib/canonicalDecision";
 import { getWorkspace, ShadowScoreReport } from "../../lib/workspace";
 import { useEffect, useState } from "react";
 
@@ -58,7 +59,7 @@ function DecisionModePanel({ report }: { report: ShadowScoreReport }) {
   const uncertainty = mode?.mainRemainingUncertainty || (canonical as { primaryUncertainty?: string } | undefined)?.primaryUncertainty || "Business ownership";
   const action = mode?.recommendedNextAction || canonical?.userMeaning || decision?.recommendedAction || "Verify the highest-value evidence before committing funds.";
   const effort = mode?.estimatedEffort || "3 minutes";
-  const impact = mode?.businessImpactIfSkipped || (canonical?.riskLevel === "HIGH" ? "High" : canonical?.riskLevel === "LOW" ? "Low" : "Medium");
+  const impact = mode?.businessImpactIfSkipped || decisionRiskDisplayLabel(canonical?.riskLevel);
 
   return (
     <section className="mt-8 rounded-[28px] border border-emerald-400/25 bg-emerald-500/[0.07] p-6">
@@ -67,7 +68,7 @@ function DecisionModePanel({ report }: { report: ShadowScoreReport }) {
         <div className="rounded-3xl border border-white/10 bg-black/45 p-6 md:col-span-1">
           <div className="text-xs uppercase tracking-[0.22em] text-zinc-500">Decision</div>
           <div className="mt-3 text-4xl font-black text-white">{proceed}</div>
-          <div className="mt-3 text-sm font-black uppercase text-emerald-200">{canonical?.decisionLight || "YELLOW"}</div>
+          <div className="mt-3 text-sm font-black uppercase text-emerald-200">{decisionLightDisplayLabel(canonical?.decisionLight)}</div>
           <div className="mt-4 text-sm font-bold text-emerald-100">Confidence: {confidence}</div>
         </div>
         <div className="rounded-3xl border border-white/10 bg-black/45 p-6 md:col-span-2">
@@ -87,6 +88,7 @@ function DecisionCard({ report }: { report: ShadowScoreReport }) {
   const canonical = report.reportSummary?.decision?.canonicalDecision || report.reportSummary?.businessNarrative?.decisionMode;
   const decision = canonical?.headline || report.reportSummary?.businessNarrative?.decision || "Proceed with verification";
   const light = canonical?.decisionLight || "YELLOW";
+  const lightLabel = decisionLightDisplayLabel(light);
   const tone = light === "GREEN"
     ? "border-emerald-400/35 bg-emerald-500/10 text-emerald-100"
     : light === "RED"
@@ -99,7 +101,7 @@ function DecisionCard({ report }: { report: ShadowScoreReport }) {
         <div>
           <div className="text-5xl font-black tracking-tight">{decision}</div>
           <p className="mt-3 max-w-2xl text-base font-bold opacity-90">{canonical?.userMeaning || report.reportSummary?.businessNarrative?.decision || "Review available evidence"}</p>
-          <p className="mt-3 text-sm font-black uppercase tracking-[0.18em] opacity-80">{light}</p>
+          <p className="mt-3 text-sm font-black uppercase tracking-[0.18em] opacity-80">{lightLabel}</p>
         </div>
         <div className="rounded-2xl border border-white/15 bg-black/20 px-5 py-4 text-right">
           <div className="text-sm font-black uppercase tracking-[0.18em]">Paid executive report</div>

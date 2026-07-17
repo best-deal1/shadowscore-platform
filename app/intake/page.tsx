@@ -8,6 +8,7 @@ import PaymentButtons from "../../components/PaymentButtons";
 import { getCurrentSession } from "../../lib/auth";
 import { isPreviewReadyResponse, nextPreviewStatus, readPreviewJson } from "../../lib/freeScanPreviewFlow";
 import { createIntake, ShadowScoreIntake } from "../../lib/workspace";
+import { decisionLightDisplayLabel } from "../../lib/canonicalDecision";
 
 type Severity = "Low" | "Medium" | "High" | "Critical";
 type Finding = {
@@ -1321,7 +1322,7 @@ export default function IntakePage() {
                       <div className="rounded-2xl border border-white/10 bg-black/40 p-4">
                         <div className="text-xs uppercase tracking-[0.2em] text-zinc-500">Decision</div>
                         <div className="mt-2 text-3xl font-black text-white">{freeScanResult.businessNarrative.decisionMode?.headline || freeScanResult.businessNarrative.decision}</div>
-                        <div className="mt-2 text-xs font-black uppercase tracking-[0.18em] text-yellow-200">{freeScanResult.businessNarrative.decisionMode?.decisionLight || "YELLOW"}</div>
+                        <div className="mt-2 text-xs font-black uppercase tracking-[0.18em] text-yellow-200">{decisionLightDisplayLabel(freeScanResult.businessNarrative.decisionMode?.decisionLight)}</div>
                       </div>
                       <div className="rounded-2xl border border-white/10 bg-black/40 p-4">
                         <div className="text-xs uppercase tracking-[0.2em] text-zinc-500">Main uncertainty</div>
