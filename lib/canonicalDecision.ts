@@ -28,11 +28,28 @@ function confidence(score: number): CanonicalDecision["confidence"] {
   return { score: normalized, label: normalized >= 80 ? "High" : normalized >= 50 ? "Medium" : normalized > 0 ? "Low" : "Unknown" };
 }
 
-export function decisionDisplayLabel(outcome: DecisionOutcome) {
+export function decisionDisplayLabel(outcome?: string) {
   if (outcome === "PROCEED") return "Proceed";
   if (outcome === "PROCEED_WITH_VERIFICATION") return "Proceed with verification";
   if (outcome === "PAUSE_AND_VERIFY") return "Pause and verify";
-  return "Do not proceed";
+  if (outcome === "DO_NOT_PROCEED") return "Do not proceed";
+  return "Proceed with verification";
+}
+
+export function decisionLightDisplayLabel(light?: string) {
+  if (light === "GREEN") return "Ready to proceed";
+  if (light === "YELLOW") return "Verify first";
+  if (light === "ORANGE") return "Pause for review";
+  if (light === "RED") return "Do not proceed";
+  return "Verify first";
+}
+
+export function decisionRiskDisplayLabel(riskLevel?: string) {
+  if (riskLevel === "LOW") return "Low risk";
+  if (riskLevel === "MODERATE") return "Moderate risk";
+  if (riskLevel === "ELEVATED") return "Elevated risk";
+  if (riskLevel === "HIGH") return "High risk";
+  return "Risk under review";
 }
 
 export function buildCanonicalDecision(input: {

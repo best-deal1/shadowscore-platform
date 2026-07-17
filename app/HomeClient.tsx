@@ -11,14 +11,14 @@ const briefingFindings = [
     detail: "Ownership, marketplace, and domain claims do not resolve cleanly to one operator.",
   },
   {
-    label: "Time recovered",
-    value: "6–9 hrs",
-    detail: "Public footprint review, reputation sweep, and contradiction mapping already packaged.",
+    label: "Research time saved",
+    value: "Hours",
+    detail: "Public footprint review, reputation context, and contradiction mapping organized into one briefing.",
   },
   {
     label: "Recommended action",
-    value: "Hold & verify",
-    detail: "Request documentary proof before payout, onboarding, or executive escalation.",
+    value: "Pause and verify",
+    detail: "Request authoritative proof before payout, onboarding, shipment, access, or escalation.",
   },
 ];
 
@@ -70,11 +70,11 @@ export default function HomeClient() {
         <div className="relative mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-[0.95fr_1.05fr]">
           <div>
             <div className="mb-6 inline-flex rounded-full border border-amber-200/20 bg-amber-200/10 px-4 py-2 text-xs font-black uppercase tracking-[0.24em] text-amber-100">Executive intelligence briefing</div>
-            <h1 className="max-w-5xl text-4xl font-black tracking-tight text-white sm:text-6xl lg:text-7xl">Know the risk before your team loses another afternoon proving it.</h1>
-            <p className="mt-6 max-w-3xl text-lg leading-8 text-zinc-300 sm:text-xl">ShadowScore compresses hours of digital identity investigation into a decision-ready briefing: what is verified, what conflicts, what matters, and what to do next.</p>
+            <h1 className="max-w-5xl text-4xl font-black tracking-tight text-white sm:text-6xl lg:text-7xl">Know the risk before your team commits time, funds, or trust.</h1>
+            <p className="mt-6 max-w-3xl text-lg leading-8 text-zinc-300 sm:text-xl">ShadowScore compresses digital identity investigation into a decision-ready briefing: what is verified, what conflicts, what remains unknown, and what to do next.</p>
             <div className="mt-8 grid gap-3 sm:grid-cols-3">
               {[
-                ["Built for", "Founders, operators, risk leads"],
+                ["Built for", "Operators, risk leads, finance teams"],
                 ["Delivered as", "Executive decision memo"],
                 ["Focus", "Trust, exposure, next action"],
               ].map(([label, value]) => (
@@ -129,7 +129,7 @@ export default function HomeClient() {
           <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr]">
             <div>
               <div className="text-xs font-black uppercase tracking-[0.28em] text-red-200">Why customers trust it quickly</div>
-              <h2 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-5xl">No dashboards. No detective work. Just a briefing your team can act on.</h2>
+              <h2 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-5xl">No raw dashboard maze. No scattered research notes. Just a briefing your team can act on.</h2>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               {trustSignals.map((signal) => <div key={signal} className="rounded-3xl border border-white/10 bg-black/35 p-5 text-sm font-black leading-6 text-white">{signal}</div>)}
