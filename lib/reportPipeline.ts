@@ -8,6 +8,7 @@ import { buildTrustInsights } from "./insightEngine";
 import { buildIdentityProfile } from "./identityEngine";
 import { buildBusinessProfile } from "./businessProfileEngine";
 import { buildBusinessIdentityIntelligence } from "./businessIdentityIntelligence";
+const { resolveBusinessIdentity } = require(`${process.cwd()}/lib/businessIdentityResolver.js`);
 import { BusinessKnowledgeGraph } from "./knowledgeGraph";
 import { buildBusinessNarrative } from "./narrative";
 import { buildTrustTimeline } from "./trustTimeline";
@@ -86,6 +87,10 @@ export async function buildReadyReport(input: {
   const insightOutput = buildTrustInsights({ providerResults, riskOutput: riskEnginePreview, audience: "paid" });
   const identityProfile = buildIdentityProfile({ providerResults, insights: insightOutput.insights, target: intake.target, email: intake.email, generatedAt: now });
   const businessProfile = buildBusinessProfile({ providerResults, target: intake.target, generatedAt: now });
+  const identityResolution = resolveBusinessIdentity(intake.target, { providerResults, observedAt: now });
+  if (identityResolution.identityResolutionStatus === "resolved" && identityResolution.primaryIdentity?.displayName && identityResolution.primaryIdentity.displayName !== "Unknown") {
+    businessProfile.businessName = identityResolution.primaryIdentity.displayName;
+  }
   const businessIdentityIntelligence = buildBusinessIdentityIntelligence({ providerResults, target: intake.target, claimedBusinessName: businessProfile.businessName, generatedAt: now });
   const knowledgeGraph = new BusinessKnowledgeGraph();
   knowledgeGraph.applyScan({
@@ -188,6 +193,7 @@ export async function buildReadyReport(input: {
       identityProfile,
       businessNarrative,
       businessIdentityIntelligence,
+      identityResolution,
       execution: {
         completedInSeconds: Number(((Date.now() - startedAt) / 1000).toFixed(2)),
         providersExecuted: executionRecords.filter((record) => record.status === "executed").length,

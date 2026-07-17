@@ -51,6 +51,11 @@ const ENGINE_DEFINITIONS: Record<OrchestratorEngineId, EngineDefinition> = {
     label: "Headers",
     supportedTargets: ["Website", "Evidence Package"],
   },
+  "authoritative-company": {
+    engineId: "authoritative-company",
+    label: "Authoritative Company",
+    supportedTargets: ["Website", "Business", "Company", "Brand", "Business Profile"],
+  },
   "business-profile": {
     engineId: "business-profile",
     label: "Business Profile",
@@ -117,7 +122,7 @@ const TARGET_ENGINE_MATRIX: Record<
   TargetClassificationInput["targetType"],
   OrchestratorEngineId[]
 > = {
-  Website: ["dns", "whois", "ssl", "headers", "business-profile"],
+  Website: ["dns", "whois", "ssl", "headers", "authoritative-company", "business-profile"],
   Business: ["business-profile", "reputation", "graph"],
   "Marketplace Seller": [
     "marketplace",
@@ -168,6 +173,8 @@ function reasonForEngine(
       return "Certificate metadata helps validate the public web endpoint.";
     case "headers":
       return "HTTP headers provide observable website configuration signals.";
+    case "authoritative-company":
+      return "Authoritative public-company sources can provide legal identity evidence without relying on WHOIS or SSL.";
     case "business-profile":
       return "Business profile evidence normalizes organization-level identity signals.";
     case "marketplace":

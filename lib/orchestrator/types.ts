@@ -9,6 +9,7 @@ export type OrchestratorEngineId =
   | "ssl"
   | "headers"
   | "business-profile"
+  | "authoritative-company"
   | "marketplace"
   | "reputation"
   | "graph"

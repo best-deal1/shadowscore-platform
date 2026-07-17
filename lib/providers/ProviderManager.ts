@@ -36,6 +36,7 @@ export type PreviewExecutionRun = ProviderExecutionRun & { telemetry: PreviewExe
 const ENGINE_PROVIDER_ALIASES: Record<string, string[]> = {
   headers: ["headers", "security-headers"],
   domain: ["domain", "dns"],
+  "authoritative-company": ["authoritative-company"],
 };
 
 const DEFAULT_PREVIEW_BUDGET_MS = 12_000;
