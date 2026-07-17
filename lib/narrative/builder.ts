@@ -6,7 +6,8 @@ function hasDecisionIntelligenceShape(decision: NarrativeDecision): decision is 
 }
 
 function decisionLabel(decision: NarrativeDecision) {
-  return hasDecisionIntelligenceShape(decision) ? decision.decision : `${decision.decision}: ${decision.decisionLabel}`;
+  const canonical = hasDecisionIntelligenceShape(decision) ? decision.canonicalDecision : decision.canonicalDecision;
+  return canonical?.headline || (hasDecisionIntelligenceShape(decision) ? decision.decision : `${decision.decision}: ${decision.decisionLabel}`);
 }
 
 function confidenceLabel(decision: NarrativeDecision) {
@@ -19,11 +20,15 @@ function coverageLabel(input: NarrativeInput) {
 }
 
 function recommendation(input: NarrativeInput) {
+  const canonical = hasDecisionIntelligenceShape(input.decision) ? input.decision.canonicalDecision : input.decision.canonicalDecision;
+  if (canonical) return canonical.userMeaning;
   if (hasDecisionIntelligenceShape(input.decision)) return input.decision.recommendation;
   return input.decision.recommendedAction;
 }
 
 function nextActions(input: NarrativeInput) {
+  const canonical = hasDecisionIntelligenceShape(input.decision) ? input.decision.canonicalDecision : input.decision.canonicalDecision;
+  if (canonical) return [...canonical.allowedActions.map((item) => `Allowed: ${item}.`), ...canonical.blockedActions.map((item) => `Blocked until verification: ${item}.`)];
   if (hasDecisionIntelligenceShape(input.decision)) return input.decision.nextActions;
   return [input.decision.recommendedAction];
 }
@@ -63,9 +68,9 @@ function missingEvidence(input: NarrativeInput) {
 }
 
 function proceedLabel(decision: NarrativeDecision): "YES" | "REVIEW" | "NO" {
-  const raw = hasDecisionIntelligenceShape(decision) ? decision.decision : decision.decision;
-  if (raw === "PASS") return "YES";
-  if (raw === "FAIL") return "NO";
+  const canonical = hasDecisionIntelligenceShape(decision) ? decision.canonicalDecision : decision.canonicalDecision;
+  if (canonical?.decisionOutcome === "PROCEED") return "YES";
+  if (canonical?.decisionOutcome === "DO_NOT_PROCEED") return "NO";
   return "REVIEW";
 }
 
@@ -98,6 +103,7 @@ function buildFacts(input: NarrativeInput): NarrativeFacts {
 
   const verificationNeeds = missingEvidence(input);
   const proceed = proceedLabel(input.decision);
+  const canonical = hasDecisionIntelligenceShape(input.decision) ? input.decision.canonicalDecision : input.decision.canonicalDecision;
 
   return {
     businessName: input.businessProfile.businessName || input.businessProfile.primaryDomain || "The business",
@@ -116,6 +122,13 @@ function buildFacts(input: NarrativeInput): NarrativeFacts {
     stabilitySummary: input.businessMemory?.changeSummary,
     hasContradictions: input.businessProfile.contradictionSignals.length > 0 || (hasDecisionIntelligenceShape(input.decision) ? input.decision.contradictions.length > 0 : false),
     proceed,
+    decisionOutcome: canonical?.decisionOutcome,
+    decisionLight: canonical?.decisionLight,
+    riskLevel: canonical?.riskLevel,
+    headline: canonical?.headline,
+    userMeaning: canonical?.userMeaning,
+    allowedActions: canonical?.allowedActions,
+    blockedActions: canonical?.blockedActions,
     mainRemainingUncertainty: uncertaintyLabel(verificationNeeds),
     estimatedEffort: effortLabel(verificationNeeds),
     businessImpactIfSkipped: impactLabel(proceed, verificationNeeds),
@@ -138,6 +151,13 @@ export function buildBusinessNarrative(input: NarrativeInput): BusinessNarrative
       recommendedNextAction: facts.recommendation,
       estimatedEffort: facts.estimatedEffort,
       businessImpactIfSkipped: facts.businessImpactIfSkipped,
+      decisionOutcome: facts.decisionOutcome,
+      decisionLight: facts.decisionLight,
+      riskLevel: facts.riskLevel,
+      headline: facts.headline,
+      userMeaning: facts.userMeaning,
+      allowedActions: facts.allowedActions,
+      blockedActions: facts.blockedActions,
     },
     sections: buildNarrativeSections(facts),
   };

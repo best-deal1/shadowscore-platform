@@ -31,6 +31,13 @@ export type BusinessNarrative = {
   confidence: string;
   decisionMode: {
     proceed: "YES" | "REVIEW" | "NO";
+    decisionOutcome?: string;
+    decisionLight?: string;
+    riskLevel?: string;
+    headline?: string;
+    userMeaning?: string;
+    allowedActions?: string[];
+    blockedActions?: string[];
     confidence: string;
     mainRemainingUncertainty: string;
     recommendedNextAction: string;
@@ -66,6 +73,13 @@ export type NarrativeFacts = {
   stabilitySummary?: string;
   hasContradictions: boolean;
   proceed: "YES" | "REVIEW" | "NO";
+  decisionOutcome?: string;
+  decisionLight?: string;
+  riskLevel?: string;
+  headline?: string;
+  userMeaning?: string;
+  allowedActions?: string[];
+  blockedActions?: string[];
   mainRemainingUncertainty: string;
   estimatedEffort: string;
   businessImpactIfSkipped: "Low" | "Medium" | "High";

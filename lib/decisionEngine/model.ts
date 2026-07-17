@@ -7,9 +7,10 @@ import { isConfirmedRiskCorrelation, isConfirmedRiskEvidenceItem } from "./riskP
 import type { ProviderResult } from "../providers/types";
 import type { RiskEngineOutput } from "../riskEngine";
 import type { TrustTimelineItem } from "../trustTimeline";
+import { buildCanonicalDecision, decisionDisplayLabel, type CanonicalDecision } from "../canonicalDecision";
 
 export type VerificationDecision = "PASS" | "REVIEW" | "FAIL";
-export type DecisionColor = "green" | "orange" | "red";
+export type DecisionColor = "green" | "yellow" | "orange" | "red";
 export type ReputationScore = number | "pending";
 export type DecisionFindingCategory = "positive" | "missing" | "negative";
 
@@ -43,6 +44,7 @@ export type VerificationDecisionOutput = {
   blockingIssues: string[];
   recommendedAction: string;
   limitedPreview: boolean;
+  canonicalDecision: CanonicalDecision;
 };
 
 function clamp(value: number) {
@@ -214,8 +216,6 @@ export function buildVerificationDecision(input: {
   if (confirmedRiskEligible) decision = "FAIL";
   else if (positiveEvidenceCount >= 3 && infrastructureScore >= 70 && identityScore >= 60 && verificationConfidence >= 65) decision = "PASS";
 
-  const decisionLabel = decision === "PASS" ? "Verified enough to proceed" : decision === "REVIEW" ? "Additional verification recommended" : "Do not proceed";
-  const decisionColor = decision === "PASS" ? "green" : decision === "REVIEW" ? "orange" : "red";
   const reasons = unique([
     `Positive evidence count is ${positiveEvidenceCount}.`,
     `Missing evidence count is ${missingEvidenceCount}; missing evidence does not count as risk.`,
@@ -223,6 +223,21 @@ export function buildVerificationDecision(input: {
     `Verification confidence is ${verificationConfidence >= 70 ? "High" : verificationConfidence >= 40 ? "Medium" : "Low"} and evidence completeness is ${evidenceCompleteness >= 70 ? "High" : evidenceCompleteness >= 40 ? "Medium" : "Low"}; both are inferred from available evidence.`,
     ...blockingIssues.map((issue) => `Verified negative issue: ${issue}.`),
   ]);
+
+
+  const materialContradiction = reviewOnlyCorrelationContradictions.some((item) => item.severity === "high" || item.severity === "critical");
+  const canonicalDecision = buildCanonicalDecision({
+    status: decision === "FAIL" ? "STOP" : decision,
+    hasConfirmedSeriousNegative: confirmedRiskEligible,
+    hasMaterialContradiction: materialContradiction,
+    hasStrongCorroboratedIdentity: positiveEvidenceCount >= 3 && identityScore >= 60 && verificationConfidence >= 65,
+    hasMissingCoreIdentity: missingSignals.some((item) => /identity|business name|registry|owner/i.test(item)),
+    missingEvidence: missingSignals,
+    decisionReasons: reasons,
+    confidenceScore: verificationConfidence,
+  });
+  const decisionLabel = decisionDisplayLabel(canonicalDecision.decisionOutcome) as VerificationDecisionOutput["decisionLabel"];
+  const decisionColor = canonicalDecision.decisionLight.toLowerCase() as DecisionColor;
 
   return {
     decision,
@@ -250,5 +265,6 @@ export function buildVerificationDecision(input: {
         ? "Additional verification is recommended because public evidence is incomplete. No confirmed negative indicators were detected."
         : "Confirmed negative indicators require investigation before proceeding.",
     limitedPreview: input.audience === "free",
+    canonicalDecision,
   };
 }

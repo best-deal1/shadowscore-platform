@@ -88,20 +88,33 @@ export async function buildReadyReport(input: {
   const identityProfile = buildIdentityProfile({ providerResults, insights: insightOutput.insights, target: intake.target, email: intake.email, generatedAt: now });
   const businessProfile = buildBusinessProfile({ providerResults, target: intake.target, generatedAt: now });
   const businessIdentityResolution = resolveBusinessIdentity(intake.target, { providerResults, businessProfile, observedAt: now, generatedAt: now });
+  const canonicalIdentity = businessIdentityResolution.canonicalIdentity;
+  const providerResultsWithCanonicalIdentity = providerResults.map((result) => result.providerId === "business-profile" && canonicalIdentity?.canonicalDisplayName ? {
+    ...result,
+    evidence: result.evidence.some((item) => /business name|profile title|organization/i.test(item.label) && String(item.value || "").trim() && String(item.value).toLowerCase() !== "unavailable") ? result.evidence : [...result.evidence, { id: "canonical-business-name", type: "document" as const, label: "Business name", value: canonicalIdentity.canonicalDisplayName, source: "canonical-identity-resolution" }],
+  } : result);
+  const canonicalBusinessProfile = {
+    ...businessProfile,
+    businessName: canonicalIdentity?.canonicalDisplayName || businessProfile.businessName,
+    businessType: canonicalIdentity?.companyType === "PUBLIC_COMPANY" ? "Public company" : canonicalIdentity?.companyType === "BANK" || canonicalIdentity?.companyType === "REGULATED_FINANCIAL_INSTITUTION" ? "Regulated bank" : businessProfile.businessType,
+    identityConfidence: canonicalIdentity?.identityConfidence?.label === "High" ? "High" : canonicalIdentity?.identityConfidence?.label === "Medium" ? "Medium" : businessProfile.identityConfidence,
+    missingEvidence: (canonicalIdentity?.identityStatus === "SUPPORTED" || canonicalIdentity?.identityStatus === "CONFLICTED") ? businessProfile.missingEvidence.filter((item) => !/business name evidence is missing/i.test(item)) : businessProfile.missingEvidence,
+    warningSignals: businessProfile.warningSignals.filter((item) => !(canonicalIdentity?.identityStatus === "SUPPORTED" && /domain ownership|public business identity|identity evidence/i.test(item))),
+  } as typeof businessProfile;
   const businessIdentityIntelligence = buildBusinessIdentityIntelligence({ providerResults, target: intake.target, claimedBusinessName: businessProfile.businessName, generatedAt: now });
   const knowledgeGraph = new BusinessKnowledgeGraph();
   knowledgeGraph.applyScan({
     scanId: `report-${intake.intakeId}`,
     entities: [
-      { type: "Business", value: businessProfile.businessName === "Insufficient Public Evidence" ? intake.target : businessProfile.businessName },
-      { type: "Domain", value: businessProfile.primaryDomain || intake.target },
+      { type: "Business", value: canonicalBusinessProfile.businessName === "Insufficient Public Evidence" ? intake.target : canonicalBusinessProfile.businessName },
+      { type: "Domain", value: canonicalBusinessProfile.primaryDomain || intake.target },
       ...(intake.email ? [{ type: "Email" as const, value: intake.email }] : []),
     ],
     relationships: [
       {
         type: "OWNS",
-        from: { type: "Business", value: businessProfile.businessName === "Insufficient Public Evidence" ? intake.target : businessProfile.businessName },
-        to: { type: "Domain", value: businessProfile.primaryDomain || intake.target },
+        from: { type: "Business", value: canonicalBusinessProfile.businessName === "Insufficient Public Evidence" ? intake.target : canonicalBusinessProfile.businessName },
+        to: { type: "Domain", value: canonicalBusinessProfile.primaryDomain || intake.target },
         context: "Business profile domain relationship",
       },
     ],
@@ -123,23 +136,23 @@ export async function buildReadyReport(input: {
   });
   const reasoning = buildReasoning({ evidenceItems, providerResults, decision });
   const decisionIntelligence = evaluateDecisionEvidence({
-    businessProfile,
+    businessProfile: canonicalBusinessProfile,
     executionPlan,
-    evidenceItems: businessProfile.evidenceItems,
+    evidenceItems: canonicalBusinessProfile.evidenceItems,
     correlationFindings: correlationSummary.findings,
-    contradictionSignals: businessProfile.contradictionSignals,
+    contradictionSignals: canonicalBusinessProfile.contradictionSignals,
   });
   executionFlow.push("✓ Decision generated");
   const businessMemory = rememberBusinessScan({
     scanId: `report-${intake.intakeId}`,
     identity: {
-      name: businessProfile.businessName === "Insufficient Public Evidence" ? intake.target : businessProfile.businessName,
-      domain: businessProfile.primaryDomain || intake.target,
+      name: canonicalBusinessProfile.businessName === "Insufficient Public Evidence" ? intake.target : canonicalBusinessProfile.businessName,
+      domain: canonicalBusinessProfile.primaryDomain || intake.target,
       emails: intake.email ? [intake.email] : [],
     },
     entities: knowledgeGraph.snapshot().entities.map((entity) => ({ type: entity.type, value: entity.label, label: entity.label })),
     relationships: knowledgeGraph.snapshot().relationships.map((relationship) => ({ type: relationship.type, from: relationship.from, to: relationship.to, context: relationship.context })),
-    evidence: businessProfile.evidenceItems.map((item) => ({ id: item.id, type: item.type, label: item.label, value: item.value, source: item.source, observedAt: item.observedAt })),
+    evidence: canonicalBusinessProfile.evidenceItems.map((item) => ({ id: item.id, type: item.type, label: item.label, value: item.value, source: item.source, observedAt: item.observedAt })),
     decision: { decision: decisionIntelligence.decision, confidence: decisionIntelligence.confidenceLevel, recommendation: decisionIntelligence.recommendation },
     timestamp: now,
   });
@@ -147,8 +160,8 @@ export async function buildReadyReport(input: {
   executionFlow.push("✓ Business memory updated");
   const businessNarrative = buildBusinessNarrative({
     decision: decisionIntelligence,
-    evidence: businessProfile.evidenceItems,
-    businessProfile,
+    evidence: canonicalBusinessProfile.evidenceItems,
+    businessProfile: canonicalBusinessProfile,
     knowledgeGraph: knowledgeGraph.snapshot(),
     businessMemory,
     generatedAt: now,
@@ -171,8 +184,8 @@ export async function buildReadyReport(input: {
     reportStatus: "ready",
     source: "payment_unlock_pipeline",
     engineVersion: REPORT_ENGINE_VERSION,
-    providerVersions: Object.fromEntries(providerResults.map((result) => [result.providerId, result.providerVersion])),
-    providerResults,
+    providerVersions: Object.fromEntries(providerResultsWithCanonicalIdentity.map((result) => [result.providerId, result.providerVersion])),
+    providerResults: providerResultsWithCanonicalIdentity,
     evidenceSummary: {
       fileCount: intake.fileNames.length,
       categories: intake.visibleSignalCategories,
