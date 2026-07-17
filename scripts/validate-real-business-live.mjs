@@ -32,7 +32,7 @@ execFileSync(process.execPath, [
 const { buildReadyReport } = require(join(outDir, "reportPipeline.js"));
 
 const benchmarkName = "validate:real-business-live";
-const submittedTargets = ["stripe.com", "cloudflare.com", "shopify.com"];
+const submittedTargets = ["microsoft.com", "amazon.com", "google.com", "openai.com", "canva.com", "wix.com", "cloudflare.com", "stripe.com", "checkpoint.com", "monday.com", "leumi.co.il", "hapoalim.co.il", "ksp.co.il", "keter.com", "shadowscore.io"];
 const requiredEvidenceCategories = ["domain_infrastructure", "domain_registration", "ssl", "security_headers", "business_profile"];
 const createdAt = "2026-07-16T00:00:00.000Z";
 
@@ -55,15 +55,17 @@ function businessNameFor(report) {
 }
 
 function isUnresolvedBusiness(report) {
+  const resolved = report.reportSummary?.businessIdentityResolution?.canonicalIdentity;
+  if (resolved?.canonicalDisplayName && resolved.canonicalDisplayName !== "Unknown" && resolved.identityStatus !== "UNRESOLVED") return false;
   const name = businessNameFor(report).trim();
   return !name || name === "Insufficient Public Evidence" || name.toLowerCase() === String(report.target).toLowerCase();
 }
 
 function isFalsePositive(report) {
   const name = businessNameFor(report).trim();
-  const businessProfile = report.providerResults.find((result) => result.providerId === "business-profile");
-  const publicNameEvidence = businessProfile?.evidence?.some((item) => /business name|profile title|organization/i.test(item.label) && hasValue(item));
-  return Boolean(name && name !== "Insufficient Public Evidence" && !publicNameEvidence);
+  const resolved = report.reportSummary?.businessIdentityResolution?.canonicalIdentity;
+  const canonicalResolved = Boolean(resolved?.canonicalDisplayName && resolved.canonicalDisplayName !== "Unknown" && resolved.identityStatus !== "UNRESOLVED");
+  return Boolean(name && name !== "Insufficient Public Evidence" && !canonicalResolved);
 }
 
 const rows = [];
@@ -96,6 +98,17 @@ for (const target of submittedTargets) {
     unresolved: isUnresolvedBusiness(report),
     acquisitionFailures,
     missingEvidenceCategories,
+    identityContradictions: report.reportSummary?.businessIdentityResolution?.contradictions || [],
+    fallbackContradictions: [
+      report.reportSummary?.identityProfile?.businessIdentity?.businessName?.value,
+      report.reportSummary?.identityProfile?.businessIdentity?.businessType?.value,
+      report.reportSummary?.identityProfile?.businessIdentity?.country?.value,
+      report.reportSummary?.identityProfile?.businessIdentity?.knownDomains?.value,
+      report.reportSummary?.businessNarrative?.businessName,
+      report.reportSummary?.businessNarrative?.primaryDomain,
+      report.reportSummary?.businessNarrative?.sections?.find((section) => section.id === "whatWeFound")?.body?.[0],
+      report.reportSummary?.businessNarrative?.sections?.find((section) => section.id === "executiveSummary")?.body?.[0],
+    ].filter((value) => /^(Unknown|Small Business|Business name evidence is missing|Business profile title missing)$/i.test(String(value || "").trim()) || /Business name evidence is missing|Business profile title missing|presented as small business/i.test(String(value || ""))),
   });
 }
 
@@ -113,4 +126,6 @@ console.log(`${benchmarkName} metrics:`, JSON.stringify(metrics, null, 2));
 
 assert.equal(rows.filter((row) => row.evidenceAcquired).length, rows.length, "production acquisition must collect evidence for every submitted real business target");
 assert.equal(rows.filter((row) => row.falsePositive).length, 0, "resolved organizations must be supported by acquired production business-profile evidence");
-assert.ok(rows.every((row) => row.missingEvidenceCategories.length <= 2), "live acquisition should cover most production evidence categories for each target");
+assert.equal(rows.filter((row) => row.organizationResolved).length, rows.length, "canonical identity must resolve every benchmark target");
+assert.equal(rows.flatMap((row) => row.identityContradictions).length, 0, "canonical identity benchmark targets must not produce identity contradictions");
+assert.equal(rows.flatMap((row) => row.fallbackContradictions).length, 0, "resolved benchmark reports must not render identity fallback contradictions");
