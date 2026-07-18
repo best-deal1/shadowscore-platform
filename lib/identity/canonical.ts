@@ -38,13 +38,13 @@ export const EVIDENCE_PRIORITY: Array<{ rank: number; category: EvidenceAuthorit
 export function cleanPageTitle(input?: string) {
   let value = String(input || "").replace(/&amp;/g, "&").replace(/&#x27;|&apos;/g, "'").replace(/&quot;/g, '"').replace(/&nbsp;/g, " ").trim();
   if (!value) return "";
-  const parts = value.split(/\s*(?:\||—|–|-|:|•|»|\/)\s*/).map((part) => part.trim()).filter(Boolean);
+  const parts = value.split(/\s*(?:\||\u2014|–|-|:|•|»|\/)\s*/).map((part) => part.trim()).filter(Boolean);
   const repeated = parts.find((part, index) => parts.findIndex((other) => other.toLowerCase() === part.toLowerCase()) !== index);
   const suffixBrand = parts.length > 1 && parts[parts.length - 1].length <= 24 && parts[0].toLowerCase().includes(parts[parts.length - 1].toLowerCase()) ? parts[parts.length - 1] : undefined;
   if (repeated || suffixBrand) value = repeated || suffixBrand || value;
   else value = parts.length ? (parts[parts.length - 1].length <= 24 && parts[0].length > 24 ? parts[parts.length - 1] : parts[0]) : value;
   value = value.replace(/\b(the )?(all[- ]in[- ]one|leader in|financial infrastructure|ai workspace|commerce platform|official website|homepage|solutions?|platform)\b.*$/i, "").trim();
-  return value.replace(/\s+/g, " ").replace(/[|:;,.\-–—]+$/g, "").trim();
+  return value.replace(/\s+/g, " ").replace(/[|:;,.\-–\u2014]+$/g, "").trim();
 }
 
 export function brandFromLegalName(legalName?: string) {

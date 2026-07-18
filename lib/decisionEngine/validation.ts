@@ -64,7 +64,7 @@ function validateTruthDatasetIndependence() {
       truthDatasetMetadata.independencePolicy.principle,
       truthDatasetMetadata.independencePolicy.purpose,
       `Represented environments: ${representedEnvironments.map((environment) => environment.label).join(", ")}`,
-      `Promotion gate: ${truthDatasetMetadata.promotionGate.readyForEngineOptimization ? "ready" : "not ready"} — ${truthDatasetMetadata.promotionGate.reason}`,
+      `Promotion gate: ${truthDatasetMetadata.promotionGate.readyForEngineOptimization ? "ready" : "not ready"}: ${truthDatasetMetadata.promotionGate.reason}`,
     ],
     counts: {
       positiveEvidenceCount: representedIndependenceClasses.size,

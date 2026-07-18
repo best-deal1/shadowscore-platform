@@ -33,7 +33,7 @@ class FacebookMarketingAgent:
             return """The marketplace already decided you're risky.
 Most sellers find out way too late.
 
-ShadowScore detects hidden signals like tracking drift, silent trust decay, and behavioral anomalies — weeks before restrictions or payout holds.
+ShadowScore detects hidden signals like tracking drift, silent trust decay, and behavioral anomalies, weeks before restrictions or payout holds.
 
 Comment "RISK" and I'll send you the link for an initial scan.
 

@@ -1,4 +1,4 @@
-# Product Experience Audit — Information Architecture Sprint 1
+# Product Experience Audit: Information Architecture Sprint 1
 
 Date: 2026-07-10  
 Scope: Product experience only. No Investigation Engine, Decision Engine, Ontology, Knowledge Graph, Providers, or Payments code was changed.
@@ -133,7 +133,7 @@ Recommended canonical vocabulary:
 
 ## Page Definitions
 
-### `/` — Homepage
+### `/`: Homepage
 
 - **Purpose:** Explain ShadowScore's premium risk-intelligence promise and drive visitors to start an investigation or sign in.
 - **Primary user:** New seller/operator evaluating ShadowScore.
@@ -142,7 +142,7 @@ Recommended canonical vocabulary:
 - **Authentication:** Public.
 - **Relationships:** Parent of public acquisition journey; should not duplicate full intake functionality beyond one hero CTA.
 
-### `/about` — About ShadowScore
+### `/about`: About ShadowScore
 
 - **Purpose:** Explain positioning, independence, and marketplace/payment focus.
 - **Primary user:** Prospective customer or trust reviewer.
@@ -151,7 +151,7 @@ Recommended canonical vocabulary:
 - **Authentication:** Public.
 - **Relationships:** Public trust/support page.
 
-### `/security` — Security & Trust
+### `/security`: Security & Trust
 
 - **Purpose:** Reassure users that marketplace passwords are not required and clarify safe evidence handling.
 - **Primary user:** Risk-conscious prospect, customer, legal/security evaluator.
@@ -160,7 +160,7 @@ Recommended canonical vocabulary:
 - **Authentication:** Public.
 - **Relationships:** Public trust page that supports conversion.
 
-### `/contact` — Contact / Analyst Inquiry
+### `/contact`: Contact / Analyst Inquiry
 
 - **Purpose:** Provide human support or analyst/sales inquiry path.
 - **Primary user:** Prospect, customer needing guidance, enterprise lead.
@@ -169,7 +169,7 @@ Recommended canonical vocabulary:
 - **Authentication:** Public.
 - **Relationships:** Support/sales escape hatch.
 
-### `/pricing` — Pricing & Plans (New)
+### `/pricing`: Pricing & Plans (New)
 
 - **Purpose:** Explain free preview vs paid report vs monitoring/admin-grade features.
 - **Primary user:** Prospect deciding whether to pay; signed-in user encountering locked report.
@@ -178,7 +178,7 @@ Recommended canonical vocabulary:
 - **Authentication:** Public with signed-in personalization optional.
 - **Relationships:** Should absorb `/upgrade`.
 
-### `/login` — Sign In
+### `/login`: Sign In
 
 - **Purpose:** Authenticate existing users.
 - **Primary user:** Returning customer.
@@ -187,7 +187,7 @@ Recommended canonical vocabulary:
 - **Authentication:** Public route that should redirect authenticated users away.
 - **Relationships:** Auth gateway for app routes.
 
-### `/signup` — Create Account
+### `/signup`: Create Account
 
 - **Purpose:** Register a user and capture legal acceptance.
 - **Primary user:** New customer who wants saved investigations/reports.
@@ -196,7 +196,7 @@ Recommended canonical vocabulary:
 - **Authentication:** Public route that should redirect authenticated users away.
 - **Relationships:** Auth gateway and legal acceptance capture point.
 
-### `/workspace` — Workspace Home
+### `/workspace`: Workspace Home
 
 - **Purpose:** Signed-in product command center with recent activity, key metrics, next action, and account status.
 - **Primary user:** Authenticated customer.
@@ -205,7 +205,7 @@ Recommended canonical vocabulary:
 - **Authentication:** Required.
 - **Relationships:** App root. Should replace `/dashboard` as canonical.
 
-### `/investigations` — Investigation List / History
+### `/investigations`: Investigation List / History
 
 - **Purpose:** Show submitted targets, scan modes, statuses, evidence needs, and next actions.
 - **Primary user:** Authenticated customer managing cases.
@@ -214,7 +214,7 @@ Recommended canonical vocabulary:
 - **Authentication:** Required for history; public users should be directed to `/investigations/new` or signup.
 - **Relationships:** Parent collection for investigation lifecycle.
 
-### `/investigations/new` — New Investigation
+### `/investigations/new`: New Investigation
 
 - **Purpose:** Start a website/business, marketplace/seller, or evidence-review investigation.
 - **Primary user:** Prospect or authenticated customer.
@@ -223,7 +223,7 @@ Recommended canonical vocabulary:
 - **Authentication:** Public preview allowed; account required to save/unlock.
 - **Relationships:** Canonical replacement for `/intake`.
 
-### `/reports` — Report Library
+### `/reports`: Report Library
 
 - **Purpose:** List ready, pending, locked, and failed reports with filters and status explanations.
 - **Primary user:** Authenticated customer.
@@ -232,7 +232,7 @@ Recommended canonical vocabulary:
 - **Authentication:** Required.
 - **Relationships:** Parent collection for paid/unlocked output.
 
-### `/reports/[reportId]` — Report Detail
+### `/reports/[reportId]`: Report Detail
 
 - **Purpose:** Show decision, identity profile, evidence hierarchy, timeline, and technical details for one report.
 - **Primary user:** Customer reviewing a paid/unlocked report.
@@ -241,7 +241,7 @@ Recommended canonical vocabulary:
 - **Authentication:** Required for private reports.
 - **Relationships:** Detail child of reports collection; replaces `/report?reportId=`.
 
-### `/monitoring` — Monitoring / Watchlist
+### `/monitoring`: Monitoring / Watchlist
 
 - **Purpose:** Manage ongoing watchlist entities and risk status changes.
 - **Primary user:** Customer with recurring risk needs.
@@ -250,7 +250,7 @@ Recommended canonical vocabulary:
 - **Authentication:** Required.
 - **Relationships:** Premium/retention product surface linked to reports and workspace.
 
-### `/billing` — Billing & Plan (New)
+### `/billing`: Billing & Plan (New)
 
 - **Purpose:** Explain plan, paid reports, invoices/payment status, and upgrade path.
 - **Primary user:** Authenticated customer.
@@ -259,7 +259,7 @@ Recommended canonical vocabulary:
 - **Authentication:** Required.
 - **Relationships:** App account/billing support route.
 
-### `/account` — Account Settings
+### `/account`: Account Settings
 
 - **Purpose:** Show profile, email, sign-out, security/account controls.
 - **Primary user:** Authenticated customer.
@@ -268,7 +268,7 @@ Recommended canonical vocabulary:
 - **Authentication:** Required.
 - **Relationships:** User-level settings, not a primary product destination.
 
-### `/privacy` — Privacy Policy
+### `/privacy`: Privacy Policy
 
 - **Purpose:** Explain collection, use, sharing, retention, legal acceptance records, and requests.
 - **Primary user:** Prospect, customer, legal reviewer.
@@ -277,7 +277,7 @@ Recommended canonical vocabulary:
 - **Authentication:** Public.
 - **Relationships:** Legal support page.
 
-### `/terms` — Terms
+### `/terms`: Terms
 
 - **Purpose:** Explain informational-use limits, no guarantees, analytical opinions, evidence accuracy, refunds, liability.
 - **Primary user:** Prospect, customer, legal reviewer.
@@ -286,7 +286,7 @@ Recommended canonical vocabulary:
 - **Authentication:** Public.
 - **Relationships:** Legal support page and acceptance dependency.
 
-### `/admin` — Admin Console
+### `/admin`: Admin Console
 
 - **Purpose:** Internal read-only operational visibility for users, intakes, payments, reports, providers, evidence, and system health.
 - **Primary user:** ShadowScore operator/admin.
@@ -411,21 +411,21 @@ Add breadcrumbs on authenticated app pages:
 
 ## Priority Backlog
 
-### P0 — IA Stabilization
+### P0: IA Stabilization
 
 - Pick `/workspace` as the only app home.
 - Make `/reports` and `/investigations` distinct collection pages.
 - Move intake to `/investigations/new` and redirect `/intake`.
 - Hide/remove legacy campaign pages from sitemap and navigation.
 
-### P1 — Premium SaaS Shell
+### P1: Premium SaaS Shell
 
 - Add app breadcrumbs.
 - Separate public header from authenticated app shell.
 - Add account dropdown instead of primary `Account` nav item.
 - Standardize empty/loading/error/locked states.
 
-### P2 — Conversion & Trust
+### P2: Conversion & Trust
 
 - Add `/pricing` or merge `/upgrade` into a canonical pricing route.
 - Add sample report only if it aligns with current private report positioning.

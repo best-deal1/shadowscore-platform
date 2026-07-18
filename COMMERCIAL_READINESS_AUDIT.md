@@ -1,4 +1,4 @@
-# Commercial Readiness Audit — Sprint 1 End-to-End Customer Journey
+# Commercial Readiness Audit: Sprint 1 End-to-End Customer Journey
 
 Date: 2026-07-10  
 Scope: Customer experience and commercial readiness only. Decision Engine, Ontology, Knowledge Graph, Investigation, and Providers were reviewed only as route dependencies where necessary and were not modified.
@@ -114,7 +114,7 @@ Replace the preview conversion block with business copy:
 CTA changes:
 
 - “Save Report” → **Save Investigation**
-- “Unlock Full Report - $9.90” → **Unlock Professional Report — $9.90**
+- “Unlock Full Report - $9.90” → **Unlock Professional Report: $9.90**
 - “Technical Details” → **Evidence details** or hide behind “For advanced users”.
 
 ## 3. Pricing
@@ -137,18 +137,18 @@ CTA changes:
 
 Create one canonical pricing model and route in a future code sprint:
 
-**Free Preview — $0**
+**Free Preview: $0**
 - Run investigation preview
 - See high-level decision preview
 - Save investigation draft/preview
 
-**Professional Report — $9.90 per report**
+**Professional Report: $9.90 per report**
 - Full evidence-backed report
 - Downloadable report
 - Saved to workspace
 - Report history
 
-**Monitoring — planned / waitlist or monthly plan**
+**Monitoring: planned / waitlist or monthly plan**
 - Watch saved businesses
 - Track marketplace/payment/supplier changes
 - Receive monitoring alerts when enabled
@@ -412,7 +412,7 @@ CTA: **View Pricing**
 | Recent scans | Recent Investigations | Business wording. |
 | Save Report | Save Investigation | Avoids promising report ownership before payment. |
 | Full Report Unlock | Professional Report | More commercial and less mechanical. |
-| Unlock Full Report - $9.90 | Unlock Professional Report — $9.90 | Clearer paid product. |
+| Unlock Full Report - $9.90 | Unlock Professional Report: $9.90 | Clearer paid product. |
 | Dev webhook: mark paid and generate | Remove from production UI | Internal tooling should not be customer visible. |
 | Payment: paid/payment_pending | Payment succeeded / Payment pending | Customer-facing labels. |
 | reportStatus=preview | Preview saved | Avoid implementation wording. |
