@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import ShadowScoreLayout from "./components/ShadowScoreLayout";
 
 const evidenceEvents = [
-  { time: "00:01", source: "Intake", text: "Supplier claims Northwind Logistics and northwind-pay.com as the same operator", tone: "neutral", phase: "Evidence enters" },
+  { time: "00:01", source: "Intake", text: "Supplier claims Example Signal Logistics and supplier-pay.test are the same operator", tone: "neutral", phase: "Evidence enters" },
   { time: "00:02", source: "Registry", text: "Operating name matches, beneficial owner is not disclosed", tone: "amber", phase: "Provider responds" },
-  { time: "00:03", source: "Domain", text: "Storefront domain resolves to an older seller identity", tone: "green", phase: "Identity linked" },
+  { time: "00:03", source: "Domain", text: "Reserved demo domain resolves to an older seller identity", tone: "green", phase: "Identity linked" },
   { time: "00:04", source: "Reputation", text: "Complaint cluster shares the payment alias used by the storefront", tone: "red", phase: "Relationship emerges" },
   { time: "00:06", source: "Document", text: "Invoice address conflicts with public filing address", tone: "red", phase: "Contradiction detected" },
 ];
@@ -20,9 +20,9 @@ const providerResponses = [
 ];
 
 const entityNodes = [
-  { label: "Northwind Logistics", className: "left-[31%] top-[8%]", kind: "Claimed subject", stage: "entity-node-0" },
-  { label: "northwind-pay.com", className: "left-[5%] top-[39%]", kind: "Domain", stage: "entity-node-1" },
-  { label: "N. W. Holdings", className: "right-[4%] top-[33%]", kind: "Public entity", stage: "entity-node-2" },
+  { label: "Example Signal Logistics", className: "left-[31%] top-[8%]", kind: "Claimed subject", stage: "entity-node-0" },
+  { label: "supplier-pay.test", className: "left-[5%] top-[39%]", kind: "Reserved domain", stage: "entity-node-1" },
+  { label: "Example Holdings LLC", className: "right-[4%] top-[33%]", kind: "Fictional public entity", stage: "entity-node-2" },
   { label: "Payment alias", className: "left-[29%] bottom-[7%]", kind: "Identity", stage: "entity-node-3" },
   { label: "Filing address", className: "right-[13%] bottom-[10%]", kind: "Document fact", stage: "entity-node-4" },
 ];
@@ -32,14 +32,14 @@ const reasoningSteps = [
   { label: "Providers checked", value: "Independent responses disagree", status: "verifying" },
   { label: "Entities connected", value: "Domain ↔ alias ↔ complaint cluster", status: "correlating" },
   { label: "Contradiction found", value: "Invoice address conflicts with filing", status: "explaining" },
-  { label: "Decision updated", value: "Verify ownership before commitment", status: "recommending" },
+  { label: "Recommendation changed", value: "Verify ownership before commitment", status: "recommending" },
 ];
 
 const productJourney = [
   {
     title: "Homepage",
     label: "8-second reasoning preview",
-    copy: "A compact investigation shows evidence entering the system, independent providers responding, connections forming, contradictions surfacing, and the recommendation changing for a reason.",
+    copy: "A compact investigation shows evidence entering the system, independent providers responding, connections forming, contradictions surfacing, and the recommendation changing after contradictory evidence is found.",
   },
   {
     title: "Start Investigation",
@@ -87,7 +87,7 @@ export default function HomeClient() {
           <div>
             <div className="mb-5 inline-flex rounded-full border border-red-300/20 bg-red-500/10 px-4 py-2 text-xs font-black uppercase tracking-[0.24em] text-red-100">Live intelligence system</div>
             <h1 className="max-w-5xl text-4xl font-black tracking-tight text-white sm:text-6xl lg:text-7xl">Watch ShadowScore think through the evidence.</h1>
-            <p className="mt-6 max-w-3xl text-lg leading-8 text-zinc-300 sm:text-xl">In the first seconds, ShadowScore investigates a claim, verifies it against independent providers, correlates identities and entities, explains contradictions, and lets the decision evolve from what it finds.</p>
+            <p className="mt-6 max-w-3xl text-lg leading-8 text-zinc-300 sm:text-xl">In the first seconds, ShadowScore investigates a claim, verifies it against independent providers, correlates identities and entities, explains contradictions, and lets the recommendation evolve from what it finds. Trust decisions made with incomplete evidence can commit capital, access, or executive attention to the wrong counterparty.</p>
             <div className="mt-8 rounded-[32px] border border-white/10 bg-white/[0.04] p-5">
               <div className="text-xs font-black uppercase tracking-[0.24em] text-zinc-500">What the preview is proving</div>
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
@@ -111,12 +111,12 @@ export default function HomeClient() {
               <div className="relative flex flex-wrap items-start justify-between gap-4 border-b border-white/10 pb-5">
                 <div>
                   <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.28em] text-emerald-100"><span className="h-2 w-2 animate-pulse rounded-full bg-emerald-300" />Investigation running</div>
-                  <h2 className="mt-3 text-2xl font-black text-white">Northwind Logistics</h2>
-                  <p className="mt-2 text-sm leading-6 text-zinc-400">Live preview · supplier commitment review</p>
+                  <h2 className="mt-3 text-2xl font-black text-white">Example Signal Logistics</h2>
+                  <p className="mt-2 text-sm leading-6 text-zinc-400">Fictional demo · supplier commitment review</p>
                 </div>
                 <div className="decision-card rounded-2xl border border-amber-200/20 bg-amber-200/10 px-4 py-3 text-right">
                   <div className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-100">Recommendation</div>
-                  <div className="decision-text mt-1 text-lg font-black text-white">Approve changes to verify first</div>
+                  <div className="decision-text mt-1 text-lg font-black text-white">Recommendation updated → Verify ownership before commitment</div>
                 </div>
               </div>
 
@@ -183,7 +183,7 @@ export default function HomeClient() {
         <div className="mx-auto max-w-7xl rounded-[40px] border border-white/10 bg-white/[0.035] p-6 sm:p-10">
           <div className="max-w-3xl">
             <div className="text-xs font-black uppercase tracking-[0.28em] text-red-200">One intelligence journey</div>
-            <h2 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-5xl">The homepage preview, investigation flow, and report now feel like the same system.</h2>
+            <h2 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-5xl">One investigation from first signal to final report.</h2>
           </div>
           <div className="mt-10 grid gap-4 lg:grid-cols-3">
             {productJourney.map((item) => (

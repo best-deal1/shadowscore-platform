@@ -16,7 +16,7 @@ export default function ExampleReport() {
             <div>
               <div className="text-sm uppercase tracking-[0.30em] text-red-300">Example Report</div>
               <h1 className="mt-4 text-5xl font-black">ShadowScore Risk Intelligence Report</h1>
-              <p className="mt-5 max-w-3xl leading-8 text-zinc-400">A sample view of how ShadowScore explains qualitative risk levels, confidence, top risk factors and next recommended actions. This is demo data only.</p>
+              <p className="mt-5 max-w-3xl leading-8 text-zinc-400">A sample view of how ShadowScore explains qualitative risk levels, confidence, top risk factors and recommendations. This is demo data only.</p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-black/60 p-5 text-right">
               <div className="text-xs uppercase tracking-[0.22em] text-zinc-500">Report ID</div>
@@ -25,7 +25,7 @@ export default function ExampleReport() {
           </div>
 
           <div className="mt-10 grid gap-5 md:grid-cols-4">
-            {[['Risk Level','High','Estimated'],['Evidence Confidence','High','Inferred'],['Health Stage','Warning','Estimated'],['Decision','Review required','Evidence first']].map(([label,value,sub]) => (
+            {[['Risk Level','High','Estimated'],['Evidence Confidence','High','Inferred'],['Health Stage','Warning','Estimated'],['Decision','Review required','Recommendation']].map(([label,value,sub]) => (
               <div key={label} className="rounded-3xl border border-white/10 bg-black/60 p-6">
                 <div className="text-xs uppercase tracking-[0.22em] text-zinc-500">{label}</div>
                 <div className="mt-4 text-4xl font-black text-red-200">{value}</div>
