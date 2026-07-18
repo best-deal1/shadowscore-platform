@@ -26,7 +26,7 @@ export default function UpgradePage() {
               {unlocks.map((item) => <div key={item} className="rounded-2xl border border-white/10 bg-black/45 p-4 text-sm font-bold text-zinc-100">✓ {item}</div>)}
             </div>
             <div className="mt-7 grid gap-3 sm:grid-cols-2">
-              <PaymentButtons planName="ShadowScore Professional" price="$49" buttonLabel="Upgrade - $49" />
+              <PaymentButtons planName="Downloadable Professional Report" price="$9.90" buttonLabel="Upgrade - $9.90" />
               <Link href="/intake" className="rounded-2xl border border-white/10 px-5 py-4 text-center text-sm font-black text-white hover:border-red-400/30">Run a scan first</Link>
             </div>
           </div>
