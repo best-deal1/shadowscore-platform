@@ -8,7 +8,7 @@ import { buildTrustInsights } from "./insightEngine";
 import { buildIdentityProfile } from "./identityEngine";
 import { buildBusinessProfile } from "./businessProfileEngine";
 import { buildBusinessIdentityIntelligence } from "./businessIdentityIntelligence";
-import { BusinessKnowledgeGraph } from "./knowledgeGraph";
+import { buildBusinessIdentityKnowledgeScan, BusinessKnowledgeGraph } from "./knowledgeGraph";
 import { buildBusinessNarrative } from "./narrative";
 import { buildTrustTimeline } from "./trustTimeline";
 import { buildReasoning } from "./reasoning";
@@ -98,22 +98,13 @@ export async function buildReadyReport(input: {
   const identityProfile = applyCanonicalIdentityToIdentityProfile(baseIdentityProfile, canonicalIdentity);
   const businessIdentityIntelligence = buildBusinessIdentityIntelligence({ providerResults: providerResultsWithCanonicalIdentity, target: intake.target, claimedBusinessName: canonicalBusinessProfile.businessName, canonicalIdentity, generatedAt: now });
   const knowledgeGraph = new BusinessKnowledgeGraph();
-  knowledgeGraph.applyScan({
+  knowledgeGraph.applyScan(buildBusinessIdentityKnowledgeScan({
     scanId: `report-${intake.intakeId}`,
-    entities: [
-      { type: "Business", value: canonicalBusinessProfile.businessName === "Insufficient Public Evidence" ? intake.target : canonicalBusinessProfile.businessName },
-      { type: "Domain", value: canonicalBusinessProfile.primaryDomain || intake.target },
-      ...(intake.email ? [{ type: "Email" as const, value: intake.email }] : []),
-    ],
-    relationships: [
-      {
-        type: "OWNS",
-        from: { type: "Business", value: canonicalBusinessProfile.businessName === "Insufficient Public Evidence" ? intake.target : canonicalBusinessProfile.businessName },
-        to: { type: "Domain", value: canonicalBusinessProfile.primaryDomain || intake.target },
-        context: "Business profile domain relationship",
-      },
-    ],
-  });
+    target: intake.target,
+    businessProfile: canonicalBusinessProfile,
+    identityIntelligence: businessIdentityIntelligence,
+    email: intake.email,
+  }));
   const trustTimeline = buildTrustTimeline({
     providerResults,
     insights: insightOutput.insights,

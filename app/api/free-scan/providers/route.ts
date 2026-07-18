@@ -4,7 +4,7 @@ import { buildTrustInsights } from "../../../../lib/insightEngine";
 import { buildIdentityProfile } from "../../../../lib/identityEngine";
 import { buildBusinessProfile } from "../../../../lib/businessProfileEngine";
 import { buildBusinessIdentityIntelligence } from "../../../../lib/businessIdentityIntelligence";
-import { BusinessKnowledgeGraph } from "../../../../lib/knowledgeGraph";
+import { buildBusinessIdentityKnowledgeScan, BusinessKnowledgeGraph } from "../../../../lib/knowledgeGraph";
 import { buildBusinessNarrative } from "../../../../lib/narrative";
 import { buildTrustTimeline } from "../../../../lib/trustTimeline";
 import { buildDecision } from "../../../../lib/decisionEngine";
@@ -146,22 +146,13 @@ export async function POST(request: Request) {
     const identityProfile = applyCanonicalIdentityToIdentityProfile(baseIdentityProfile, canonicalIdentity);
     const businessTrustIntelligence = buildBusinessIdentityIntelligence({ providerResults: completedProviderResults, target: context.target, claimedBusinessName: canonicalBusinessProfile.businessName, canonicalIdentity, generatedAt });
     const knowledgeGraph = new BusinessKnowledgeGraph();
-    knowledgeGraph.applyScan({
+    knowledgeGraph.applyScan(buildBusinessIdentityKnowledgeScan({
       scanId: `free-scan-${context.intakeId}`,
-      entities: [
-        { type: "Business", value: canonicalBusinessProfile.businessName === "Insufficient Public Evidence" ? context.target : canonicalBusinessProfile.businessName },
-        { type: "Domain", value: canonicalBusinessProfile.primaryDomain || context.target },
-        ...(context.email ? [{ type: "Email" as const, value: context.email }] : []),
-      ],
-      relationships: [
-        {
-          type: "OWNS",
-          from: { type: "Business", value: canonicalBusinessProfile.businessName === "Insufficient Public Evidence" ? context.target : canonicalBusinessProfile.businessName },
-          to: { type: "Domain", value: canonicalBusinessProfile.primaryDomain || context.target },
-          context: "Business profile domain relationship",
-        },
-      ],
-    });
+      target: context.target,
+      businessProfile: canonicalBusinessProfile,
+      identityIntelligence: businessTrustIntelligence,
+      email: context.email,
+    }));
     const timeline = buildTrustTimeline({
       providerResults: completedProviderResults,
       insights: insightOutput.insights,
