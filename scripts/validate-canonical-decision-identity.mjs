@@ -8,8 +8,8 @@ const provider = (providerId, metadata = {}, evidence = []) => ({ providerId, pr
 
 const green = buildCanonicalDecision({ status: "PASS", hasStrongCorroboratedIdentity: true, confidenceScore: 90 });
 assert.equal(green.status, "PASS"); assert.equal(green.decisionLight, "GREEN"); assert.equal(green.decisionOutcome, "PROCEED");
-const yellow = buildCanonicalDecision({ status: "REVIEW", missingEvidence: ["Legal business identity"], confidenceScore: 55 });
-assert.equal(yellow.status, "REVIEW"); assert.equal(yellow.decisionLight, "YELLOW"); assert.equal(yellow.decisionOutcome, "PROCEED_WITH_VERIFICATION"); assert.ok(!/\bYES\b/.test(yellow.headline)); assert.ok(yellow.allowedActions.includes("continue preliminary discussions")); assert.ok(yellow.blockedActions.includes("large payment"));
+const yellow = buildCanonicalDecision({ status: "PROCEED_WITH_VERIFICATION", missingEvidence: ["Legal business identity"], confidenceScore: 55 });
+assert.equal(yellow.status, "PROCEED_WITH_VERIFICATION"); assert.equal(yellow.decisionLight, "YELLOW"); assert.equal(yellow.decisionOutcome, "PROCEED_WITH_VERIFICATION"); assert.ok(!/\bYES\b/.test(yellow.headline)); assert.ok(yellow.allowedActions.includes("continue preliminary discussions")); assert.ok(yellow.blockedActions.includes("large payment"));
 const orange = buildCanonicalDecision({ status: "REVIEW", hasMaterialContradiction: true });
 assert.equal(orange.decisionLight, "ORANGE"); assert.equal(orange.decisionOutcome, "PAUSE_AND_VERIFY");
 const red = buildCanonicalDecision({ hasConfirmedSeriousNegative: true });
