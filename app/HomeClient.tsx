@@ -37,20 +37,28 @@ const reasoningSteps = [
 
 const productJourney = [
   {
-    title: "Homepage",
-    label: "8-second reasoning preview",
-    copy: "A compact investigation shows evidence entering the system, independent providers responding, connections forming, contradictions surfacing, and the recommendation changing after contradictory evidence is found.",
+    title: "Identify the organization",
+    label: "Who are you dealing with?",
+    copy: "Resolve the trading name, legal entity, parent, brands, operating country and the identities connected to the organization.",
   },
   {
-    title: "Start Investigation",
-    label: "Complete reasoning journey",
-    copy: "The intake expands the preview into structured evidence collection, entity resolution, confidence recalculation, and analyst-grade reasoning.",
+    title: "Corroborate the evidence",
+    label: "Can it be verified?",
+    copy: "Compare independent sources and make contradictions visible—rather than treating a domain check as a conclusion.",
   },
   {
-    title: "Report",
-    label: "Conclusion and evidence",
-    copy: "The final report separates verified facts, conflicts, unknowns, and the decision your team can defend.",
+    title: "Protect the decision",
+    label: "What should we actually do?",
+    copy: "Receive a commercial recommendation with the specific evidence to request before money, access or reputation is at risk.",
   },
+];
+
+const executiveQuestions = [
+  ["01", "Who am I actually dealing with?", "Legal entity, trading name, ownership, country, industry and related brands."],
+  ["02", "Can this organization be verified?", "Independent sources either corroborate the identity or expose a gap."],
+  ["03", "Should I trust them?", "Trust rises when evidence agrees, not when a website merely looks credible."],
+  ["04", "What could go wrong?", "Material contradictions, negative events and unverified payment identity get priority."],
+  ["05", "What should we actually do?", "A concrete recommendation that reduces the cost of a wrong decision."],
 ];
 
 const trustSignals = [
@@ -85,11 +93,11 @@ export default function HomeClient() {
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_10%,rgba(220,38,38,0.24),transparent_30%),radial-gradient(circle_at_82%_18%,rgba(251,191,36,0.12),transparent_28%),linear-gradient(180deg,rgba(10,10,10,0.05),#050505_82%)]" />
         <div className="relative mx-auto grid max-w-7xl items-center gap-8 lg:min-h-[760px] lg:grid-cols-[0.86fr_1.14fr]">
           <div>
-            <div className="mb-5 inline-flex rounded-full border border-red-300/20 bg-red-500/10 px-4 py-2 text-xs font-black uppercase tracking-[0.24em] text-red-100">Live intelligence system</div>
-            <h1 className="max-w-5xl text-4xl font-black tracking-tight text-white sm:text-6xl lg:text-7xl">Watch ShadowScore think through the evidence.</h1>
-            <p className="mt-6 max-w-3xl text-lg leading-8 text-zinc-300 sm:text-xl">In the first seconds, ShadowScore investigates a claim, verifies it against independent providers, correlates identities and entities, explains contradictions, and lets the recommendation evolve from what it finds. Trust decisions made with incomplete evidence can commit capital, access, or executive attention to the wrong counterparty.</p>
+            <div className="mb-5 inline-flex rounded-full border border-red-300/20 bg-red-500/10 px-4 py-2 text-xs font-black uppercase tracking-[0.24em] text-red-100">AI business due diligence analyst</div>
+            <h1 className="max-w-5xl text-4xl font-black tracking-tight text-white sm:text-6xl lg:text-7xl">Know who you are trusting—before the commitment.</h1>
+            <p className="mt-6 max-w-3xl text-lg leading-8 text-zinc-300 sm:text-xl">ShadowScore does not sell a technical scan. It investigates the organization behind a claim, compares independent evidence, explains what does not match, and recommends the lowest-cost action that protects your business.</p>
             <div className="mt-8 rounded-[32px] border border-white/10 bg-white/[0.04] p-5">
-              <div className="text-xs font-black uppercase tracking-[0.24em] text-zinc-500">What the preview is proving</div>
+              <div className="text-xs font-black uppercase tracking-[0.24em] text-zinc-500">What your analyst answers</div>
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
                 {productJourney.map((item) => (
                   <div key={item.title} className="rounded-3xl border border-white/10 bg-black/30 p-4">
@@ -179,11 +187,30 @@ export default function HomeClient() {
         </div>
       </section>
 
+      <section className="px-5 py-14 sm:px-6" aria-label="Executive due diligence questions">
+        <div className="mx-auto max-w-7xl">
+          <div className="max-w-3xl">
+            <div className="text-xs font-black uppercase tracking-[0.28em] text-red-200">Executive due diligence</div>
+            <h2 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-5xl">Five questions. One defensible business decision.</h2>
+            <p className="mt-5 text-base leading-7 text-zinc-300">Technical observations are supporting evidence. The investigation is organized around the questions a buyer, risk leader or investment committee actually needs answered.</p>
+          </div>
+          <div className="mt-10 grid gap-4 lg:grid-cols-5">
+            {executiveQuestions.map(([number, question, detail]) => (
+              <article key={number} className="rounded-[28px] border border-white/10 bg-white/[0.035] p-6">
+                <div className="text-xs font-black tracking-[0.22em] text-red-200">{number}</div>
+                <h3 className="mt-5 text-lg font-black leading-6 text-white">{question}</h3>
+                <p className="mt-4 text-sm leading-6 text-zinc-400">{detail}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="px-5 py-14 sm:px-6" aria-label="Product journey">
         <div className="mx-auto max-w-7xl rounded-[40px] border border-white/10 bg-white/[0.035] p-6 sm:p-10">
           <div className="max-w-3xl">
             <div className="text-xs font-black uppercase tracking-[0.28em] text-red-200">One intelligence journey</div>
-            <h2 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-5xl">One investigation from first signal to final report.</h2>
+            <h2 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-5xl">Every investigation becomes evidence for the next one.</h2>
           </div>
           <div className="mt-10 grid gap-4 lg:grid-cols-3">
             {productJourney.map((item) => (
