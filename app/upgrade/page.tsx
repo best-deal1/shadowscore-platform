@@ -3,6 +3,7 @@ import PaymentButtons from "../components/PaymentButtons";
 import ShadowScoreLayout from "../components/ShadowScoreLayout";
 
 const unlocks = [
+  "Downloadable Professional Report for $9.90 per completed investigation",
   "Unlimited saved scan history in your workspace",
   "Full downloadable reports after successful payment",
   "Business identity summaries, decision reasons and recommended actions",
@@ -16,9 +17,9 @@ export default function UpgradePage() {
       <section className="mx-auto max-w-6xl px-6 py-16 sm:py-20">
         <div className="grid gap-8 lg:grid-cols-[.95fr_1.05fr] lg:items-start">
           <div>
-            <div className="text-xs font-black uppercase tracking-[0.32em] text-red-300">Professional Plan</div>
+            <div className="text-xs font-black uppercase tracking-[0.32em] text-red-300">Plans</div>
             <h1 className="mt-5 text-5xl font-black tracking-tight">Upgrade from preview to operating intelligence.</h1>
-            <p className="mt-5 text-lg leading-8 text-zinc-400">Payment unlocks the product features that turn a one-time scan into a usable risk workspace. Free users can run previews; Professional users can save, organize, monitor and open full reports.</p>
+            <p className="mt-5 text-lg leading-8 text-zinc-400">Start with a free preview, then unlock a downloadable Professional Report for $9.90 when the evidence is useful. Free users can run previews; paid users can save, organize, monitor and open full reports.</p>
           </div>
           <div className="rounded-[34px] border border-red-400/25 bg-red-500/[0.07] p-7">
             <div className="text-sm font-black uppercase tracking-[0.22em] text-red-200">What becomes available after payment</div>

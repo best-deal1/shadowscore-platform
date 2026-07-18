@@ -10,6 +10,7 @@ const primaryNav = [
   { href: "/investigations", label: "Investigations" },
   { href: "/reports", label: "Reports" },
   { href: "/monitoring", label: "Monitoring" },
+  { href: "/upgrade", label: "Plans" },
   { href: "/workspace", label: "Workspace" },
   { href: "/account", label: "Account" },
 ];
@@ -26,6 +27,7 @@ const footerGroups = [
   { title: "Product", links: [
     { href: "/intake", label: "Start Investigation" },
     { href: "/example-report", label: "Example Report" },
+    { href: "/upgrade", label: "Plans" },
     { href: "/about", label: "Methodology" },
   ]},
   { title: "Trust & Legal", links: [
@@ -98,7 +100,7 @@ export default function ShadowScoreLayout({ children }: { children: ReactNode })
               <img src="/shadowscore-shield-v8.png" alt="" className="h-10 w-10 rounded-xl bg-black object-contain p-1" />
               <div className="text-2xl font-black tracking-tight">Shadow<span className="text-red-500">Score</span></div>
             </div>
-            <p className="mt-5 max-w-xl text-sm leading-7 text-zinc-400">Enterprise-grade Digital Trust Intelligence for investigating digital business identities, online reputation signals and evidence-backed risk before critical decisions.</p>
+            <p className="mt-5 max-w-xl text-sm leading-7 text-zinc-400">Digital trust intelligence for investigating business identity, online reputation signals, and evidence-backed risk before critical decisions.</p>
           </div>
           <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-6">
             <div className="text-xs font-black uppercase tracking-[0.24em] text-red-200">Ready to investigate?</div>
