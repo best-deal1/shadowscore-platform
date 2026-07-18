@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { buildTrustInsights } from "../../../../lib/insightEngine";
 import { buildIdentityProfile } from "../../../../lib/identityEngine";
 import { buildBusinessProfile } from "../../../../lib/businessProfileEngine";
+import { buildBusinessIdentityIntelligence } from "../../../../lib/businessIdentityIntelligence";
 import { BusinessKnowledgeGraph } from "../../../../lib/knowledgeGraph";
 import { buildBusinessNarrative } from "../../../../lib/narrative";
 import { buildTrustTimeline } from "../../../../lib/trustTimeline";
@@ -143,6 +144,7 @@ export async function POST(request: Request) {
     const canonicalIdentity = businessIdentityResolution.canonicalIdentity;
     const canonicalBusinessProfile = applyCanonicalIdentityToBusinessProfile(businessProfile, canonicalIdentity);
     const identityProfile = applyCanonicalIdentityToIdentityProfile(baseIdentityProfile, canonicalIdentity);
+    const businessTrustIntelligence = buildBusinessIdentityIntelligence({ providerResults: completedProviderResults, target: context.target, claimedBusinessName: canonicalBusinessProfile.businessName, canonicalIdentity, generatedAt });
     const knowledgeGraph = new BusinessKnowledgeGraph();
     knowledgeGraph.applyScan({
       scanId: `free-scan-${context.intakeId}`,
@@ -218,6 +220,7 @@ export async function POST(request: Request) {
       identityProfile,
       businessNarrative,
       businessIdentityResolution,
+      businessTrustIntelligence,
     });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to run free provider scan." }, { status: 500 });

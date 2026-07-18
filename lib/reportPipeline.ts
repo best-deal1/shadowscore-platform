@@ -96,7 +96,7 @@ export async function buildReadyReport(input: {
   } : result);
   const canonicalBusinessProfile = applyCanonicalIdentityToBusinessProfile(businessProfile, canonicalIdentity);
   const identityProfile = applyCanonicalIdentityToIdentityProfile(baseIdentityProfile, canonicalIdentity);
-  const businessIdentityIntelligence = buildBusinessIdentityIntelligence({ providerResults: providerResultsWithCanonicalIdentity, target: intake.target, claimedBusinessName: canonicalBusinessProfile.businessName, generatedAt: now });
+  const businessIdentityIntelligence = buildBusinessIdentityIntelligence({ providerResults: providerResultsWithCanonicalIdentity, target: intake.target, claimedBusinessName: canonicalBusinessProfile.businessName, canonicalIdentity, generatedAt: now });
   const knowledgeGraph = new BusinessKnowledgeGraph();
   knowledgeGraph.applyScan({
     scanId: `report-${intake.intakeId}`,
@@ -136,6 +136,7 @@ export async function buildReadyReport(input: {
     evidenceItems: canonicalBusinessProfile.evidenceItems,
     correlationFindings: correlationSummary.findings,
     contradictionSignals: canonicalBusinessProfile.contradictionSignals,
+    businessTrustIntelligence: businessIdentityIntelligence,
   });
   executionFlow.push("✓ Decision generated");
   const businessMemory = rememberBusinessScan({
