@@ -18,16 +18,16 @@ function item(partial: Pick<EvidenceItem, "id" | "provider" | "category" | "stat
 
 const identityMismatchRegressionCases = [
   {
-    label: "Isolated email mismatch routes to REVIEW",
-    expected: "REVIEW" as const,
+    label: "Isolated email gap routes to proceed with verification",
+    expected: "PROCEED_WITH_VERIFICATION" as const,
     evidenceItems: [
       item({ id: "site", provider: "business_profile", category: "Verified", status: "observed", title: "Website domain", value: "example.com", description: "Website domain: example.com", businessImpact: "Website evidence supports verification coverage." }),
       item({ id: "email", provider: "business_profile", category: "Verified", status: "observed", title: "Contact email", value: "owner@gmail.com", description: "Contact email: owner@gmail.com", businessImpact: "Contact evidence supports verification coverage." }),
     ],
   },
   {
-    label: "Isolated company name mismatch routes to REVIEW",
-    expected: "REVIEW" as const,
+    label: "Isolated company name gap routes to proceed with verification",
+    expected: "PROCEED_WITH_VERIFICATION" as const,
     evidenceItems: [
       item({ id: "business", provider: "business_profile", category: "Verified", status: "observed", title: "Business name", value: "Gadget Deals", description: "Business name: Gadget Deals", businessImpact: "Business profile evidence supports verification coverage." }),
       item({ id: "registry", provider: "registry", category: "Verified", status: "observed", title: "Legal name", value: "Gadget Online Ltd", description: "Legal name: Gadget Online Ltd", businessImpact: "Registry evidence supports verification coverage." }),
@@ -121,7 +121,8 @@ export { confirmedRiskDecisionMatrix };
 
 export const decisionAlgorithmSummary = [
   "PASS requires sufficient positive evidence and zero confirmed negative evidence.",
-  "REVIEW is used for missing evidence, incomplete provider coverage, or insufficient confidence when negative evidence is absent.",
+  "PROCEED_WITH_VERIFICATION is used for missing evidence, incomplete provider coverage, or insufficient confidence when negative evidence is absent.",
+  "REVIEW is reserved for material contradictions, confirmed negative indicators requiring human judgment, or multiple weak signals that create material uncertainty.",
   "FAIL requires at least one verified negative condition; missing evidence alone cannot produce FAIL.",
   "Verification confidence and evidence completeness are reported separately from risk/negative evidence.",
 ];
@@ -135,8 +136,8 @@ export const falsePositiveReviewCases = [
 ] as const;
 
 export const beforeAfterDecisionMatrix = [
-  { scenario: "Missing data only", before: "Could reduce score below FAIL threshold", after: "REVIEW because missing evidence is incomplete coverage, not risk" },
-  { scenario: "Incomplete provider coverage", before: "Could be treated as a critical failed check", after: "REVIEW unless verified negative evidence exists" },
+  { scenario: "Missing data only", before: "Could reduce score below REVIEW threshold", after: "PROCEED_WITH_VERIFICATION because missing evidence is incomplete coverage, not risk" },
+  { scenario: "Incomplete provider coverage", before: "Could be treated as a critical failed check", after: "PROCEED_WITH_VERIFICATION unless verified negative evidence or a material contradiction exists" },
   { scenario: "Strong positive evidence", before: "PASS only if score thresholds survive missing-signal penalties", after: "PASS when positive evidence is sufficient and negative evidence count is zero" },
   { scenario: "Verified phishing/malicious/reputation issue", before: "FAIL through score or blocking issue", after: "FAIL through explicit verified negative evidence" },
 ];

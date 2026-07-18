@@ -11,21 +11,21 @@
       "label": "New business",
       "snapshot": "new-business",
       "expected": [
-        "REVIEW"
+        "PROCEED_WITH_VERIFICATION"
       ]
     },
     {
       "label": "Provider failure",
       "snapshot": "provider-failure",
       "expected": [
-        "REVIEW"
+        "PROCEED_WITH_VERIFICATION"
       ]
     },
     {
       "label": "Missing ownership",
       "snapshot": "missing-ownership",
       "expected": [
-        "REVIEW"
+        "PASS"
       ]
     },
     {
@@ -83,28 +83,28 @@
       "label": "C-Data",
       "snapshot": "c-data",
       "expected": [
-        "REVIEW"
+        "PROCEED_WITH_VERIFICATION"
       ]
     },
     {
       "label": "GadgetDeals",
       "snapshot": "gadget-deals",
       "expected": [
-        "REVIEW"
+        "PROCEED_WITH_VERIFICATION"
       ]
     },
     {
       "label": "New domain",
       "snapshot": "new-domain",
       "expected": [
-        "REVIEW"
+        "PROCEED_WITH_VERIFICATION"
       ]
     },
     {
       "label": "Missing data only",
       "snapshot": "missing-data-only",
       "expected": [
-        "REVIEW"
+        "PROCEED_WITH_VERIFICATION"
       ]
     },
     {

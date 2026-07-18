@@ -44,7 +44,7 @@ export function evaluateDecisionEvidence(input: DecisionIntelligenceInput): Deci
   const decision = selectDecision({ assessment, contradictions: allContradictions });
   const materialContradiction = allContradictions.some((signal) => signal.severity === "high" && !isConfirmedRiskContradiction(signal));
   const canonicalDecision = buildCanonicalDecision({
-    status: decision === "FAIL" ? "STOP" : decision,
+    status: decision === "FAIL" ? "STOP" : decision === "PROCEED_WITH_VERIFICATION" ? "REVIEW" : decision,
     hasConfirmedSeriousNegative: allContradictions.some(isConfirmedRiskContradiction),
     hasMaterialContradiction: materialContradiction,
     hasStrongCorroboratedIdentity: assessment.positiveEvidenceCount >= 3 && assessment.confidenceLevel !== "Low" && assessment.confidenceLevel !== "None",

@@ -9,7 +9,7 @@ import type { RiskEngineOutput } from "../riskEngine";
 import type { TrustTimelineItem } from "../trustTimeline";
 import { buildCanonicalDecision, decisionDisplayLabel, type CanonicalDecision } from "../canonicalDecision";
 
-export type VerificationDecision = "PASS" | "REVIEW" | "FAIL";
+export type VerificationDecision = "PASS" | "PROCEED_WITH_VERIFICATION" | "REVIEW" | "FAIL";
 export type DecisionColor = "green" | "yellow" | "orange" | "red";
 export type ReputationScore = number | "pending";
 export type DecisionFindingCategory = "positive" | "missing" | "negative";
@@ -24,7 +24,7 @@ export type DecisionFinding = {
 
 export type VerificationDecisionOutput = {
   decision: VerificationDecision;
-  decisionLabel: "Verified enough to proceed" | "Additional verification recommended" | "Do not proceed";
+  decisionLabel: "Verified enough to proceed" | "Proceed with verification" | "Review required" | "Do not proceed";
   decisionColor: DecisionColor;
   verificationScore: number;
   verificationConfidence: number;
@@ -212,9 +212,15 @@ export function buildVerificationDecision(input: {
   const deterministicBlockingRule: DecisionFinding[] = [];
   const confirmedRiskEligible = negativeEvidenceCount > 0 || deterministicBlockingRule.length > 0;
 
-  let decision: VerificationDecision = "REVIEW";
+  const hasMaterialContradiction = reviewOnlyCorrelationContradictions.some((item) => item.severity === "high" || item.severity === "critical");
+  const hasCompoundingUncertainty = reviewOnlyNegativeEvidenceItems.length >= 2 || (reviewOnlyNegativeEvidenceItems.length >= 1 && reviewOnlyCorrelationContradictions.length >= 1);
+  const hasCoreOwnershipGap = missingSignals.some((item) => /ownership|owner|beneficial/i.test(item));
+  const hasStrongBusinessEvidence = positiveEvidenceCount >= 3 && infrastructureScore >= 70 && identityScore >= 60 && !hasCoreOwnershipGap;
+
+  let decision: VerificationDecision = "PROCEED_WITH_VERIFICATION";
   if (confirmedRiskEligible) decision = "FAIL";
-  else if (positiveEvidenceCount >= 3 && infrastructureScore >= 70 && identityScore >= 60 && verificationConfidence >= 65) decision = "PASS";
+  else if (hasMaterialContradiction || hasCompoundingUncertainty) decision = "REVIEW";
+  else if (hasStrongBusinessEvidence) decision = "PASS";
 
   const reasons = unique([
     `Positive evidence count is ${positiveEvidenceCount}.`,
@@ -225,12 +231,11 @@ export function buildVerificationDecision(input: {
   ]);
 
 
-  const materialContradiction = reviewOnlyCorrelationContradictions.some((item) => item.severity === "high" || item.severity === "critical");
   const canonicalDecision = buildCanonicalDecision({
-    status: decision === "FAIL" ? "STOP" : decision,
+    status: decision === "FAIL" ? "STOP" : decision === "PROCEED_WITH_VERIFICATION" ? "REVIEW" : decision,
     hasConfirmedSeriousNegative: confirmedRiskEligible,
-    hasMaterialContradiction: materialContradiction,
-    hasStrongCorroboratedIdentity: positiveEvidenceCount >= 3 && identityScore >= 60 && verificationConfidence >= 65,
+    hasMaterialContradiction,
+    hasStrongCorroboratedIdentity: hasStrongBusinessEvidence,
     hasMissingCoreIdentity: missingSignals.some((item) => /identity|business name|registry|owner/i.test(item)),
     missingEvidence: missingSignals,
     decisionReasons: reasons,
@@ -261,9 +266,11 @@ export function buildVerificationDecision(input: {
     blockingIssues,
     recommendedAction: decision === "PASS"
       ? "Sufficient evidence was collected and no significant negative indicators were detected."
-      : decision === "REVIEW"
-        ? "Additional verification is recommended because public evidence is incomplete. No confirmed negative indicators were detected."
-        : "Confirmed negative indicators require investigation before proceeding.",
+      : decision === "PROCEED_WITH_VERIFICATION"
+        ? "Proceed with verification: no confirmed risk was found, but collect ownership or documentation before major commitment."
+        : decision === "REVIEW"
+          ? "Review is required because material contradictions or compounding uncertainty were detected."
+          : "Confirmed negative indicators require investigation before proceeding.",
     limitedPreview: input.audience === "free",
     canonicalDecision,
   };

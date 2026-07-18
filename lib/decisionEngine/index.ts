@@ -11,7 +11,7 @@ export type { DecisionColor, ReputationScore, VerificationDecision, Verification
 
 export const DECISION_ENGINE_VERSION = "decision-engine-v2";
 
-export type DecisionLabel = "Verified enough to proceed" | "Additional verification recommended" | "Do not proceed";
+export type DecisionLabel = "Verified enough to proceed" | "Proceed with verification" | "Review required" | "Do not proceed";
 export type DecisionConfidence = "Low" | "Medium" | "High";
 export type DecisionAudience = "free" | "paid";
 
@@ -49,9 +49,11 @@ export function buildDecision(input: {
     topReasons: model.reasons.slice(0, 3),
     whatThisMeans: model.decision === "PASS"
       ? "Sufficient evidence was collected and no significant negative indicators were detected."
-      : model.decision === "REVIEW"
-        ? "Additional verification is recommended because public evidence is incomplete. No confirmed negative indicators were detected."
-        : "Confirmed negative indicators require investigation before proceeding.",
+      : model.decision === "PROCEED_WITH_VERIFICATION"
+        ? "No confirmed risk was found. Additional ownership or documentation should be collected before a major commitment."
+        : model.decision === "REVIEW"
+          ? "Material contradictions or compounding uncertainty require human review before proceeding."
+          : "Confirmed negative indicators require investigation before proceeding.",
     recommendedAction: model.recommendedAction,
     limitedPreview: input.audience === "free",
   };

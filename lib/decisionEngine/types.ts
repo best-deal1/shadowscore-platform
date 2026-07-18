@@ -4,7 +4,7 @@ import type { ExecutionPlan } from "../orchestrator/types";
 
 import type { CanonicalDecision } from "../canonicalDecision";
 
-export type DecisionIntelligenceDecision = "PASS" | "REVIEW" | "FAIL";
+export type DecisionIntelligenceDecision = "PASS" | "PROCEED_WITH_VERIFICATION" | "REVIEW" | "FAIL";
 
 export type DecisionConfidenceLevel = "High" | "Medium" | "Low" | "None";
 
