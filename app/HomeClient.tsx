@@ -6,27 +6,27 @@ import ShadowScoreLayout from "./components/ShadowScoreLayout";
 
 const briefingFindings = [
   {
-    label: "Identity confidence",
-    value: "High friction",
-    detail: "Ownership, marketplace, and domain claims do not resolve cleanly to one operator.",
+    label: "Identity verification",
+    value: "Review required",
+    detail: "Ownership, operating entity, and domain claims need authoritative corroboration before commitment.",
   },
   {
-    label: "Research time saved",
-    value: "Hours",
-    detail: "Public footprint review, reputation context, and contradiction mapping organized into one briefing.",
+    label: "Public sources analyzed",
+    value: "Evidence structured",
+    detail: "Public footprint, reputation context, identity signals, and contradictions organized into one briefing.",
   },
   {
     label: "Recommended action",
-    value: "Pause and verify",
-    detail: "Request authoritative proof before payout, onboarding, shipment, access, or escalation.",
+    value: "Review required",
+    detail: "Request authoritative proof before onboarding, shipment, access, payment, or escalation.",
   },
 ];
 
 const trustSignals = [
-  "Decision memo, not raw telemetry",
-  "Source trail separated from interpretation",
-  "Plain-English risk language for leadership",
-  "Next action clearly stated",
+  "Evidence structure separated from interpretation",
+  "Identity verification trail summarized",
+  "Contradictions highlighted for leadership",
+  "Executive recommendation clearly stated",
 ];
 
 const briefingSections = [
@@ -40,7 +40,7 @@ const briefingSections = [
   },
   {
     title: "What to do next",
-    copy: "Every briefing ends with a defensible recommendation so teams can approve, pause, escalate, or request evidence without another internal research cycle.",
+    copy: "Every briefing ends with a defensible recommendation so teams can proceed, verify first, escalate, or request evidence without another internal research cycle.",
   },
 ];
 
@@ -96,12 +96,12 @@ export default function HomeClient() {
               <div className="flex flex-wrap items-start justify-between gap-4 border-b border-white/10 pb-6">
                 <div>
                   <div className="text-xs font-black uppercase tracking-[0.28em] text-red-200">Briefing snapshot</div>
-                  <h2 className="mt-3 text-2xl font-black text-white">Acme Seller Review</h2>
-                  <p className="mt-2 text-sm leading-6 text-zinc-400">Prepared for payout approval meeting</p>
+                  <h2 className="mt-3 text-2xl font-black text-white">Northwind Logistics</h2>
+                  <p className="mt-2 text-sm leading-6 text-zinc-400">Prepared for supplier due diligence</p>
                 </div>
                 <div className="rounded-2xl border border-amber-200/20 bg-amber-200/10 px-4 py-3 text-right">
                   <div className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-100">Decision</div>
-                  <div className="mt-1 text-lg font-black text-white">Pause</div>
+                  <div className="mt-1 text-lg font-black text-white">Review required</div>
                 </div>
               </div>
               <div className="mt-6 space-y-4">
@@ -128,7 +128,7 @@ export default function HomeClient() {
         <div className="mx-auto max-w-7xl rounded-[40px] border border-white/10 bg-white/[0.035] p-6 sm:p-10">
           <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr]">
             <div>
-              <div className="text-xs font-black uppercase tracking-[0.28em] text-red-200">Why customers trust it quickly</div>
+              <div className="text-xs font-black uppercase tracking-[0.28em] text-red-200">Why teams can act faster</div>
               <h2 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-5xl">No raw dashboard maze. No scattered research notes. Just a briefing your team can act on.</h2>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">

@@ -3,7 +3,7 @@ import ShadowScoreLayout from "../../components/ShadowScoreLayout";
 const factors = [
   ["Tracking Integrity", "High", "Delayed or weak delivery verification can increase manual review exposure."],
   ["Verification Readiness", "Elevated", "Business, identity and supplier evidence should be organized before appeal or review."],
-  ["Payment Exposure", "Elevated", "Payment holds, reserves or payout friction can appear when marketplace trust signals degrade."],
+  ["Payment Exposure", "Elevated", "Payment holds or reserves can appear when business trust signals degrade."],
   ["Policy Exposure", "Medium", "Brand, VeRO, authenticity and restricted product signals should be checked before scaling listings."],
 ];
 
@@ -25,7 +25,7 @@ export default function ExampleReport() {
           </div>
 
           <div className="mt-10 grid gap-5 md:grid-cols-4">
-            {[['Risk Level','High','Estimated'],['Evidence Confidence','High','Inferred'],['Health Stage','Warning','Estimated'],['Next Action','Stabilize','Evidence first']].map(([label,value,sub]) => (
+            {[['Risk Level','High','Estimated'],['Evidence Confidence','High','Inferred'],['Health Stage','Warning','Estimated'],['Decision','Review required','Evidence first']].map(([label,value,sub]) => (
               <div key={label} className="rounded-3xl border border-white/10 bg-black/60 p-6">
                 <div className="text-xs uppercase tracking-[0.22em] text-zinc-500">{label}</div>
                 <div className="mt-4 text-4xl font-black text-red-200">{value}</div>
@@ -47,7 +47,7 @@ export default function ExampleReport() {
           </div>
 
           <div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-sm leading-7 text-zinc-500">
-            Important: This sample report is an analytical assessment, not internal marketplace data and not a guarantee of future platform decisions. Heuristic or inferred metrics are shown as qualitative levels, not artificial percentages.
+            Important: This sample report is an analytical assessment, not internal platform data and not a guarantee of future third-party decisions. Heuristic or inferred metrics are shown as qualitative levels, not artificial percentages.
           </div>
         </div>
       </section>

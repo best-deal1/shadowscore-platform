@@ -23,41 +23,20 @@ const mobilePublicNav = [
 ];
 
 const footerGroups = [
-  { title: "Platform", links: [
+  { title: "Product", links: [
     { href: "/intake", label: "Start Investigation" },
-    { href: "/investigations", label: "Investigation Workspace" },
-    { href: "/reports", label: "Reports" },
-    { href: "/monitoring", label: "Monitoring" },
-    { href: "/radar", label: "Risk Radar" },
+    { href: "/example-report", label: "Example Report" },
+    { href: "/about", label: "Methodology" },
   ]},
-  { title: "Trust Center", links: [
+  { title: "Trust & Legal", links: [
     { href: "/security", label: "Security" },
     { href: "/privacy", label: "Privacy" },
-    { href: "/terms", label: "Legal Terms" },
-    { href: "/contact", label: "Report a Concern" },
+    { href: "/terms", label: "Terms" },
   ]},
-  { title: "Resources", links: [
-    { href: "/example-report", label: "Example Report" },
-    { href: "/about", label: "Digital Trust Guide" },
-    { href: "/contact", label: "Talk to an Analyst" },
-    { href: "/upgrade", label: "Plans" },
-  ]},
-  { title: "Documentation", links: [
-    { href: "/intake", label: "Investigation Intake" },
-    { href: "/workspace", label: "Workspace Guide" },
-    { href: "/account", label: "Account Settings" },
-    { href: "/dashboard", label: "Dashboard" },
-  ]},
-  { title: "Company", links: [
-    { href: "/about", label: "About" },
+  { title: "Access", links: [
     { href: "/contact", label: "Contact" },
     { href: "/login", label: "Customer Login" },
     { href: "/signup", label: "Create Account" },
-  ]},
-  { title: "Legal", links: [
-    { href: "/privacy", label: "Privacy Policy" },
-    { href: "/terms", label: "Terms of Service" },
-    { href: "/security", label: "Security Practices" },
   ]},
 ];
 
@@ -127,7 +106,7 @@ export default function ShadowScoreLayout({ children }: { children: ReactNode })
             <Link href="/intake" className="mt-5 inline-flex rounded-full bg-red-600 px-5 py-3 text-xs font-black uppercase tracking-[0.14em] text-white hover:bg-red-500">Start Investigation</Link>
           </div>
         </div>
-        <div className="mx-auto mt-10 grid max-w-7xl gap-8 sm:grid-cols-2 lg:grid-cols-7">
+        <div className="mx-auto mt-10 grid max-w-7xl gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {footerGroups.map((group) => (
             <nav key={group.title} aria-label={`${group.title} footer`} className="space-y-3">
               <h2 className="text-xs font-black uppercase tracking-[0.24em] text-zinc-500">{group.title}</h2>
