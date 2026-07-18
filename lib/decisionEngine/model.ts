@@ -232,7 +232,7 @@ export function buildVerificationDecision(input: {
 
 
   const canonicalDecision = buildCanonicalDecision({
-    status: decision === "FAIL" ? "STOP" : decision === "PROCEED_WITH_VERIFICATION" ? "REVIEW" : decision,
+    status: decision === "FAIL" ? "STOP" : decision,
     hasConfirmedSeriousNegative: confirmedRiskEligible,
     hasMaterialContradiction,
     hasStrongCorroboratedIdentity: hasStrongBusinessEvidence,
