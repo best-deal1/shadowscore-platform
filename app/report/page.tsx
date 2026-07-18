@@ -63,7 +63,7 @@ function DecisionModePanel({ report }: { report: ShadowScoreReport }) {
 
   return (
     <section className="mt-8 rounded-[28px] border border-emerald-400/25 bg-emerald-500/[0.07] p-6">
-      <div className="text-xs uppercase tracking-[0.28em] text-emerald-200">Decision mode</div>
+      <div className="text-xs uppercase tracking-[0.28em] text-emerald-200">Decision</div>
       <div className="mt-5 grid gap-4 md:grid-cols-3">
         <div className="rounded-3xl border border-white/10 bg-black/45 p-6 md:col-span-1">
           <div className="text-xs uppercase tracking-[0.22em] text-zinc-500">Decision</div>
@@ -75,7 +75,7 @@ function DecisionModePanel({ report }: { report: ShadowScoreReport }) {
           <div className="grid gap-4 md:grid-cols-2">
             <FieldDetail label="Main remaining uncertainty" value={uncertainty} />
             <FieldDetail label="Estimated effort" value={effort} />
-            <FieldDetail label="Recommended next action" value={action} />
+            <FieldDetail label="Recommendation" value={action} />
             <FieldDetail label="Business impact if skipped" value={impact} />
           </div>
         </div>
@@ -105,7 +105,7 @@ function DecisionCard({ report }: { report: ShadowScoreReport }) {
         </div>
         <div className="rounded-2xl border border-white/15 bg-black/20 px-5 py-4 text-right">
           <div className="text-sm font-black uppercase tracking-[0.18em]">Paid executive report</div>
-          <div className="mt-2 text-xs font-bold opacity-75">Decision, rationale, next action and appendix included</div>
+          <div className="mt-2 text-xs font-bold opacity-75">Decision, rationale, recommendation and appendix included</div>
         </div>
       </div>
     </section>

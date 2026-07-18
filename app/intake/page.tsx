@@ -1364,7 +1364,7 @@ export default function IntakePage() {
                   <div className="text-xs uppercase tracking-[0.22em] text-yellow-200">Why unlock?</div>
                   <p className="mt-4 text-base font-bold text-white">The free preview is a direction check. The paid report is the executive decision product: what to do, why it matters, and what uncertainty costs if ignored.</p>
                   <div className="mt-4 grid gap-3 md:grid-cols-3">
-                    {["Final commercial recommendation", "Source-backed appendix", "Action plan for next steps"].map((item) => <div key={item} className="rounded-2xl border border-white/10 bg-black/30 p-4 text-sm font-bold text-yellow-50">✓ {item}</div>)}
+                    {["Final recommendation", "Source-backed appendix", "Action plan for next steps"].map((item) => <div key={item} className="rounded-2xl border border-white/10 bg-black/30 p-4 text-sm font-bold text-yellow-50">✓ {item}</div>)}
                   </div>
                   <div className="mt-5 rounded-2xl border border-white/10 bg-black/30 p-5">
                     <label>
@@ -1396,7 +1396,7 @@ export default function IntakePage() {
                         <div className="text-xs uppercase tracking-[0.22em] text-red-200">Decision Preview</div>
                         <div className="mt-3 flex flex-wrap items-center gap-3"><div className="text-2xl font-black text-white">Decision: {(freeScanResult.decisionPreview.decision === "FAIL" ? "CONFIRMED RISK" : freeScanResult.decisionPreview.decision)} — {(freeScanResult.decisionPreview.decisionLabel === "Do not proceed" ? "Verified negative indicators detected" : freeScanResult.decisionPreview.decisionLabel === "Verified enough to proceed" ? "Evidence supports proceeding" : freeScanResult.decisionPreview.decisionLabel)}</div><span className="rounded-full border border-white/10 px-3 py-1 text-xs font-bold text-zinc-300">{freeScanResult.decisionPreview.confidenceLevel} confidence</span></div>
                         <p className="mt-4 text-sm leading-6 text-zinc-300"><span className="font-bold text-zinc-100">What this means:</span> {freeScanResult.decisionPreview.whatThisMeans}</p>
-                        <p className="mt-2 text-sm leading-6 text-zinc-300"><span className="font-bold text-zinc-100">Recommended action:</span> {freeScanResult.decisionPreview.recommendedAction}</p>
+                        <p className="mt-2 text-sm leading-6 text-zinc-300"><span className="font-bold text-zinc-100">Recommendation:</span> {freeScanResult.decisionPreview.recommendedAction}</p>
                         <div className="mt-5 grid gap-3 md:grid-cols-2">
                           <div className="rounded-xl border border-emerald-400/20 bg-emerald-500/10 p-3"><div className="text-xs uppercase tracking-[0.2em] text-emerald-200">Verified Signals</div><ul className="mt-2 space-y-2 text-sm leading-6 text-zinc-200">{freeScanResult.decisionPreview.topReasons.slice(0, 4).map((reason) => <li key={reason}>• {reason}</li>)}</ul></div>
                           <div className="rounded-xl border border-orange-400/20 bg-orange-500/10 p-3"><div className="text-xs uppercase tracking-[0.2em] text-orange-200">Verification Gaps</div>{freeScanResult.decisionPreview.missingSignals.length ? <ul className="mt-2 space-y-2 text-sm leading-6 text-orange-100">{freeScanResult.decisionPreview.missingSignals.map((signal) => <li key={signal}>• {signal}</li>)}</ul> : <p className="mt-2 text-sm text-zinc-300">No major verification gaps detected in the free preview.</p>}</div>
