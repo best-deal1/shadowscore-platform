@@ -7,7 +7,7 @@ Generated: 2026-07-16T18:35:55.640Z
 - previousPassRate: 100% (derived)
 - organizationResolutionRate: 100% (measured)
 - averageEvidenceCoverage: 100% (derived)
-- httpSuccessRate: unavailable — No HTTP acquisition metrics are emitted by validate:live-truth authoritative provider results.
+- httpSuccessRate: unavailable: No HTTP acquisition metrics are emitted by validate:live-truth authoritative provider results.
 - providerReliability: 100% (measured)
 - regressionCount: 0 (derived)
 - unresolvedIdentityCount: 0 (measured)

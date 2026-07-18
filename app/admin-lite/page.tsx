@@ -10,7 +10,7 @@ import { getCurrentSession, getCurrentUser } from "../../lib/auth";
 import type { PaymentStatus, ReportStatus } from "../../lib/workspace";
 
 function formatDate(value?: string) {
-  if (!value) return "—";
+  if (!value) return "Unavailable";
   try {
     return new Intl.DateTimeFormat("en", { month: "short", day: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(value));
   } catch {

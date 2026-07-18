@@ -38,11 +38,11 @@ const PRIVATE_BRAND_OVERRIDES = new Map([
 function cleanPageTitleName(input) {
   let value = normalizeName(String(input || "").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#x27;|&apos;/g, "'").replace(/&nbsp;/g, " "));
   if (!value) return "";
-  const parts = value.split(/\s*(?:\||—|–|-|:|•|»|\/)\s*/).map((part) => normalizeName(part)).filter(Boolean);
+  const parts = value.split(/\s*(?:\||\u2014|–|-|:|•|»|\/)\s*/).map((part) => normalizeName(part)).filter(Boolean);
   const repeated = parts.find((part, index) => parts.findIndex((other) => other.toLowerCase() === part.toLowerCase()) !== index);
   const suffixBrand = parts.length > 1 && parts[parts.length - 1].length <= 24 && parts[0].toLowerCase().includes(parts[parts.length - 1].toLowerCase()) ? parts[parts.length - 1] : undefined;
   value = repeated || suffixBrand || (parts.length ? (parts[parts.length - 1].length <= 24 && parts[0].length > 24 ? parts[parts.length - 1] : parts[0]) : value);
-  return normalizeName(value.replace(/\b(the )?(all[- ]in[- ]one|leader in|financial infrastructure|ai workspace|commerce platform|official website|homepage|solutions?|platform)\b.*$/i, "").replace(/[|:;,.\-–—]+$/g, ""));
+  return normalizeName(value.replace(/\b(the )?(all[- ]in[- ]one|leader in|financial infrastructure|ai workspace|commerce platform|official website|homepage|solutions?|platform)\b.*$/i, "").replace(/[|:;,.\-–\u2014]+$/g, ""));
 }
 function brandFromLegal(legalName) { return normalizeName(String(legalName || "").replace(/\b(incorporated|inc\.?|corp\.?|corporation|ltd\.?|limited|plc|llc|co\.?|company)\b/gi, "").replace(/[,()]/g, " ")); }
 function canonicalCompanyType(classification, domain) {

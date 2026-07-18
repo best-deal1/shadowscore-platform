@@ -212,7 +212,7 @@ export default function ReportPage() {
             </section>
 
             <details className="mt-8 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-              <summary className="cursor-pointer text-xs uppercase tracking-[0.28em] text-red-300">Technical Appendix — engineering details</summary>
+              <summary className="cursor-pointer text-xs uppercase tracking-[0.28em] text-red-300">Technical Appendix: engineering details</summary>
               <section className="mt-5 rounded-2xl border border-white/10 bg-black/40 p-5">
                 <div className="text-xs uppercase tracking-[0.28em] text-zinc-400">Report metadata</div>
                 <div className="mt-4 grid gap-3 md:grid-cols-2">
@@ -315,7 +315,7 @@ export default function ReportPage() {
                         <div className="text-xs font-black uppercase tracking-[0.22em] text-zinc-300">{status}</div>
                         <ul className="mt-3 space-y-2 text-sm leading-6 text-zinc-400">
                           {report.reportSummary?.technicalDetails?.[status].length ? report.reportSummary.technicalDetails[status].map((item) => (
-                            <li key={`${status}-${item.engineId}`}>• {item.label}{item.providerId ? ` (${item.providerId})` : ""}{item.reason ? ` — ${item.reason}` : ""}</li>
+                            <li key={`${status}-${item.engineId}`}>• {item.label}{item.providerId ? ` (${item.providerId})` : ""}{item.reason ? `: ${item.reason}` : ""}</li>
                           )) : <li>• None</li>}
                         </ul>
                       </div>

@@ -266,7 +266,7 @@ Recommendations:
 
 The premium investigation should be a vertical command timeline with six major stages and nested provider/evidence rows.
 
-### Stage 1 — Target
+### Stage 1: Target
 
 Purpose: establish what is being investigated.
 
@@ -284,7 +284,7 @@ Primary UI:
 - Confidence.
 - Edit/correct action.
 
-### Stage 2 — Identity
+### Stage 2: Identity
 
 Purpose: show what ShadowScore believes the target represents.
 
@@ -301,7 +301,7 @@ Primary UI:
 - Evidence sources used.
 - Missing identity facts.
 
-### Stage 3 — Evidence
+### Stage 3: Evidence
 
 Purpose: make discovery visible.
 
@@ -319,7 +319,7 @@ Primary UI:
 - Evidence counts.
 - Locked full evidence hierarchy teaser.
 
-### Stage 4 — Verification
+### Stage 4: Verification
 
 Purpose: show the analysis step between evidence and decision.
 
@@ -336,7 +336,7 @@ Primary UI:
 - Confidence movement.
 - Missing or contradictory signals.
 
-### Stage 5 — Decision
+### Stage 5: Decision
 
 Purpose: reveal the recommendation.
 
@@ -353,7 +353,7 @@ Primary UI:
 - Top reasons.
 - Recommended next action.
 
-### Stage 6 — Report
+### Stage 6: Report
 
 Purpose: transition from preview to saved/unlocked report.
 
@@ -457,31 +457,31 @@ Safe UX-only implementation areas:
 
 ## Priority Plan
 
-### P0 — Make loading truthful and premium
+### P0: Make loading truthful and premium
 
 - Replace homepage and intake generic progress with status-aware timeline UI.
 - Stop showing all running steps as checked.
 - Add provider status taxonomy with Running, Completed, Failed, Not Available, and Not Yet Implemented.
 
-### P1 — Make provider execution visible
+### P1: Make provider execution visible
 
 - Move provider grid out of collapsed technical details.
 - Show production providers as running/completed/failed.
 - Show non-production providers as `Not yet implemented`, not as spinners.
 
-### P2 — Add progressive reveal
+### P2: Add progressive reveal
 
 - Render stages in order: Target → Identity → Evidence → Verification → Decision → Report.
 - Reveal each stage as data becomes available.
 - Add staged decision reveal after verification.
 
-### P3 — Clarify save and unlock
+### P3: Clarify save and unlock
 
 - Rename `Save Report` to `Save Investigation`.
 - Add saved/locked/unlock states to the report timeline.
 - Clarify signed-out save behavior.
 
-### P4 — Upgrade report continuity
+### P4: Upgrade report continuity
 
 - Replace `/report` plain loading text with report continuity skeleton.
 - Show report readiness as the final timeline stage.

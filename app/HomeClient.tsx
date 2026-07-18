@@ -39,33 +39,33 @@ const productJourney = [
   {
     title: "Identify the organization",
     label: "Who are you dealing with?",
-    copy: "Resolve the trading name, legal entity, parent, brands, operating country and the identities connected to the organization.",
+    copy: "Identify the trading name, legal entity, parent, brands, operating country and related identities.",
   },
   {
     title: "Corroborate the evidence",
     label: "Can it be verified?",
-    copy: "Compare independent sources and make contradictions visible—rather than treating a domain check as a conclusion.",
+    copy: "Compare independent sources. Surface contradictions instead of treating a domain check as a conclusion.",
   },
   {
     title: "Protect the decision",
     label: "What should we actually do?",
-    copy: "Receive a commercial recommendation with the specific evidence to request before money, access or reputation is at risk.",
+    copy: "Get a recommendation and the evidence to request before money, access or reputation is at risk.",
   },
 ];
 
 const executiveQuestions = [
   ["01", "Who am I actually dealing with?", "Legal entity, trading name, ownership, country, industry and related brands."],
-  ["02", "Can this organization be verified?", "Independent sources either corroborate the identity or expose a gap."],
-  ["03", "Should I trust them?", "Trust rises when evidence agrees, not when a website merely looks credible."],
-  ["04", "What could go wrong?", "Material contradictions, negative events and unverified payment identity get priority."],
-  ["05", "What should we actually do?", "A concrete recommendation that reduces the cost of a wrong decision."],
+  ["02", "Can this organization be verified?", "Independent sources corroborate the identity or identify a gap."],
+  ["03", "Should I trust them?", "Trust depends on corroborating evidence, not a credible-looking website."],
+  ["04", "What could go wrong?", "Prioritize material contradictions, negative events and unverified payment identities."],
+  ["05", "What should we actually do?", "A recommendation that reduces the cost of a wrong decision."],
 ];
 
 const trustSignals = [
-  "Evidence structure separated from interpretation",
-  "Identity verification trail summarized",
-  "Contradictions highlighted for leadership",
-  "Executive recommendation clearly stated",
+  "Evidence separated from interpretation",
+  "Identity verification trail",
+  "Contradictions for leadership",
+  "Clear executive recommendation",
 ];
 
 const coveredScenarios = [
@@ -93,9 +93,9 @@ export default function HomeClient() {
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_10%,rgba(220,38,38,0.24),transparent_30%),radial-gradient(circle_at_82%_18%,rgba(251,191,36,0.12),transparent_28%),linear-gradient(180deg,rgba(10,10,10,0.05),#050505_82%)]" />
         <div className="relative mx-auto grid max-w-7xl items-center gap-8 lg:min-h-[760px] lg:grid-cols-[0.86fr_1.14fr]">
           <div>
-            <div className="mb-5 inline-flex rounded-full border border-red-300/20 bg-red-500/10 px-4 py-2 text-xs font-black uppercase tracking-[0.24em] text-red-100">AI business due diligence analyst</div>
-            <h1 className="max-w-5xl text-4xl font-black tracking-tight text-white sm:text-6xl lg:text-7xl">Know who you are trusting—before the commitment.</h1>
-            <p className="mt-6 max-w-3xl text-lg leading-8 text-zinc-300 sm:text-xl">ShadowScore does not sell a technical scan. It investigates the organization behind a claim, compares independent evidence, explains what does not match, and recommends the lowest-cost action that protects your business.</p>
+            <div className="mb-5 inline-flex rounded-full border border-red-300/20 bg-red-500/10 px-4 py-2 text-xs font-black uppercase tracking-[0.24em] text-red-100">Business due diligence</div>
+            <h1 className="max-w-5xl text-4xl font-black tracking-tight text-white sm:text-6xl lg:text-7xl">Business trust starts with evidence.</h1>
+            <p className="mt-6 max-w-3xl text-lg leading-8 text-zinc-300 sm:text-xl">ShadowScore investigates the organization behind a claim. It compares independent evidence, identifies conflicts and recommends the next action.</p>
             <div className="mt-8 rounded-[32px] border border-white/10 bg-white/[0.04] p-5">
               <div className="text-xs font-black uppercase tracking-[0.24em] text-zinc-500">What your analyst answers</div>
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
@@ -108,10 +108,10 @@ export default function HomeClient() {
               </div>
             </div>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <button onClick={startInvestigation} className="rounded-full bg-red-600 px-7 py-4 text-sm font-black uppercase tracking-[0.14em] text-white shadow-[0_0_34px_rgba(220,38,38,0.4)] transition hover:bg-red-500">Start investigation</button>
-              <a href="/example-report" className="rounded-full border border-white/15 bg-white/[0.04] px-7 py-4 text-center text-sm font-black uppercase tracking-[0.14em] text-white transition hover:bg-white/[0.08]">View report</a>
+              <button onClick={startInvestigation} className="rounded-full bg-red-600 px-7 py-4 text-sm font-black uppercase tracking-[0.14em] text-white shadow-[0_0_34px_rgba(220,38,38,0.4)] transition hover:bg-red-500">Investigate</button>
+              <a href="/example-report" className="rounded-full border border-white/15 bg-white/[0.04] px-7 py-4 text-center text-sm font-black uppercase tracking-[0.14em] text-white transition hover:bg-white/[0.08]">View example</a>
             </div>
-            {isOpening ? <div className="mt-5 rounded-2xl border border-red-400/20 bg-red-500/10 p-4 text-sm font-bold text-red-100">Opening full investigation intake…</div> : null}
+            {isOpening ? <div className="mt-5 rounded-2xl border border-red-400/20 bg-red-500/10 p-4 text-sm font-bold text-red-100">Opening investigation intake…</div> : null}
           </div>
 
           <div className="rounded-[36px] border border-white/10 bg-zinc-950/90 p-4 shadow-[0_0_110px_rgba(220,38,38,0.18)] backdrop-blur-xl sm:p-5">
@@ -192,7 +192,7 @@ export default function HomeClient() {
           <div className="max-w-3xl">
             <div className="text-xs font-black uppercase tracking-[0.28em] text-red-200">Executive due diligence</div>
             <h2 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-5xl">Five questions. One defensible business decision.</h2>
-            <p className="mt-5 text-base leading-7 text-zinc-300">Technical observations are supporting evidence. The investigation is organized around the questions a buyer, risk leader or investment committee actually needs answered.</p>
+            <p className="mt-5 text-base leading-7 text-zinc-300">Technical observations support the evidence. The investigation answers the questions a buyer, risk leader or investment committee needs answered.</p>
           </div>
           <div className="mt-10 grid gap-4 lg:grid-cols-5">
             {executiveQuestions.map(([number, question, detail]) => (
@@ -210,7 +210,7 @@ export default function HomeClient() {
         <div className="mx-auto max-w-7xl rounded-[40px] border border-white/10 bg-white/[0.035] p-6 sm:p-10">
           <div className="max-w-3xl">
             <div className="text-xs font-black uppercase tracking-[0.28em] text-red-200">One intelligence journey</div>
-            <h2 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-5xl">Every investigation becomes evidence for the next one.</h2>
+            <h2 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-5xl">Each investigation creates evidence for the next decision.</h2>
           </div>
           <div className="mt-10 grid gap-4 lg:grid-cols-3">
             {productJourney.map((item) => (
@@ -227,9 +227,9 @@ export default function HomeClient() {
       <section className="px-5 py-14 sm:px-6" aria-label="Trust signals">
         <div className="mx-auto grid max-w-7xl gap-8 rounded-[40px] border border-white/10 bg-gradient-to-br from-red-950/35 to-zinc-950 p-6 sm:p-10 lg:grid-cols-[0.9fr_1.1fr]">
           <div>
-            <div className="text-xs font-black uppercase tracking-[0.28em] text-red-200">Why teams can act faster</div>
-            <h2 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-5xl">Not a score pasted onto a dashboard. A reasoning trail that reaches a decision.</h2>
-            <p className="mt-5 text-base leading-7 text-zinc-300">ShadowScore is designed for moments when a digital identity, business, seller, or counterparty is asking for trust before your organization has enough confidence.</p>
+            <div className="text-xs font-black uppercase tracking-[0.28em] text-red-200">Evidence for action</div>
+            <h2 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-5xl">A reasoning trail for each business decision.</h2>
+            <p className="mt-5 text-base leading-7 text-zinc-300">Use ShadowScore when a digital identity, business, seller or counterparty requires a trust decision before the evidence is complete.</p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             {trustSignals.map((signal) => <div key={signal} className="rounded-3xl border border-white/10 bg-black/35 p-5 text-sm font-black leading-6 text-white">{signal}</div>)}
