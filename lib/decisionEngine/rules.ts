@@ -4,14 +4,17 @@ import type { ContradictionSignal, DecisionIntelligenceDecision, EvidenceAssessm
 export function selectDecision(input: { assessment: EvidenceAssessment; contradictions: ContradictionSignal[] }): DecisionIntelligenceDecision {
   const hasVerifiedNegativeEvidence = input.contradictions.some(isConfirmedRiskContradiction);
   if (hasVerifiedNegativeEvidence) return "FAIL";
-  if (input.assessment.positiveEvidenceCount >= 3 && input.assessment.negativeEvidenceCount === 0 && input.assessment.confidenceLevel !== "Low" && input.assessment.confidenceLevel !== "None") return "PASS";
-  return "REVIEW";
+  const hasMaterialContradiction = input.contradictions.some((signal) => signal.severity === "high" && !isConfirmedRiskContradiction(signal));
+  if (hasMaterialContradiction) return "REVIEW";
+  if (input.assessment.positiveEvidenceCount >= 3 && input.assessment.negativeEvidenceCount === 0 && input.assessment.confidenceLevel !== "None") return "PASS";
+  return "PROCEED_WITH_VERIFICATION";
 }
 
 export function recommendationFor(decision: DecisionIntelligenceDecision): string {
   if (decision === "PASS") return "Sufficient evidence was collected and no significant negative indicators were detected.";
   if (decision === "FAIL") return "Confirmed negative indicators require investigation before proceeding.";
-  return "Additional verification is recommended because public evidence is incomplete. No confirmed negative indicators were detected.";
+  if (decision === "REVIEW") return "Material contradictions or compounding uncertainty require review before proceeding.";
+  return "Proceed with verification: no confirmed risk was found, but collect documentation before major commitment.";
 }
 
 export function nextActionsFor(input: { decision: DecisionIntelligenceDecision; missingEvidence: string[]; hasContradictions: boolean }): string[] {
@@ -23,7 +26,7 @@ export function nextActionsFor(input: { decision: DecisionIntelligenceDecision; 
     ];
   }
 
-  if (input.decision === "REVIEW") {
+  if (input.decision === "REVIEW" || input.decision === "PROCEED_WITH_VERIFICATION") {
     const missingActions = input.missingEvidence.slice(0, 3).map((item) => `Collect or verify: ${item}.`);
     return missingActions.length > 0
       ? [...missingActions, "Treat missing evidence as incomplete coverage, not as proof of risk."]
