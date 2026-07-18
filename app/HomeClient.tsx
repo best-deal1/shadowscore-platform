@@ -4,32 +4,42 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import ShadowScoreLayout from "./components/ShadowScoreLayout";
 
-const liveSignals = [
-  { time: "00:01", source: "Registry", text: "Operating name matches, ownership missing", tone: "amber" },
-  { time: "00:02", source: "Domain", text: "New storefront points to older seller identity", tone: "green" },
-  { time: "00:04", source: "Reputation", text: "Complaint cluster overlaps payment alias", tone: "red" },
-  { time: "00:06", source: "Document", text: "Invoice address conflicts with public filing", tone: "red" },
+const evidenceEvents = [
+  { time: "00:01", source: "Intake", text: "Supplier claims Northwind Logistics and northwind-pay.com as the same operator", tone: "neutral", phase: "Evidence enters" },
+  { time: "00:02", source: "Registry", text: "Operating name matches, beneficial owner is not disclosed", tone: "amber", phase: "Provider responds" },
+  { time: "00:03", source: "Domain", text: "Storefront domain resolves to an older seller identity", tone: "green", phase: "Identity linked" },
+  { time: "00:04", source: "Reputation", text: "Complaint cluster shares the payment alias used by the storefront", tone: "red", phase: "Relationship emerges" },
+  { time: "00:06", source: "Document", text: "Invoice address conflicts with public filing address", tone: "red", phase: "Contradiction detected" },
+];
+
+const providerResponses = [
+  { name: "Registry", finding: "Name match · owner unknown", tone: "amber" },
+  { name: "Domain", finding: "Historical seller link", tone: "green" },
+  { name: "Reputation", finding: "Alias overlap", tone: "red" },
+  { name: "Document", finding: "Address conflict", tone: "red" },
 ];
 
 const entityNodes = [
-  { label: "Northwind Logistics", className: "left-[33%] top-[10%]", kind: "Subject" },
-  { label: "northwind-pay.com", className: "left-[7%] top-[38%]", kind: "Domain" },
-  { label: "N. W. Holdings", className: "right-[5%] top-[34%]", kind: "Entity" },
-  { label: "Payment alias", className: "left-[30%] bottom-[7%]", kind: "Identity" },
+  { label: "Northwind Logistics", className: "left-[31%] top-[8%]", kind: "Claimed subject", stage: "entity-node-0" },
+  { label: "northwind-pay.com", className: "left-[5%] top-[39%]", kind: "Domain", stage: "entity-node-1" },
+  { label: "N. W. Holdings", className: "right-[4%] top-[33%]", kind: "Public entity", stage: "entity-node-2" },
+  { label: "Payment alias", className: "left-[29%] bottom-[7%]", kind: "Identity", stage: "entity-node-3" },
+  { label: "Filing address", className: "right-[13%] bottom-[10%]", kind: "Document fact", stage: "entity-node-4" },
 ];
 
 const reasoningSteps = [
-  { label: "Signals received", value: "4 evidence streams", status: "ingesting" },
-  { label: "Identities linked", value: "Domain ↔ alias ↔ entity", status: "correlating" },
-  { label: "Contradiction found", value: "Address claim conflicts", status: "detected" },
-  { label: "Decision emerging", value: "Verify before commitment", status: "ready" },
+  { label: "Evidence received", value: "Claim, domain, filing, payment alias", status: "ingesting" },
+  { label: "Providers checked", value: "Independent responses disagree", status: "verifying" },
+  { label: "Entities connected", value: "Domain ↔ alias ↔ complaint cluster", status: "correlating" },
+  { label: "Contradiction found", value: "Invoice address conflicts with filing", status: "explaining" },
+  { label: "Decision updated", value: "Verify ownership before commitment", status: "recommending" },
 ];
 
 const productJourney = [
   {
     title: "Homepage",
-    label: "6–8 second live preview",
-    copy: "A miniature investigation shows evidence entering the system, connections forming, contradictions surfacing, and a recommendation beginning to emerge.",
+    label: "8-second reasoning preview",
+    copy: "A compact investigation shows evidence entering the system, independent providers responding, connections forming, contradictions surfacing, and the recommendation changing for a reason.",
   },
   {
     title: "Start Investigation",
@@ -76,10 +86,10 @@ export default function HomeClient() {
         <div className="relative mx-auto grid max-w-7xl items-center gap-8 lg:min-h-[760px] lg:grid-cols-[0.86fr_1.14fr]">
           <div>
             <div className="mb-5 inline-flex rounded-full border border-red-300/20 bg-red-500/10 px-4 py-2 text-xs font-black uppercase tracking-[0.24em] text-red-100">Live intelligence system</div>
-            <h1 className="max-w-5xl text-4xl font-black tracking-tight text-white sm:text-6xl lg:text-7xl">Watch evidence become a decision.</h1>
-            <p className="mt-6 max-w-3xl text-lg leading-8 text-zinc-300 sm:text-xl">ShadowScore does not just give a score. It investigates, correlates, explains, and decides—turning scattered identity, entity, reputation, and document signals into a defensible risk position.</p>
+            <h1 className="max-w-5xl text-4xl font-black tracking-tight text-white sm:text-6xl lg:text-7xl">Watch ShadowScore think through the evidence.</h1>
+            <p className="mt-6 max-w-3xl text-lg leading-8 text-zinc-300 sm:text-xl">In the first seconds, ShadowScore investigates a claim, verifies it against independent providers, correlates identities and entities, explains contradictions, and lets the decision evolve from what it finds.</p>
             <div className="mt-8 rounded-[32px] border border-white/10 bg-white/[0.04] p-5">
-              <div className="text-xs font-black uppercase tracking-[0.24em] text-zinc-500">Product language</div>
+              <div className="text-xs font-black uppercase tracking-[0.24em] text-zinc-500">What the preview is proving</div>
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
                 {productJourney.map((item) => (
                   <div key={item.title} className="rounded-3xl border border-white/10 bg-black/30 p-4">
@@ -98,54 +108,64 @@ export default function HomeClient() {
 
           <div className="rounded-[36px] border border-white/10 bg-zinc-950/90 p-4 shadow-[0_0_110px_rgba(220,38,38,0.18)] backdrop-blur-xl sm:p-5">
             <div className="investigation-console relative overflow-hidden rounded-[28px] border border-white/10 bg-gradient-to-br from-zinc-950 via-black to-zinc-950 p-5 sm:p-6">
-              <div className="scanline" />
               <div className="relative flex flex-wrap items-start justify-between gap-4 border-b border-white/10 pb-5">
                 <div>
                   <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.28em] text-emerald-100"><span className="h-2 w-2 animate-pulse rounded-full bg-emerald-300" />Investigation running</div>
                   <h2 className="mt-3 text-2xl font-black text-white">Northwind Logistics</h2>
                   <p className="mt-2 text-sm leading-6 text-zinc-400">Live preview · supplier commitment review</p>
                 </div>
-                <div className="rounded-2xl border border-amber-200/20 bg-amber-200/10 px-4 py-3 text-right">
-                  <div className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-100">Emerging decision</div>
-                  <div className="mt-1 text-lg font-black text-white">Verify first</div>
+                <div className="decision-card rounded-2xl border border-amber-200/20 bg-amber-200/10 px-4 py-3 text-right">
+                  <div className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-100">Recommendation</div>
+                  <div className="decision-text mt-1 text-lg font-black text-white">Approve changes to verify first</div>
                 </div>
               </div>
 
-              <div className="relative mt-5 grid gap-4 xl:grid-cols-[0.86fr_1.14fr]">
+              <div className="relative mt-5 grid gap-4 xl:grid-cols-[0.82fr_1.18fr]">
                 <div className="space-y-3">
-                  {liveSignals.map((signal, index) => (
+                  {evidenceEvents.map((signal, index) => (
                     <div key={signal.text} className={`signal-card signal-card-${index} rounded-2xl border border-white/10 bg-white/[0.045] p-4`}>
                       <div className="flex items-center justify-between gap-3">
                         <div className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">{signal.time} · {signal.source}</div>
-                        <div className={`h-2 w-2 rounded-full ${signal.tone === "red" ? "bg-red-400" : signal.tone === "amber" ? "bg-amber-300" : "bg-emerald-300"}`} />
+                        <div className={`h-2 w-2 rounded-full ${signal.tone === "red" ? "bg-red-400" : signal.tone === "amber" ? "bg-amber-300" : signal.tone === "green" ? "bg-emerald-300" : "bg-zinc-300"}`} />
                       </div>
-                      <p className="mt-2 text-sm font-bold leading-6 text-zinc-100">{signal.text}</p>
+                      <div className="mt-2 text-[10px] font-black uppercase tracking-[0.18em] text-red-100">{signal.phase}</div>
+                      <p className="mt-1 text-sm font-bold leading-6 text-zinc-100">{signal.text}</p>
                     </div>
                   ))}
                 </div>
 
                 <div className="rounded-[28px] border border-white/10 bg-black/35 p-4">
-                  <div className="relative h-[360px] overflow-hidden rounded-[24px] border border-white/10 bg-[radial-gradient(circle_at_center,rgba(220,38,38,0.14),transparent_45%)]">
-                    <svg className="absolute inset-0 h-full w-full opacity-70" viewBox="0 0 520 360" aria-hidden="true">
-                      <path className="link-line link-line-a" d="M192 72 C120 126 98 158 86 178" />
-                      <path className="link-line link-line-b" d="M240 78 C326 126 398 136 445 160" />
-                      <path className="link-line link-line-c" d="M100 205 C184 255 216 292 238 306" />
-                      <path className="link-line link-line-d contradiction-line" d="M430 190 C352 246 312 280 266 306" />
+                  <div className="mb-3 grid gap-2 sm:grid-cols-4">
+                    {providerResponses.map((provider, index) => (
+                      <div key={provider.name} className={`provider-chip provider-chip-${index} rounded-2xl border border-white/10 bg-zinc-950/80 p-3`}>
+                        <div className="text-[9px] font-black uppercase tracking-[0.18em] text-zinc-500">{provider.name}</div>
+                        <div className={`mt-1 text-[11px] font-black leading-4 ${provider.tone === "red" ? "text-red-100" : provider.tone === "amber" ? "text-amber-100" : "text-emerald-100"}`}>{provider.finding}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="relative h-[386px] overflow-hidden rounded-[24px] border border-white/10 bg-[radial-gradient(circle_at_center,rgba(220,38,38,0.14),transparent_45%)]">
+                    <div className="reasoning-question absolute left-4 top-4 z-10 rounded-full border border-white/10 bg-black/70 px-3 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-200">What is ShadowScore discovering?</div>
+                    <svg className="absolute inset-0 h-full w-full opacity-80" viewBox="0 0 520 386" aria-hidden="true">
+                      <path className="link-line link-line-a" d="M190 72 C118 130 98 165 84 190" />
+                      <path className="link-line link-line-b" d="M238 78 C325 126 398 140 448 166" />
+                      <path className="link-line link-line-c" d="M98 216 C180 266 216 315 238 330" />
+                      <path className="link-line link-line-d" d="M430 190 C370 245 326 288 280 326" />
+                      <path className="link-line link-line-e contradiction-line" d="M428 210 C426 276 400 318 360 336" />
                     </svg>
                     {entityNodes.map((node) => (
-                      <div key={node.label} className={`entity-node absolute ${node.className} max-w-[190px] rounded-2xl border border-white/10 bg-zinc-950/95 p-3 shadow-[0_0_28px_rgba(255,255,255,0.06)]`}>
+                      <div key={node.label} className={`entity-node ${node.stage} absolute ${node.className} max-w-[190px] rounded-2xl border border-white/10 bg-zinc-950/95 p-3 shadow-[0_0_28px_rgba(255,255,255,0.06)]`}>
                         <div className="text-[9px] font-black uppercase tracking-[0.18em] text-zinc-500">{node.kind}</div>
                         <div className="mt-1 text-xs font-black leading-5 text-white">{node.label}</div>
                       </div>
                     ))}
-                    <div className="confidence-ring absolute left-1/2 top-1/2 flex h-28 w-28 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-red-300/25 bg-red-500/10 text-center">
-                      <div><div className="text-[10px] font-black uppercase tracking-[0.18em] text-red-100">Confidence</div><div className="mt-1 text-sm font-black text-white">recalculating</div></div>
+                    <div className="confidence-ring absolute left-1/2 top-1/2 flex h-32 w-32 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-red-300/25 bg-red-500/10 text-center">
+                      <div><div className="text-[10px] font-black uppercase tracking-[0.18em] text-red-100">Confidence</div><div className="confidence-state mt-1 text-sm font-black text-white">lowered by contradiction</div></div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="relative mt-4 grid gap-3 sm:grid-cols-4">
+              <div className="relative mt-4 grid gap-3 sm:grid-cols-5">
                 {reasoningSteps.map((step, index) => (
                   <div key={step.label} className={`reasoning-step reasoning-step-${index} rounded-2xl border border-white/10 bg-black/35 p-4`}>
                     <div className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">{step.status}</div>
