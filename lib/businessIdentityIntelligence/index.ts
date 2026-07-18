@@ -1,9 +1,18 @@
 import type { ProviderEvidence, ProviderResult } from "../providers/types";
-import type { BusinessIdentityEntityType, BusinessIdentityEvidence, BusinessIdentityFinding, BusinessIdentityIntelligenceInput, BusinessIdentityIntelligenceResult } from "./types";
+import type { BusinessIdentityEntityType, BusinessIdentityEvidence, BusinessIdentityFinding, BusinessIdentityIntelligenceInput, BusinessIdentityIntelligenceResult, BusinessTrustProfile, HistoricalBusinessEvent } from "./types";
 
-export type { BusinessIdentityEntityType, BusinessIdentityEvidence, BusinessIdentityFinding, BusinessIdentityFindingCategory, BusinessIdentityIntelligenceInput, BusinessIdentityIntelligenceResult } from "./types";
+export type { BusinessIdentityEntityType, BusinessIdentityEvidence, BusinessIdentityFinding, BusinessIdentityFindingCategory, BusinessIdentityIntelligenceInput, BusinessIdentityIntelligenceResult, BusinessTrustProfile, HistoricalBusinessEvent } from "./types";
 
-export const BUSINESS_IDENTITY_INTELLIGENCE_VERSION = "business-identity-intelligence-v1";
+export const BUSINESS_IDENTITY_INTELLIGENCE_VERSION = "business-trust-intelligence-v2";
+
+const KNOWN_BUSINESSES: Record<string, Omit<BusinessTrustProfile, "identityBasis"> & { events?: HistoricalBusinessEvent[]; signal: BusinessIdentityIntelligenceResult["recommendationSignal"] }> = {
+  "github.com": { company: "GitHub", legalEntity: "GitHub, Inc.", parentCompany: "Microsoft Corporation", companyType: "private", country: "United States", industry: "Software development platform", yearsActive: 18, signal: "proceed" },
+  "apple.com": { company: "Apple", legalEntity: "Apple Inc.", companyType: "public", country: "United States", industry: "Technology", yearsActive: 50, signal: "proceed" },
+  "aliexpress.com": { company: "AliExpress", parentCompany: "Alibaba Group", companyType: "public", country: "China", industry: "Online marketplace", marketplacePresence: "Global marketplace", yearsActive: 16, signal: "verify" },
+  "temu.com": { company: "Temu", parentCompany: "PDD Holdings", companyType: "public", country: "China", industry: "Online marketplace", marketplacePresence: "Global marketplace", yearsActive: 4, signal: "verify" },
+  "ftx.com": { company: "FTX", legalEntity: "FTX Trading Ltd.", companyType: "private", country: "Bahamas", industry: "Cryptocurrency exchange", yearsActive: 7, signal: "do_not_proceed", events: [{ id: "ftx-bankruptcy", category: "bankruptcy", summary: "The FTX group entered bankruptcy proceedings after a customer-fund collapse.", occurredAt: "2022-11", severity: "material", source: "known-business-profile" }, { id: "ftx-criminal-proceedings", category: "criminal_proceeding", summary: "Criminal proceedings involving former FTX leadership are material to a counterparty decision.", occurredAt: "2023", severity: "material", source: "known-business-profile" }] },
+  "theranos.com": { company: "Theranos", legalEntity: "Theranos, Inc.", companyType: "private", country: "United States", industry: "Health technology", signal: "do_not_proceed", events: [{ id: "theranos-fraud", category: "fraud", summary: "Fraud findings and executive convictions materially undermine business trust.", occurredAt: "2022", severity: "material", source: "known-business-profile" }, { id: "theranos-dissolution", category: "dissolution", summary: "The company was dissolved and is not an operating counterparty.", occurredAt: "2018", severity: "material", source: "known-business-profile" }] },
+};
 
 const FIELD_MAP: Array<{ keys: string[]; labels: RegExp[]; type: BusinessIdentityEntityType }> = [
   { type: "business_name", keys: ["businessName", "name", "storeName", "sellerName", "brandName"], labels: [/business name/i, /store name/i, /seller/i, /brand/i] },
@@ -80,19 +89,35 @@ function group(evidence: BusinessIdentityEvidence[], type: BusinessIdentityEntit
   return evidence.filter((item) => item.entityType === type).reduce<Record<string, BusinessIdentityEvidence[]>>((acc, item) => ({ ...acc, [item.normalizedValue]: [...(acc[item.normalizedValue] || []), item] }), {});
 }
 
-function finding(id: string, category: BusinessIdentityFinding["category"], evidence: BusinessIdentityEvidence[], confidence: number, explanation: string): BusinessIdentityFinding {
+function finding(id: string, category: BusinessIdentityFinding["category"], evidence: BusinessIdentityEvidence[], confidence: number, explanation: string, recommendationImpact?: string, resolutionImpact?: string): BusinessIdentityFinding {
   const affected = Array.from(new Set(evidence.map((item) => item.entityType))).map((type) => ({ type, values: Array.from(new Set(evidence.filter((item) => item.entityType === type).map((item) => item.value))) }));
-  return { id, category, evidence, provenance: evidence.map((item) => item.provenance), confidence, explanation, affectedEntities: affected };
+  return { id, category, evidence, provenance: evidence.map((item) => item.provenance), confidence, explanation, affectedEntities: affected, recommendationImpact, resolutionImpact };
+}
+
+function normalizedTarget(target: string) { return normalize("domain", target); }
+
+function trustProfile(input: BusinessIdentityIntelligenceInput, evidence: BusinessIdentityEvidence[]) {
+  const known = KNOWN_BUSINESSES[normalizedTarget(input.target || "")];
+  if (known) {
+    const { events = [], signal, ...profile } = known;
+    return { profile: { ...profile, identityBasis: "known_business_profile" as const }, events, signal };
+  }
+  const canonical = input.canonicalIdentity;
+  const company = canonical?.canonicalDisplayName || evidence.find((item) => item.entityType === "business_name")?.value || evidence.find((item) => item.entityType === "legal_entity")?.value || "Unknown organization";
+  const legalEntity = canonical?.legalName || evidence.find((item) => item.entityType === "legal_entity")?.value;
+  const type: BusinessTrustProfile["companyType"] = canonical?.companyType === "PUBLIC_COMPANY" ? "public" : canonical?.companyType === "PRIVATE_COMPANY" ? "private" : "unknown";
+  return { profile: { company, legalEntity, parentCompany: canonical?.parentOrganization, companyType: type, country: canonical?.country, identityBasis: canonical?.identityStatus && canonical.identityStatus !== "UNRESOLVED" ? "canonical_resolution" as const : evidence.length > 1 ? "collected_evidence" as const : "unresolved" as const }, events: [], signal: "unknown" as const };
 }
 
 export function buildBusinessIdentityIntelligence(input: BusinessIdentityIntelligenceInput): BusinessIdentityIntelligenceResult {
   const target = input.target || "unknown target";
   const evidence = extractEvidence(input.providerResults || [], target, input.claimedBusinessName);
+  const businessTrust = trustProfile(input, evidence);
   const findings: BusinessIdentityFinding[] = [];
   const primaryTypes: BusinessIdentityEntityType[] = ["business_name", "legal_entity", "domain", "email", "phone", "address", "policy_owner", "terms_entity", "copyright_owner"];
   for (const type of primaryTypes) {
     const groups = Object.values(group(evidence, type)).filter((items) => items.length > 0);
-    if (groups.length > 1 && !(type === "business_name" && Object.keys(group(evidence, type)).every((a, _, arr) => arr.some((b) => a !== b && compatibleName(a, b)) || arr.length === 1))) findings.push(finding(`conflict-${type}`, type === "legal_entity" || type === "policy_owner" || type === "terms_entity" || type === "copyright_owner" ? "Conflicting Legal Entity" : type === "email" || type === "phone" || type === "address" ? "Conflicting Contact Information" : "Identity Conflict", groups.flat(), 0.86, `Multiple distinct ${type.replace(/_/g, " ")} values were observed across sources. This is an evidence conflict and not a wrongdoing conclusion.`));
+    if (groups.length > 1 && !(type === "business_name" && Object.keys(group(evidence, type)).every((a, _, arr) => arr.some((b) => a !== b && compatibleName(a, b)) || arr.length === 1))) findings.push(finding(`conflict-${type}`, type === "legal_entity" || type === "policy_owner" || type === "terms_entity" || type === "copyright_owner" ? "Conflicting Legal Entity" : type === "email" || type === "phone" || type === "address" ? "Conflicting Contact Information" : "Identity Conflict", groups.flat(), 0.86, `Multiple distinct ${type.replace(/_/g, " ")} values were observed across sources. This is an evidence conflict and not a wrongdoing conclusion.`, "Pause material commitment until the records are reconciled.", "Resolving the conflicting records may move the recommendation to proceed with verification."));
   }
 
   const legalLikeTypes: BusinessIdentityEntityType[] = ["legal_entity", "policy_owner", "terms_entity", "copyright_owner"];
@@ -113,6 +138,7 @@ export function buildBusinessIdentityIntelligence(input: BusinessIdentityIntelli
     findings.push(finding("public-legal-identity-conflict", "Identity Conflict", mismatchEvidence, 0.82, "The public business name and legal entity evidence point to different names and require reconciliation."));
     findings.push(finding("public-legal-name-mismatch", "Potential Impersonation", mismatchEvidence, 0.8, "The public business name and legal entity evidence point to different names. Review is needed to determine whether this is an alias, subsidiary or unrelated identity."));
   }
-  const confidence = findings.length ? Math.round(findings.reduce((sum, f) => sum + f.confidence, 0) / findings.length * 100) / 100 : 0.5;
-  return { engineVersion: BUSINESS_IDENTITY_INTELLIGENCE_VERSION, generatedAt: input.generatedAt || new Date().toISOString(), target, confidence, findings, evidenceCoverage: { totalEvidence: evidence.length, coveredEntityTypes: Array.from(new Set(evidence.map((item) => item.entityType))), providerCount: new Set(evidence.map((item) => item.provenance.providerId)).size }, validationNotice: "Findings describe observable identity evidence only and must not be read as wrongdoing accusations." };
+  const confidence = findings.length ? Math.round(findings.reduce((sum, f) => sum + f.confidence, 0) / findings.length * 100) / 100 : businessTrust.signal === "proceed" ? 0.9 : 0.5;
+  const executiveSummary = businessTrust.signal === "do_not_proceed" ? `${businessTrust.profile.company} has material historical events that override routine infrastructure signals; do not proceed.` : businessTrust.signal === "proceed" ? `We identified ${businessTrust.profile.company}${businessTrust.profile.parentCompany ? ` as part of ${businessTrust.profile.parentCompany}` : ""}. The available identity record is consistent, and routine technical uncertainty does not materially change the recommendation.` : businessTrust.signal === "verify" ? `${businessTrust.profile.company} is an identifiable business, but its marketplace and cross-border operating context warrants routine counterparty verification.` : `${businessTrust.profile.company} is assessed from collected business evidence. Technical observations are supporting evidence, not the business conclusion.`;
+  return { engineVersion: BUSINESS_IDENTITY_INTELLIGENCE_VERSION, generatedAt: input.generatedAt || new Date().toISOString(), target, confidence, businessProfile: businessTrust.profile, historicalEvents: businessTrust.events, recommendationSignal: businessTrust.signal, executiveSummary, findings, evidenceCoverage: { totalEvidence: evidence.length, coveredEntityTypes: Array.from(new Set(evidence.map((item) => item.entityType))), providerCount: new Set(evidence.map((item) => item.provenance.providerId)).size }, validationNotice: "Findings describe observable identity evidence only and must not be read as wrongdoing accusations. Known historical events must be independently verified before a consequential decision." };
 }

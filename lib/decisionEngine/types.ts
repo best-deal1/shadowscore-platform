@@ -3,6 +3,7 @@ import type { BusinessProfile, BusinessProfileContradictionSignal, BusinessProfi
 import type { ExecutionPlan } from "../orchestrator/types";
 
 import type { CanonicalDecision } from "../canonicalDecision";
+import type { BusinessIdentityIntelligenceResult } from "../businessIdentityIntelligence";
 
 export type DecisionIntelligenceDecision = "PASS" | "PROCEED_WITH_VERIFICATION" | "REVIEW" | "FAIL";
 
@@ -29,6 +30,7 @@ export type DecisionIntelligenceInput = {
   evidenceItems: EvidenceItem[];
   correlationFindings?: CorrelationFinding[];
   contradictionSignals: ContradictionSignal[];
+  businessTrustIntelligence?: BusinessIdentityIntelligenceResult;
 };
 
 export type DecisionIntelligenceOutput = {

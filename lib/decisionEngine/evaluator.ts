@@ -41,16 +41,18 @@ export function evaluateDecisionEvidence(input: DecisionIntelligenceInput): Deci
   const correlationFindings = input.correlationFindings || [];
   const correlationContradictions = correlationFindings.flatMap((finding) => finding.contradiction ? [finding.contradiction] : []);
   const allContradictions = [...input.contradictionSignals, ...correlationContradictions.map((finding) => ({ id: finding.id, severity: isConfirmedRiskCorrelation(finding) ? "high" as const : "medium" as const, title: finding.title, evidence: finding.evidence.map((item) => item.value), interpretation: finding.explanation, businessMeaning: isConfirmedRiskCorrelation(finding) ? "Verified negative evidence conflicts with a trusted-company conclusion." : "Identity inconsistency requires review but is not confirmed risk without independent negative evidence." }))];
-  const decision = selectDecision({ assessment, contradictions: allContradictions });
+  const historicalStop = input.businessTrustIntelligence?.recommendationSignal === "do_not_proceed" && input.businessTrustIntelligence.historicalEvents.some((event) => event.severity === "material");
+  const historicalReasons = input.businessTrustIntelligence?.historicalEvents.filter((event) => event.severity === "material").map((event) => event.summary) || [];
+  const decision = historicalStop ? "FAIL" : input.businessTrustIntelligence?.recommendationSignal === "proceed" && assessment.positiveEvidenceCount > 0 && allContradictions.length === 0 ? "PASS" : selectDecision({ assessment, contradictions: allContradictions });
   const materialContradiction = allContradictions.some((signal) => signal.severity === "high" && !isConfirmedRiskContradiction(signal));
   const canonicalDecision = buildCanonicalDecision({
     status: decision === "FAIL" ? "STOP" : decision,
-    hasConfirmedSeriousNegative: allContradictions.some(isConfirmedRiskContradiction),
+    hasConfirmedSeriousNegative: historicalStop || allContradictions.some(isConfirmedRiskContradiction),
     hasMaterialContradiction: materialContradiction,
     hasStrongCorroboratedIdentity: assessment.positiveEvidenceCount >= 3 && assessment.confidenceLevel !== "Low" && assessment.confidenceLevel !== "None",
     hasMissingCoreIdentity: assessment.missingEvidence.some((item) => /identity|business name|registry|owner/i.test(item)),
     missingEvidence: assessment.missingEvidence,
-    decisionReasons: [`Evidence coverage is ${assessment.evidenceCoverage}.`, `Positive evidence count is ${assessment.positiveEvidenceCount}.`, `Missing evidence count is ${assessment.missingEvidenceCount}.`, `Negative evidence count is ${assessment.negativeEvidenceCount}.`],
+    decisionReasons: [...historicalReasons, `Evidence coverage is ${assessment.evidenceCoverage}.`, `Positive evidence count is ${assessment.positiveEvidenceCount}.`, `Missing evidence count is ${assessment.missingEvidenceCount}.`, `Negative evidence count is ${assessment.negativeEvidenceCount}.`],
     confidenceScore: Math.round(assessment.evidenceCompleteness),
   });
   const recommendation = `${decisionDisplayLabel(canonicalDecision.decisionOutcome)}: ${canonicalDecision.userMeaning}`;
