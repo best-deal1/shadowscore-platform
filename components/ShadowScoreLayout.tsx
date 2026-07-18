@@ -25,18 +25,18 @@ const mobilePublicNav = [
 const footerGroups = [
   { title: "Product", links: [
     { href: "/intake", label: "Start Investigation" },
-    { href: "/investigations", label: "Investigations" },
-    { href: "/reports", label: "Reports" },
-    { href: "/monitoring", label: "Monitoring" },
+    { href: "/example-report", label: "Example Report" },
+    { href: "/about", label: "Methodology" },
   ]},
-  { title: "Company", links: [
-    { href: "/about", label: "About" },
+  { title: "Trust & Legal", links: [
     { href: "/security", label: "Security" },
-    { href: "/contact", label: "Contact" },
-  ]},
-  { title: "Legal", links: [
     { href: "/privacy", label: "Privacy" },
     { href: "/terms", label: "Terms" },
+  ]},
+  { title: "Access", links: [
+    { href: "/contact", label: "Contact" },
+    { href: "/login", label: "Customer Login" },
+    { href: "/signup", label: "Create Account" },
   ]},
 ];
 
@@ -92,7 +92,7 @@ export default function ShadowScoreLayout({ children }: { children: ReactNode })
       <main>{children}</main>
 
       <footer className="border-t border-white/10 bg-black px-6 py-12">
-        <div className="mx-auto grid max-w-7xl gap-8 md:grid-cols-5">
+        <div className="mx-auto grid max-w-7xl gap-8 md:grid-cols-4">
           {footerGroups.map((group) => (
             <nav key={group.title} aria-label={`${group.title} footer`} className="space-y-3">
               <h2 className="text-xs font-black uppercase tracking-[0.24em] text-zinc-500">{group.title}</h2>

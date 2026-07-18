@@ -31,7 +31,7 @@ function confidence(score: number): CanonicalDecision["confidence"] {
 export function decisionDisplayLabel(outcome?: string) {
   if (outcome === "PROCEED") return "Proceed";
   if (outcome === "PROCEED_WITH_VERIFICATION") return "Proceed with verification";
-  if (outcome === "PAUSE_AND_VERIFY") return "Pause and verify";
+  if (outcome === "PAUSE_AND_VERIFY") return "Review required";
   if (outcome === "DO_NOT_PROCEED") return "Do not proceed";
   return "Proceed with verification";
 }
@@ -39,7 +39,7 @@ export function decisionDisplayLabel(outcome?: string) {
 export function decisionLightDisplayLabel(light?: string) {
   if (light === "GREEN") return "Ready to proceed";
   if (light === "YELLOW") return "Verify first";
-  if (light === "ORANGE") return "Pause for review";
+  if (light === "ORANGE") return "Review required";
   if (light === "RED") return "Do not proceed";
   return "Verify first";
 }
@@ -68,7 +68,7 @@ export function buildCanonicalDecision(input: {
     return { status: "STOP", decisionOutcome: "DO_NOT_PROCEED", decisionLight: "RED", riskLevel: "HIGH", headline: "Do not proceed", userMeaning: "Material identity conflicts, serious unsupported claims, or significant negative indicators were detected. Do not proceed unless the issue is independently resolved.", allowedActions: ["independently resolve the issue", "document remediation evidence"], blockedActions: ["payment", "shipment", "granting access", "signing a contract", "sharing sensitive information"], verificationRequired: missing.length ? missing : ["Resolve confirmed negative indicators with authoritative evidence."], primaryUncertainty: missing[0] || "Confirmed serious negative evidence", decisionReasons: reasons.length ? reasons : ["Confirmed serious negative evidence was detected."], confidence: confidence(input.confidenceScore ?? 30) };
   }
   if (input.hasMaterialContradiction) {
-    return { status: "REVIEW", decisionOutcome: "PAUSE_AND_VERIFY", decisionLight: "ORANGE", riskLevel: "ELEVATED", headline: "Pause and verify", userMeaning: "Conflicting evidence, meaningful uncertainty, or elevated risk signals were detected. Pause payment, shipment, access, or contractual commitment until the issue is resolved.", allowedActions: ["request authoritative documents", "resolve conflicting identity evidence", "run only reversible checks"], blockedActions: ORANGE_BLOCKED, verificationRequired: missing.length ? missing : ["Resolve the material identity contradiction."], primaryUncertainty: missing[0] || "Material identity contradiction", decisionReasons: reasons.length ? reasons : ["Material identity contradiction requires resolution."], confidence: confidence(input.confidenceScore ?? 45) };
+    return { status: "REVIEW", decisionOutcome: "PAUSE_AND_VERIFY", decisionLight: "ORANGE", riskLevel: "ELEVATED", headline: "Review required", userMeaning: "Conflicting evidence, meaningful uncertainty, or elevated risk signals were detected. Payment, shipment, access, or contractual commitment should wait until the issue is resolved.", allowedActions: ["request authoritative documents", "resolve conflicting identity evidence", "run only reversible checks"], blockedActions: ORANGE_BLOCKED, verificationRequired: missing.length ? missing : ["Resolve the material identity contradiction."], primaryUncertainty: missing[0] || "Material identity contradiction", decisionReasons: reasons.length ? reasons : ["Material identity contradiction requires resolution."], confidence: confidence(input.confidenceScore ?? 45) };
   }
   if (input.status === "PASS" && input.hasStrongCorroboratedIdentity !== false && !input.hasMissingCoreIdentity) {
     return { status: "PASS", decisionOutcome: "PROCEED", decisionLight: "GREEN", riskLevel: "LOW", headline: "Proceed", userMeaning: "Sufficient reliable evidence was found. No material contradiction or significant warning was detected. You may proceed under normal commercial controls.", allowedActions: ["proceed under normal commercial controls", "archive the evidence chain", "continue routine monitoring"], blockedActions: [], verificationRequired: [], primaryUncertainty: "Routine commercial controls", decisionReasons: reasons.length ? reasons : ["Strong corroborated identity with no material warning."], confidence: confidence(input.confidenceScore ?? 85) };
