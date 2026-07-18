@@ -10,6 +10,7 @@ const primaryNav = [
   { href: "/investigations", label: "Investigations" },
   { href: "/reports", label: "Reports" },
   { href: "/monitoring", label: "Monitoring" },
+  { href: "/upgrade", label: "Plans" },
   { href: "/workspace", label: "Workspace" },
   { href: "/account", label: "Account" },
 ];
@@ -26,6 +27,7 @@ const footerGroups = [
   { title: "Product", links: [
     { href: "/intake", label: "Start Investigation" },
     { href: "/example-report", label: "Example Report" },
+    { href: "/upgrade", label: "Plans" },
     { href: "/about", label: "Methodology" },
   ]},
   { title: "Trust & Legal", links: [

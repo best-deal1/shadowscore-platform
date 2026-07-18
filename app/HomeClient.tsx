@@ -6,19 +6,19 @@ import ShadowScoreLayout from "./components/ShadowScoreLayout";
 
 const briefingFindings = [
   {
-    label: "Identity verification",
-    value: "Review required",
-    detail: "Ownership, operating entity, and domain claims need authoritative corroboration before commitment.",
+    label: "Decision",
+    value: "Pause and verify",
+    detail: "The current evidence is not strong enough for commitment yet.",
   },
   {
-    label: "Public sources analyzed",
+    label: "Supporting rationale",
     value: "Evidence structured",
     detail: "Public footprint, reputation context, identity signals, and contradictions organized into one briefing.",
   },
   {
-    label: "Recommended action",
-    value: "Review required",
-    detail: "Request authoritative proof before onboarding, shipment, access, payment, or escalation.",
+    label: "Required action",
+    value: "Request proof",
+    detail: "Ask for authoritative ownership and operating-entity evidence before onboarding, shipment, access, payment, or escalation.",
   },
 ];
 
@@ -87,6 +87,7 @@ export default function HomeClient() {
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
               <button onClick={startInvestigation} className="rounded-full bg-red-600 px-7 py-4 text-sm font-black uppercase tracking-[0.14em] text-white shadow-[0_0_34px_rgba(220,38,38,0.4)] transition hover:bg-red-500">Start a briefing</button>
               <a href="/example-report" className="rounded-full border border-white/15 bg-white/[0.04] px-7 py-4 text-center text-sm font-black uppercase tracking-[0.14em] text-white transition hover:bg-white/[0.08]">View sample report</a>
+              <a href="/upgrade" className="rounded-full border border-amber-200/25 bg-amber-200/10 px-7 py-4 text-center text-sm font-black uppercase tracking-[0.14em] text-amber-100 transition hover:bg-amber-200/15">Plans from $9.90</a>
             </div>
             {isOpening ? <div className="mt-5 rounded-2xl border border-red-400/20 bg-red-500/10 p-4 text-sm font-bold text-red-100">Opening secure briefing intake…</div> : null}
           </div>
