@@ -64,6 +64,7 @@ function ExecutiveBrief({ report }: { report: ShadowScoreReport }) {
   const impact = publicStatements(sectionBody(report, "decisionCost")).slice(0, 2);
   const actions = publicStatements(sectionBody(report, "recommendedNextSteps")).slice(0, 5);
   const sources = report.reportSummary?.sourceProvenance || [];
+  const businessFindings = report.reportSummary?.businessIntelligence?.findings || [];
 
   return (
     <article className="mt-8 rounded-[32px] border border-white/10 bg-black/55 p-6 shadow-[0_0_60px_rgba(120,0,20,0.16)] sm:p-8">
@@ -90,6 +91,20 @@ function ExecutiveBrief({ report }: { report: ShadowScoreReport }) {
         <ListCard title="Business impact" items={impact} emptyMessage="The report does not record a separate business impact statement." />
       </div>
       <div className="mt-5"><ListCard title="Recommended next actions" items={actions} numbered emptyMessage="Complete the standard checks required for this decision." /></div>
+
+      <section className="mt-5 rounded-3xl border border-white/10 bg-black/35 p-6" aria-label="Business findings">
+        <h2 className="text-xs font-black uppercase tracking-[0.28em] text-red-200">Business findings</h2>
+        <p className="mt-3 text-sm leading-6 text-zinc-400">Each finding compares evidence from separate providers. Findings describe the available records and do not establish facts beyond that evidence.</p>
+        <div className="mt-5 space-y-4">
+          {businessFindings.length ? businessFindings.map((finding) => (
+            <article key={`${finding.id}-${finding.title}`} className="rounded-2xl border border-white/10 bg-black/30 p-4">
+              <div className="flex flex-wrap items-center gap-2"><h3 className="font-bold text-zinc-100">{finding.title}</h3><span className="rounded-full border border-white/10 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-zinc-400">{finding.direction.replaceAll("_", " ")}</span></div>
+              <p className="mt-2 text-sm leading-6 text-zinc-300">{finding.statement}</p>
+              <ul className="mt-3 space-y-1 text-xs leading-5 text-zinc-500">{finding.evidence.map((item) => <li key={`${item.providerId}-${item.id}`}>{item.providerId}: {item.label}{item.value ? `, ${item.value}` : ""} ({item.source})</li>)}</ul>
+            </article>
+          )) : <p className="text-sm text-zinc-400">No cross-provider business findings were produced from the available evidence.</p>}
+        </div>
+      </section>
 
       <section className="mt-8 border-t border-white/10 pt-6" aria-label="Source provenance">
         <h2 className="text-xs font-black uppercase tracking-[0.28em] text-red-200">Source provenance</h2>
