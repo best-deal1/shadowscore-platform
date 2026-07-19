@@ -9,6 +9,7 @@ import { buildIdentityProfile } from "./identityEngine";
 import { buildBusinessProfile } from "./businessProfileEngine";
 import { buildBusinessIdentityIntelligence } from "./businessIdentityIntelligence";
 import { buildBusinessIntelligence } from "./businessIntelligence";
+import { investigateWebsite } from "./websiteIntelligence";
 import { buildBusinessIdentityKnowledgeScan, BusinessKnowledgeGraph } from "./knowledgeGraph";
 import { buildBusinessNarrative } from "./narrative";
 import { buildTrustTimeline } from "./trustTimeline";
@@ -99,6 +100,7 @@ export async function buildReadyReport(input: {
   const identityProfile = applyCanonicalIdentityToIdentityProfile(baseIdentityProfile, canonicalIdentity);
   const businessIdentityIntelligence = buildBusinessIdentityIntelligence({ providerResults: providerResultsWithCanonicalIdentity, target: intake.target, claimedBusinessName: canonicalBusinessProfile.businessName, canonicalIdentity, generatedAt: now });
   const businessIntelligence = buildBusinessIntelligence(providerResultsWithCanonicalIdentity, now);
+  const websiteIntelligence = intake.scanMode === "website" ? await investigateWebsite({ target: intake.target }) : undefined;
   const knowledgeGraph = new BusinessKnowledgeGraph();
   knowledgeGraph.applyScan(buildBusinessIdentityKnowledgeScan({
     scanId: `report-${intake.intakeId}`,
@@ -194,6 +196,7 @@ export async function buildReadyReport(input: {
       businessIdentityResolution,
       businessIdentityIntelligence,
       businessIntelligence,
+      websiteIntelligence,
       execution: {
         completedInSeconds: Number(((Date.now() - startedAt) / 1000).toFixed(2)),
         providersExecuted: executionRecords.filter((record) => record.status === "executed").length,

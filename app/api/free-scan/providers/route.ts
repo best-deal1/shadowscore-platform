@@ -5,6 +5,7 @@ import { buildIdentityProfile } from "../../../../lib/identityEngine";
 import { buildBusinessProfile } from "../../../../lib/businessProfileEngine";
 import { buildBusinessIdentityIntelligence } from "../../../../lib/businessIdentityIntelligence";
 import { buildBusinessIntelligence } from "../../../../lib/businessIntelligence";
+import { investigateWebsite } from "../../../../lib/websiteIntelligence";
 import { buildBusinessIdentityKnowledgeScan, BusinessKnowledgeGraph } from "../../../../lib/knowledgeGraph";
 import { buildBusinessNarrative } from "../../../../lib/narrative";
 import { buildTrustTimeline } from "../../../../lib/trustTimeline";
@@ -147,6 +148,7 @@ export async function POST(request: Request) {
     const identityProfile = applyCanonicalIdentityToIdentityProfile(baseIdentityProfile, canonicalIdentity);
     const businessTrustIntelligence = buildBusinessIdentityIntelligence({ providerResults: completedProviderResults, target: context.target, claimedBusinessName: canonicalBusinessProfile.businessName, canonicalIdentity, generatedAt });
     const businessIntelligence = buildBusinessIntelligence(completedProviderResults, generatedAt);
+    const websiteIntelligence = context.scanMode === "website" ? await investigateWebsite({ target: context.target, timeoutMs: 2_500, retries: 0 }) : undefined;
     const knowledgeGraph = new BusinessKnowledgeGraph();
     knowledgeGraph.applyScan(buildBusinessIdentityKnowledgeScan({
       scanId: `free-scan-${context.intakeId}`,
@@ -215,6 +217,7 @@ export async function POST(request: Request) {
       businessIdentityResolution,
       businessTrustIntelligence,
       businessIntelligence,
+      websiteIntelligence,
     });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to run free provider scan." }, { status: 500 });

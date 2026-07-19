@@ -36,7 +36,8 @@
     "validate:report-contract": "node scripts/validate-report-contract.mjs",
     "validate:public-browser-boundary": "node scripts/validate-public-browser-boundary.mjs",
     "validate:accessibility": "node scripts/validate-accessibility.mjs",
-    "validate:production": "npm run validate:report-contract && npm run validate:reasoning-boundary && npm run validate:business-intelligence && npm run validate:decision-integrity && npm run validate:public-browser-boundary && npm run validate:accessibility && npm run lint"
+    "validate:production": "npm run validate:report-contract && npm run validate:reasoning-boundary && npm run validate:business-intelligence && npm run validate:decision-integrity && npm run validate:public-browser-boundary && npm run validate:accessibility && npm run lint",
+    "validate:website-intelligence": "node scripts/validate-website-intelligence.mjs"
   },
   "dependencies": {
     "next": "16.2.6",
