@@ -1,6 +1,6 @@
 import { buildReadyReport, canGenerateReport } from "./reportPipeline";
 import { getMutableMemoryWorkspace } from "./workspaceStore";
-import type { WorkspaceSession } from "./workspace";
+import { presentReportForEndUser, type WorkspaceSession } from "./workspace";
 
 export async function markPaymentPaidAndGenerateReport(session: WorkspaceSession, paymentIntentId: string) {
   const workspace = getMutableMemoryWorkspace(session.userId);
@@ -15,5 +15,5 @@ export async function markPaymentPaidAndGenerateReport(session: WorkspaceSession
   const report = await buildReadyReport({ intake, paymentIntent: intent });
   workspace.reports = [report, ...workspace.reports.filter((item) => item.paymentIntentId !== intent.id)].slice(0, 25);
   intake.reportStatus = "ready";
-  return report;
+  return presentReportForEndUser(report);
 }
