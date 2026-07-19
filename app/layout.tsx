@@ -1,15 +1,18 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
+import { LocaleProvider } from "../components/LocaleProvider";
+import { defaultLocale, directionForLocale, isLocale } from "../lib/i18n";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ShadowScore | Auditable Business Trust Intelligence",
+  title: "ShadowScore | AI Business Due Diligence",
   description:
-    "Evidence-backed business investigations with source provenance, recorded decisions, and clear next actions.",
+    "Evidence-based Business Trust Intelligence with source provenance, evidence gaps, and clear next actions.",
   metadataBase: new URL("https://shadowscore.io"),
   openGraph: {
-    title: "ShadowScore | Auditable Business Trust Intelligence",
+    title: "ShadowScore | AI Business Due Diligence",
     description:
-      "Evidence-backed investigations with a recorded source trail and decision context.",
+      "Evidence-based Business Trust Intelligence with a recorded source trail and decision context.",
     url: "https://shadowscore.io",
     siteName: "ShadowScore",
     images: [
@@ -20,8 +23,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "ShadowScore | Auditable Business Trust Intelligence",
-    description: "Evidence-backed investigations with source provenance and clear next actions.",
+    title: "ShadowScore | AI Business Due Diligence",
+    description: "AI Business Due Diligence with source provenance and clear next actions.",
     images: ["/marketplaces-monitor-enterprise-v5.png"],
   },
   icons: {
@@ -31,10 +34,12 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const localeCookie = (await cookies()).get("shadowscore_locale")?.value;
+  const locale = isLocale(localeCookie) ? localeCookie : defaultLocale;
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang={locale} dir={directionForLocale(locale)}>
+      <body><LocaleProvider locale={locale}>{children}</LocaleProvider></body>
     </html>
   );
 }

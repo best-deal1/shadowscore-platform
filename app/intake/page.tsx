@@ -12,6 +12,7 @@ import { getCurrentSession } from "../../lib/auth";
 import { isPreviewReadyResponse, nextPreviewStatus, readPreviewJson } from "../../lib/freeScanPreviewFlow";
 import { createIntake, ShadowScoreIntake } from "../../lib/workspace";
 import { decisionLightDisplayLabel } from "../../lib/canonicalDecision";
+import { useLocale } from "../../components/LocaleProvider";
 
 type Severity = "Low" | "Medium" | "High" | "Critical";
 type Finding = {
@@ -562,6 +563,7 @@ function hasHint(fileNames: string[], hints: string[]) {
 }
 
 export default function IntakePage() {
+  const { t } = useLocale();
   const [scanMode, setScanMode] = useState<ScanMode>("website");
   const [files, setFiles] = useState<File[]>([]);
   const [marketplace, setMarketplace] = useState("eBay");
@@ -963,10 +965,10 @@ export default function IntakePage() {
               ShadowScore Investigation
             </div>
             <h1 className="mt-6 text-5xl font-extrabold leading-tight">
-              Start with one target
+              {t.intake.title}
             </h1>
             <p className="mt-6 max-w-xl text-lg leading-8 text-zinc-400">
-              Enter a website, company, email, phone or seller. ShadowScore prepares a clear trust report before you decide.
+              {t.intake.description}
             </p>
             <div className="mt-10 rounded-3xl border border-white/10 bg-white/[0.035] p-6">
               <div className="font-bold">Evidence readiness</div>
@@ -1013,7 +1015,7 @@ export default function IntakePage() {
               </div>
               <div className="mt-2 text-xl font-black">{activeMode.label}</div>
               <p className="mt-2 text-sm leading-6 text-zinc-400">
-                ShadowScore automatically adapts the investigation based on what you enter.
+                {t.intake.coverage}
               </p>
             </div>
 
@@ -1021,7 +1023,7 @@ export default function IntakePage() {
               <div className="mt-6 grid gap-5 md:grid-cols-2">
                 <label className="md:col-span-2">
                   <div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">
-                    Website URL, business name or company domain *
+                    {t.intake.field} *
                   </div>
                   <input
                     value={websiteTarget}
