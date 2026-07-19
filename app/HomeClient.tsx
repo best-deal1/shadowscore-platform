@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import ShadowScoreLayout from "./components/ShadowScoreLayout";
 import InvestigationTimeline from "./components/InvestigationTimeline";
 import AuditMetadata from "./components/AuditMetadata";
+import { useLocale } from "../components/LocaleProvider";
 
 const evidenceEvents = [
   { time: "00:01", source: "Intake", text: "Supplier claims Example Signal Logistics and supplier-pay.test are the same operator", tone: "neutral", phase: "Evidence enters" },
@@ -81,6 +82,7 @@ const coveredScenarios = [
 
 export default function HomeClient() {
   const router = useRouter();
+  const { t } = useLocale();
   const [isOpening, setIsOpening] = useState(false);
 
   function startInvestigation() {
@@ -95,9 +97,9 @@ export default function HomeClient() {
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_10%,rgba(14,165,233,0.18),transparent_30%),radial-gradient(circle_at_82%_18%,rgba(251,191,36,0.12),transparent_28%),linear-gradient(180deg,rgba(10,10,10,0.05),#050505_82%)]" />
         <div className="relative mx-auto grid max-w-7xl items-center gap-8 lg:min-h-[760px] lg:grid-cols-[0.86fr_1.14fr]">
           <div>
-            <div className="mb-5 inline-flex rounded-full border border-sky-300/20 bg-sky-500/10 px-4 py-2 text-xs font-black uppercase tracking-[0.24em] text-sky-100">Business due diligence</div>
-            <h1 className="max-w-5xl text-4xl font-black tracking-tight text-white sm:text-6xl lg:text-7xl">Business trust starts with evidence.</h1>
-            <p className="mt-6 max-w-3xl text-lg leading-8 text-zinc-300 sm:text-xl">ShadowScore investigates the organization behind a claim. It compares independent evidence, identifies conflicts and recommends the next action.</p>
+            <div className="mb-5 inline-flex rounded-full border border-sky-300/20 bg-sky-500/10 px-4 py-2 text-xs font-black uppercase tracking-[0.24em] text-sky-100">{t.positioning.eyebrow}</div>
+            <h1 className="max-w-5xl text-4xl font-black tracking-tight text-white sm:text-6xl lg:text-7xl">{t.positioning.headline}</h1>
+            <p className="mt-6 max-w-3xl text-lg leading-8 text-zinc-300 sm:text-xl">{t.positioning.description}</p>
             <div className="mt-8 rounded-[32px] border border-white/10 bg-white/[0.04] p-5">
               <div className="text-xs font-black uppercase tracking-[0.24em] text-zinc-500">What your analyst answers</div>
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
@@ -110,7 +112,7 @@ export default function HomeClient() {
               </div>
             </div>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <button onClick={startInvestigation} className="rounded-full bg-sky-600 px-7 py-4 text-sm font-black uppercase tracking-[0.14em] text-white shadow-[0_0_34px_rgba(14,165,233,0.32)] transition hover:bg-sky-500">Investigate</button>
+              <button onClick={startInvestigation} className="rounded-full bg-sky-600 px-7 py-4 text-sm font-black uppercase tracking-[0.14em] text-white shadow-[0_0_34px_rgba(14,165,233,0.32)] transition hover:bg-sky-500">{t.nav.start}</button>
               <a href="/example-report" className="rounded-full border border-white/15 bg-white/[0.04] px-7 py-4 text-center text-sm font-black uppercase tracking-[0.14em] text-white transition hover:bg-white/[0.08]">View example</a>
             </div>
             {isOpening ? <div className="mt-5 rounded-2xl border border-sky-400/20 bg-sky-500/10 p-4 text-sm font-bold text-sky-100">Opening investigation intake…</div> : null}
@@ -246,6 +248,7 @@ export default function HomeClient() {
           </div>
         </div>
       </section>
+      <p className="mx-auto max-w-7xl px-5 pb-12 text-xs leading-6 text-zinc-500 sm:px-6">{t.positioning.disclaimer}</p>
     </ShadowScoreLayout>
   );
 }

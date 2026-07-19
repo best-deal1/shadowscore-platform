@@ -8,17 +8,11 @@ import { EmptyState, ErrorState, LoadingState } from "../../components/AsyncStat
 import InvestigationTimeline from "../components/InvestigationTimeline";
 import { getCurrentSession } from "../../lib/auth";
 import { getWorkspace, type ShadowScoreReport } from "../../lib/workspace";
+import { TechnicalValue, useLocale } from "../../components/LocaleProvider";
+import { formatDateTime } from "../../lib/i18n";
 
 const INTERNAL_LANGUAGE = /\b(observation|inference|confidence|causal(?:ity)?|graph|reasoning|weight(?:ing)?|score|prompt|engine|signal)\b/i;
 
-function formatDate(value?: string) {
-  if (!value) return "Not recorded";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("en", {
-    month: "short", day: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", timeZoneName: "short",
-  }).format(date);
-}
 
 function sectionBody(report: ShadowScoreReport, id: string) {
   return report.reportSummary?.businessNarrative?.sections.find((section) => section.id === id)?.body || [];
@@ -51,6 +45,7 @@ function ListCard({ title, items, tone = "neutral", numbered = false, emptyMessa
 }
 
 function ExecutiveBrief({ report }: { report: ShadowScoreReport }) {
+  const { locale, t } = useLocale();
   const narrative = report.reportSummary?.businessNarrative;
   const canonical = report.reportSummary?.decision?.canonicalDecision || narrative?.decisionMode;
   const decisionBasis = publicStatements([
@@ -71,10 +66,10 @@ function ExecutiveBrief({ report }: { report: ShadowScoreReport }) {
   return (
     <article className="mt-8 rounded-[32px] border border-white/10 bg-black/55 p-6 shadow-[0_0_60px_rgba(120,0,20,0.16)] sm:p-8">
       <header className="border-b border-white/10 pb-8">
-        <div className="text-xs font-black uppercase tracking-[0.4em] text-red-300">Executive decision brief</div>
+        <div className="text-xs font-black uppercase tracking-[0.4em] text-red-300">{t.report.brief}</div>
         <h1 className="mt-4 text-3xl font-black text-white sm:text-4xl">{narrative?.businessName || report.target || report.entity}</h1>
         <div className="mt-6 rounded-3xl border border-red-400/35 bg-red-600/15 p-6">
-          <div className="text-xs font-black uppercase tracking-[0.28em] text-red-200">Recommendation</div>
+          <div className="text-xs font-black uppercase tracking-[0.28em] text-red-200">{t.report.recommendation}</div>
           <div className="mt-3 text-2xl font-black tracking-tight text-white sm:text-3xl">{recommendation(report)}</div>
         </div>
       </header>
@@ -87,15 +82,15 @@ function ExecutiveBrief({ report }: { report: ShadowScoreReport }) {
       </section>
 
       <div className="mt-5 grid gap-5 lg:grid-cols-2">
-        <ListCard title="Verified facts" items={verified} emptyMessage="No verified facts are recorded in the available report evidence." />
-        <ListCard title="Material concerns" items={concerns} tone="concern" emptyMessage="No material concerns are recorded in the available report evidence." />
-        <ListCard title="Evidence gaps" items={gaps} tone="gap" emptyMessage="No additional evidence gaps are recorded in this report." />
-        <ListCard title="Business impact" items={impact} emptyMessage="The report does not record a separate business impact statement." />
+        <ListCard title={t.report.verifiedFacts} items={verified} emptyMessage="No verified facts are recorded in the available report evidence." />
+        <ListCard title={t.report.materialConcerns} items={concerns} tone="concern" emptyMessage="No material concerns are recorded in the available report evidence." />
+        <ListCard title={t.report.evidenceGaps} items={gaps} tone="gap" emptyMessage="No additional evidence gaps are recorded in this report." />
+        <ListCard title={t.report.businessImpact} items={impact} emptyMessage="The report does not record a separate business impact statement." />
       </div>
-      <div className="mt-5"><ListCard title="Recommended next actions" items={actions} numbered emptyMessage="Complete the standard checks required for this decision." /></div>
+      <div className="mt-5"><ListCard title={t.report.actions} items={actions} numbered emptyMessage="Complete the standard checks required for this decision." /></div>
 
       <section className="mt-5 rounded-3xl border border-white/10 bg-black/35 p-6" aria-label="Business findings">
-        <h2 className="text-xs font-black uppercase tracking-[0.28em] text-red-200">Business findings</h2>
+        <h2 className="text-xs font-black uppercase tracking-[0.28em] text-red-200">{t.report.findings}</h2>
         <p className="mt-3 text-sm leading-6 text-zinc-400">Each finding compares evidence from separate providers. Findings describe the available records and do not establish facts beyond that evidence.</p>
         <div className="mt-5 space-y-4">
           {businessFindings.length ? businessFindings.map((finding) => (
@@ -109,14 +104,14 @@ function ExecutiveBrief({ report }: { report: ShadowScoreReport }) {
       </section>
 
       {report.reportSummary?.scorecard && <section className="mt-5 rounded-3xl border border-white/10 bg-black/35 p-6" aria-label="Assessment summary">
-        <h2 className="text-xs font-black uppercase tracking-[0.28em] text-red-200">Assessment summary</h2>
-        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{report.reportSummary.scorecard.scores.map((item) => <article key={item.dimension} className="rounded-2xl border border-white/10 bg-black/30 p-4"><h3 className="font-bold text-zinc-100">{item.dimension}</h3><p className="mt-2 text-sm capitalize text-zinc-300">{item.level.replaceAll("_", " ")}</p><p className="mt-1 text-xs capitalize text-zinc-500">Evidence confidence: {item.confidence}</p>{item.evidenceGaps.length > 0 && <p className="mt-3 text-xs leading-5 text-amber-200">Evidence gaps: {item.evidenceGaps.join(", ")}</p>}</article>)}</div>
+        <h2 className="text-xs font-black uppercase tracking-[0.28em] text-red-200">{t.report.assessment}</h2>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{report.reportSummary.scorecard.scores.map((item) => <article key={item.dimension} className="rounded-2xl border border-white/10 bg-black/30 p-4"><h3 className="font-bold text-zinc-100">{t.scorecard[item.dimension]}</h3><p className="mt-2 text-sm capitalize text-zinc-300">{t.scorecard[item.level]}</p><p className="mt-1 text-xs capitalize text-zinc-500">{t.report.evidenceConfidence}: {item.confidence}</p>{item.evidenceGaps.length > 0 && <p className="mt-3 text-xs leading-5 text-amber-200">Evidence gaps: {item.evidenceGaps.join(", ")}</p>}</article>)}</div>
       </section>}
 
       {report.reportSummary?.investigationTimeline && <InvestigationTimeline className="mt-5" title="Investigation status" items={report.reportSummary.investigationTimeline.map((item) => ({ title: item.label, description: item.status === "unavailable" ? "Evidence was unavailable for this stage." : `Stage ${item.status}.`, evidenceSource: item.source, status: item.status, timestamp: item.observedAt, risk: item.status === "failed" }))} />}
 
       {report.reportSummary?.websiteIntelligence && <section className="mt-5 rounded-3xl border border-white/10 bg-black/35 p-6" aria-label="Website Intelligence">
-        <h2 className="text-xs font-black uppercase tracking-[0.28em] text-red-200">Website Intelligence</h2>
+        <h2 className="text-xs font-black uppercase tracking-[0.28em] text-red-200">{t.report.website}</h2>
         <p className="mt-3 text-sm leading-6 text-zinc-300">{report.reportSummary.websiteIntelligence.executiveSummary}</p>
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           {[['Technical health', report.reportSummary.websiteIntelligence.technicalHealth], ['Security posture', report.reportSummary.websiteIntelligence.securityPosture], ['Infrastructure maturity', report.reportSummary.websiteIntelligence.infrastructureMaturity], ['Website trust indicators', report.reportSummary.websiteIntelligence.trustIndicators]].map(([title, body]) => <div key={title} className="rounded-2xl border border-white/10 bg-black/30 p-4"><h3 className="text-xs font-black uppercase tracking-wider text-zinc-300">{title}</h3><p className="mt-2 text-sm leading-6 text-zinc-400">{body}</p></div>)}
@@ -125,16 +120,16 @@ function ExecutiveBrief({ report }: { report: ShadowScoreReport }) {
       </section>}
 
       <section className="mt-8 border-t border-white/10 pt-6" aria-label="Source provenance">
-        <h2 className="text-xs font-black uppercase tracking-[0.28em] text-red-200">Source provenance</h2>
+        <h2 className="text-xs font-black uppercase tracking-[0.28em] text-red-200">{t.report.provenance}</h2>
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {sources.length ? sources.map((source) => (
             <div key={`${source.label}-${source.completedAt}`} className="rounded-2xl border border-white/10 bg-black/30 p-4">
               <div className="font-bold text-zinc-100">{source.label}</div>
-              <div className="mt-2 text-xs text-zinc-400">Reviewed {formatDate(source.completedAt)}</div>
+              <div className="mt-2 text-xs text-zinc-400">{t.report.reviewed} <TechnicalValue>{formatDateTime(source.completedAt, locale)}</TechnicalValue></div>
             </div>
           )) : <p className="text-sm text-zinc-400">Source timing was not recorded for this report.</p>}
         </div>
-        <p className="mt-5 text-xs leading-5 text-zinc-500">Brief prepared {formatDate(narrative?.generatedAt || report.readyAt)}. Claims above are limited to the report evidence available at that time.</p>
+        <p className="mt-5 text-xs leading-5 text-zinc-500">{t.report.prepared} <TechnicalValue>{formatDateTime(narrative?.generatedAt || report.readyAt, locale)}</TechnicalValue>. Claims above are limited to the report evidence available at that time.</p>
       </section>
     </article>
   );

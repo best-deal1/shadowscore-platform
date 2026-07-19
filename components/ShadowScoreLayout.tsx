@@ -3,16 +3,18 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
+import { useLocale } from "./LocaleProvider";
+import { localeNames, locales, type Locale } from "../lib/i18n";
 import { CONTACT_EMAIL, SUPPORT_EMAIL, LINKEDIN_URL, TIKTOK_URL, X_URL, YOUTUBE_URL } from "../lib/config";
 import { getCurrentUser, type ShadowScoreUser } from "../lib/auth";
 
 const primaryNav = [
-  { href: "/investigations", label: "Investigations" },
-  { href: "/reports", label: "Reports" },
-  { href: "/monitoring", label: "Monitoring" },
-  { href: "/upgrade", label: "Plans" },
-  { href: "/workspace", label: "Workspace" },
-  { href: "/account", label: "Account" },
+  { href: "/investigations", label: "Investigations", key: "investigations" },
+  { href: "/reports", label: "Reports", key: "reports" },
+  { href: "/monitoring", label: "Monitoring", key: "monitoring" },
+  { href: "/upgrade", label: "Plans", key: "plans" },
+  { href: "/workspace", label: "Workspace", key: "workspace" },
+  { href: "/account", label: "Account", key: "account" },
 ];
 
 const mobilePublicNav = [
@@ -27,7 +29,7 @@ const footerGroups = [
   { title: "Product", links: [
     { href: "/intake", label: "Start Investigation" },
     { href: "/example-report", label: "Example Report" },
-    { href: "/upgrade", label: "Plans" },
+    { href: "/upgrade", label: "Plans", key: "plans" },
     { href: "/about", label: "Methodology" },
   ]},
   { title: "Trust & Legal", links: [
@@ -55,6 +57,8 @@ function linkClass(active: boolean) {
 
 export default function ShadowScoreLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname() || "/";
+  const { locale, t } = useLocale();
+  const setLocale = async (next: Locale) => { if (next === locale) return; await fetch("/api/locale", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ locale: next }) }); window.location.reload(); };
   const [menuOpen, setMenuOpen] = useState(false);
   const [user] = useState<ShadowScoreUser | null>(() => getCurrentUser());
 
@@ -68,24 +72,26 @@ export default function ShadowScoreLayout({ children }: { children: ReactNode })
           </Link>
 
           <nav aria-label="Primary navigation" className="hidden items-center gap-1 text-sm font-bold lg:flex">
-            {primaryNav.map((item) => <Link key={item.href} href={item.href} className={linkClass(pathname === item.href)} aria-current={pathname === item.href ? "page" : undefined}>{item.label}</Link>)}
+            {primaryNav.map((item) => <Link key={item.href} href={item.href} className={linkClass(pathname === item.href)} aria-current={pathname === item.href ? "page" : undefined}>{t.nav[item.key as keyof typeof t.nav] || item.label}</Link>)}
           </nav>
 
           <div className="hidden items-center gap-3 lg:flex">
-            {user ? <span className="max-w-[180px] truncate rounded-full border border-emerald-400/25 bg-emerald-500/10 px-3 py-2 text-xs font-bold text-emerald-100">Connected: {user.email}</span> : <Link href="/login" className={linkClass(pathname === "/login")}>Sign In</Link>}
-            <Link href="/intake" className="rounded-full bg-red-600 px-5 py-2 text-sm font-black text-white shadow-lg shadow-red-950/40 transition hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-300">Start Investigation</Link>
+            <label className="sr-only" htmlFor="language-selector">{t.nav.language}</label><select id="language-selector" aria-label={t.nav.language} value={locale} onChange={(event) => void setLocale(event.target.value as Locale)} className="rounded-full border border-white/15 bg-black px-3 py-2 text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-red-300">{locales.map((item) => <option key={item} value={item}>{localeNames[item]}</option>)}</select>
+            {user ? <span className="max-w-[180px] truncate rounded-full border border-emerald-400/25 bg-emerald-500/10 px-3 py-2 text-xs font-bold text-emerald-100">Connected: {user.email}</span> : <Link href="/login" className={linkClass(pathname === "/login")}>{t.nav.signIn}</Link>}
+            <Link href="/intake" className="rounded-full bg-red-600 px-5 py-2 text-sm font-black text-white shadow-lg shadow-red-950/40 transition hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-300">{t.nav.start}</Link>
           </div>
 
-          <button type="button" aria-label="Open navigation menu" aria-expanded={menuOpen} aria-controls="mobile-navigation" onClick={() => setMenuOpen((open) => !open)} className="rounded-xl border border-white/10 px-3 py-2 text-sm font-black text-white focus:outline-none focus:ring-2 focus:ring-red-300 lg:hidden">
-            Menu
+          <button type="button" aria-label={t.nav.menu} aria-expanded={menuOpen} aria-controls="mobile-navigation" onClick={() => setMenuOpen((open) => !open)} className="rounded-xl border border-white/10 px-3 py-2 text-sm font-black text-white focus:outline-none focus:ring-2 focus:ring-red-300 lg:hidden">
+            {t.nav.menu}
           </button>
         </div>
         {menuOpen ? (
           <nav id="mobile-navigation" aria-label="Mobile navigation" onClick={() => setMenuOpen(false)} className="border-t border-white/10 bg-black px-4 py-4 lg:hidden">
             <div className="grid gap-2">
-              <Link href="/intake" className="rounded-2xl bg-red-600 px-4 py-3 text-center text-sm font-black text-white">Start Investigation</Link>
-              {user ? <div className="rounded-2xl border border-emerald-400/25 bg-emerald-500/10 px-4 py-3 text-xs font-bold text-emerald-100">Connected: {user.email}</div> : <Link href="/login" className={linkClass(pathname === "/login")}>Sign In</Link>}
-              {[...primaryNav, ...mobilePublicNav].map((item) => <Link key={item.href} href={item.href} className={linkClass(pathname === item.href)} aria-current={pathname === item.href ? "page" : undefined}>{item.label}</Link>)}
+              <label className="sr-only" htmlFor="mobile-language-selector">{t.nav.language}</label><select id="mobile-language-selector" aria-label={t.nav.language} value={locale} onChange={(event) => void setLocale(event.target.value as Locale)} className="rounded-xl border border-white/15 bg-black px-4 py-3 text-sm font-bold text-white">{locales.map((item) => <option key={item} value={item}>{localeNames[item]}</option>)}</select>
+              <Link href="/intake" className="rounded-2xl bg-red-600 px-4 py-3 text-center text-sm font-black text-white">{t.nav.start}</Link>
+              {user ? <div className="rounded-2xl border border-emerald-400/25 bg-emerald-500/10 px-4 py-3 text-xs font-bold text-emerald-100">Connected: {user.email}</div> : <Link href="/login" className={linkClass(pathname === "/login")}>{t.nav.signIn}</Link>}
+              {[...primaryNav, ...mobilePublicNav].map((item) => <Link key={item.href} href={item.href} className={linkClass(pathname === item.href)} aria-current={pathname === item.href ? "page" : undefined}>{("key" in item ? t.nav[item.key as keyof typeof t.nav] : item.label)}</Link>)}
             </div>
           </nav>
         ) : null}
