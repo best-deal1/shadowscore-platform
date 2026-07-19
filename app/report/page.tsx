@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import ShadowScoreLayout from "../../components/ShadowScoreLayout";
 import { EmptyState, ErrorState, LoadingState } from "../../components/AsyncState";
+import InvestigationTimeline from "../components/InvestigationTimeline";
 import { getCurrentSession } from "../../lib/auth";
 import { getWorkspace, type ShadowScoreReport } from "../../lib/workspace";
 
@@ -106,6 +107,13 @@ function ExecutiveBrief({ report }: { report: ShadowScoreReport }) {
           )) : <p className="text-sm text-zinc-400">No cross-provider business findings were produced from the available evidence.</p>}
         </div>
       </section>
+
+      {report.reportSummary?.scorecard && <section className="mt-5 rounded-3xl border border-white/10 bg-black/35 p-6" aria-label="Assessment summary">
+        <h2 className="text-xs font-black uppercase tracking-[0.28em] text-red-200">Assessment summary</h2>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{report.reportSummary.scorecard.scores.map((item) => <article key={item.dimension} className="rounded-2xl border border-white/10 bg-black/30 p-4"><h3 className="font-bold text-zinc-100">{item.dimension}</h3><p className="mt-2 text-sm capitalize text-zinc-300">{item.level.replaceAll("_", " ")}</p><p className="mt-1 text-xs capitalize text-zinc-500">Evidence confidence: {item.confidence}</p>{item.evidenceGaps.length > 0 && <p className="mt-3 text-xs leading-5 text-amber-200">Evidence gaps: {item.evidenceGaps.join(", ")}</p>}</article>)}</div>
+      </section>}
+
+      {report.reportSummary?.investigationTimeline && <InvestigationTimeline className="mt-5" title="Investigation status" items={report.reportSummary.investigationTimeline.map((item) => ({ title: item.label, description: item.status === "unavailable" ? "Evidence was unavailable for this stage." : `Stage ${item.status}.`, evidenceSource: item.source, status: item.status, timestamp: item.observedAt, risk: item.status === "failed" }))} />}
 
       {report.reportSummary?.websiteIntelligence && <section className="mt-5 rounded-3xl border border-white/10 bg-black/35 p-6" aria-label="Website Intelligence">
         <h2 className="text-xs font-black uppercase tracking-[0.28em] text-red-200">Website Intelligence</h2>

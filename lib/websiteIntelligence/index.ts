@@ -3,6 +3,7 @@ import { websiteModules } from "./registry";
 import type { WebsiteEvidence, WebsiteIntelligenceReport, WebsiteModuleResult, WebsiteScanContext } from "./types";
 export * from "./types";
 export { registerWebsiteModule, websiteModules } from "./registry";
+export { normalizeWebsiteEvidence } from "./evidence";
 
 function domainFor(target: string) { try { return new URL(target.includes("://") ? target : `https://${target}`).hostname.toLowerCase(); } catch { return target.trim().toLowerCase().replace(/^www\./, ""); } }
 function unavailable(moduleId: WebsiteModuleResult["moduleId"], moduleName: string, source: string, message: string, started: number): WebsiteModuleResult {
