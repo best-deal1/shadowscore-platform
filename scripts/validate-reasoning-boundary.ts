@@ -38,6 +38,12 @@ const presented = presentWorkspaceForEndUser(workspace);
 if (presented.reports[0].reportSummary?.reasoning) {
   throw new Error("Internal reasoning output was included in the end-user workspace response.");
 }
+if (presented.reports[0].providerResults) {
+  throw new Error("Raw provider results were included in the end-user workspace response.");
+}
+if (presented.reports[0].reportSummary?.knowledgeGraph || presented.reports[0].reportSummary?.technicalDetails) {
+  throw new Error("Internal report implementation details were included in the end-user workspace response.");
+}
 if (!workspace.reports[0].reportSummary?.reasoning) {
   throw new Error("Presenting the workspace mutated the stored reasoning output.");
 }
