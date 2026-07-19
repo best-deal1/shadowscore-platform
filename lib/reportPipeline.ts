@@ -205,6 +205,9 @@ export async function buildReadyReport(input: {
         pending: executionRecords.filter((record) => record.status === "pending"),
         failed: executionRecords.filter((record) => record.status === "failed"),
       },
+      sourceProvenance: providerResultsWithCanonicalIdentity
+        .filter((provider) => provider.status === "completed")
+        .map((provider) => ({ label: provider.providerId.replace(/[-_]/g, " "), completedAt: provider.completedAt })),
     },
     riskScore: undefined,
     confidenceScore: undefined,

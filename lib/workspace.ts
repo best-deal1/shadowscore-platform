@@ -64,7 +64,7 @@ export type ShadowScoreReport = {
   providerVersions?: Record<string, string>;
   providerResults?: ProviderResult[];
   evidenceSummary?: unknown;
-  reportSummary?: { message: string; primaryRiskDomain?: string; findingCount?: number; insights?: TrustInsight[]; insightEngineVersion?: string; decision?: DecisionOutput; reasoning?: ReasoningOutput; correlationSummary?: CorrelationSummary; identityProfile?: IdentityProfile; businessNarrative?: BusinessNarrative; businessIdentityResolution?: unknown; businessIdentityIntelligence?: BusinessIdentityIntelligenceResult; execution?: { completedInSeconds: number; providersExecuted: number; evidenceCollected: number; decisionConfidence?: string }; executionFlow?: string[]; knowledgeGraph?: KnowledgeGraphSnapshot; technicalDetails?: { executed: ProviderExecutionRecord[]; skipped: ProviderExecutionRecord[]; pending: ProviderExecutionRecord[]; failed: ProviderExecutionRecord[] } };
+  reportSummary?: { message: string; primaryRiskDomain?: string; findingCount?: number; insights?: TrustInsight[]; insightEngineVersion?: string; decision?: DecisionOutput; reasoning?: ReasoningOutput; correlationSummary?: CorrelationSummary; identityProfile?: IdentityProfile; businessNarrative?: BusinessNarrative; businessIdentityResolution?: unknown; businessIdentityIntelligence?: BusinessIdentityIntelligenceResult; execution?: { completedInSeconds: number; providersExecuted: number; evidenceCollected: number; decisionConfidence?: string }; executionFlow?: string[]; knowledgeGraph?: KnowledgeGraphSnapshot; technicalDetails?: { executed: ProviderExecutionRecord[]; skipped: ProviderExecutionRecord[]; pending: ProviderExecutionRecord[]; failed: ProviderExecutionRecord[] }; sourceProvenance?: Array<{ label: string; completedAt?: string }> };
   topFactors: string[];
 };
 
@@ -106,15 +106,21 @@ export type WorkspaceData = {
 };
 
 /**
- * Reasoning output is retained with the report for engine validation and later
- * internal use. It is deliberately omitted from data returned to browser-facing
- * workspace views until a dedicated decision-brief contract is introduced.
+ * Internal implementation data remains with the stored report. Browser-facing
+ * workspace views receive the business brief data and source provenance only.
  */
 export function presentReportForEndUser(report: ShadowScoreReport): ShadowScoreReport {
-  if (!report.reportSummary?.reasoning) return report;
+  if (!report.reportSummary) return { ...report, providerResults: undefined };
   const reportSummary = { ...report.reportSummary };
   delete reportSummary.reasoning;
-  return { ...report, reportSummary };
+  delete reportSummary.correlationSummary;
+  delete reportSummary.businessIdentityResolution;
+  delete reportSummary.businessIdentityIntelligence;
+  delete reportSummary.execution;
+  delete reportSummary.executionFlow;
+  delete reportSummary.knowledgeGraph;
+  delete reportSummary.technicalDetails;
+  return { ...report, providerResults: undefined, reportSummary };
 }
 
 export function presentWorkspaceForEndUser(workspace: WorkspaceData): WorkspaceData {
