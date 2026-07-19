@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import PaymentButtons from "../../components/PaymentButtons";
+import InvestigationLifecycle from "../components/InvestigationLifecycle";
 import { getCurrentSession } from "../../lib/auth";
 import { isPreviewReadyResponse, nextPreviewStatus, readPreviewJson } from "../../lib/freeScanPreviewFlow";
 import { createIntake, ShadowScoreIntake } from "../../lib/workspace";
@@ -105,15 +106,6 @@ const SCAN_MODES: Array<{
     description:
       "Validate notices, screenshots, emails, invoices, tracking and payout documents.",
   },
-];
-
-const ANIMATED_SCAN_STEPS = [
-  "Identifying target",
-  "Checking infrastructure",
-  "Resolving business identity",
-  "Collecting evidence",
-  "Building investigation",
-  "Preparing report",
 ];
 
 const WEBSITE_SIGNAL_CATEGORIES = ["DNS Intelligence", "WHOIS Intelligence", "SSL Certificate Provider", "HTTP Security Headers Provider", "SPF Provider", "DMARC Provider", "Public Business Profile Provider", "Reputation Provider", "Website Metadata Provider", "Contact Discovery Provider", "Social Profile Discovery Provider"];
@@ -583,6 +575,7 @@ export default function IntakePage() {
   const [freeScanRunning, setFreeScanRunning] = useState(false);
   const [previewStatus, setPreviewStatus] = useState<"idle" | "loading" | "ready" | "failed">("idle");
   const [freeScanError, setFreeScanError] = useState("");
+  const [investigationStartedAt, setInvestigationStartedAt] = useState<string>();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -840,6 +833,7 @@ export default function IntakePage() {
     setFreeScanResult(null);
     setPreviewStatus("idle");
     setFreeScanError("");
+    setInvestigationStartedAt(undefined);
   };
 
   const runFreePreview = async () => {
@@ -858,6 +852,7 @@ export default function IntakePage() {
     setFreeScanRunning(true);
     setPreviewStatus("loading");
     setFreeScanResult(null);
+    setInvestigationStartedAt(new Date().toISOString());
 
     try {
       const response = await fetch("/api/free-scan/providers", {
@@ -1272,18 +1267,15 @@ export default function IntakePage() {
               {freeScanRunning ? "Investigating..." : previewStatus === "ready" ? "Preview Ready" : "Start Investigation"}
             </button>
 
-            {previewStatus === "loading" && (
-              <div className="mt-6 rounded-3xl border border-red-400/20 bg-red-500/[0.06] p-5">
-                <div className="text-xs font-black uppercase tracking-[0.24em] text-red-200">Investigation timeline</div>
-                <div className="mt-4 space-y-3">
-                  {ANIMATED_SCAN_STEPS.map((step, index) => (
-                    <div key={step} className="flex items-center gap-3 text-sm text-zinc-300">
-                      <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-400" style={{ animationDelay: `${index * 120}ms` }} />
-                      <span>✓ {step}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+            {submitted && canAnalyze && previewStatus !== "idle" && (
+              <InvestigationLifecycle
+                running={previewStatus === "loading"}
+                failed={previewStatus === "failed"}
+                target={activeTarget}
+                startedAt={investigationStartedAt}
+                completedAt={freeScanResult?.executedAt}
+                providers={freeScanResult?.providers}
+              />
             )}
 
             {submitted && canAnalyze && previewStatus !== "loading" && (
