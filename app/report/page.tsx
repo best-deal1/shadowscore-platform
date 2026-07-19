@@ -9,6 +9,8 @@ import { buildTrustTimeline } from "../../lib/trustTimeline";
 import { decisionLightDisplayLabel, decisionRiskDisplayLabel } from "../../lib/canonicalDecision";
 import { getWorkspace, ShadowScoreReport } from "../../lib/workspace";
 import { useEffect, useState } from "react";
+import InvestigationTimeline from "../components/InvestigationTimeline";
+import AuditMetadata from "../components/AuditMetadata";
 
 function formatDate(value?: string) {
   if (!value) return "Pending";
@@ -149,7 +151,7 @@ export default function ReportPage() {
     <ShadowScoreLayout>
       <section className="mx-auto max-w-5xl px-6 py-16">
         <Link href="/workspace" className="text-sm font-bold text-red-300 hover:text-red-200">← Back to dashboard</Link>
-        <div className="mt-8 text-xs uppercase tracking-[0.45em] text-red-300">Private Report</div>
+        <div className="mt-8 text-xs uppercase tracking-[0.45em] text-sky-300">Private Report</div>
         {!loaded && <p className="mt-6 text-zinc-400">Preparing report...</p>}
         {loaded && !report && (
           <div className="mt-8 rounded-[28px] border border-white/10 bg-white/[0.035] p-7">
@@ -166,10 +168,12 @@ export default function ReportPage() {
         {report && isReady && (
           <div className="mt-8 rounded-[32px] border border-white/10 bg-black/55 p-8 shadow-[0_0_60px_rgba(120,0,20,0.16)]">
             <DecisionCard report={report} />
+            <AuditMetadata compact createdAt={report.createdAt} completedAt={report.readyAt} engineVersion={report.reportSummary?.insightEngineVersion} policyVersion="Trust Policy v1.0" sources={report.providerResults?.filter((provider) => provider.status === "completed").map((provider) => provider.providerId) || []} />
+            {trustTimeline.length ? <InvestigationTimeline className="mt-8" items={trustTimeline.map((item) => ({ ...item, timestamp: report.readyAt, risk: /contradiction|risk/i.test(item.title) }))} /> : null}
             <DecisionModePanel report={report} />
 
-            <section className="mt-8 rounded-[28px] border border-red-400/20 bg-red-500/[0.06] p-6">
-              <div className="text-xs uppercase tracking-[0.28em] text-red-200">Executive brief</div>
+            <section className="mt-8 rounded-[28px] border border-sky-400/20 bg-sky-500/[0.06] p-6">
+              <div className="text-xs uppercase tracking-[0.28em] text-sky-200">Executive brief</div>
               <h1 className="mt-4 text-4xl font-extrabold">{report.reportSummary?.identityProfile?.businessIdentity?.businessName.value || report.target || report.entity}</h1>
               <p className="mt-4 max-w-3xl text-lg leading-8 text-zinc-200">
                 <span className="font-bold text-white">Commercial answer:</span> {(report.reportSummary?.decision?.recommendedAction || report.reportSummary?.businessNarrative?.decision || "Use the findings below before you proceed.")}
@@ -181,8 +185,8 @@ export default function ReportPage() {
               </div>
             </section>
 
-            <section className="mt-8 rounded-[28px] border border-red-400/20 bg-red-500/[0.06] p-6">
-              <div className="text-xs uppercase tracking-[0.28em] text-red-200">Board-level rationale</div>
+            <section className="mt-8 rounded-[28px] border border-sky-400/20 bg-sky-500/[0.06] p-6">
+              <div className="text-xs uppercase tracking-[0.28em] text-sky-200">Board-level rationale</div>
               <div className="mt-4 text-3xl font-black text-white">{report.reportSummary?.businessNarrative?.decision || report.reportSummary?.decision?.decisionLabel || "Review available evidence"}</div>
               {executiveSummary?.body.length ? (
                 <div className="mt-5 space-y-3 text-base leading-7 text-zinc-300">

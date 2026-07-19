@@ -1,3 +1,6 @@
+import InvestigationTimeline from "./InvestigationTimeline";
+import AuditMetadata from "./AuditMetadata";
+
 type Provider = {
   providerId: string;
   providerName: string;
@@ -20,11 +23,6 @@ const stages = [
   "Executive recommendation",
   "Professional report",
 ];
-
-function timestamp(value?: string) {
-  if (!value) return "Live";
-  return new Intl.DateTimeFormat("en", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }).format(new Date(value));
-}
 
 function statusStyle(status: LifecycleStatus) {
   if (status === "Completed") return "border-emerald-400/25 bg-emerald-500/10 text-emerald-100";
@@ -79,7 +77,7 @@ export default function InvestigationLifecycle({
     <section aria-live="polite" className="mt-6 rounded-[28px] border border-white/10 bg-[#0a0a0c]/95 p-5 shadow-[0_18px_60px_rgba(0,0,0,.3)]">
       <div className="flex flex-wrap items-start justify-between gap-4 border-b border-white/10 pb-5">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.24em] text-red-300">Investigation workspace</p>
+          <p className="text-xs font-bold uppercase tracking-[0.24em] text-sky-300">Investigation workspace</p>
           <h2 className="mt-2 text-xl font-black text-white">{target || "Target"}</h2>
           <p className="mt-1 text-sm text-zinc-400">Work is recorded as each source returns evidence.</p>
         </div>
@@ -97,12 +95,8 @@ export default function InvestigationLifecycle({
           </ol>
         </div>
         <div className="space-y-5">
-          <div>
-            <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500">Activity log</h3>
-            <div className="mt-4 space-y-2">
-              {log.map((entry) => <div key={`${entry.text}-${entry.source}`} className="rounded-xl border border-white/10 bg-black/35 p-3"><div className="flex items-start justify-between gap-3"><div className="text-sm font-semibold text-white">{entry.text}</div><span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] ${statusStyle(entry.status)}`}>{entry.status}</span></div><div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-zinc-500"><span>{timestamp(entry.at)}</span><span>Source: {entry.source}</span></div></div>)}
-            </div>
-          </div>
+          <InvestigationTimeline title="Investigation timeline" items={log.map((entry) => ({ title: entry.text, description: `Status: ${entry.status}`, evidenceSource: entry.source, status: entry.status, timestamp: entry.at, risk: entry.status === "Failed" }))} />
+          <AuditMetadata compact createdAt={startedAt} completedAt={completedAt} engineVersion="Insight Engine v1.0" policyVersion="Trust Policy v1.0" sources={completedProviders.map((provider) => provider.providerName)} />
           {!running && !failed && <div><h3 className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500">Evidence received</h3><div className="mt-4 space-y-2">{completedProviders.length ? completedProviders.slice(0, 4).map((provider) => <div key={provider.providerId} className="rounded-xl border border-white/10 bg-black/35 p-3"><div className="flex items-center justify-between gap-3"><span className="text-sm font-semibold text-white">{provider.providerName}</span><span className="text-xs font-bold text-emerald-200">Verified source</span></div><div className="mt-2 text-xs text-zinc-400">{provider.evidenceCount || provider.fields.length} evidence item{(provider.evidenceCount || provider.fields.length) === 1 ? "" : "s"} attached</div></div>) : <p className="rounded-xl border border-white/10 bg-black/35 p-3 text-sm text-zinc-400">No evidence was returned by applicable sources.</p>}</div></div>}
           <div><h3 className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500">Evidence quality</h3><div className="mt-3 grid grid-cols-2 gap-2 text-xs"><div className="rounded-lg border border-blue-400/20 bg-blue-500/10 p-2 text-blue-100">Known: reported by a source</div><div className="rounded-lg border border-emerald-400/20 bg-emerald-500/10 p-2 text-emerald-100">Verified: corroborated evidence</div><div className="rounded-lg border border-zinc-600/60 bg-zinc-900/60 p-2 text-zinc-300">Unknown: no conclusion</div><div className="rounded-lg border border-orange-400/20 bg-orange-500/10 p-2 text-orange-100">Unavailable: source did not return</div><div className="col-span-2 rounded-lg border border-red-400/20 bg-red-500/10 p-2 text-red-100">Contradictory: sources disagree</div></div></div>
         </div>
