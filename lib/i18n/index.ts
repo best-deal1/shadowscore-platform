@@ -747,6 +747,20 @@ const en = {
     coverage:
       "Provider coverage depends on the target and available evidence. Evidence gaps and unavailable providers are shown in the report.",
   },
+  intakeUi: {
+    backToShadowScore: "Back to ShadowScore",
+    freePreview: "Free Trust Intelligence Preview",
+    investigation: "ShadowScore Investigation",
+    evidenceReadiness: "Evidence readiness",
+    evidenceReadinessDescription:
+      "Add files when they help. ShadowScore flags unsupported or weak evidence before you pay for a full report.",
+    privateByDesign: "Private by design",
+    privateByDesignDescription:
+      "We use the target and evidence you provide to prepare a private report after checkout.",
+    startInvestigation: "Start Investigation",
+    investigating: "Investigating...",
+    previewReady: "Preview Ready",
+  },
   report: {
     brief: "Executive decision brief",
     recommendation: "Recommendation",
@@ -817,6 +831,20 @@ const translations: Record<Exclude<Locale, "en">, Dictionary> = {
       coverage:
         "כיסוי הספקים תלוי ביעד ובראיות הזמינות. פערי ראיות וספקים שאינם זמינים מוצגים בדוח.",
     },
+    intakeUi: {
+      backToShadowScore: "חזרה ל-ShadowScore",
+      freePreview: "תצוגה מקדימה חינמית של מודיעין אמון",
+      investigation: "חקירת ShadowScore",
+      evidenceReadiness: "מוכנות הראיות",
+      evidenceReadinessDescription:
+        "הוסיפו קבצים כשיש בהם צורך. ShadowScore מסמנת ראיות שאינן נתמכות או חלשות לפני התשלום עבור דוח מלא.",
+      privateByDesign: "פרטיות כברירת מחדל",
+      privateByDesignDescription:
+        "אנו משתמשים ביעד ובראיות שמסרתם כדי להכין דוח פרטי לאחר התשלום.",
+      startInvestigation: "התחלת חקירה",
+      investigating: "החקירה מתבצעת...",
+      previewReady: "התצוגה המקדימה מוכנה",
+    },
     report: {
       brief: "תמצית החלטה ניהולית",
       recommendation: "המלצה",
@@ -884,6 +912,20 @@ const translations: Record<Exclude<Locale, "en">, Dictionary> = {
         "اسم الشركة أو الموقع أو النطاق أو ملف البائع أو اسم التاجر أو المورد أو البريد الإلكتروني أو الدليل",
       coverage:
         "تعتمد تغطية المزوّدين على الهدف والأدلة المتاحة. تظهر فجوات الأدلة والمزوّدون غير المتاحين في التقرير.",
+    },
+    intakeUi: {
+      backToShadowScore: "العودة إلى ShadowScore",
+      freePreview: "معاينة مجانية لمعلومات الثقة",
+      investigation: "تحقيق ShadowScore",
+      evidenceReadiness: "جاهزية الأدلة",
+      evidenceReadinessDescription:
+        "أضف ملفات عند الحاجة. يحدد ShadowScore الأدلة غير المدعومة أو الضعيفة قبل دفع ثمن التقرير الكامل.",
+      privateByDesign: "خصوصية حسب التصميم",
+      privateByDesignDescription:
+        "نستخدم الهدف والأدلة التي تقدمها لإعداد تقرير خاص بعد إتمام الدفع.",
+      startInvestigation: "بدء التحقيق",
+      investigating: "جارٍ التحقيق...",
+      previewReady: "المعاينة جاهزة",
     },
     report: {
       brief: "موجز قرار تنفيذي",
@@ -953,6 +995,20 @@ const translations: Record<Exclude<Locale, "en">, Dictionary> = {
       coverage:
         "La cobertura de proveedores depende del objetivo y de la evidencia disponible. Los vacíos de evidencia y los proveedores no disponibles aparecen en el informe.",
     },
+    intakeUi: {
+      backToShadowScore: "Volver a ShadowScore",
+      freePreview: "Vista previa gratuita de inteligencia de confianza",
+      investigation: "Investigación de ShadowScore",
+      evidenceReadiness: "Preparación de la evidencia",
+      evidenceReadinessDescription:
+        "Añada archivos cuando ayuden. ShadowScore señala evidencia no compatible o débil antes de pagar un informe completo.",
+      privateByDesign: "Privado por diseño",
+      privateByDesignDescription:
+        "Usamos el objetivo y la evidencia que proporcione para preparar un informe privado después del pago.",
+      startInvestigation: "Iniciar investigación",
+      investigating: "Investigando...",
+      previewReady: "Vista previa lista",
+    },
     report: {
       brief: "Resumen ejecutivo de decisión",
       recommendation: "Recomendación",
@@ -1021,6 +1077,20 @@ const translations: Record<Exclude<Locale, "en">, Dictionary> = {
       coverage:
         "La couverture des fournisseurs dépend de la cible et des preuves disponibles. Les lacunes de preuve et les fournisseurs indisponibles apparaissent dans le rapport.",
     },
+    intakeUi: {
+      backToShadowScore: "Retour à ShadowScore",
+      freePreview: "Aperçu gratuit du renseignement de confiance",
+      investigation: "Enquête ShadowScore",
+      evidenceReadiness: "Préparation des preuves",
+      evidenceReadinessDescription:
+        "Ajoutez des fichiers lorsqu’ils sont utiles. ShadowScore signale les preuves non prises en charge ou faibles avant le paiement d’un rapport complet.",
+      privateByDesign: "Confidentialité par conception",
+      privateByDesignDescription:
+        "Nous utilisons la cible et les preuves fournies pour préparer un rapport privé après le paiement.",
+      startInvestigation: "Démarrer l’enquête",
+      investigating: "Enquête en cours...",
+      previewReady: "Aperçu prêt",
+    },
     report: {
       brief: "Synthèse décisionnelle",
       recommendation: "Recommandation",
@@ -1088,6 +1158,20 @@ const translations: Record<Exclude<Locale, "en">, Dictionary> = {
         "Firmenname, Website, Domain, Verkäuferprofil, Händler- oder Lieferantenname, E-Mail oder Beleg",
       coverage:
         "Die Anbieterabdeckung hängt vom Ziel und den verfügbaren Belegen ab. Beleglücken und nicht verfügbare Anbieter werden im Bericht angezeigt.",
+    },
+    intakeUi: {
+      backToShadowScore: "Zurück zu ShadowScore",
+      freePreview: "Kostenlose Vorschau der Vertrauensanalyse",
+      investigation: "ShadowScore-Untersuchung",
+      evidenceReadiness: "Belegbereitschaft",
+      evidenceReadinessDescription:
+        "Fügen Sie Dateien hinzu, wenn sie helfen. ShadowScore kennzeichnet nicht unterstützte oder schwache Belege, bevor Sie für einen vollständigen Bericht zahlen.",
+      privateByDesign: "Datenschutz durch Design",
+      privateByDesignDescription:
+        "Wir verwenden das Ziel und die von Ihnen bereitgestellten Belege, um nach der Zahlung einen privaten Bericht zu erstellen.",
+      startInvestigation: "Untersuchung starten",
+      investigating: "Untersuchung läuft...",
+      previewReady: "Vorschau bereit",
     },
     report: {
       brief: "Management-Entscheidungsübersicht",

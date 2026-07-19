@@ -950,10 +950,10 @@ export default function IntakePage() {
               alt="ShadowScore"
               className="h-8 w-8 object-contain"
             />
-            Back to ShadowScore
+            {t.intakeUi.backToShadowScore}
           </Link>
           <div className="rounded-full border border-red-400/25 bg-red-500/10 px-4 py-2 text-sm font-bold text-red-200">
-            Free Trust Intelligence Preview
+            {t.intakeUi.freePreview}
           </div>
         </div>
       </header>
@@ -962,7 +962,7 @@ export default function IntakePage() {
         <div className="grid gap-10 lg:grid-cols-[.82fr_1.18fr]">
           <div>
             <div className="text-xs uppercase tracking-[0.45em] text-red-300">
-              ShadowScore Investigation
+              {t.intakeUi.investigation}
             </div>
             <h1 className="mt-6 text-5xl font-extrabold leading-tight">
               {t.intake.title}
@@ -971,15 +971,15 @@ export default function IntakePage() {
               {t.intake.description}
             </p>
             <div className="mt-10 rounded-3xl border border-white/10 bg-white/[0.035] p-6">
-              <div className="font-bold">Evidence readiness</div>
+              <div className="font-bold">{t.intakeUi.evidenceReadiness}</div>
               <p className="mt-4 leading-7 text-zinc-400">
-                Add files when they help. ShadowScore flags unsupported or weak evidence before you pay for a full report.
+                {t.intakeUi.evidenceReadinessDescription}
               </p>
             </div>
             <div className="mt-6 rounded-3xl border border-red-400/20 bg-red-500/[0.06] p-6">
-              <div className="font-bold text-red-200">Private by design</div>
+              <div className="font-bold text-red-200">{t.intakeUi.privateByDesign}</div>
               <p className="mt-3 leading-7 text-zinc-400">
-                We use the target and evidence you provide to prepare a private report after checkout.
+                {t.intakeUi.privateByDesignDescription}
               </p>
             </div>
           </div>
@@ -1162,7 +1162,7 @@ export default function IntakePage() {
                   <div className="mb-3 flex items-center justify-between">
                     <div>
                       <div className="text-xs uppercase tracking-[0.28em] text-zinc-500">
-                        Evidence readiness
+                        {t.intakeUi.evidenceReadiness}
                       </div>
                       <div className="mt-2 font-bold">
                         {files.length
@@ -1268,7 +1268,11 @@ export default function IntakePage() {
               onClick={runFreePreview}
               className="mt-6 block w-full rounded-2xl bg-red-600 px-7 py-5 text-center text-sm font-black uppercase tracking-[0.16em] shadow-[0_0_28px_rgba(220,38,38,0.28)] hover:bg-red-500"
             >
-              {freeScanRunning ? "Investigating..." : previewStatus === "ready" ? "Preview Ready" : "Start Investigation"}
+              {freeScanRunning
+                ? t.intakeUi.investigating
+                : previewStatus === "ready"
+                  ? t.intakeUi.previewReady
+                  : t.intakeUi.startInvestigation}
             </button>
 
             {submitted && canAnalyze && previewStatus !== "idle" && (

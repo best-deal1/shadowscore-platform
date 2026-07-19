@@ -15,6 +15,9 @@ const phrases = [
   "Recorded during investigation",
   "verification trail",
   "and ownership claims",
+  "Back to ShadowScore",
+  "Evidence readiness",
+  "Start Investigation",
 ];
 for (const locale of locales.filter((locale) => locale !== "en")) {
   const dictionary = getDictionary(locale);
@@ -56,6 +59,7 @@ for (const locale of locales.filter((locale) => locale !== "en")) {
     ...home.scenarios,
     ...Object.values(dictionary.footer),
     ...Object.values(dictionary.audit),
+    ...Object.values(dictionary.intakeUi),
   ];
   for (const phrase of phrases)
     assert.ok(
