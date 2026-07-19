@@ -9,7 +9,9 @@ import { buildIdentityProfile } from "./identityEngine";
 import { buildBusinessProfile } from "./businessProfileEngine";
 import { buildBusinessIdentityIntelligence } from "./businessIdentityIntelligence";
 import { buildBusinessIntelligence } from "./businessIntelligence";
-import { investigateWebsite } from "./websiteIntelligence";
+import { investigateWebsite, normalizeWebsiteEvidence } from "./websiteIntelligence";
+import { buildShadowScorecard } from "./scoring";
+import { buildInvestigationTimeline } from "./investigation/timeline";
 import { buildBusinessIdentityKnowledgeScan, BusinessKnowledgeGraph } from "./knowledgeGraph";
 import { buildBusinessNarrative } from "./narrative";
 import { buildTrustTimeline } from "./trustTimeline";
@@ -59,12 +61,15 @@ export async function buildReadyReport(input: {
   const executionPlan = planFromClassification(classification);
   executionFlow.push("✓ Execution plan created");
   const { providerResults, executionRecords } = await providerManager.runExecutionPlan(providerContext, executionPlan.executionPlan, executionPlan.skippedEngines);
-  const evidenceItems = buildEvidenceItems({
+  const websiteIntelligence = intake.scanMode === "website" ? await investigateWebsite({ target: intake.target }) : undefined;
+  const websiteEvidenceItems = websiteIntelligence ? normalizeWebsiteEvidence(websiteIntelligence) : [];
+  const providerEvidenceItems = buildEvidenceItems({
     providerResults,
     notCheckedProviders: executionRecords
       .filter((record) => record.status === "pending" || record.status === "skipped")
       .map((record) => ({ providerId: record.providerId || record.engineId, reason: record.reason || "Provider was not checked in this execution plan." })),
   });
+  const evidenceItems = [...providerEvidenceItems, ...websiteEvidenceItems];
   const correlationSummary = correlateEvidence({ evidenceItems });
   const providerCategories = Object.fromEntries(providerManager.listProviders().map((provider) => [provider.id, provider.category]));
   const canonicalEvidenceSummary = summarizeEvidence(evidenceItems, providerCategories);
@@ -100,7 +105,6 @@ export async function buildReadyReport(input: {
   const identityProfile = applyCanonicalIdentityToIdentityProfile(baseIdentityProfile, canonicalIdentity);
   const businessIdentityIntelligence = buildBusinessIdentityIntelligence({ providerResults: providerResultsWithCanonicalIdentity, target: intake.target, claimedBusinessName: canonicalBusinessProfile.businessName, canonicalIdentity, generatedAt: now });
   const businessIntelligence = buildBusinessIntelligence(providerResultsWithCanonicalIdentity, now);
-  const websiteIntelligence = intake.scanMode === "website" ? await investigateWebsite({ target: intake.target }) : undefined;
   const knowledgeGraph = new BusinessKnowledgeGraph();
   knowledgeGraph.applyScan(buildBusinessIdentityKnowledgeScan({
     scanId: `report-${intake.intakeId}`,
@@ -134,6 +138,8 @@ export async function buildReadyReport(input: {
     businessTrustIntelligence: businessIdentityIntelligence,
   });
   executionFlow.push("✓ Decision generated");
+  const scorecard = buildShadowScorecard({ evidenceItems: providerEvidenceItems, websiteEvidence: websiteEvidenceItems });
+  const investigationTimeline = buildInvestigationTimeline({ websiteIntelligence, completedAt: now, identityCompleted: true, correlationCompleted: true, businessCompleted: true, decisionCompleted: true, executiveCompleted: true });
   const businessMemory = rememberBusinessScan({
     scanId: `report-${intake.intakeId}`,
     identity: {
@@ -197,6 +203,8 @@ export async function buildReadyReport(input: {
       businessIdentityIntelligence,
       businessIntelligence,
       websiteIntelligence,
+      scorecard,
+      investigationTimeline,
       execution: {
         completedInSeconds: Number(((Date.now() - startedAt) / 1000).toFixed(2)),
         providersExecuted: executionRecords.filter((record) => record.status === "executed").length,
