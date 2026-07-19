@@ -6,6 +6,8 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import PaymentButtons from "../../components/PaymentButtons";
 import InvestigationLifecycle from "../components/InvestigationLifecycle";
+import InvestigationTimeline from "../components/InvestigationTimeline";
+import AuditMetadata from "../components/AuditMetadata";
 import { getCurrentSession } from "../../lib/auth";
 import { isPreviewReadyResponse, nextPreviewStatus, readPreviewJson } from "../../lib/freeScanPreviewFlow";
 import { createIntake, ShadowScoreIntake } from "../../lib/workspace";
@@ -1406,15 +1408,13 @@ export default function IntakePage() {
                     ) : null}
 
                     {freeScanResult?.timeline?.length ? (
-                      <section className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-                        <div className="text-xs uppercase tracking-[0.22em] text-red-300">Trust Timeline</div>
-                        <div className="mt-4 space-y-3">{freeScanResult.timeline.map((item, index) => <div key={`${item.title}-${index}`} className="rounded-xl border border-white/10 bg-black/35 p-4"><div className="flex flex-wrap items-center justify-between gap-2"><div className="font-black text-white">Step {index + 1}: {item.title}</div><span className="rounded-full border border-emerald-400/25 bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-100">{item.status}</span></div><p className="mt-2 text-sm leading-6 text-zinc-300">{item.description}</p><p className="mt-2 text-xs leading-5 text-zinc-500"><span className="text-zinc-400">Evidence source:</span> {item.evidenceSource}</p></div>)}</div>
-                      </section>
+                      <InvestigationTimeline items={freeScanResult.timeline.map((item) => ({ ...item, timestamp: freeScanResult.executedAt }))} />
                     ) : null}
+                    {freeScanResult ? <AuditMetadata compact createdAt={freeScanResult.executedAt} completedAt={freeScanResult.executedAt} engineVersion={freeScanResult.insightEngineVersion} policyVersion="Trust Policy v1.0" sources={freeScanResult.providers.filter((provider) => provider.status === "completed").map((provider) => provider.providerName)} /> : null}
 
                     {scanMode === "website" && (freeScanRunning || freeScanResult || freeScanError) && (
                       <section className="rounded-2xl border border-white/10 bg-black/50 p-5">
-                        <div className="text-xs uppercase tracking-[0.22em] text-red-300">Provider status</div>
+                        <div className="text-xs uppercase tracking-[0.22em] text-sky-300">Provider status</div>
                         <div className="mt-4 grid gap-3 md:grid-cols-2">{(freeScanResult?.providerRegistry || []).map((provider) => { const result = freeScanResult?.providers.find((item) => item.providerId === provider.id); const status = providerStatusLabel(result); return <div key={provider.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"><div className="font-black text-white">{providerStatusIcon(status)} {provider.name}</div><div className="mt-1 text-xs uppercase tracking-[0.18em] text-zinc-500">{provider.category} · v{provider.version} · {status}</div>{result && <div className="mt-3 space-y-2 text-sm text-zinc-300">{result.fields.map((field) => <div key={field.label}><span className="text-zinc-500">{field.label}:</span> {renderValue(field.value)}</div>)}{status !== "Completed" && <div className="text-yellow-100">Status: {status}. {result.error || result.failureReason || "Unavailable"}</div>}</div>}</div>; })}</div>
                         {freeScanResult?.providerRegistry?.length ? <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] p-3 text-xs leading-5 text-zinc-400">Provider Coverage: {freeScanResult.providers.filter((provider) => providerStatusLabel(provider) === "Completed").length} of {freeScanResult.providerRegistry.length} registry providers completed.</div> : null}
                         {freeScanError && <div className="mt-4 rounded-xl border border-red-400/25 bg-red-500/10 p-3 text-sm text-red-100">{freeScanError}</div>}
