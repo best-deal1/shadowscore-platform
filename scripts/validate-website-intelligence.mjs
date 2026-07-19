@@ -1,0 +1,12 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+const root = resolve(import.meta.dirname, "..");
+const read = (path) => readFileSync(resolve(root, path), "utf8");
+const modules = read("lib/websiteIntelligence/modules.ts");
+const types = read("lib/websiteIntelligence/types.ts");
+const required = ["domain", "dns", "ssl", "http", "security_headers", "technology", "infrastructure", "email", "reputation", "quality", "screenshot"];
+for (const id of required) if (!modules.includes(`simple(\"${id}\"`)) throw new Error(`Missing Website Intelligence module: ${id}`);
+for (const field of ["findings", "evidence", "confidence", "source", "businessImpact", "recommendation", "executiveSummary"]) if (!types.includes(field)) throw new Error(`Website Intelligence contract lacks ${field}`);
+if (!read("lib/websiteIntelligence/index.ts").includes("Promise.all")) throw new Error("Modules must run independently.");
+if (!read("lib/websiteIntelligence/index.ts").includes("unavailable")) throw new Error("Unavailable modules must return evidence.");
+console.log("Website Intelligence validation passed.");

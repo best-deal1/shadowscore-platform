@@ -107,6 +107,15 @@ function ExecutiveBrief({ report }: { report: ShadowScoreReport }) {
         </div>
       </section>
 
+      {report.reportSummary?.websiteIntelligence && <section className="mt-5 rounded-3xl border border-white/10 bg-black/35 p-6" aria-label="Website Intelligence">
+        <h2 className="text-xs font-black uppercase tracking-[0.28em] text-red-200">Website Intelligence</h2>
+        <p className="mt-3 text-sm leading-6 text-zinc-300">{report.reportSummary.websiteIntelligence.executiveSummary}</p>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          {[['Technical health', report.reportSummary.websiteIntelligence.technicalHealth], ['Security posture', report.reportSummary.websiteIntelligence.securityPosture], ['Infrastructure maturity', report.reportSummary.websiteIntelligence.infrastructureMaturity], ['Website trust indicators', report.reportSummary.websiteIntelligence.trustIndicators]].map(([title, body]) => <div key={title} className="rounded-2xl border border-white/10 bg-black/30 p-4"><h3 className="text-xs font-black uppercase tracking-wider text-zinc-300">{title}</h3><p className="mt-2 text-sm leading-6 text-zinc-400">{body}</p></div>)}
+        </div>
+        <div className="mt-5"><ListCard title="Recommended actions" items={report.reportSummary.websiteIntelligence.recommendedActions} numbered emptyMessage="No additional website actions were identified from the available evidence." /></div>
+      </section>}
+
       <section className="mt-8 border-t border-white/10 pt-6" aria-label="Source provenance">
         <h2 className="text-xs font-black uppercase tracking-[0.28em] text-red-200">Source provenance</h2>
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
