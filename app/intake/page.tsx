@@ -82,35 +82,6 @@ const MARKETPLACE_PLATFORMS = [
   "Other",
 ];
 
-const SCAN_MODES: Array<{
-  id: ScanMode;
-  label: string;
-  eyebrow: string;
-  description: string;
-}> = [
-  {
-    id: "website",
-    label: "Website / Business",
-    eyebrow: "No upload required",
-    description:
-      "Enter a URL, business name or company domain for the Trust Intelligence entry point.",
-  },
-  {
-    id: "marketplace",
-    label: "Marketplace / Seller",
-    eyebrow: "Optional evidence",
-    description:
-      "Check a marketplace seller profile, platform account, payout account or store identity.",
-  },
-  {
-    id: "evidence",
-    label: "Evidence Review",
-    eyebrow: "Upload required",
-    description:
-      "Validate notices, screenshots, emails, invoices, tracking and payout documents.",
-  },
-];
-
 const WEBSITE_SIGNAL_CATEGORIES = ["DNS Intelligence", "WHOIS Intelligence", "SSL Certificate Provider", "HTTP Security Headers Provider", "SPF Provider", "DMARC Provider", "Public Business Profile Provider", "Reputation Provider", "Website Metadata Provider", "Contact Discovery Provider", "Social Profile Discovery Provider"];
 
 const MARKETPLACE_REQUIREMENTS: Record<string, Requirement[]> = {
@@ -564,6 +535,11 @@ function hasHint(fileNames: string[], hints: string[]) {
 
 export default function IntakePage() {
   const { t } = useLocale();
+  const scanModes: Array<{ id: ScanMode; label: string; eyebrow: string; description: string }> = [
+    { id: "website", label: t.intakeUi.websiteBusiness, eyebrow: t.intakeUi.noUploadRequired, description: t.intakeUi.websiteModeDescription },
+    { id: "marketplace", label: t.intakeUi.marketplaceSeller, eyebrow: t.intakeUi.optionalEvidence, description: t.intakeUi.marketplaceModeDescription },
+    { id: "evidence", label: t.intakeUi.evidenceReview, eyebrow: t.intakeUi.uploadRequired, description: t.intakeUi.evidenceModeDescription },
+  ];
   const [scanMode, setScanMode] = useState<ScanMode>("website");
   const [files, setFiles] = useState<File[]>([]);
   const [marketplace, setMarketplace] = useState("eBay");
@@ -612,7 +588,7 @@ export default function IntakePage() {
     [scanMode, marketplace],
   );
   const activeMode =
-    SCAN_MODES.find((mode) => mode.id === scanMode) || SCAN_MODES[0];
+    scanModes.find((mode) => mode.id === scanMode) || scanModes[0];
   const fileNames = useMemo(
     () => files.map((file) => normalize(file.name)),
     [files],
@@ -830,7 +806,7 @@ export default function IntakePage() {
       target: activeTarget,
       email,
       fileNames: files.map((file) => file.name),
-      visibleSignalCategories: scanMode === "website" ? WEBSITE_SIGNAL_CATEGORIES : (detectedSignals.length ? detectedSignals.map((item) => item.title) : ["Marketplace identity", "Evidence readiness", "Payment or policy categories"]),
+      visibleSignalCategories: scanMode === "website" ? WEBSITE_SIGNAL_CATEGORIES : (detectedSignals.length ? detectedSignals.map((item) => item.title) : ["Marketplace identity", t.intakeUi.evidenceReadiness, "Payment or policy categories"]),
     });
 
   const resetFreeScan = () => {
@@ -950,10 +926,10 @@ export default function IntakePage() {
               alt="ShadowScore"
               className="h-8 w-8 object-contain"
             />
-            Back to ShadowScore
+            {t.intakeUi.back}
           </Link>
           <div className="rounded-full border border-red-400/25 bg-red-500/10 px-4 py-2 text-sm font-bold text-red-200">
-            Free Trust Intelligence Preview
+            {t.intakeUi.preview}
           </div>
         </div>
       </header>
@@ -962,7 +938,7 @@ export default function IntakePage() {
         <div className="grid gap-10 lg:grid-cols-[.82fr_1.18fr]">
           <div>
             <div className="text-xs uppercase tracking-[0.45em] text-red-300">
-              ShadowScore Investigation
+              {t.intakeUi.eyebrow}
             </div>
             <h1 className="mt-6 text-5xl font-extrabold leading-tight">
               {t.intake.title}
@@ -971,22 +947,22 @@ export default function IntakePage() {
               {t.intake.description}
             </p>
             <div className="mt-10 rounded-3xl border border-white/10 bg-white/[0.035] p-6">
-              <div className="font-bold">Evidence readiness</div>
+              <div className="font-bold">{t.intakeUi.evidenceReadiness}</div>
               <p className="mt-4 leading-7 text-zinc-400">
-                Add files when they help. ShadowScore flags unsupported or weak evidence before you pay for a full report.
+                {t.intakeUi.evidenceReadinessCopy}
               </p>
             </div>
             <div className="mt-6 rounded-3xl border border-red-400/20 bg-red-500/[0.06] p-6">
-              <div className="font-bold text-red-200">Private by design</div>
+              <div className="font-bold text-red-200">{t.intakeUi.privateByDesign}</div>
               <p className="mt-3 leading-7 text-zinc-400">
-                We use the target and evidence you provide to prepare a private report after checkout.
+                {t.intakeUi.privateByDesignCopy}
               </p>
             </div>
           </div>
 
           <div className="rounded-[32px] border border-white/10 bg-black/55 p-6 shadow-[0_0_60px_rgba(120,0,20,0.16)] backdrop-blur-xl">
             <div className="grid gap-3 md:grid-cols-3">
-              {SCAN_MODES.map((mode) => (
+              {scanModes.map((mode) => (
                 <button
                   key={mode.id}
                   type="button"
@@ -1011,7 +987,7 @@ export default function IntakePage() {
 
             <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
               <div className="text-xs uppercase tracking-[0.28em] text-red-300">
-                Selected investigation
+                {t.intakeUi.selectedInvestigation}
               </div>
               <div className="mt-2 text-xl font-black">{activeMode.label}</div>
               <p className="mt-2 text-sm leading-6 text-zinc-400">
@@ -1034,7 +1010,7 @@ export default function IntakePage() {
                       resetFreeScan();
                     }}
                     className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white"
-                    placeholder="Website, company, email, phone or marketplace seller..."
+                    placeholder={t.intakeUi.targetPlaceholder}
                   />
                 </label>
               </div>
@@ -1047,7 +1023,7 @@ export default function IntakePage() {
                     <>
                       <label>
                         <div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">
-                          Platform *
+                          {t.intakeUi.platform} *
                         </div>
                         <select
                           value={marketplace}
@@ -1065,7 +1041,7 @@ export default function IntakePage() {
                       </label>
                       <label>
                         <div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">
-                          Case type *
+                          {t.intakeUi.caseType} *
                         </div>
                         <select
                           value={caseType}
@@ -1079,7 +1055,7 @@ export default function IntakePage() {
                       </label>
                       <label className="md:col-span-2">
                         <div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">
-                          Seller URL, store URL, account name or seller ID *
+                          {t.intakeUi.sellerTarget} *
                         </div>
                         <input
                           value={store}
@@ -1089,7 +1065,7 @@ export default function IntakePage() {
                             setLeadSaved(false);
                           }}
                           className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white"
-                          placeholder="https://... or seller ID"
+                          placeholder={t.intakeUi.sellerPlaceholder}
                         />
                       </label>
                     </>
@@ -1097,7 +1073,7 @@ export default function IntakePage() {
                   {scanMode === "evidence" && (
                     <label className="md:col-span-2">
                       <div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">
-                        Optional account, marketplace or case reference
+                        {t.intakeUi.evidenceReference}
                       </div>
                       <input
                         value={store}
@@ -1107,7 +1083,7 @@ export default function IntakePage() {
                           setLeadSaved(false);
                         }}
                         className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white"
-                        placeholder="eBay MC011, PayPal reserve, order ID, account name..."
+                        placeholder={t.intakeUi.evidenceReferencePlaceholder}
                       />
                     </label>
                   )}
@@ -1116,7 +1092,7 @@ export default function IntakePage() {
                 {marketplace === "Other" && scanMode === "marketplace" && (
                   <label className="mt-5 block">
                     <div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">
-                      Custom platform name
+                      {t.intakeUi.customPlatform}
                     </div>
                     <input
                       value={customMarketplace}
@@ -1126,7 +1102,7 @@ export default function IntakePage() {
                         setLeadSaved(false);
                       }}
                       className="w-full rounded-2xl border border-red-400/20 bg-black p-4 text-white"
-                      placeholder="Enter platform name"
+                      placeholder={t.intakeUi.customPlatformPlaceholder}
                     />
                   </label>
                 )}
@@ -1143,14 +1119,14 @@ export default function IntakePage() {
                   />
                   <div className="text-2xl font-extrabold">
                     {scanMode === "marketplace"
-                      ? "Add optional evidence"
-                      : "Drop evidence files here"}
+                      ? t.intakeUi.addOptionalEvidence
+                      : t.intakeUi.dropEvidence}
                   </div>
                   <div className="mt-3 text-zinc-500">
-                    PNG, JPG, PDF, CSV, DOCX, XLSX, HTML. 1KB to 15MB per file.
+                    {t.intakeUi.fileRequirements}
                   </div>
                   <div className="mt-5 text-sm font-bold text-red-300">
-                    Click to select files
+                    {t.intakeUi.selectFiles}
                   </div>
                 </label>
               </>
@@ -1162,14 +1138,14 @@ export default function IntakePage() {
                   <div className="mb-3 flex items-center justify-between">
                     <div>
                       <div className="text-xs uppercase tracking-[0.28em] text-zinc-500">
-                        Evidence readiness
+                        {t.intakeUi.evidenceReadiness}
                       </div>
                       <div className="mt-2 font-bold">
                         {files.length
-                          ? `${files.length} files loaded`
+                          ? `${files.length} ${t.intakeUi.filesLoaded}`
                           : scanMode === "marketplace"
-                            ? "Evidence optional"
-                            : "Waiting for evidence"}
+                            ? t.intakeUi.evidenceOptional
+                            : t.intakeUi.waitingForEvidence}
                       </div>
                     </div>
                     <div className="rounded-full border border-red-400/30 bg-red-500/10 px-4 py-2 text-sm font-bold text-red-200">
@@ -1232,7 +1208,7 @@ export default function IntakePage() {
 
                 <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
                   <div className="text-xs uppercase tracking-[0.28em] text-red-300">
-                    Evidence Queue
+                    {t.intakeUi.evidenceQueue}
                   </div>
                   <div className="mt-4 space-y-2 text-sm text-zinc-400">
                     {files.length ? (
@@ -1242,7 +1218,7 @@ export default function IntakePage() {
                         </div>
                       ))
                     ) : (
-                      <div>No evidence uploaded yet.</div>
+                      <div>{t.intakeUi.noEvidence}</div>
                     )}
                   </div>
                 </div>
@@ -1251,10 +1227,10 @@ export default function IntakePage() {
 
             {!canAnalyze && submitted && (
               <div className="mt-6 rounded-2xl border border-red-400/25 bg-red-500/10 p-5 text-sm leading-7 text-red-100">
-                <div className="font-bold">Preview cannot run yet.</div>
+                <div className="font-bold">{t.intakeUi.previewCannotRun}</div>
                 <div className="mt-2 space-y-1">
                   {blockingIssues.length > 0 && (
-                    <div>• Remove blocked files before running the scan.</div>
+                    <div>• {t.intakeUi.removeBlockedFiles}</div>
                   )}
                   {formErrors.map((error) => (
                     <div key={error}>• {error}</div>
@@ -1268,7 +1244,7 @@ export default function IntakePage() {
               onClick={runFreePreview}
               className="mt-6 block w-full rounded-2xl bg-red-600 px-7 py-5 text-center text-sm font-black uppercase tracking-[0.16em] shadow-[0_0_28px_rgba(220,38,38,0.28)] hover:bg-red-500"
             >
-              {freeScanRunning ? "Investigating..." : previewStatus === "ready" ? "Preview Ready" : "Start Investigation"}
+              {freeScanRunning ? t.intakeUi.investigating : previewStatus === "ready" ? t.intakeUi.previewReady : t.intakeUi.startInvestigation}
             </button>
 
             {submitted && canAnalyze && previewStatus !== "idle" && (
