@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "npm run validate:production && next build",
     "start": "next start",
     "lint": "eslint",
     "validate:decisions": "node scripts/validate-decisions.mjs",
@@ -32,7 +32,11 @@
     "validate:business-identity-intelligence": "node --experimental-strip-types scripts/validate-business-identity-intelligence.mjs",
     "validate:business-intelligence": "node --experimental-strip-types scripts/validate-business-intelligence.mjs",
     "test:preview-flow": "node tests/free-scan-preview-flow.mjs",
-    "validate:canonical-decision-identity": "node --experimental-strip-types scripts/validate-canonical-decision-identity.mjs"
+    "validate:canonical-decision-identity": "node --experimental-strip-types scripts/validate-canonical-decision-identity.mjs",
+    "validate:report-contract": "node scripts/validate-report-contract.mjs",
+    "validate:public-browser-boundary": "node scripts/validate-public-browser-boundary.mjs",
+    "validate:accessibility": "node scripts/validate-accessibility.mjs",
+    "validate:production": "npm run validate:report-contract && npm run validate:reasoning-boundary && npm run validate:business-intelligence && npm run validate:decision-integrity && npm run validate:public-browser-boundary && npm run validate:accessibility && npm run lint"
   },
   "dependencies": {
     "next": "16.2.6",

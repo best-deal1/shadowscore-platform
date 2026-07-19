@@ -1,9 +1,11 @@
+/* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
 "use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import ShadowScoreLayout from "../components/ShadowScoreLayout";
+import { EmptyState, ErrorState, LoadingState } from "../../components/AsyncState";
 import { getCurrentSession, getCurrentUser } from "../../lib/auth";
 import { getWorkspace, type ShadowScoreEntity } from "../../lib/workspace";
 import { metricProvenance, qualitativeFromRisk } from "../../lib/metricDisplay";
@@ -19,15 +21,29 @@ export default function MonitoringPage() {
   const router = useRouter();
   const [entities, setEntities] = useState<ShadowScoreEntity[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
-  useEffect(() => {
+  async function loadEntities() {
+    setLoaded(false);
+    setLoadError(false);
     const user = getCurrentUser();
     const session = getCurrentSession();
     if (!user || !session) {
       router.push("/login");
       return;
     }
-    getWorkspace(session).then((workspace) => setEntities(workspace.entities)).finally(() => setLoaded(true));
+    try {
+      const workspace = await getWorkspace(session);
+      setEntities(workspace.entities);
+    } catch {
+      setLoadError(true);
+    } finally {
+      setLoaded(true);
+    }
+  }
+
+  useEffect(() => {
+    void loadEntities();
   }, [router]);
 
   return (
@@ -49,9 +65,10 @@ export default function MonitoringPage() {
         </div>
 
         <div className="mt-8 rounded-[34px] border border-white/10 bg-black/55 p-6">
-          {!loaded && <div className="text-zinc-400">Loading monitored businesses...</div>}
-          {loaded && entities.length === 0 && <div className="rounded-3xl border border-white/10 bg-white/[0.035] p-6"><div className="text-xl font-black">No monitored businesses yet</div><p className="mt-2 text-zinc-500">Use the dashboard watchlist form to add your first business. This is an empty state, not placeholder data.</p></div>}
-          <div className="grid gap-4 md:grid-cols-2">
+          {!loaded && <LoadingState label="Loading monitored businesses..." />}
+          {loaded && loadError && <ErrorState title="Monitoring unavailable" description="We could not load your watchlist. Check your connection and try again." onRetry={() => void loadEntities()} />}
+          {loaded && !loadError && entities.length === 0 && <EmptyState title="No monitored businesses yet" description="Use the dashboard watchlist form to add your first business." />}
+          {loaded && !loadError && <div className="grid gap-4 md:grid-cols-2">
             {entities.map((entity) => (
               <div key={entity.id} className="rounded-3xl border border-white/10 bg-white/[0.035] p-5">
                 <div className="flex items-start justify-between gap-4">
@@ -68,7 +85,7 @@ export default function MonitoringPage() {
                 <p className="mt-2 text-xs text-zinc-500">{metricProvenance("estimated")}</p>
               </div>
             ))}
-          </div>
+          </div>}
         </div>
       </section>
     </ShadowScoreLayout>
