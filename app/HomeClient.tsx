@@ -103,6 +103,7 @@ export default function HomeClient() {
   const [selectedEntity, setSelectedEntity] = useState(entityNodes[0].label);
   const [expandedEvidence, setExpandedEvidence] = useState<number | null>(null);
   const [activityTick, setActivityTick] = useState(0);
+  const [expandedReport, setExpandedReport] = useState<string | null>("Executive decision");
 
   useEffect(() => {
     const timer = window.setInterval(() => setActivityTick((value) => value + 1), 5000);
@@ -348,6 +349,62 @@ export default function HomeClient() {
                 ))}
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="px-5 py-16 sm:px-6" aria-labelledby="marketplace-risk-title">
+        <div className="mx-auto max-w-7xl">
+          <div className="grid gap-10 lg:grid-cols-[0.78fr_1.22fr] lg:items-end">
+            <div>
+              <div className="ui-label text-sky-200">Marketplace risk intelligence</div>
+              <h2 id="marketplace-risk-title" className="mt-4 text-3xl font-black tracking-tight text-white sm:text-5xl">Risk moves across the marketplace before it appears in one record.</h2>
+              <p className="mt-5 max-w-xl text-base leading-7 text-zinc-300">Supplier identity, payment exposure, fulfillment behavior, and reputation signals often change independently. ShadowScore keeps their relationships visible during review.</p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {[
+                ["Identity", "Supplier and ownership claims"],
+                ["Payment", "Aliases and payout exposure"],
+                ["Fulfillment", "Delivery and reputation signals"],
+              ].map(([title, copy], index) => (
+                <article key={title} className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
+                  <div className="evidence-value text-sm text-sky-300">0{index + 1}</div>
+                  <h3 className="mt-6 text-lg font-black text-white">{title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-zinc-400">{copy}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+          <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {["Identity fraud", "Supplier verification", "Payment exposure", "Delivery manipulation", "Reputation abuse", "Marketplace enforcement"].map((risk, index) => (
+              <div key={risk} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/25 px-4 py-3">
+                <span className={`h-2 w-2 rounded-full ${index > 3 ? "bg-amber-300" : "bg-sky-300"}`} />
+                <span className="text-sm font-bold text-zinc-200">{risk}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="px-5 py-14 sm:px-6" aria-labelledby="graph-title">
+        <div className="mx-auto max-w-7xl overflow-hidden rounded-[36px] border border-white/10 bg-zinc-950 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.28)] sm:p-9">
+          <div className="max-w-2xl">
+            <div className="ui-label text-sky-200">Intelligence graph</div>
+            <h2 id="graph-title" className="mt-4 text-3xl font-black tracking-tight text-white sm:text-5xl">A decision is stronger when the relationships are visible.</h2>
+            <p className="mt-4 text-base leading-7 text-zinc-400">The graph correlates evidence across the entities involved in a marketplace transaction. It makes shared identifiers, gaps, and contradictions reviewable.</p>
+          </div>
+          <div className="mt-10 grid gap-3 md:grid-cols-4 lg:grid-cols-8">
+            {["Supplier", "Company", "Domain", "Marketplace", "Payment", "Tracking", "Evidence", "Decision"].map((node, index, nodes) => (
+              <div key={node} className="relative">
+                <div className={`rounded-2xl border p-4 text-center text-sm font-black ${index === nodes.length - 1 ? "border-amber-300/40 bg-amber-400/10 text-amber-100" : "border-sky-300/20 bg-sky-500/[0.08] text-white"}`}>{node}</div>
+                {index < nodes.length - 1 ? <span className="mx-auto my-2 block h-5 w-px bg-sky-300/40 md:absolute md:-right-3 md:top-1/2 md:my-0 md:h-px md:w-6" aria-hidden="true" /> : null}
+              </div>
+            ))}
+          </div>
+          <div className="mt-8 grid gap-3 border-t border-white/10 pt-6 sm:grid-cols-3">
+            <p className="text-sm leading-6 text-zinc-400"><span className="font-black text-white">Connected:</span> Shared payment and domain identifiers can establish a relationship.</p>
+            <p className="text-sm leading-6 text-zinc-400"><span className="font-black text-white">Unresolved:</span> Missing ownership data remains visible as an evidence gap.</p>
+            <p className="text-sm leading-6 text-zinc-400"><span className="font-black text-white">Contradictory:</span> Conflicting addresses influence the review, not the source record.</p>
           </div>
         </div>
       </section>
@@ -613,6 +670,51 @@ export default function HomeClient() {
           </div>
         </div>
       </section>
+      <section className="px-5 py-16 sm:px-6" aria-labelledby="report-title">
+        <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[0.72fr_1.28fr]">
+          <div>
+            <div className="ui-label text-sky-200">Example report</div>
+            <h2 id="report-title" className="mt-4 text-3xl font-black tracking-tight text-white sm:text-5xl">A report records how the decision was reached.</h2>
+            <p className="mt-5 max-w-xl text-base leading-7 text-zinc-300">This illustrative preview separates evidence, confidence, and recommended next steps so reviewers can audit the decision.</p>
+            <a href="/example-report" className="mt-7 inline-flex rounded-full border border-white/15 px-5 py-3 text-xs font-black uppercase tracking-[0.14em] text-white transition hover:bg-white/[0.08]">View example report</a>
+          </div>
+          <div className="rounded-[32px] border border-white/10 bg-white/[0.03] p-3">
+            {["Executive decision", "Evidence summary", "Confidence and gaps", "Recommended actions"].map((section, index) => {
+              const open = expandedReport === section;
+              const details = ["Hold payment release pending verified ownership and address evidence.", "Five findings connect the claimed supplier, historic domain, payment alias, and submitted invoice.", "Corroborated identity links are present. Beneficial ownership remains unresolved.", "Request the registration record, confirm the filing address, and monitor the payment alias."];
+              return <div key={section} className="border-b border-white/10 last:border-0">
+                <button type="button" onClick={() => setExpandedReport(open ? null : section)} aria-expanded={open} className="flex w-full items-center justify-between gap-4 p-5 text-left">
+                  <span><span className="evidence-value mr-3 text-xs text-sky-300">0{index + 1}</span><span className="text-sm font-black text-white">{section}</span></span>
+                  <span className="text-lg text-zinc-500">{open ? "−" : "+"}</span>
+                </button>
+                {open ? <p className="px-5 pb-5 pl-12 text-sm leading-6 text-zinc-400">{details[index]}</p> : null}
+              </div>;
+            })}
+          </div>
+        </div>
+      </section>
+
+      <section className="px-5 py-16 sm:px-6" aria-labelledby="method-title">
+        <div className="mx-auto max-w-7xl rounded-[36px] border border-white/10 bg-gradient-to-br from-sky-500/[0.09] via-zinc-950 to-zinc-950 p-7 sm:p-10">
+          <div className="max-w-2xl"><div className="ui-label text-sky-200">Investigation methodology</div><h2 id="method-title" className="mt-4 text-3xl font-black tracking-tight text-white sm:text-5xl">A consistent path from intake to action.</h2></div>
+          <ol className="mt-10 grid gap-3 md:grid-cols-3 lg:grid-cols-6">{["Intake", "Evidence collection", "Correlation", "Confidence", "Risk assessment", "Recommendations"].map((step, index) => <li key={step} className="rounded-2xl border border-white/10 bg-black/30 p-4"><div className="evidence-value text-xs text-sky-300">0{index + 1}</div><div className="mt-7 text-sm font-black text-white">{step}</div></li>)}</ol>
+        </div>
+      </section>
+
+      <section className="px-5 py-16 sm:px-6" aria-labelledby="platform-title">
+        <div className="mx-auto max-w-7xl"><div className="max-w-2xl"><div className="ui-label text-sky-200">Connected platform</div><h2 id="platform-title" className="mt-4 text-3xl font-black tracking-tight text-white sm:text-5xl">One operating picture for marketplace risk.</h2></div>
+          <div className="mt-9 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{[["Investigations", "Review evidence and document decisions."], ["Monitoring", "Track changes after the initial review."], ["Reports", "Share a reviewable decision record."], ["Alerts", "Surface new evidence and risk changes."], ["Workspace", "Keep investigations organized by team."], ["API", "Connect risk intelligence to existing systems."], ["Collaboration", "Give reviewers shared evidence context."], ["Trust controls", "Apply consistent methods to each review."]].map(([title, copy]) => <article key={title} className="rounded-[24px] border border-white/10 bg-white/[0.025] p-5"><h3 className="text-base font-black text-white">{title}</h3><p className="mt-3 text-sm leading-6 text-zinc-400">{copy}</p></article>)}</div>
+        </div>
+      </section>
+
+      <section className="px-5 py-16 sm:px-6" aria-labelledby="trust-title"><div className="mx-auto grid max-w-7xl gap-4 lg:grid-cols-3"><div className="rounded-[30px] border border-white/10 bg-zinc-950 p-7 lg:col-span-1"><div className="ui-label text-sky-200">Trust and security</div><h2 id="trust-title" className="mt-4 text-3xl font-black tracking-tight text-white">Built for reviewable risk work.</h2><p className="mt-4 text-sm leading-6 text-zinc-400">The platform is designed to preserve evidence context, clearly distinguish confidence from fact, and support responsible investigation workflows.</p><a href="/security" className="mt-6 inline-block text-sm font-black text-sky-200 hover:text-white">Visit Trust Center →</a></div><div className="grid gap-4 sm:grid-cols-2 lg:col-span-2">{["Evidence-first methodology", "Privacy-aware handling", "Security controls", "Responsible AI", "Compliance roadmap", "Auditable records"].map((item, index) => <div key={item} className="rounded-[30px] border border-white/10 bg-white/[0.025] p-6"><div className="evidence-value text-xs text-sky-300">0{index + 1}</div><h3 className="mt-8 text-base font-black text-white">{item}</h3></div>)}</div></div></section>
+
+      <section className="px-5 py-16 sm:px-6" aria-labelledby="industries-title"><div className="mx-auto max-w-7xl"><div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end"><div><div className="ui-label text-sky-200">Industries</div><h2 id="industries-title" className="mt-4 text-3xl font-black tracking-tight text-white sm:text-5xl">Marketplace risk has many operating contexts.</h2></div><p className="max-w-md text-sm leading-6 text-zinc-400">Use the same relationship-first approach across seller, marketplace, brand, and financial-services workflows.</p></div><div className="mt-8 flex flex-wrap gap-3">{["Amazon sellers", "TikTok Shop", "Walmart", "eBay", "Shopify", "Brands", "Financial services"].map((industry) => <span key={industry} className="rounded-full border border-white/10 bg-white/[0.025] px-5 py-3 text-sm font-bold text-zinc-200">{industry}</span>)}</div></div></section>
+
+      <section className="px-5 py-16 sm:px-6" aria-labelledby="resources-title"><div className="mx-auto max-w-7xl border-y border-white/10 py-10"><div className="ui-label text-sky-200">Research and resources</div><h2 id="resources-title" className="mt-4 text-3xl font-black tracking-tight text-white">Practical context for marketplace risk teams.</h2><div className="mt-8 grid gap-4 md:grid-cols-3">{[["Marketplace intelligence", "How relationship signals support supplier review."], ["Risk reports", "A decision record teams can revisit and share."], ["Research", "Patterns, enforcement changes, and operating guidance."]].map(([title, copy]) => <article key={title} className="border-t border-white/15 pt-5"><h3 className="text-base font-black text-white">{title}</h3><p className="mt-2 text-sm leading-6 text-zinc-400">{copy}</p><span className="mt-5 inline-block text-sm font-black text-sky-200">Coming soon</span></article>)}</div></div></section>
+
+      <section className="px-5 pb-16 pt-8 sm:px-6"><div className="mx-auto max-w-7xl overflow-hidden rounded-[38px] border border-sky-300/20 bg-[radial-gradient(circle_at_80%_20%,rgba(14,165,233,0.22),transparent_28%),linear-gradient(135deg,#082f49,#09090b_62%)] p-8 sm:p-12"><div className="max-w-3xl"><div className="ui-label text-sky-100">Start with the evidence</div><h2 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-5xl">Make the next marketplace decision with a clearer record.</h2><p className="mt-5 text-base leading-7 text-sky-50/75">Open an investigation, review an example report, or talk through your team&apos;s workflow.</p><div className="mt-8 flex flex-col gap-3 sm:flex-row"><button onClick={startInvestigation} className="rounded-full bg-sky-300 px-6 py-3 text-xs font-black uppercase tracking-[0.14em] text-slate-950 transition hover:bg-white">Start investigation</button><a href="/contact" className="rounded-full border border-white/20 px-6 py-3 text-center text-xs font-black uppercase tracking-[0.14em] text-white transition hover:bg-white/10">Book demo</a><a href="/example-report" className="rounded-full border border-white/20 px-6 py-3 text-center text-xs font-black uppercase tracking-[0.14em] text-white transition hover:bg-white/10">View report</a></div></div></div></section>
+
       <p className="mx-auto max-w-7xl px-5 pb-12 text-xs leading-6 text-zinc-500 sm:px-6">
         {t.positioning.disclaimer}
       </p>
