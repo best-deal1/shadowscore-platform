@@ -9,7 +9,7 @@ import InvestigationTimeline from "../components/InvestigationTimeline";
 import { getCurrentSession } from "../../lib/auth";
 import { getWorkspace, type ShadowScoreReport } from "../../lib/workspace";
 import { TechnicalValue, useLocale } from "../../components/LocaleProvider";
-import { formatDateTime } from "../../lib/i18n";
+import { formatDateTime, localizeReportText } from "../../lib/i18n";
 
 const INTERNAL_LANGUAGE = /\b(observation|inference|confidence|causal(?:ity)?|graph|reasoning|weight(?:ing)?|score|prompt|engine|signal)\b/i;
 
@@ -38,7 +38,7 @@ function ListCard({ title, items, tone = "neutral", numbered = false, emptyMessa
     <section className={`rounded-3xl border p-6 ${toneClass}`}>
       <h2 className="text-xs font-black uppercase tracking-[0.28em] text-red-200">{title}</h2>
       <ol className="mt-4 space-y-3 text-sm leading-6 text-zinc-200">
-        {items.length ? items.map((item, index) => <li key={item} className="flex gap-3"><span className="font-black text-red-300">{numbered ? `${index + 1}.` : "•"}</span><span>{item}</span></li>) : <li className="text-zinc-400">{emptyMessage || "No additional information is recorded."}</li>}
+        {items.length ? items.map((item, index) => <li key={`${index}-${item}`} className="flex gap-3"><span className="font-black text-red-300">{numbered ? `${index + 1}.` : "•"}</span><span>{item}</span></li>) : <li className="text-zinc-400">{emptyMessage || "No additional information is recorded."}</li>}
       </ol>
     </section>
   );
@@ -46,20 +46,21 @@ function ListCard({ title, items, tone = "neutral", numbered = false, emptyMessa
 
 function ExecutiveBrief({ report }: { report: ShadowScoreReport }) {
   const { locale, t } = useLocale();
+  const localize = (value: string) => localizeReportText(value, locale);
   const narrative = report.reportSummary?.businessNarrative;
   const canonical = report.reportSummary?.decision?.canonicalDecision || narrative?.decisionMode;
   const decisionBasis = publicStatements([
     canonical?.userMeaning,
     report.reportSummary?.decision?.whatThisMeans,
     ...sectionBody(report, "executiveSummary"),
-  ]).slice(0, 2);
+  ]).slice(0, 2).map(localize);
   const verified = publicStatements(sectionBody(report, "whatWeFound"))
-    .filter((item) => !/no broader|not confirmed|limited public|could not/i.test(item)).slice(0, 5);
+    .filter((item) => !/no broader|not confirmed|limited public|could not/i.test(item)).slice(0, 5).map(localize);
   const reviewItems = publicStatements(sectionBody(report, "whatRequiresVerification"));
-  const concerns = reviewItems.filter((item) => /inconsistent|conflict|mismatch|different|contradic/i.test(item)).slice(0, 4);
-  const gaps = reviewItems.filter((item) => !/inconsistent|conflict|mismatch|different|contradic/i.test(item)).slice(0, 5);
-  const impact = publicStatements(sectionBody(report, "decisionCost")).slice(0, 2);
-  const actions = publicStatements(sectionBody(report, "recommendedNextSteps")).slice(0, 5);
+  const concerns = reviewItems.filter((item) => /inconsistent|conflict|mismatch|different|contradic/i.test(item)).slice(0, 4).map(localize);
+  const gaps = reviewItems.filter((item) => !/inconsistent|conflict|mismatch|different|contradic/i.test(item)).slice(0, 5).map(localize);
+  const impact = publicStatements(sectionBody(report, "decisionCost")).slice(0, 2).map(localize);
+  const actions = publicStatements(sectionBody(report, "recommendedNextSteps")).slice(0, 5).map(localize);
   const sources = report.reportSummary?.sourceProvenance || [];
   const businessFindings = report.reportSummary?.businessIntelligence?.findings || [];
 
@@ -70,7 +71,7 @@ function ExecutiveBrief({ report }: { report: ShadowScoreReport }) {
         <h1 className="mt-4 text-3xl font-black text-white sm:text-4xl">{narrative?.businessName || report.target || report.entity}</h1>
         <div className="mt-6 rounded-3xl border border-red-400/35 bg-red-600/15 p-6">
           <div className="text-xs font-black uppercase tracking-[0.28em] text-red-200">{t.report.recommendation}</div>
-          <div className="mt-3 text-2xl font-black tracking-tight text-white sm:text-3xl">{recommendation(report)}</div>
+          <div className="mt-3 text-2xl font-black tracking-tight text-white sm:text-3xl">{localize(recommendation(report))}</div>
         </div>
       </header>
 
@@ -95,9 +96,9 @@ function ExecutiveBrief({ report }: { report: ShadowScoreReport }) {
         <div className="mt-5 space-y-4">
           {businessFindings.length ? businessFindings.map((finding) => (
             <article key={`${finding.id}-${finding.title}`} className="rounded-2xl border border-white/10 bg-black/30 p-4">
-              <div className="flex flex-wrap items-center gap-2"><h3 className="font-bold text-zinc-100">{finding.title}</h3><span className="rounded-full border border-white/10 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-zinc-400">{finding.direction.replaceAll("_", " ")}</span></div>
-              <p className="mt-2 text-sm leading-6 text-zinc-300">{finding.statement}</p>
-              <ul className="mt-3 space-y-1 text-xs leading-5 text-zinc-500">{finding.evidence.map((item) => <li key={`${item.providerId}-${item.id}`}>{item.providerId}: {item.label}{item.value ? `, ${item.value}` : ""} ({item.source})</li>)}</ul>
+              <div className="flex flex-wrap items-center gap-2"><h3 className="font-bold text-zinc-100">{localize(finding.title)}</h3><span className="rounded-full border border-white/10 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-zinc-400">{localize(finding.direction.replaceAll("_", " "))}</span></div>
+              <p className="mt-2 text-sm leading-6 text-zinc-300">{localize(finding.statement)}</p>
+              <ul className="mt-3 space-y-1 text-xs leading-5 text-zinc-500">{finding.evidence.map((item) => <li key={`${item.providerId}-${item.id}`}>{item.providerId}: {localize(item.label)}{item.value ? `, ${item.value}` : ""} ({item.source})</li>)}</ul>
             </article>
           )) : <p className="text-sm text-zinc-400">No cross-provider business findings were produced from the available evidence.</p>}
         </div>
@@ -108,15 +109,15 @@ function ExecutiveBrief({ report }: { report: ShadowScoreReport }) {
         <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{report.reportSummary.scorecard.scores.map((item) => <article key={item.dimension} className="rounded-2xl border border-white/10 bg-black/30 p-4"><h3 className="font-bold text-zinc-100">{t.scorecard[item.dimension]}</h3><p className="mt-2 text-sm capitalize text-zinc-300">{t.scorecard[item.level]}</p><p className="mt-1 text-xs capitalize text-zinc-500">{t.report.evidenceConfidence}: {item.confidence}</p>{item.evidenceGaps.length > 0 && <p className="mt-3 text-xs leading-5 text-amber-200">Evidence gaps: {item.evidenceGaps.join(", ")}</p>}</article>)}</div>
       </section>}
 
-      {report.reportSummary?.investigationTimeline && <InvestigationTimeline className="mt-5" title="Investigation status" items={report.reportSummary.investigationTimeline.map((item) => ({ title: item.label, description: item.status === "unavailable" ? "Evidence was unavailable for this stage." : `Stage ${item.status}.`, evidenceSource: item.source, status: item.status, timestamp: item.observedAt, risk: item.status === "failed" }))} />}
+      {report.reportSummary?.investigationTimeline && <InvestigationTimeline className="mt-5" title={t.report.status} items={report.reportSummary.investigationTimeline.map((item) => ({ title: localize(item.label), description: localize(item.status === "unavailable" ? "Evidence was unavailable for this stage." : `Stage ${item.status}.`), evidenceSource: item.source, status: item.status, timestamp: item.observedAt, risk: item.status === "failed" }))} />}
 
       {report.reportSummary?.websiteIntelligence && <section className="mt-5 rounded-3xl border border-white/10 bg-black/35 p-6" aria-label="Website Intelligence">
         <h2 className="text-xs font-black uppercase tracking-[0.28em] text-red-200">{t.report.website}</h2>
-        <p className="mt-3 text-sm leading-6 text-zinc-300">{report.reportSummary.websiteIntelligence.executiveSummary}</p>
+        <p className="mt-3 text-sm leading-6 text-zinc-300">{localize(report.reportSummary.websiteIntelligence.executiveSummary)}</p>
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          {[['Technical health', report.reportSummary.websiteIntelligence.technicalHealth], ['Security posture', report.reportSummary.websiteIntelligence.securityPosture], ['Infrastructure maturity', report.reportSummary.websiteIntelligence.infrastructureMaturity], ['Website trust indicators', report.reportSummary.websiteIntelligence.trustIndicators]].map(([title, body]) => <div key={title} className="rounded-2xl border border-white/10 bg-black/30 p-4"><h3 className="text-xs font-black uppercase tracking-wider text-zinc-300">{title}</h3><p className="mt-2 text-sm leading-6 text-zinc-400">{body}</p></div>)}
+          {[['Technical health', report.reportSummary.websiteIntelligence.technicalHealth], ['Security posture', report.reportSummary.websiteIntelligence.securityPosture], ['Infrastructure maturity', report.reportSummary.websiteIntelligence.infrastructureMaturity], ['Website trust indicators', report.reportSummary.websiteIntelligence.trustIndicators]].map(([title, body]) => <div key={title} className="rounded-2xl border border-white/10 bg-black/30 p-4"><h3 className="text-xs font-black uppercase tracking-wider text-zinc-300">{localize(title)}</h3><p className="mt-2 text-sm leading-6 text-zinc-400">{localize(body)}</p></div>)}
         </div>
-        <div className="mt-5"><ListCard title="Recommended actions" items={report.reportSummary.websiteIntelligence.recommendedActions} numbered emptyMessage="No additional website actions were identified from the available evidence." /></div>
+        <div className="mt-5"><ListCard title={localize("Recommended actions")} items={report.reportSummary.websiteIntelligence.recommendedActions.map(localize)} numbered emptyMessage={localize("No additional website actions were identified from the available evidence.")} /></div>
       </section>}
 
       <section className="mt-8 border-t border-white/10 pt-6" aria-label="Source provenance">

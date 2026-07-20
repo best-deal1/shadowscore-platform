@@ -1305,6 +1305,116 @@ const translations: Record<Exclude<Locale, "en">, Dictionary> = {
 export function getDictionary(locale: Locale): Dictionary {
   return locale === "en" ? en : translations[locale];
 }
+
+/**
+ * Localize report prose while preserving the report-specific facts embedded in
+ * it. Report narratives are stored with the report in English, so replacing a
+ * list entry with a UI label would discard the finding, source, or requested
+ * verification. These templates translate the generated prose and interpolate
+ * the original values instead.
+ */
+export function localizeReportText(value: string, locale: Locale) {
+  if (locale === "en" || !value.trim()) return value;
+
+  const exact: Record<Exclude<Locale, "en">, Record<string, string>> = {
+    he: {
+      "Inconsistent information was found.": "נמצא מידע שאינו עקבי.",
+      "Some public information could not be independently verified.": "לא ניתן לאמת באופן עצמאי חלק מהמידע הציבורי.",
+      "No broader public relationship map was confirmed from the supplied information.": "לא אושרה מפת קשרים ציבורית רחבה יותר מהמידע שסופק.",
+      "No prior business memory was supplied to compare stability over time.": "לא סופק מידע עסקי קודם להשוואת יציבות לאורך זמן.",
+      "No named evidence item was supplied.": "לא סופק פריט ראיה בעל שם.",
+      "The available review found limited confirmed public information.": "הבדיקה הזמינה מצאה מידע ציבורי מאומת מוגבל.",
+    },
+    ar: {
+      "Inconsistent information was found.": "تم العثور على معلومات غير متسقة.",
+      "Some public information could not be independently verified.": "تعذر التحقق بشكل مستقل من بعض المعلومات العامة.",
+      "No broader public relationship map was confirmed from the supplied information.": "لم يتم تأكيد خريطة أوسع للعلاقات العامة من المعلومات المقدمة.",
+      "No prior business memory was supplied to compare stability over time.": "لم تُقدَّم معلومات سابقة عن النشاط لمقارنة الاستقرار بمرور الوقت.",
+      "No named evidence item was supplied.": "لم يتم تقديم عنصر دليل مسمى.",
+      "The available review found limited confirmed public information.": "وجدت المراجعة المتاحة معلومات عامة مؤكدة محدودة.",
+    },
+    es: {
+      "Inconsistent information was found.": "Se encontró información inconsistente.",
+      "Some public information could not be independently verified.": "Parte de la información pública no pudo verificarse de forma independiente.",
+      "No broader public relationship map was confirmed from the supplied information.": "La información proporcionada no confirmó un mapa más amplio de relaciones públicas.",
+      "No prior business memory was supplied to compare stability over time.": "No se proporcionó información empresarial anterior para comparar la estabilidad a lo largo del tiempo.",
+      "No named evidence item was supplied.": "No se proporcionó ningún elemento de evidencia identificado.",
+      "The available review found limited confirmed public information.": "La revisión disponible encontró información pública confirmada limitada.",
+    },
+    fr: {
+      "Inconsistent information was found.": "Des informations incohérentes ont été relevées.",
+      "Some public information could not be independently verified.": "Certaines informations publiques n'ont pas pu être vérifiées de manière indépendante.",
+      "No broader public relationship map was confirmed from the supplied information.": "Les informations fournies n'ont pas confirmé de cartographie plus large des relations publiques.",
+      "No prior business memory was supplied to compare stability over time.": "Aucune information commerciale antérieure n'a été fournie pour comparer la stabilité dans le temps.",
+      "No named evidence item was supplied.": "Aucun élément de preuve identifié n'a été fourni.",
+      "The available review found limited confirmed public information.": "L'examen disponible a relevé peu d'informations publiques confirmées.",
+    },
+    de: {
+      "Inconsistent information was found.": "Es wurden widersprüchliche Informationen festgestellt.",
+      "Some public information could not be independently verified.": "Einige öffentliche Informationen konnten nicht unabhängig überprüft werden.",
+      "No broader public relationship map was confirmed from the supplied information.": "Aus den bereitgestellten Informationen konnte keine umfassendere öffentliche Beziehungsübersicht bestätigt werden.",
+      "No prior business memory was supplied to compare stability over time.": "Es wurden keine früheren Unternehmensinformationen zum Vergleich der Stabilität im Zeitverlauf bereitgestellt.",
+      "No named evidence item was supplied.": "Es wurde kein benanntes Belegelement bereitgestellt.",
+      "The available review found limited confirmed public information.": "Die verfügbare Prüfung ergab begrenzte bestätigte öffentliche Informationen.",
+    },
+  };
+  const fixed = exact[locale][value];
+  if (fixed) return fixed;
+
+  const templates: Array<[RegExp, (...parts: string[]) => string]> = locale === "es" ? [
+    [/^(.+) is presented as (.+) associated with (.+)\.$/, (name, type, domain) => `${name} se presenta como ${type} asociado con ${domain}.`],
+    [/^Allowed: (.+)\.$/, (action) => `Permitido: ${action}.`],
+    [/^Blocked until verification: (.+)\.$/, (action) => `Bloqueado hasta la verificación: ${action}.`],
+    [/^The main follow-up is to confirm (.+)\.$/, (item) => `La principal acción de seguimiento es confirmar ${item}.`],
+    [/^The remaining uncertainty relates to (.+)\.$/, (item) => `La incertidumbre restante se relaciona con ${item}.`],
+    [/^(.+) from (.+)$/, (label, source) => `${label} de ${source}`],
+  ] : locale === "fr" ? [
+    [/^(.+) is presented as (.+) associated with (.+)\.$/, (name, type, domain) => `${name} est présenté comme ${type}, associé à ${domain}.`],
+    [/^Allowed: (.+)\.$/, (action) => `Autorisé : ${action}.`],
+    [/^Blocked until verification: (.+)\.$/, (action) => `Bloqué jusqu'à vérification : ${action}.`],
+    [/^The main follow-up is to confirm (.+)\.$/, (item) => `La principale vérification à effectuer est de confirmer ${item}.`],
+    [/^The remaining uncertainty relates to (.+)\.$/, (item) => `L'incertitude restante concerne ${item}.`],
+    [/^(.+) from (.+)$/, (label, source) => `${label} provenant de ${source}`],
+  ] : locale === "de" ? [
+    [/^(.+) is presented as (.+) associated with (.+)\.$/, (name, type, domain) => `${name} wird als ${type} mit Bezug zu ${domain} dargestellt.`],
+    [/^Allowed: (.+)\.$/, (action) => `Erlaubt: ${action}.`],
+    [/^Blocked until verification: (.+)\.$/, (action) => `Bis zur Überprüfung gesperrt: ${action}.`],
+    [/^The main follow-up is to confirm (.+)\.$/, (item) => `Der wichtigste nächste Schritt ist die Bestätigung von ${item}.`],
+    [/^The remaining uncertainty relates to (.+)\.$/, (item) => `Die verbleibende Unsicherheit betrifft ${item}.`],
+    [/^(.+) from (.+)$/, (label, source) => `${label} von ${source}`],
+  ] : locale === "he" ? [
+    [/^(.+) is presented as (.+) associated with (.+)\.$/, (name, type, domain) => `${name} מוצג כ-${type} המשויך ל-${domain}.`],
+    [/^Allowed: (.+)\.$/, (action) => `מותר: ${action}.`],
+    [/^Blocked until verification: (.+)\.$/, (action) => `חסום עד לאימות: ${action}.`],
+    [/^The main follow-up is to confirm (.+)\.$/, (item) => `פעולת ההמשך העיקרית היא לאמת ${item}.`],
+    [/^The remaining uncertainty relates to (.+)\.$/, (item) => `אי-הוודאות שנותרה נוגעת ל-${item}.`],
+    [/^(.+) from (.+)$/, (label, source) => `${label} מ-${source}`],
+  ] : [
+    [/^(.+) is presented as (.+) associated with (.+)\.$/, (name, type, domain) => `يُعرض ${name} بوصفه ${type} مرتبطًا بـ ${domain}.`],
+    [/^Allowed: (.+)\.$/, (action) => `مسموح: ${action}.`],
+    [/^Blocked until verification: (.+)\.$/, (action) => `محظور حتى التحقق: ${action}.`],
+    [/^The main follow-up is to confirm (.+)\.$/, (item) => `إجراء المتابعة الرئيسي هو تأكيد ${item}.`],
+    [/^The remaining uncertainty relates to (.+)\.$/, (item) => `يتعلق عدم اليقين المتبقي بـ ${item}.`],
+    [/^(.+) from (.+)$/, (label, source) => `${label} من ${source}`],
+  ];
+  for (const [pattern, translate] of templates) {
+    const match = value.match(pattern);
+    if (match) return translate(...match.slice(1));
+  }
+
+  // Generated findings often contain an evidence value that must stay verbatim
+  // (a domain, legal name, record value, or provider response). Translate the
+  // surrounding report language, but never replace that value with a generic
+  // sentence.
+  const fragments: Record<Exclude<Locale, "en">, Array<[string, string]>> = {
+    he: [["Proceeding without resolving ", "התקדמות ללא פתרון של "], [" leaves the decision exposed to avoidable commercial risk", " חושפת את ההחלטה לסיכון מסחרי שניתן למנוע"], ["If skipped, the expected business impact is ", "אם הבדיקה תידחה, ההשפעה העסקית הצפויה היא "], [" because the buyer may rely on incomplete proof before paying, onboarding or signing", " משום שהקונה עלול להסתמך על הוכחה חלקית לפני תשלום, קליטה או חתימה"], ["The recommended check is estimated at ", "הבדיקה המומלצת מוערכת ב-"], [", so the cost of verification is small compared with a wrong supplier, seller or partner decision", ", ולכן עלות האימות קטנה ביחס להחלטה שגויה לגבי ספק, מוכר או שותף"], ["Evidence was unavailable for this stage.", "ראיות לא היו זמינות לשלב זה."], ["Stage ", "שלב "]],
+    ar: [["Proceeding without resolving ", "المضي قدمًا دون حل "], [" leaves the decision exposed to avoidable commercial risk", " يعرّض القرار لمخاطر تجارية يمكن تجنبها"], ["If skipped, the expected business impact is ", "إذا تم تجاوزها، فالأثر التجاري المتوقع هو "], [" because the buyer may rely on incomplete proof before paying, onboarding or signing", " لأن المشتري قد يعتمد على إثبات غير مكتمل قبل الدفع أو ضم المورد أو التوقيع"], ["The recommended check is estimated at ", "يُقدَّر وقت الفحص الموصى به بـ "], [", so the cost of verification is small compared with a wrong supplier, seller or partner decision", "، لذا فإن تكلفة التحقق صغيرة مقارنة بقرار خاطئ بشأن مورد أو بائع أو شريك"], ["Evidence was unavailable for this stage.", "لم تتوفر أدلة لهذه المرحلة."], ["Stage ", "المرحلة "]],
+    es: [["Proceeding without resolving ", "Seguir adelante sin resolver "], [" leaves the decision exposed to avoidable commercial risk", " expone la decisión a un riesgo comercial evitable"], ["If skipped, the expected business impact is ", "Si se omite, el impacto empresarial previsto es "], [" because the buyer may rely on incomplete proof before paying, onboarding or signing", " porque el comprador puede basarse en pruebas incompletas antes de pagar, incorporar o firmar"], ["The recommended check is estimated at ", "La comprobación recomendada se estima en "], [", so the cost of verification is small compared with a wrong supplier, seller or partner decision", ", por lo que el coste de la verificación es pequeño frente a una decisión equivocada sobre un proveedor, vendedor o socio"], ["Evidence was unavailable for this stage.", "La evidencia no estuvo disponible para esta etapa."], ["Stage ", "Etapa "]],
+    fr: [["Proceeding without resolving ", "Poursuivre sans résoudre "], [" leaves the decision exposed to avoidable commercial risk", " expose la décision à un risque commercial évitable"], ["If skipped, the expected business impact is ", "Si elle est ignorée, l'incidence commerciale attendue est "], [" because the buyer may rely on incomplete proof before paying, onboarding or signing", " car l'acheteur peut se fonder sur des preuves incomplètes avant de payer, d'intégrer ou de signer"], ["The recommended check is estimated at ", "La vérification recommandée est estimée à "], [", so the cost of verification is small compared with a wrong supplier, seller or partner decision", ", le coût de la vérification est donc faible face à une mauvaise décision concernant un fournisseur, un vendeur ou un partenaire"], ["Evidence was unavailable for this stage.", "Les preuves n'étaient pas disponibles pour cette étape."], ["Stage ", "Étape "]],
+    de: [["Proceeding without resolving ", "Ein Vorgehen ohne Klärung von "], [" leaves the decision exposed to avoidable commercial risk", " setzt die Entscheidung einem vermeidbaren geschäftlichen Risiko aus"], ["If skipped, the expected business impact is ", "Wenn die Prüfung ausgelassen wird, sind die erwarteten geschäftlichen Auswirkungen "], [" because the buyer may rely on incomplete proof before paying, onboarding or signing", ", weil der Käufer sich vor Zahlung, Aufnahme oder Unterschrift auf unvollständige Nachweise verlassen könnte"], ["The recommended check is estimated at ", "Die empfohlene Prüfung wird auf "], [", so the cost of verification is small compared with a wrong supplier, seller or partner decision", " geschätzt. Die Kosten der Überprüfung sind damit gering im Vergleich zu einer falschen Entscheidung über einen Lieferanten, Verkäufer oder Partner"], ["Evidence was unavailable for this stage.", "Für diese Phase waren keine Belege verfügbar."], ["Stage ", "Phase "]],
+  };
+  return fragments[locale].reduce((localized, [source, translation]) => localized.replaceAll(source, translation), value);
+}
 export function formatDateTime(value: string | undefined, locale: Locale) {
   if (!value) return getDictionary(locale).report.noInformation;
   const date = new Date(value);
