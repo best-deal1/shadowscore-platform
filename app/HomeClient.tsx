@@ -106,6 +106,7 @@ export default function HomeClient() {
   const [expandedReport, setExpandedReport] = useState<string | null>("Executive decision");
 
   useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const timer = window.setInterval(() => setActivityTick((value) => value + 1), 5000);
     return () => window.clearInterval(timer);
   }, []);
@@ -121,6 +122,15 @@ export default function HomeClient() {
     if (isOpening) return;
     setIsOpening(true);
     window.setTimeout(() => router.push("/intake"), 450);
+  }
+
+  function moveView(current: typeof activeView, key: string) {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(key)) return;
+    const views: typeof activeView[] = ['investigation', 'monitoring', 'trust'];
+    const index = views.indexOf(current);
+    const next = key === 'Home' ? 0 : key === 'End' ? views.length - 1 : (index + (key === 'ArrowRight' ? 1 : -1) + views.length) % views.length;
+    setActiveView(views[next]);
+    window.requestAnimationFrame(() => document.getElementById(`${views[next]}-tab`)?.focus());
   }
 
   return (
@@ -161,13 +171,13 @@ export default function HomeClient() {
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <button
                 onClick={startInvestigation}
-                className="rounded-full bg-sky-600 px-7 py-4 text-sm font-black uppercase tracking-[0.14em] text-white shadow-[0_0_34px_rgba(14,165,233,0.32)] transition hover:bg-sky-500"
+                className="min-h-12 rounded-full bg-sky-600 px-7 py-4 text-sm font-black uppercase tracking-[0.14em] text-white shadow-[0_0_34px_rgba(14,165,233,0.32)] transition hover:bg-sky-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
               >
                 {t.nav.start}
               </button>
               <a
                 href="#interactive-demo"
-                className="rounded-full border border-white/15 bg-white/[0.04] px-7 py-4 text-center text-sm font-black uppercase tracking-[0.14em] text-white transition hover:bg-white/[0.08]"
+                className="min-h-12 rounded-full border border-white/15 bg-white/[0.04] px-7 py-4 text-center text-sm font-black uppercase tracking-[0.14em] text-white transition hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
               >
                 View interactive demo
               </a>
@@ -215,7 +225,7 @@ export default function HomeClient() {
                       key={signal.text}
                       onClick={() => setExpandedEvidence(expandedEvidence === index ? null : index)}
                       aria-expanded={expandedEvidence === index}
-                      className={`signal-card signal-card-${index} rounded-2xl border border-white/10 bg-white/[0.045] p-4`}
+                      className={`signal-card signal-card-${index} min-h-24 w-full rounded-2xl border border-white/10 bg-white/[0.045] p-4 text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300`}
                     >
                       <div className="flex items-center justify-between gap-3">
                         <div className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">
@@ -232,7 +242,7 @@ export default function HomeClient() {
                         {signal.text}
                       </p>
                       {expandedEvidence === index ? (
-                        <p className="mt-3 border-t border-white/10 pt-3 text-left text-xs leading-5 text-sky-100">
+                        <p className="mt-3 border-t border-white/10 pt-3 text-start text-xs leading-5 text-sky-100">
                           Evidence recorded at {signal.time}. Select a relationship node to inspect how this finding changes the review.
                         </p>
                       ) : null}
@@ -258,7 +268,14 @@ export default function HomeClient() {
                       </div>
                     ))}
                   </div>
-                  <div className="relative h-[386px] overflow-hidden rounded-[24px] border border-white/10 bg-[radial-gradient(circle_at_center,rgba(220,38,38,0.14),transparent_45%)]">
+                  <div className="mb-3 grid gap-2 sm:hidden" aria-label="Relationship graph summary">
+                    {entityNodes.map((node) => (
+                      <button key={node.label} type="button" onClick={() => setSelectedEntity(node.label)} aria-pressed={selectedEntity === node.label} className="min-h-12 rounded-xl border border-white/10 bg-zinc-950/80 px-3 py-2 text-start text-xs font-black text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300">
+                        <span className="text-zinc-500">{node.kind}: </span>{node.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="relative hidden h-[386px] overflow-hidden rounded-[24px] border border-white/10 bg-[radial-gradient(circle_at_center,rgba(220,38,38,0.14),transparent_45%)] sm:block">
                     <div className="reasoning-question absolute left-4 top-4 z-10 rounded-full border border-white/10 bg-black/70 px-3 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-200">
                       {t.home.discoveryQuestion}
                     </div>
@@ -294,7 +311,7 @@ export default function HomeClient() {
                         key={node.label}
                         onClick={() => setSelectedEntity(node.label)}
                         aria-pressed={selectedEntity === node.label}
-                        className={`entity-node ${node.stage} absolute ${node.className} max-w-[190px] rounded-2xl border border-white/10 bg-zinc-950/95 p-3 shadow-[0_0_28px_rgba(255,255,255,0.06)]`}
+                        className={`entity-node ${node.stage} absolute ${node.className} max-w-[190px] rounded-2xl border border-white/10 bg-zinc-950/95 p-3 text-start shadow-[0_0_28px_rgba(255,255,255,0.06)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300`}
                       >
                         <div className="text-[9px] font-black uppercase tracking-[0.18em] text-zinc-500">
                           {node.kind}
@@ -304,7 +321,7 @@ export default function HomeClient() {
                         </div>
                       </button>
                     ))}
-                    <button type="button" title="Confidence reflects corroborated links, unresolved ownership, and contradictory address evidence." className="confidence-ring absolute left-1/2 top-1/2 flex h-32 w-32 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-red-300/25 bg-red-500/10 text-center">
+                    <button type="button" aria-label={`Confidence: ${confidence}% supported. Confidence reflects corroborated links, unresolved ownership, and contradictory address evidence.`} className="confidence-ring absolute left-1/2 top-1/2 flex h-32 w-32 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-red-300/25 bg-red-500/10 text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-200">
                       <div>
                         <div className="text-[10px] font-black uppercase tracking-[0.18em] text-red-100">
                           {t.home.confidence}
@@ -330,7 +347,7 @@ export default function HomeClient() {
                 </div>
               </div>
 
-              <div className="relative mt-4 grid gap-3 sm:grid-cols-5">
+              <div className="relative mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
                 {t.home.reasoningSteps.map((step, index) => (
                   <div
                     key={step.label}
@@ -397,7 +414,7 @@ export default function HomeClient() {
             {["Supplier", "Company", "Domain", "Marketplace", "Payment", "Tracking", "Evidence", "Decision"].map((node, index, nodes) => (
               <div key={node} className="relative">
                 <div className={`rounded-2xl border p-4 text-center text-sm font-black ${index === nodes.length - 1 ? "border-amber-300/40 bg-amber-400/10 text-amber-100" : "border-sky-300/20 bg-sky-500/[0.08] text-white"}`}>{node}</div>
-                {index < nodes.length - 1 ? <span className="mx-auto my-2 block h-5 w-px bg-sky-300/40 md:absolute md:-right-3 md:top-1/2 md:my-0 md:h-px md:w-6" aria-hidden="true" /> : null}
+                {index < nodes.length - 1 ? <span className="mx-auto my-2 block h-5 w-px bg-sky-300/40 md:absolute md:-end-3 md:top-1/2 md:my-0 md:h-px md:w-6" aria-hidden="true" /> : null}
               </div>
             ))}
           </div>
@@ -457,7 +474,7 @@ export default function HomeClient() {
               </p>
             </div>
             <div
-              className="flex rounded-2xl border border-white/10 bg-black/35 p-1"
+              className="grid grid-cols-3 rounded-2xl border border-white/10 bg-black/35 p-1 sm:flex"
               role="tablist"
               aria-label={t.home.analystAnswers}
             >
@@ -473,9 +490,12 @@ export default function HomeClient() {
                       key={view}
                       type="button"
                       role="tab"
+                      id={`${view}-tab`}
+                      aria-controls={`${view}-panel`}
                       aria-selected={activeView === view}
                       onClick={() => setActiveView(view)}
-                      className={`rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] transition focus:outline-none focus:ring-2 focus:ring-sky-300 ${activeView === view ? "bg-sky-400 text-zinc-950" : "text-zinc-400 hover:text-white"}`}
+                      onKeyDown={(event) => moveView(view, event.key)}
+                      className={`min-h-11 rounded-xl px-2 py-2 text-[10px] font-black uppercase tracking-[0.08em] transition focus:outline-none focus:ring-2 focus:ring-sky-300 sm:px-3 sm:tracking-[0.14em] ${activeView === view ? "bg-sky-400 text-zinc-950" : "text-zinc-400 hover:text-white"}`}
                     >
                       {labels[index]}
                     </button>
@@ -503,7 +523,7 @@ export default function HomeClient() {
             </div>
 
             {activeView === "investigation" ? (
-              <div className="grid lg:grid-cols-[0.72fr_1.28fr]">
+              <div id="investigation-panel" role="tabpanel" aria-labelledby="investigation-tab" className="grid lg:grid-cols-[0.72fr_1.28fr]">
                 <div className="border-b border-white/10 p-5 lg:border-b-0 lg:border-r">
                   <div className="ui-label">{t.home.analystAnswers}</div>
                   <div className="mt-4 space-y-3">
@@ -536,7 +556,7 @@ export default function HomeClient() {
                     <div className="ui-label">{t.home.discoveryQuestion}</div>
                     <span className="risk-status">{t.audit.risk}</span>
                   </div>
-                  <div className="investigation-radar relative mt-4 h-[360px] overflow-hidden rounded-[26px] border border-white/10 bg-black">
+                  <div className="investigation-radar relative mt-4 hidden h-[360px] overflow-hidden rounded-[26px] border border-white/10 bg-black sm:block">
                     <div className="radar-sweep absolute inset-0" />
                     <div className="absolute left-[16%] top-[17%] rounded-full border border-sky-300/50 bg-sky-400/10 px-3 py-2 text-[10px] font-black text-sky-100">
                       supplier-pay.test
@@ -560,10 +580,17 @@ export default function HomeClient() {
                       </span>
                     </div>
                   </div>
+                  <div className="mt-4 rounded-[26px] border border-white/10 bg-black/50 p-4 sm:hidden">
+                    <div className="ui-label">{t.home.discoveryQuestion}</div>
+                    <div className="mt-4 grid gap-2">
+                      {["supplier-pay.test", t.home.productJourney[0].title, t.home.reasoningSteps[3].label, t.home.productJourney[1].title].map((label) => <div key={label} className="rounded-xl border border-white/10 px-3 py-3 text-xs font-black text-zinc-100">{label}</div>)}
+                    </div>
+                    <div className="mt-4 rounded-2xl border border-red-400/50 bg-red-500/10 p-4 text-center"><span className="ui-label text-red-100">{t.home.confidence}</span><strong className="mt-2 block text-xl text-white">62%</strong><span className="mt-1 block text-[9px] font-bold text-red-100">{t.home.confidenceValue}</span></div>
+                  </div>
                 </div>
               </div>
             ) : activeView === "monitoring" ? (
-              <div className="grid gap-5 p-5 lg:grid-cols-[1.2fr_0.8fr]">
+              <div id="monitoring-panel" role="tabpanel" aria-labelledby="monitoring-tab" className="grid gap-5 p-5 lg:grid-cols-[1.2fr_0.8fr]">
                 <div className="rounded-[26px] border border-white/10 bg-black/30 p-5">
                   <div className="flex items-center justify-between">
                     <div>
@@ -615,7 +642,7 @@ export default function HomeClient() {
                 </div>
               </div>
             ) : (
-              <div className="grid gap-5 p-5 lg:grid-cols-3">
+              <div id="trust-panel" role="tabpanel" aria-labelledby="trust-tab" className="grid gap-5 p-5 lg:grid-cols-3">
                 {t.home.trustSignals.map((signal, index) => (
                   <article
                     key={signal}
@@ -647,7 +674,7 @@ export default function HomeClient() {
       </section>
 
       <section className="px-5 py-8 sm:px-6" aria-label={t.home.journeyEyebrow}>
-        <div className="mx-auto max-w-7xl border-l border-white/15 pl-5 sm:pl-8">
+        <div className="mx-auto max-w-7xl border-s border-white/15 ps-5 sm:ps-8">
           <div className="ui-label text-sky-200">{t.home.journeyEyebrow}</div>
           <div className="mt-5 grid gap-4 md:grid-cols-3">
             {t.home.productJourney.map((item, index) => (
@@ -655,7 +682,7 @@ export default function HomeClient() {
                 key={item.title}
                 className="relative border-t border-white/15 pt-5"
               >
-                <span className="absolute -left-[1.72rem] -top-1.5 h-3 w-3 rounded-full border-2 border-black bg-sky-300 sm:-left-[2.47rem]" />
+                <span className="absolute -start-[1.72rem] -top-1.5 h-3 w-3 rounded-full border-2 border-black bg-sky-300 sm:-start-[2.47rem]" />
                 <div className="evidence-value text-xs text-sky-300">
                   0{index + 1} / 03
                 </div>
@@ -683,11 +710,11 @@ export default function HomeClient() {
               const open = expandedReport === section;
               const details = ["Hold payment release pending verified ownership and address evidence.", "Five findings connect the claimed supplier, historic domain, payment alias, and submitted invoice.", "Corroborated identity links are present. Beneficial ownership remains unresolved.", "Request the registration record, confirm the filing address, and monitor the payment alias."];
               return <div key={section} className="border-b border-white/10 last:border-0">
-                <button type="button" onClick={() => setExpandedReport(open ? null : section)} aria-expanded={open} className="flex w-full items-center justify-between gap-4 p-5 text-left">
-                  <span><span className="evidence-value mr-3 text-xs text-sky-300">0{index + 1}</span><span className="text-sm font-black text-white">{section}</span></span>
+                <button type="button" onClick={() => setExpandedReport(open ? null : section)} aria-expanded={open} aria-controls={`report-section-${index}`} className="flex min-h-14 w-full items-center justify-between gap-4 p-5 text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sky-300">
+                  <span><span className="evidence-value me-3 text-xs text-sky-300">0{index + 1}</span><span className="text-sm font-black text-white">{section}</span></span>
                   <span className="text-lg text-zinc-500">{open ? "−" : "+"}</span>
                 </button>
-                {open ? <p className="px-5 pb-5 pl-12 text-sm leading-6 text-zinc-400">{details[index]}</p> : null}
+                {open ? <p id={`report-section-${index}`} className="px-5 pb-5 ps-12 text-sm leading-6 text-zinc-400">{details[index]}</p> : null}
               </div>;
             })}
           </div>
@@ -713,7 +740,7 @@ export default function HomeClient() {
 
       <section className="px-5 py-16 sm:px-6" aria-labelledby="resources-title"><div className="mx-auto max-w-7xl border-y border-white/10 py-10"><div className="ui-label text-sky-200">Research and resources</div><h2 id="resources-title" className="mt-4 text-3xl font-black tracking-tight text-white">Practical context for marketplace risk teams.</h2><div className="mt-8 grid gap-4 md:grid-cols-3">{[["Marketplace intelligence", "How relationship signals support supplier review."], ["Risk reports", "A decision record teams can revisit and share."], ["Research", "Patterns, enforcement changes, and operating guidance."]].map(([title, copy]) => <article key={title} className="border-t border-white/15 pt-5"><h3 className="text-base font-black text-white">{title}</h3><p className="mt-2 text-sm leading-6 text-zinc-400">{copy}</p><span className="mt-5 inline-block text-sm font-black text-sky-200">Coming soon</span></article>)}</div></div></section>
 
-      <section className="px-5 pb-16 pt-8 sm:px-6"><div className="mx-auto max-w-7xl overflow-hidden rounded-[38px] border border-sky-300/20 bg-[radial-gradient(circle_at_80%_20%,rgba(14,165,233,0.22),transparent_28%),linear-gradient(135deg,#082f49,#09090b_62%)] p-8 sm:p-12"><div className="max-w-3xl"><div className="ui-label text-sky-100">Start with the evidence</div><h2 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-5xl">Make the next marketplace decision with a clearer record.</h2><p className="mt-5 text-base leading-7 text-sky-50/75">Open an investigation, review an example report, or talk through your team&apos;s workflow.</p><div className="mt-8 flex flex-col gap-3 sm:flex-row"><button onClick={startInvestigation} className="rounded-full bg-sky-300 px-6 py-3 text-xs font-black uppercase tracking-[0.14em] text-slate-950 transition hover:bg-white">Start investigation</button><a href="/contact" className="rounded-full border border-white/20 px-6 py-3 text-center text-xs font-black uppercase tracking-[0.14em] text-white transition hover:bg-white/10">Book demo</a><a href="/example-report" className="rounded-full border border-white/20 px-6 py-3 text-center text-xs font-black uppercase tracking-[0.14em] text-white transition hover:bg-white/10">View report</a></div></div></div></section>
+      <section className="px-5 pb-16 pt-8 sm:px-6"><div className="mx-auto max-w-7xl overflow-hidden rounded-[38px] border border-sky-300/20 bg-[radial-gradient(circle_at_80%_20%,rgba(14,165,233,0.22),transparent_28%),linear-gradient(135deg,#082f49,#09090b_62%)] p-6 sm:p-12"><div className="max-w-3xl"><div className="ui-label text-sky-100">Start with the evidence</div><h2 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-5xl">Make the next marketplace decision with a clearer record.</h2><p className="mt-5 text-base leading-7 text-sky-50/75">Open an investigation, review an example report, or talk through your team&apos;s workflow.</p><div className="mt-8 flex flex-col gap-3 sm:flex-row"><button onClick={startInvestigation} className="min-h-12 rounded-full bg-sky-300 px-6 py-3 text-xs font-black uppercase tracking-[0.14em] text-slate-950 transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">Start investigation</button><a href="/contact" className="min-h-12 rounded-full border border-white/20 px-6 py-3 text-center text-xs font-black uppercase tracking-[0.14em] text-white transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">Book demo</a><a href="/example-report" className="min-h-12 rounded-full border border-white/20 px-6 py-3 text-center text-xs font-black uppercase tracking-[0.14em] text-white transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">View report</a></div></div></div></section>
 
       <p className="mx-auto max-w-7xl px-5 pb-12 text-xs leading-6 text-zinc-500 sm:px-6">
         {t.positioning.disclaimer}
