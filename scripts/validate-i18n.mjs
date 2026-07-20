@@ -62,3 +62,9 @@ for (const locale of locales.filter((locale) => locale !== "en")) {
   assert.ok(localized[1].includes("company registration document") && localized[2].includes("account 1234"), `${locale} must preserve requested verification details`);
 }
 console.log(`Validated ${locales.length} complete locale dictionaries, RTL direction, canonical presentation boundaries, and semantic report item localization.`);
+
+const userPages = (await import("../lib/i18n/index.ts")).userPageCopy;
+for (const pageName of ["security", "contact", "login", "signup", "example"]) {
+  assert.notDeepEqual(userPages.he[pageName], userPages.en[pageName], `Hebrew ${pageName} page copy must be localized`);
+}
+console.log("Validated localized Hebrew copy for every public account, contact, security, and example-report route.");
