@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import ShadowScoreLayout from "./components/ShadowScoreLayout";
 import InvestigationTimeline from "./components/InvestigationTimeline";
@@ -85,6 +85,14 @@ const entityNodes = [
   },
 ];
 
+const entityDetails: Record<string, { relationship: string; evidence: string; effect: string }> = {
+  "Example Signal Logistics": { relationship: "Claimed subject in the submitted supplier record.", evidence: "Operating name supplied during intake.", effect: "Starts the identity-resolution review." },
+  "supplier-pay.test": { relationship: "Payment domain connected to the claimed subject.", evidence: "Historical domain observation links it to an earlier seller identity.", effect: "Adds a corroborated identity link." },
+  "Example Holdings LLC": { relationship: "Fictional registry record used in this example.", evidence: "Operating name matches. Beneficial owner is unavailable.", effect: "Leaves ownership unresolved." },
+  "Payment alias": { relationship: "Alias shared by the storefront and complaint cluster.", evidence: "Reputation provider returned an overlapping payment alias.", effect: "Raises the relationship risk." },
+  "Filing address": { relationship: "Address stated in a submitted invoice.", evidence: "The invoice address conflicts with the public filing address.", effect: "Creates a material contradiction." },
+};
+
 export default function HomeClient() {
   const router = useRouter();
   const { t } = useLocale();
@@ -92,6 +100,21 @@ export default function HomeClient() {
   const [activeView, setActiveView] = useState<
     "investigation" | "monitoring" | "trust"
   >("investigation");
+  const [selectedEntity, setSelectedEntity] = useState(entityNodes[0].label);
+  const [expandedEvidence, setExpandedEvidence] = useState<number | null>(null);
+  const [activityTick, setActivityTick] = useState(0);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setActivityTick((value) => value + 1), 5000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const evidenceCount = 12 + (activityTick % 3);
+  const confidence = 58 + (activityTick % 4) * 2;
+  const activeAlert =
+    activityTick % 2 === 0
+      ? "Address conflict reviewed"
+      : "Alias overlap confirmed";
 
   function startInvestigation() {
     if (isOpening) return;
@@ -142,10 +165,10 @@ export default function HomeClient() {
                 {t.nav.start}
               </button>
               <a
-                href="/example-report"
+                href="#interactive-demo"
                 className="rounded-full border border-white/15 bg-white/[0.04] px-7 py-4 text-center text-sm font-black uppercase tracking-[0.14em] text-white transition hover:bg-white/[0.08]"
               >
-                {t.home.viewExample}
+                View interactive demo
               </a>
             </div>
             {isOpening ? (
@@ -155,7 +178,7 @@ export default function HomeClient() {
             ) : null}
           </div>
 
-          <div className="rounded-[36px] border border-white/10 bg-zinc-950/90 p-4 shadow-[0_0_110px_rgba(14,165,233,0.14)] backdrop-blur-xl sm:p-5">
+          <div id="interactive-demo" className="rounded-[36px] border border-white/10 bg-zinc-950/90 p-4 shadow-[0_0_110px_rgba(14,165,233,0.14)] backdrop-blur-xl sm:p-5">
             <div className="investigation-console relative overflow-hidden rounded-[28px] border border-white/10 bg-gradient-to-br from-zinc-950 via-black to-zinc-950 p-5 sm:p-6">
               <div className="relative flex flex-wrap items-start justify-between gap-4 border-b border-white/10 pb-5">
                 <div>
@@ -167,7 +190,10 @@ export default function HomeClient() {
                     Example Signal Logistics
                   </h2>
                   <p className="mt-2 text-sm leading-6 text-zinc-400">
-                    {t.home.demoSubtitle}
+                    Illustrative workspace. {t.home.demoSubtitle}
+                  </p>
+                  <p className="mt-2 text-xs font-bold text-sky-100">
+                    {evidenceCount} evidence items active. Latest update: {activeAlert}.
                   </p>
                 </div>
                 <div className="decision-card rounded-2xl border border-amber-200/20 bg-amber-200/10 px-4 py-3 text-right">
@@ -183,8 +209,11 @@ export default function HomeClient() {
               <div className="relative mt-5 grid gap-4 xl:grid-cols-[0.82fr_1.18fr]">
                 <div className="space-y-3">
                   {evidenceEvents.map((signal, index) => (
-                    <div
+                    <button
+                      type="button"
                       key={signal.text}
+                      onClick={() => setExpandedEvidence(expandedEvidence === index ? null : index)}
+                      aria-expanded={expandedEvidence === index}
                       className={`signal-card signal-card-${index} rounded-2xl border border-white/10 bg-white/[0.045] p-4`}
                     >
                       <div className="flex items-center justify-between gap-3">
@@ -201,7 +230,12 @@ export default function HomeClient() {
                       <p className="mt-1 text-sm font-bold leading-6 text-zinc-100">
                         {signal.text}
                       </p>
-                    </div>
+                      {expandedEvidence === index ? (
+                        <p className="mt-3 border-t border-white/10 pt-3 text-left text-xs leading-5 text-sky-100">
+                          Evidence recorded at {signal.time}. Select a relationship node to inspect how this finding changes the review.
+                        </p>
+                      ) : null}
+                    </button>
                   ))}
                 </div>
 
@@ -254,8 +288,11 @@ export default function HomeClient() {
                       />
                     </svg>
                     {entityNodes.map((node) => (
-                      <div
+                      <button
+                        type="button"
                         key={node.label}
+                        onClick={() => setSelectedEntity(node.label)}
+                        aria-pressed={selectedEntity === node.label}
                         className={`entity-node ${node.stage} absolute ${node.className} max-w-[190px] rounded-2xl border border-white/10 bg-zinc-950/95 p-3 shadow-[0_0_28px_rgba(255,255,255,0.06)]`}
                       >
                         <div className="text-[9px] font-black uppercase tracking-[0.18em] text-zinc-500">
@@ -264,19 +301,31 @@ export default function HomeClient() {
                         <div className="mt-1 text-xs font-black leading-5 text-white">
                           {node.label}
                         </div>
-                      </div>
+                      </button>
                     ))}
-                    <div className="confidence-ring absolute left-1/2 top-1/2 flex h-32 w-32 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-red-300/25 bg-red-500/10 text-center">
+                    <button type="button" title="Confidence reflects corroborated links, unresolved ownership, and contradictory address evidence." className="confidence-ring absolute left-1/2 top-1/2 flex h-32 w-32 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-red-300/25 bg-red-500/10 text-center">
                       <div>
                         <div className="text-[10px] font-black uppercase tracking-[0.18em] text-red-100">
                           {t.home.confidence}
                         </div>
                         <div className="confidence-state mt-1 text-sm font-black text-white">
-                          {t.home.confidenceValue}
+                          {confidence}% supported
                         </div>
                       </div>
-                    </div>
+                    </button>
                   </div>
+                  <aside className="mt-3 rounded-2xl border border-sky-300/20 bg-sky-500/[0.07] p-4" aria-live="polite">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="ui-label text-sky-100">Relationship detail</span>
+                      <span className="evidence-value text-xs text-sky-200">{evidenceCount} evidence items</span>
+                    </div>
+                    <h3 className="mt-2 text-sm font-black text-white">{selectedEntity}</h3>
+                    <p className="mt-1 text-xs leading-5 text-zinc-300">{entityDetails[selectedEntity].relationship}</p>
+                    <dl className="mt-3 grid gap-2 text-xs sm:grid-cols-2">
+                      <div><dt className="text-zinc-500">Evidence</dt><dd className="mt-1 text-zinc-200">{entityDetails[selectedEntity].evidence}</dd></div>
+                      <div><dt className="text-zinc-500">Review effect</dt><dd className="mt-1 text-zinc-200">{entityDetails[selectedEntity].effect}</dd></div>
+                    </dl>
+                  </aside>
                 </div>
               </div>
 
