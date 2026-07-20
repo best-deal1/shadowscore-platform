@@ -89,6 +89,9 @@ export default function HomeClient() {
   const router = useRouter();
   const { t } = useLocale();
   const [isOpening, setIsOpening] = useState(false);
+  const [activeView, setActiveView] = useState<
+    "investigation" | "monitoring" | "trust"
+  >("investigation");
 
   function startInvestigation() {
     if (isOpening) return;
@@ -332,101 +335,231 @@ export default function HomeClient() {
 
       <section
         className="px-5 py-14 sm:px-6"
-        aria-label="{t.home.executiveEyebrow} questions"
+        aria-label={t.home.executiveEyebrow}
       >
         <div className="mx-auto max-w-7xl">
-          <div className="max-w-3xl">
-            <div className="text-xs font-black uppercase tracking-[0.28em] text-sky-200">
-              {t.home.executiveEyebrow}
+          <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+            <div className="max-w-3xl">
+              <div className="text-xs font-black uppercase tracking-[0.28em] text-sky-200">
+                {t.home.executiveEyebrow}
+              </div>
+              <h2 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-5xl">
+                {t.home.executiveTitle}
+              </h2>
+              <p className="mt-5 text-base leading-7 text-zinc-300">
+                {t.home.executiveCopy}
+              </p>
             </div>
-            <h2 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-5xl">
-              {t.home.executiveTitle}
-            </h2>
-            <p className="mt-5 text-base leading-7 text-zinc-300">
-              {t.home.executiveCopy}
-            </p>
+            <div
+              className="flex rounded-2xl border border-white/10 bg-black/35 p-1"
+              role="tablist"
+              aria-label={t.home.analystAnswers}
+            >
+              {(["investigation", "monitoring", "trust"] as const).map(
+                (view, index) => {
+                  const labels = [
+                    t.nav.investigations,
+                    t.nav.monitoring,
+                    t.home.trustEyebrow,
+                  ];
+                  return (
+                    <button
+                      key={view}
+                      type="button"
+                      role="tab"
+                      aria-selected={activeView === view}
+                      onClick={() => setActiveView(view)}
+                      className={`rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] transition focus:outline-none focus:ring-2 focus:ring-sky-300 ${activeView === view ? "bg-sky-400 text-zinc-950" : "text-zinc-400 hover:text-white"}`}
+                    >
+                      {labels[index]}
+                    </button>
+                  );
+                },
+              )}
+            </div>
           </div>
-          <div className="mt-10 grid gap-4 lg:grid-cols-5">
-            {t.home.executiveQuestions.map((item, index) => (
-              <article
-                key={item.question}
-                className="rounded-[28px] border border-white/10 bg-white/[0.035] p-6"
-              >
-                <div className="text-xs font-black tracking-[0.22em] text-sky-200">
-                  {String(index + 1).padStart(2, "0")}
+
+          <div className="mt-10 overflow-hidden rounded-[36px] border border-white/10 bg-zinc-950 shadow-[0_24px_80px_rgba(0,0,0,0.32)]">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-white/[0.025] px-5 py-4">
+              <div className="flex items-center gap-3">
+                <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-emerald-300" />
+                <span className="ui-label text-zinc-300">
+                  {activeView === "monitoring"
+                    ? t.nav.monitoring
+                    : activeView === "trust"
+                      ? t.home.trustTitle
+                      : t.nav.investigations}
+                </span>
+              </div>
+              <div className="evidence-value text-xs text-zinc-500">
+                SS-2048 · {t.home.running}
+              </div>
+            </div>
+
+            {activeView === "investigation" ? (
+              <div className="grid lg:grid-cols-[0.72fr_1.28fr]">
+                <div className="border-b border-white/10 p-5 lg:border-b-0 lg:border-r">
+                  <div className="ui-label">{t.home.analystAnswers}</div>
+                  <div className="mt-4 space-y-3">
+                    {t.home.executiveQuestions
+                      .slice(0, 4)
+                      .map((item, index) => (
+                        <div
+                          key={item.question}
+                          className="group rounded-2xl border border-white/10 bg-white/[0.025] p-4 transition hover:border-sky-300/30"
+                        >
+                          <div className="flex items-start gap-3">
+                            <span className="evidence-value mt-0.5 text-xs text-sky-300">
+                              0{index + 1}
+                            </span>
+                            <div>
+                              <h3 className="text-sm font-black text-white">
+                                {item.question}
+                              </h3>
+                              <p className="mt-1 text-xs leading-5 text-zinc-400">
+                                {item.detail}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
                 </div>
-                <h3 className="mt-5 text-lg font-black leading-6 text-white">
-                  {item.question}
-                </h3>
-                <p className="mt-4 text-sm leading-6 text-zinc-400">
-                  {item.detail}
-                </p>
-              </article>
-            ))}
+                <div className="p-5">
+                  <div className="flex items-center justify-between">
+                    <div className="ui-label">{t.home.discoveryQuestion}</div>
+                    <span className="risk-status">{t.audit.risk}</span>
+                  </div>
+                  <div className="investigation-radar relative mt-4 h-[360px] overflow-hidden rounded-[26px] border border-white/10 bg-black">
+                    <div className="radar-sweep absolute inset-0" />
+                    <div className="absolute left-[16%] top-[17%] rounded-full border border-sky-300/50 bg-sky-400/10 px-3 py-2 text-[10px] font-black text-sky-100">
+                      supplier-pay.test
+                    </div>
+                    <div className="absolute right-[12%] top-[25%] rounded-full border border-amber-300/40 bg-amber-400/10 px-3 py-2 text-[10px] font-black text-amber-100">
+                      {t.home.productJourney[0].title}
+                    </div>
+                    <div className="absolute bottom-[18%] left-[23%] rounded-full border border-red-300/50 bg-red-500/10 px-3 py-2 text-[10px] font-black text-red-100">
+                      {t.home.reasoningSteps[3].label}
+                    </div>
+                    <div className="absolute bottom-[14%] right-[14%] rounded-full border border-white/20 bg-white/[0.08] px-3 py-2 text-[10px] font-black text-white">
+                      {t.home.productJourney[1].title}
+                    </div>
+                    <div className="absolute left-1/2 top-1/2 flex h-32 w-32 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full border border-red-400/50 bg-red-500/10 text-center shadow-[0_0_50px_rgba(248,113,113,0.14)]">
+                      <span className="ui-label text-red-100">
+                        {t.home.confidence}
+                      </span>
+                      <strong className="mt-2 text-xl text-white">62%</strong>
+                      <span className="mt-1 text-[9px] font-bold text-red-100">
+                        {t.home.confidenceValue}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : activeView === "monitoring" ? (
+              <div className="grid gap-5 p-5 lg:grid-cols-[1.2fr_0.8fr]">
+                <div className="rounded-[26px] border border-white/10 bg-black/30 p-5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="ui-label">{t.nav.monitoring}</div>
+                      <h3 className="mt-2 text-xl font-black text-white">
+                        {t.home.productJourney[2].title}
+                      </h3>
+                    </div>
+                    <span className="audit-status">{t.home.running}</span>
+                  </div>
+                  <div className="mt-7 grid grid-cols-7 items-end gap-2 h-36">
+                    {[31, 48, 38, 64, 47, 82, 59].map((height, index) => (
+                      <div key={height} className="group flex h-full items-end">
+                        <div
+                          style={{ height: `${height}%` }}
+                          className={`w-full rounded-t-md ${index === 5 ? "bg-red-400" : "bg-sky-400/70"}`}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-3 flex justify-between evidence-value text-[10px] text-zinc-500">
+                    <span>07.14</span>
+                    <span>07.20</span>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  {t.home.reasoningSteps.slice(2).map((step, index) => (
+                    <div
+                      key={step.label}
+                      className="rounded-2xl border border-white/10 bg-white/[0.025] p-4"
+                    >
+                      <div className="flex justify-between gap-3">
+                        <span className="text-sm font-black text-white">
+                          {step.label}
+                        </span>
+                        <span
+                          className={
+                            index === 1 ? "risk-status" : "audit-status"
+                          }
+                        >
+                          {step.status}
+                        </span>
+                      </div>
+                      <p className="mt-2 text-xs leading-5 text-zinc-400">
+                        {step.value}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="grid gap-5 p-5 lg:grid-cols-3">
+                {t.home.trustSignals.map((signal, index) => (
+                  <article
+                    key={signal}
+                    className="relative overflow-hidden rounded-[26px] border border-white/10 bg-white/[0.025] p-6"
+                  >
+                    <div className="absolute right-5 top-4 evidence-value text-4xl text-white/5">
+                      0{index + 1}
+                    </div>
+                    <div
+                      className={`h-2 w-2 rounded-full ${index === 2 ? "bg-red-400" : "bg-emerald-300"}`}
+                    />
+                    <h3 className="mt-8 text-lg font-black text-white">
+                      {signal}
+                    </h3>
+                    <p className="mt-3 text-sm leading-6 text-zinc-400">
+                      {t.home.scenarios[index]}
+                    </p>
+                    <div className="mt-6 h-1 overflow-hidden rounded-full bg-white/10">
+                      <div
+                        className={`h-full ${index === 2 ? "w-[46%] bg-red-400" : "w-[78%] bg-emerald-300"}`}
+                      />
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </section>
 
-      <section className="px-5 py-14 sm:px-6" aria-label="Product journey">
-        <div className="mx-auto max-w-7xl rounded-[40px] border border-white/10 bg-white/[0.035] p-6 sm:p-10">
-          <div className="max-w-3xl">
-            <div className="text-xs font-black uppercase tracking-[0.28em] text-sky-200">
-              {t.home.journeyEyebrow}
-            </div>
-            <h2 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-5xl">
-              {t.home.journeyTitle}
-            </h2>
-          </div>
-          <div className="mt-10 grid gap-4 lg:grid-cols-3">
-            {t.home.productJourney.map((item) => (
-              <div
+      <section className="px-5 py-8 sm:px-6" aria-label={t.home.journeyEyebrow}>
+        <div className="mx-auto max-w-7xl border-l border-white/15 pl-5 sm:pl-8">
+          <div className="ui-label text-sky-200">{t.home.journeyEyebrow}</div>
+          <div className="mt-5 grid gap-4 md:grid-cols-3">
+            {t.home.productJourney.map((item, index) => (
+              <article
                 key={item.title}
-                className="rounded-[32px] border border-white/10 bg-black/35 p-7"
+                className="relative border-t border-white/15 pt-5"
               >
-                <div className="text-xs font-black uppercase tracking-[0.22em] text-sky-100">
-                  {item.label}
+                <span className="absolute -left-[1.72rem] -top-1.5 h-3 w-3 rounded-full border-2 border-black bg-sky-300 sm:-left-[2.47rem]" />
+                <div className="evidence-value text-xs text-sky-300">
+                  0{index + 1} / 03
                 </div>
-                <h3 className="mt-4 text-xl font-black text-white">
+                <h3 className="mt-3 text-lg font-black text-white">
                   {item.title}
                 </h3>
-                <p className="mt-4 text-sm leading-7 text-zinc-300">
+                <p className="mt-3 max-w-sm text-sm leading-6 text-zinc-400">
                   {item.copy}
                 </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="px-5 py-14 sm:px-6" aria-label="Trust signals">
-        <div className="mx-auto grid max-w-7xl gap-8 rounded-[40px] border border-white/10 bg-gradient-to-br from-slate-900 to-zinc-950 p-6 sm:p-10 lg:grid-cols-[0.9fr_1.1fr]">
-          <div>
-            <div className="text-xs font-black uppercase tracking-[0.28em] text-sky-200">
-              {t.home.trustEyebrow}
-            </div>
-            <h2 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-5xl">
-              {t.home.trustTitle}
-            </h2>
-            <p className="mt-5 text-base leading-7 text-zinc-300">
-              {t.home.trustCopy}
-            </p>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {t.home.trustSignals.map((signal) => (
-              <div
-                key={signal}
-                className="rounded-3xl border border-white/10 bg-black/35 p-5 text-sm font-black leading-6 text-white"
-              >
-                {signal}
-              </div>
-            ))}
-            {t.home.scenarios.map((scenario) => (
-              <div
-                key={scenario}
-                className="rounded-2xl border border-white/10 bg-black/30 p-5 text-sm font-black text-white"
-              >
-                {scenario}
-              </div>
+              </article>
             ))}
           </div>
         </div>

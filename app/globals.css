@@ -184,3 +184,52 @@ body {
 .timeline-item { position: relative; border: 1px solid rgb(255 255 255 / 0.1); border-radius: 0.875rem; background: rgb(0 0 0 / 0.25); padding: 1rem; }
 .timeline-marker { position: absolute; left: -1.625rem; top: 1.25rem; height: 0.7rem; width: 0.7rem; border: 2px solid #0a0a0a; border-radius: 9999px; background: var(--ss-accent); }
 .timeline-marker-risk { background: var(--ss-risk); }
+
+.investigation-radar {
+  background-image:
+    linear-gradient(rgb(255 255 255 / 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.055) 1px, transparent 1px),
+    radial-gradient(circle at center, rgb(14 165 233 / 0.13), transparent 47%);
+  background-size:
+    38px 38px,
+    38px 38px,
+    auto;
+}
+.investigation-radar::before,
+.investigation-radar::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border: 1px solid rgb(125 211 252 / 0.16);
+  border-radius: 999px;
+  transform: translate(-50%, -50%);
+}
+.investigation-radar::before {
+  width: 52%;
+  aspect-ratio: 1;
+}
+.investigation-radar::after {
+  width: 88%;
+  aspect-ratio: 1;
+}
+.radar-sweep {
+  background: conic-gradient(
+    from 0deg at 50% 50%,
+    transparent 0 300deg,
+    rgb(56 189 248 / 0.22) 355deg,
+    transparent 360deg
+  );
+  animation: radarScan 7s linear infinite;
+  transform-origin: center;
+}
+@keyframes radarScan {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .radar-sweep {
+    animation: none;
+  }
+}
