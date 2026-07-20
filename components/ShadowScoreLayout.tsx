@@ -16,6 +16,7 @@ import {
 import { getCurrentUser, type ShadowScoreUser } from "../lib/auth";
 
 const primaryNav = [
+  { href: "/dashboard", label: "Dashboard", key: "dashboard" },
   { href: "/investigations", label: "Investigations", key: "investigations" },
   { href: "/reports", label: "Reports", key: "reports" },
   { href: "/monitoring", label: "Monitoring", key: "monitoring" },
