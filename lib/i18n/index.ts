@@ -962,11 +962,11 @@ const translations: Record<Exclude<Locale, "en">, Dictionary> = {
       language: "שפה",
     },
     positioning: {
-      eyebrow: "בדיקת נאותות עסקית מבוססת AI",
+      eyebrow: "בדיקת נאותות עסקית ומודיעין סיכונים",
       headline:
         "בדיקת נאותות עסקית לפני שנותנים אמון, משלמים, משתפים פעולה או משקיעים.",
       description:
-        "ShadowScore בודקת זהות עסקית, אותות אתר, ראיות ציבוריות, סתירות ופערי ראיות, ומפיקה המלצה ניהולית המבוססת על מקורות.",
+        "ניתוח ראיות בסיוע AI, מיפוי קשרים ומודיעין סיכונים להחלטות הנוגעות לעסק, ספק, שותף או השקעה.",
       disclaimer:
         "ShadowScore מספקת תמיכה בקבלת החלטות המבוססת על ראיות. היא אינה מספקת אישור משפטי, פיננסי, רגולטורי, אשראי, סנקציות או ציות.",
     },
@@ -1034,11 +1034,11 @@ const translations: Record<Exclude<Locale, "en">, Dictionary> = {
       language: "اللغة",
     },
     positioning: {
-      eyebrow: "العناية الواجبة التجارية بالذكاء الاصطناعي",
+      eyebrow: "العناية الواجبة التجارية وذكاء المخاطر",
       headline:
         "العناية الواجبة التجارية قبل الثقة أو الدفع أو الشراكة أو الاستثمار.",
       description:
-        "يفحص ShadowScore هوية الشركة وإشارات الموقع والأدلة العامة والتناقضات وفجوات الأدلة، ثم يقدم توصية تنفيذية مدعومة بالمصادر.",
+        "تحليل للأدلة بمساعدة الذكاء الاصطناعي، ورسم للعلاقات، وذكاء للمخاطر لقرارات تخص شركة أو مورداً أو شريكاً أو استثماراً.",
       disclaimer:
         "يوفر ShadowScore دعماً لاتخاذ القرار يستند إلى الأدلة. ولا يقدم موافقة قانونية أو مالية أو تنظيمية أو ائتمانية أو متعلقة بالعقوبات أو الامتثال.",
     },
@@ -1146,11 +1146,11 @@ const translations: Record<Exclude<Locale, "en">, Dictionary> = {
       language: "Idioma",
     },
     positioning: {
-      eyebrow: "Debida diligencia empresarial con IA",
+      eyebrow: "Debida diligencia empresarial e inteligencia de riesgos",
       headline:
         "Debida diligencia empresarial antes de confiar, pagar, asociarse o invertir.",
       description:
-        "ShadowScore investiga la identidad empresarial, señales del sitio web, evidencia pública, contradicciones y vacíos de evidencia, y genera una recomendación ejecutiva respaldada por fuentes.",
+        "Análisis de evidencia asistido por IA, mapeo de relaciones e inteligencia de riesgos para decisiones sobre una empresa, proveedor, socio o inversión.",
       disclaimer:
         "ShadowScore ofrece apoyo para decisiones basado en evidencia. No proporciona aprobación legal, financiera, regulatoria, crediticia, de sanciones ni de cumplimiento.",
     },
@@ -1258,11 +1258,11 @@ const translations: Record<Exclude<Locale, "en">, Dictionary> = {
       language: "Langue",
     },
     positioning: {
-      eyebrow: "Diligence commerciale par IA",
+      eyebrow: "Diligence commerciale et renseignement sur les risques",
       headline:
         "Une diligence commerciale avant de faire confiance, payer, vous associer ou investir.",
       description:
-        "ShadowScore examine l'identité de l'entreprise, les signaux du site, les preuves publiques, les contradictions et les lacunes, puis produit une recommandation exécutive sourcée.",
+        "Analyse de preuves assistée par IA, cartographie des relations et renseignement sur les risques pour les décisions concernant une entreprise, un fournisseur, un partenaire ou un investissement.",
       disclaimer:
         "ShadowScore fournit une aide à la décision fondée sur des preuves. Il ne fournit pas d'approbation juridique, financière, réglementaire, de crédit, de sanctions ou de conformité.",
     },
@@ -1370,11 +1370,11 @@ const translations: Record<Exclude<Locale, "en">, Dictionary> = {
       language: "Sprache",
     },
     positioning: {
-      eyebrow: "KI-gestützte Unternehmensprüfung",
+      eyebrow: "Unternehmensprüfung und Risikoinformationen",
       headline:
         "Unternehmensprüfung, bevor Sie vertrauen, zahlen, zusammenarbeiten oder investieren.",
       description:
-        "ShadowScore untersucht Geschäftsidentität, Website-Signale, öffentliche Belege, Widersprüche und Beleglücken und erstellt eine quellenbasierte Managementempfehlung.",
+        "KI-gestützte Beleganalyse, Beziehungszuordnung und Risikoinformationen für Entscheidungen zu einem Unternehmen, Lieferanten, Partner oder einer Investition.",
       disclaimer:
         "ShadowScore unterstützt evidenzbasierte Entscheidungen. Es bietet keine rechtliche, finanzielle, regulatorische, kreditbezogene, sanktionsbezogene oder Compliance-Freigabe.",
     },
