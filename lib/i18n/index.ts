@@ -553,6 +553,43 @@ for (const locale of ["ar", "es", "fr", "de"] as const)
     requiredPhraseTranslations[locale] as Record<string, string>,
   );
 
+const reportFallbackTranslations = {
+  en: {
+    decisionBasisFallback: "Review the available business information before making a commitment.",
+    noVerifiedFacts: "No verified facts are recorded in the available report evidence.",
+    noMaterialConcerns: "No material concerns are recorded in the available report evidence.",
+    noEvidenceGaps: "No additional evidence gaps are recorded in this report.",
+    noBusinessImpact: "The report does not record a separate business impact statement.",
+    standardChecks: "Complete the standard checks required for this decision.",
+    findingsMethod: "Each finding compares evidence from separate providers. Findings describe the available records and do not establish facts beyond that evidence.",
+    noBusinessFindings: "No cross-provider business findings were produced from the available evidence.",
+    evidenceGapsLabel: "Evidence gaps",
+    sourceTimingMissing: "Source timing was not recorded for this report.",
+    preparedEvidenceLimit: "Claims above are limited to the report evidence available at that time.",
+    technicalHealth: "Technical health",
+    securityPosture: "Security posture",
+    infrastructureMaturity: "Infrastructure maturity",
+    websiteTrustIndicators: "Website trust indicators",
+    recommendationActions: "Recommended actions",
+    noWebsiteActions: "No additional website actions were identified from the available evidence.",
+  },
+  he: {
+    decisionBasisFallback: "יש לבחון את המידע העסקי הזמין לפני קבלת התחייבות.", noVerifiedFacts: "לא נרשמו עובדות מאומתות בראיות הדוח הזמינות.", noMaterialConcerns: "לא נרשמו חששות מהותיים בראיות הדוח הזמינות.", noEvidenceGaps: "לא נרשמו בדוח זה פערי ראיות נוספים.", noBusinessImpact: "הדוח אינו מתעד הצהרה נפרדת על השפעה עסקית.", standardChecks: "יש להשלים את הבדיקות המקובלות הנדרשות להחלטה זו.", findingsMethod: "כל ממצא משווה ראיות מספקים נפרדים. הממצאים מתארים את הרשומות הזמינות ואינם קובעים עובדות מעבר לראיות אלה.", noBusinessFindings: "לא הופקו ממצאים עסקיים בין-ספקיים מהראיות הזמינות.", evidenceGapsLabel: "פערי ראיות", sourceTimingMissing: "מועד המקור לא תועד בדוח זה.", preparedEvidenceLimit: "הטענות לעיל מוגבלות לראיות הדוח שהיו זמינות באותו מועד.", technicalHealth: "תקינות טכנית", securityPosture: "מצב אבטחה", infrastructureMaturity: "בשלות תשתית", websiteTrustIndicators: "מדדי אמון באתר", recommendationActions: "פעולות מומלצות", noWebsiteActions: "לא זוהו פעולות נוספות לאתר מתוך הראיות הזמינות.",
+  },
+  ar: {
+    decisionBasisFallback: "راجع معلومات النشاط المتاحة قبل اتخاذ التزام.", noVerifiedFacts: "لا توجد حقائق موثقة مسجلة في أدلة التقرير المتاحة.", noMaterialConcerns: "لا توجد مخاوف جوهرية مسجلة في أدلة التقرير المتاحة.", noEvidenceGaps: "لا توجد فجوات أدلة إضافية مسجلة في هذا التقرير.", noBusinessImpact: "لا يسجل التقرير بيانًا منفصلًا للأثر التجاري.", standardChecks: "أكمل الفحوص القياسية المطلوبة لهذا القرار.", findingsMethod: "يقارن كل استنتاج أدلة من مزودين منفصلين. تصف الاستنتاجات السجلات المتاحة ولا تثبت حقائق تتجاوز تلك الأدلة.", noBusinessFindings: "لم تُنتج الأدلة المتاحة استنتاجات تجارية عبر مزودين متعددين.", evidenceGapsLabel: "فجوات الأدلة", sourceTimingMissing: "لم يُسجل توقيت المصدر لهذا التقرير.", preparedEvidenceLimit: "الادعاءات أعلاه تقتصر على أدلة التقرير المتاحة في ذلك الوقت.", technicalHealth: "السلامة التقنية", securityPosture: "الوضع الأمني", infrastructureMaturity: "نضج البنية التحتية", websiteTrustIndicators: "مؤشرات الثقة في الموقع", recommendationActions: "الإجراءات الموصى بها", noWebsiteActions: "لم تُحدد إجراءات إضافية للموقع من الأدلة المتاحة.",
+  },
+  es: {
+    decisionBasisFallback: "Revise la información empresarial disponible antes de asumir un compromiso.", noVerifiedFacts: "No se registraron hechos verificados en la evidencia disponible del informe.", noMaterialConcerns: "No se registraron preocupaciones materiales en la evidencia disponible del informe.", noEvidenceGaps: "No se registraron lagunas de evidencia adicionales en este informe.", noBusinessImpact: "El informe no registra una declaración independiente sobre impacto empresarial.", standardChecks: "Complete las comprobaciones habituales requeridas para esta decisión.", findingsMethod: "Cada hallazgo compara evidencia de proveedores distintos. Los hallazgos describen los registros disponibles y no establecen hechos más allá de esa evidencia.", noBusinessFindings: "La evidencia disponible no produjo hallazgos empresariales entre proveedores.", evidenceGapsLabel: "Lagunas de evidencia", sourceTimingMissing: "No se registró el momento de la fuente para este informe.", preparedEvidenceLimit: "Las afirmaciones anteriores se limitan a la evidencia del informe disponible en ese momento.", technicalHealth: "Estado técnico", securityPosture: "Postura de seguridad", infrastructureMaturity: "Madurez de la infraestructura", websiteTrustIndicators: "Indicadores de confianza del sitio web", recommendationActions: "Acciones recomendadas", noWebsiteActions: "No se identificaron acciones adicionales para el sitio web a partir de la evidencia disponible.",
+  },
+  fr: {
+    decisionBasisFallback: "Examinez les informations commerciales disponibles avant de prendre un engagement.", noVerifiedFacts: "Aucun fait vérifié n'est enregistré dans les preuves disponibles du rapport.", noMaterialConcerns: "Aucune préoccupation importante n'est enregistrée dans les preuves disponibles du rapport.", noEvidenceGaps: "Aucune lacune de preuve supplémentaire n'est enregistrée dans ce rapport.", noBusinessImpact: "Le rapport ne consigne pas d'énoncé distinct sur l'incidence commerciale.", standardChecks: "Effectuez les vérifications habituelles requises pour cette décision.", findingsMethod: "Chaque constat compare des preuves de fournisseurs distincts. Les constats décrivent les dossiers disponibles et n'établissent pas de faits au-delà de ces preuves.", noBusinessFindings: "Les preuves disponibles n'ont produit aucun constat commercial entre fournisseurs.", evidenceGapsLabel: "Lacunes de preuve", sourceTimingMissing: "La date de la source n'a pas été enregistrée pour ce rapport.", preparedEvidenceLimit: "Les affirmations ci-dessus sont limitées aux preuves du rapport disponibles à ce moment-là.", technicalHealth: "État technique", securityPosture: "Posture de sécurité", infrastructureMaturity: "Maturité de l'infrastructure", websiteTrustIndicators: "Indicateurs de confiance du site web", recommendationActions: "Actions recommandées", noWebsiteActions: "Aucune action supplémentaire pour le site web n'a été relevée dans les preuves disponibles.",
+  },
+  de: {
+    decisionBasisFallback: "Prüfen Sie die verfügbaren Unternehmensinformationen, bevor Sie eine Verpflichtung eingehen.", noVerifiedFacts: "In den verfügbaren Berichtsnachweisen sind keine verifizierten Fakten verzeichnet.", noMaterialConcerns: "In den verfügbaren Berichtsnachweisen sind keine wesentlichen Bedenken verzeichnet.", noEvidenceGaps: "In diesem Bericht sind keine weiteren Beleglücken verzeichnet.", noBusinessImpact: "Der Bericht enthält keine gesonderte Aussage zu geschäftlichen Auswirkungen.", standardChecks: "Führen Sie die für diese Entscheidung erforderlichen Standardprüfungen durch.", findingsMethod: "Jede Erkenntnis vergleicht Nachweise verschiedener Anbieter. Die Erkenntnisse beschreiben die verfügbaren Unterlagen und stellen keine darüber hinausgehenden Tatsachen fest.", noBusinessFindings: "Aus den verfügbaren Nachweisen wurden keine anbieterübergreifenden Geschäftserkenntnisse erstellt.", evidenceGapsLabel: "Beleglücken", sourceTimingMissing: "Der Zeitpunkt der Quelle wurde für diesen Bericht nicht erfasst.", preparedEvidenceLimit: "Die obigen Aussagen sind auf die zu diesem Zeitpunkt verfügbaren Berichtsnachweise beschränkt.", technicalHealth: "Technischer Zustand", securityPosture: "Sicherheitsstatus", infrastructureMaturity: "Infrastrukturreife", websiteTrustIndicators: "Vertrauensindikatoren der Website", recommendationActions: "Empfohlene Maßnahmen", noWebsiteActions: "Aus den verfügbaren Nachweisen wurden keine weiteren Website-Maßnahmen ermittelt.",
+  },
+};
+
 const footerTranslations = {
   en: {
     product: "Product",
@@ -888,6 +925,7 @@ const en = {
     evidenceConfidence: "Evidence confidence",
     noInformation: "No additional information is recorded.",
     originalEvidence: "Original evidence",
+    content: reportFallbackTranslations.en,
   },
   scorecard: {
     "Website Intelligence": "Website Intelligence",
@@ -962,6 +1000,7 @@ const translations: Record<Exclude<Locale, "en">, Dictionary> = {
       evidenceConfidence: "רמת אמון בראיות",
       noInformation: "לא נרשם מידע נוסף.",
       originalEvidence: "ראיה מקורית",
+      content: reportFallbackTranslations.he,
     },
     scorecard: {
       "Website Intelligence": "מודיעין אתר",
@@ -1073,6 +1112,7 @@ const translations: Record<Exclude<Locale, "en">, Dictionary> = {
       evidenceConfidence: "موثوقية الأدلة",
       noInformation: "لا توجد معلومات إضافية مسجلة.",
       originalEvidence: "الدليل الأصلي",
+      content: reportFallbackTranslations.ar,
     },
     scorecard: {
       "Website Intelligence": "معلومات الموقع",
@@ -1184,6 +1224,7 @@ const translations: Record<Exclude<Locale, "en">, Dictionary> = {
       evidenceConfidence: "Confianza en la evidencia",
       noInformation: "No hay información adicional registrada.",
       originalEvidence: "Evidencia original",
+      content: reportFallbackTranslations.es,
     },
     scorecard: {
       "Website Intelligence": "Inteligencia del sitio web",
@@ -1295,6 +1336,7 @@ const translations: Record<Exclude<Locale, "en">, Dictionary> = {
       evidenceConfidence: "Fiabilité des preuves",
       noInformation: "Aucune information supplémentaire n'est enregistrée.",
       originalEvidence: "Preuve d'origine",
+      content: reportFallbackTranslations.fr,
     },
     scorecard: {
       "Website Intelligence": "Renseignement du site web",
@@ -1406,6 +1448,7 @@ const translations: Record<Exclude<Locale, "en">, Dictionary> = {
       evidenceConfidence: "Vertrauen in die Belege",
       noInformation: "Es sind keine weiteren Informationen erfasst.",
       originalEvidence: "Originalbeleg",
+      content: reportFallbackTranslations.de,
     },
     scorecard: {
       "Website Intelligence": "Website-Intelligence",

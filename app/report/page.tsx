@@ -76,23 +76,23 @@ function ExecutiveBrief({ report }: { report: ShadowScoreReport }) {
       </header>
 
       <section className="mt-8 rounded-3xl border border-white/10 bg-white/[0.035] p-6">
-        <h2 className="text-xs font-black uppercase tracking-[0.28em] text-red-200">Decision basis</h2>
+        <h2 className="text-xs font-black uppercase tracking-[0.28em] text-red-200">{t.report.decisionBasis}</h2>
         <div className="mt-4 space-y-3 text-base leading-7 text-zinc-200">
-          {decisionBasis.length ? decisionBasis.map((item) => <p key={item}>{item}</p>) : <p>Review the available business information before making a commitment.</p>}
+          {decisionBasis.length ? decisionBasis.map((item) => <p key={item}>{item}</p>) : <p>{t.report.content.decisionBasisFallback}</p>}
         </div>
       </section>
 
       <div className="mt-5 grid gap-5 lg:grid-cols-2">
-        <ListCard title={t.report.verifiedFacts} items={verified} emptyMessage="No verified facts are recorded in the available report evidence." />
-        <ListCard title={t.report.materialConcerns} items={concerns} tone="concern" emptyMessage="No material concerns are recorded in the available report evidence." />
-        <ListCard title={t.report.evidenceGaps} items={gaps} tone="gap" emptyMessage="No additional evidence gaps are recorded in this report." />
-        <ListCard title={t.report.businessImpact} items={impact} emptyMessage="The report does not record a separate business impact statement." />
+        <ListCard title={t.report.verifiedFacts} items={verified} emptyMessage={t.report.content.noVerifiedFacts} />
+        <ListCard title={t.report.materialConcerns} items={concerns} tone="concern" emptyMessage={t.report.content.noMaterialConcerns} />
+        <ListCard title={t.report.evidenceGaps} items={gaps} tone="gap" emptyMessage={t.report.content.noEvidenceGaps} />
+        <ListCard title={t.report.businessImpact} items={impact} emptyMessage={t.report.content.noBusinessImpact} />
       </div>
-      <div className="mt-5"><ListCard title={t.report.actions} items={actions} numbered emptyMessage="Complete the standard checks required for this decision." /></div>
+      <div className="mt-5"><ListCard title={t.report.actions} items={actions} numbered emptyMessage={t.report.content.standardChecks} /></div>
 
       <section className="mt-5 rounded-3xl border border-white/10 bg-black/35 p-6" aria-label="Business findings">
         <h2 className="text-xs font-black uppercase tracking-[0.28em] text-red-200">{t.report.findings}</h2>
-        <p className="mt-3 text-sm leading-6 text-zinc-400">Each finding compares evidence from separate providers. Findings describe the available records and do not establish facts beyond that evidence.</p>
+        <p className="mt-3 text-sm leading-6 text-zinc-400">{t.report.content.findingsMethod}</p>
         <div className="mt-5 space-y-4">
           {businessFindings.length ? businessFindings.map((finding) => (
             <article key={`${finding.id}-${finding.title}`} className="rounded-2xl border border-white/10 bg-black/30 p-4">
@@ -100,13 +100,13 @@ function ExecutiveBrief({ report }: { report: ShadowScoreReport }) {
               <p className="mt-2 text-sm leading-6 text-zinc-300">{localize(finding.statement)}</p>
               <ul className="mt-3 space-y-1 text-xs leading-5 text-zinc-500">{finding.evidence.map((item) => <li key={`${item.providerId}-${item.id}`}>{item.providerId}: {localize(item.label)}{item.value ? `, ${item.value}` : ""} ({item.source})</li>)}</ul>
             </article>
-          )) : <p className="text-sm text-zinc-400">No cross-provider business findings were produced from the available evidence.</p>}
+          )) : <p className="text-sm text-zinc-400">{t.report.content.noBusinessFindings}</p>}
         </div>
       </section>
 
       {report.reportSummary?.scorecard && <section className="mt-5 rounded-3xl border border-white/10 bg-black/35 p-6" aria-label="Assessment summary">
         <h2 className="text-xs font-black uppercase tracking-[0.28em] text-red-200">{t.report.assessment}</h2>
-        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{report.reportSummary.scorecard.scores.map((item) => <article key={item.dimension} className="rounded-2xl border border-white/10 bg-black/30 p-4"><h3 className="font-bold text-zinc-100">{t.scorecard[item.dimension]}</h3><p className="mt-2 text-sm capitalize text-zinc-300">{t.scorecard[item.level]}</p><p className="mt-1 text-xs capitalize text-zinc-500">{t.report.evidenceConfidence}: {item.confidence}</p>{item.evidenceGaps.length > 0 && <p className="mt-3 text-xs leading-5 text-amber-200">Evidence gaps: {item.evidenceGaps.join(", ")}</p>}</article>)}</div>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{report.reportSummary.scorecard.scores.map((item) => <article key={item.dimension} className="rounded-2xl border border-white/10 bg-black/30 p-4"><h3 className="font-bold text-zinc-100">{t.scorecard[item.dimension]}</h3><p className="mt-2 text-sm capitalize text-zinc-300">{t.scorecard[item.level]}</p><p className="mt-1 text-xs capitalize text-zinc-500">{t.report.evidenceConfidence}: {item.confidence}</p>{item.evidenceGaps.length > 0 && <p className="mt-3 text-xs leading-5 text-amber-200">{t.report.content.evidenceGapsLabel}: {item.evidenceGaps.map(localize).join(", ")}</p>}</article>)}</div>
       </section>}
 
       {report.reportSummary?.investigationTimeline && <InvestigationTimeline className="mt-5" title={t.report.status} items={report.reportSummary.investigationTimeline.map((item) => ({ title: localize(item.label), description: localize(item.status === "unavailable" ? "Evidence was unavailable for this stage." : `Stage ${item.status}.`), evidenceSource: item.source, status: item.status, timestamp: item.observedAt, risk: item.status === "failed" }))} />}
@@ -115,9 +115,9 @@ function ExecutiveBrief({ report }: { report: ShadowScoreReport }) {
         <h2 className="text-xs font-black uppercase tracking-[0.28em] text-red-200">{t.report.website}</h2>
         <p className="mt-3 text-sm leading-6 text-zinc-300">{localize(report.reportSummary.websiteIntelligence.executiveSummary)}</p>
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          {[['Technical health', report.reportSummary.websiteIntelligence.technicalHealth], ['Security posture', report.reportSummary.websiteIntelligence.securityPosture], ['Infrastructure maturity', report.reportSummary.websiteIntelligence.infrastructureMaturity], ['Website trust indicators', report.reportSummary.websiteIntelligence.trustIndicators]].map(([title, body]) => <div key={title} className="rounded-2xl border border-white/10 bg-black/30 p-4"><h3 className="text-xs font-black uppercase tracking-wider text-zinc-300">{localize(title)}</h3><p className="mt-2 text-sm leading-6 text-zinc-400">{localize(body)}</p></div>)}
+          {[[t.report.content.technicalHealth, report.reportSummary.websiteIntelligence.technicalHealth], [t.report.content.securityPosture, report.reportSummary.websiteIntelligence.securityPosture], [t.report.content.infrastructureMaturity, report.reportSummary.websiteIntelligence.infrastructureMaturity], [t.report.content.websiteTrustIndicators, report.reportSummary.websiteIntelligence.trustIndicators]].map(([title, body]) => <div key={title} className="rounded-2xl border border-white/10 bg-black/30 p-4"><h3 className="text-xs font-black uppercase tracking-wider text-zinc-300">{localize(title)}</h3><p className="mt-2 text-sm leading-6 text-zinc-400">{localize(body)}</p></div>)}
         </div>
-        <div className="mt-5"><ListCard title={localize("Recommended actions")} items={report.reportSummary.websiteIntelligence.recommendedActions.map(localize)} numbered emptyMessage={localize("No additional website actions were identified from the available evidence.")} /></div>
+        <div className="mt-5"><ListCard title={t.report.content.recommendationActions} items={report.reportSummary.websiteIntelligence.recommendedActions.map(localize)} numbered emptyMessage={t.report.content.noWebsiteActions} /></div>
       </section>}
 
       <section className="mt-8 border-t border-white/10 pt-6" aria-label="Source provenance">
@@ -128,9 +128,9 @@ function ExecutiveBrief({ report }: { report: ShadowScoreReport }) {
               <div className="font-bold text-zinc-100">{source.label}</div>
               <div className="mt-2 text-xs text-zinc-400">{t.report.reviewed} <TechnicalValue>{formatDateTime(source.completedAt, locale)}</TechnicalValue></div>
             </div>
-          )) : <p className="text-sm text-zinc-400">Source timing was not recorded for this report.</p>}
+          )) : <p className="text-sm text-zinc-400">{t.report.content.sourceTimingMissing}</p>}
         </div>
-        <p className="mt-5 text-xs leading-5 text-zinc-500">{t.report.prepared} <TechnicalValue>{formatDateTime(narrative?.generatedAt || report.readyAt, locale)}</TechnicalValue>. Claims above are limited to the report evidence available at that time.</p>
+        <p className="mt-5 text-xs leading-5 text-zinc-500">{t.report.prepared} <TechnicalValue>{formatDateTime(narrative?.generatedAt || report.readyAt, locale)}</TechnicalValue>. {t.report.content.preparedEvidenceLimit}</p>
       </section>
     </article>
   );
