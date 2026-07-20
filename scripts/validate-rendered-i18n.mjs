@@ -18,8 +18,12 @@ const phrases = [
 ];
 for (const locale of locales.filter((locale) => locale !== "en")) {
   const dictionary = getDictionary(locale);
-  const { home } = dictionary;
+  const { home, positioning } = dictionary;
   const renderedStrings = [
+    positioning.eyebrow,
+    positioning.headline,
+    positioning.description,
+    positioning.disclaimer,
     home.analystAnswers,
     home.viewExample,
     home.opening,
@@ -71,6 +75,12 @@ for (const locale of locales.filter((locale) => locale !== "en")) {
     assert.ok(
       !renderedStrings.some((value) => value.includes(phrase)),
       `${locale} contains English product phrase: ${phrase}`,
+    );
+  for (const [key, value] of Object.entries(positioning))
+    assert.notEqual(
+      value,
+      getDictionary("en").positioning[key],
+      `${locale}.positioning.${key} must be localized rather than falling back to English`,
     );
 }
 for (const locale of ["ar", "es", "fr", "de"]) {
