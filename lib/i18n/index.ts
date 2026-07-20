@@ -886,11 +886,11 @@ const en = {
     language: "Language",
   },
   positioning: {
-    eyebrow: "AI Business Due Diligence",
+    eyebrow: "Business Due Diligence and Risk Intelligence",
     headline:
-      "AI Business Due Diligence before you trust, pay, partner, or invest.",
+      "Business Due Diligence before you trust, pay, partner, or invest.",
     description:
-      "ShadowScore investigates business identity, website signals, public evidence, contradictions, and evidence gaps, then produces a source-backed executive recommendation.",
+      "AI-assisted evidence analysis, relationship mapping, and risk intelligence for decisions involving a business, supplier, partner, or investment.",
     disclaimer:
       "ShadowScore provides evidence-based decision support. It does not provide legal, financial, regulatory, credit, sanctions, or compliance approval.",
   },
