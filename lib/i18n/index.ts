@@ -1474,6 +1474,138 @@ export function getDictionary(locale: Locale): Dictionary {
   return locale === "en" ? en : translations[locale];
 }
 
+type PublicPageTranslation = {
+  about: {
+    eyebrow: string;
+    title: string;
+    description: string;
+    focus: string;
+    independence: string;
+  };
+  plans: {
+    eyebrow: string;
+    title: string;
+    description: string;
+    availableAfterPayment: string;
+    unlocks: string[];
+    upgrade: string;
+    runScanFirst: string;
+  };
+};
+
+export const publicPageTranslations: Record<Locale, PublicPageTranslation> = {
+  en: {
+    about: {
+      eyebrow: "About ShadowScore",
+      title: "Marketplace and payment risk intelligence for digital sellers",
+      description: "ShadowScore helps sellers understand marketplace, verification, compliance and payout risk before revenue, account access or payment flow are affected.",
+      focus: "We focus on the places where sellers feel the impact first: eBay, Amazon, Walmart, Etsy, TikTok Shop, PayPal, Payoneer and Stripe. We prioritize marketplace and payment evidence over generic URL scanning.",
+      independence: "ShadowScore is independent and does not claim access to internal marketplace systems. The platform uses seller-supplied evidence, public policies, visible operational signals and structured risk analysis.",
+    },
+    plans: {
+      eyebrow: "Plans",
+      title: "Upgrade from preview to operating intelligence.",
+      description: "Start with a free preview, then unlock a downloadable Professional Report for $9.90 when the evidence is useful. Free users can run previews. Paid users can save, organize, monitor and open full reports.",
+      availableAfterPayment: "What becomes available after payment",
+      unlocks: ["Downloadable Professional Report for $9.90 per completed investigation", "Unlimited saved scan history in your workspace", "Full downloadable reports after successful payment", "Business identity summaries, decision reasons and recommended actions", "Monitoring watchlist for businesses, marketplaces, suppliers and payment providers", "Saved reports, business history and account-level workspace organization"],
+      upgrade: "Upgrade - $9.90",
+      runScanFirst: "Run a scan first",
+    },
+  },
+  he: {
+    about: {
+      eyebrow: "אודות ShadowScore",
+      title: "מודיעין סיכוני זירות מסחר ותשלומים למוכרים דיגיטליים",
+      description: "ShadowScore מסייעת למוכרים להבין סיכוני זירה, אימות, ציות ותשלומים לפני שהם משפיעים על ההכנסות, הגישה לחשבון או זרימת התשלום.",
+      focus: "אנו מתמקדים במקומות שבהם מוכרים חשים את ההשפעה ראשונים: eBay, Amazon, Walmart, Etsy, TikTok Shop, PayPal, Payoneer ו-Stripe. אנו נותנים עדיפות לראיות מזירות מסחר ותשלומים על פני סריקת כתובות URL כללית.",
+      independence: "ShadowScore עצמאית ואינה טוענת לגישה למערכות פנימיות של זירות מסחר. הפלטפורמה משתמשת בראיות שמספק המוכר, במדיניות ציבורית, באותות תפעוליים גלויים ובניתוח סיכונים מובנה.",
+    },
+    plans: {
+      eyebrow: "תוכניות",
+      title: "שדרגו מתצוגה מקדימה למודיעין תפעולי.",
+      description: "התחילו בתצוגה מקדימה ללא עלות, ולאחר מכן פתחו דוח מקצועי להורדה ב-9.90 דולר כאשר הראיות מועילות. משתמשים ללא תשלום יכולים להריץ תצוגות מקדימות. משתמשים משלמים יכולים לשמור, לארגן, לנטר ולפתוח דוחות מלאים.",
+      availableAfterPayment: "מה זמין לאחר התשלום",
+      unlocks: ["דוח מקצועי להורדה ב-9.90 דולר לכל חקירה שהושלמה", "היסטוריית סריקות שמורה ללא הגבלה בסביבת העבודה", "דוחות מלאים להורדה לאחר תשלום מוצלח", "סיכומי זהות עסקית, נימוקי החלטה ופעולות מומלצות", "רשימת מעקב לעסקים, זירות מסחר, ספקים וספקי תשלומים", "דוחות שמורים, היסטוריית עסק וארגון סביבת העבודה ברמת החשבון"],
+      upgrade: "שדרוג - $9.90",
+      runScanFirst: "הפעילו סריקה תחילה",
+    },
+  },
+  ar: {
+    about: {
+      eyebrow: "حول ShadowScore",
+      title: "معلومات مخاطر الأسواق والمدفوعات للبائعين الرقميين",
+      description: "تساعد ShadowScore البائعين على فهم مخاطر السوق والتحقق والامتثال والمدفوعات قبل أن تؤثر في الإيرادات أو الوصول إلى الحساب أو تدفق الدفع.",
+      focus: "نركز على الأماكن التي يشعر فيها البائعون بالأثر أولاً: eBay وAmazon وWalmart وEtsy وTikTok Shop وPayPal وPayoneer وStripe. نعطي أولوية لأدلة الأسواق والمدفوعات بدلاً من فحص عناوين URL العامة.",
+      independence: "ShadowScore مستقلة ولا تدّعي الوصول إلى الأنظمة الداخلية للأسواق. تستخدم المنصة الأدلة التي يقدمها البائع والسياسات العامة والإشارات التشغيلية الظاهرة وتحليل المخاطر المنظم.",
+    },
+    plans: {
+      eyebrow: "الخطط",
+      title: "انتقل من المعاينة إلى المعلومات التشغيلية.",
+      description: "ابدأ بمعاينة مجانية، ثم افتح تقريراً مهنياً قابلاً للتنزيل مقابل 9.90 دولار عندما تكون الأدلة مفيدة. يمكن للمستخدمين المجانيين تشغيل المعاينات. ويمكن للمستخدمين المدفوعين حفظ التقارير وتنظيمها ومراقبتها وفتحها كاملة.",
+      availableAfterPayment: "ما يتاح بعد الدفع",
+      unlocks: ["تقرير مهني قابل للتنزيل مقابل 9.90 دولار لكل تحقيق مكتمل", "سجل محفوظ غير محدود لعمليات الفحص في مساحة العمل", "تقارير كاملة قابلة للتنزيل بعد نجاح الدفع", "ملخصات هوية الأعمال وأسباب القرار والإجراءات الموصى بها", "قائمة مراقبة للأعمال والأسواق والموردين ومزودي الدفع", "تقارير محفوظة وسجل الأعمال وتنظيم مساحة العمل على مستوى الحساب"],
+      upgrade: "ترقية - $9.90",
+      runScanFirst: "شغّل فحصاً أولاً",
+    },
+  },
+  es: {
+    about: {
+      eyebrow: "Acerca de ShadowScore",
+      title: "Inteligencia de riesgo de marketplaces y pagos para vendedores digitales",
+      description: "ShadowScore ayuda a los vendedores a comprender el riesgo de marketplace, verificación, cumplimiento y pagos antes de que afecte los ingresos, el acceso a la cuenta o el flujo de pagos.",
+      focus: "Nos centramos en los lugares donde los vendedores notan primero el impacto: eBay, Amazon, Walmart, Etsy, TikTok Shop, PayPal, Payoneer y Stripe. Priorizamos la evidencia de marketplaces y pagos frente al escaneo genérico de URL.",
+      independence: "ShadowScore es independiente y no afirma tener acceso a sistemas internos de marketplaces. La plataforma utiliza evidencia aportada por el vendedor, políticas públicas, señales operativas visibles y análisis de riesgo estructurado.",
+    },
+    plans: {
+      eyebrow: "Planes",
+      title: "Pasa de la vista previa a la inteligencia operativa.",
+      description: "Empieza con una vista previa gratuita y desbloquea un Informe Profesional descargable por 9,90 USD cuando la evidencia sea útil. Los usuarios gratuitos pueden ejecutar vistas previas. Los usuarios de pago pueden guardar, organizar, supervisar y abrir informes completos.",
+      availableAfterPayment: "Lo que se habilita después del pago",
+      unlocks: ["Informe Profesional descargable por 9,90 USD por cada investigación completada", "Historial ilimitado de análisis guardados en tu espacio de trabajo", "Informes completos descargables después de un pago correcto", "Resúmenes de identidad empresarial, motivos de decisión y acciones recomendadas", "Lista de seguimiento para empresas, marketplaces, proveedores y proveedores de pago", "Informes guardados, historial empresarial y organización del espacio de trabajo por cuenta"],
+      upgrade: "Mejorar - 9,90 USD",
+      runScanFirst: "Ejecutar un análisis primero",
+    },
+  },
+  fr: {
+    about: {
+      eyebrow: "À propos de ShadowScore",
+      title: "Renseignement sur les risques de places de marché et de paiement pour les vendeurs numériques",
+      description: "ShadowScore aide les vendeurs à comprendre les risques liés aux places de marché, à la vérification, à la conformité et aux versements avant qu'ils n'affectent les revenus, l'accès au compte ou le flux de paiement.",
+      focus: "Nous nous concentrons sur les domaines où les vendeurs ressentent d'abord l'impact : eBay, Amazon, Walmart, Etsy, TikTok Shop, PayPal, Payoneer et Stripe. Nous privilégions les éléments relatifs aux places de marché et aux paiements plutôt que l'analyse générique d'URL.",
+      independence: "ShadowScore est indépendante et ne revendique aucun accès aux systèmes internes des places de marché. La plateforme utilise les éléments fournis par le vendeur, les politiques publiques, les signaux opérationnels visibles et une analyse structurée des risques.",
+    },
+    plans: {
+      eyebrow: "Forfaits",
+      title: "Passez de l'aperçu au renseignement opérationnel.",
+      description: "Commencez avec un aperçu gratuit, puis débloquez un rapport professionnel téléchargeable à 9,90 $ lorsque les éléments sont utiles. Les utilisateurs gratuits peuvent lancer des aperçus. Les utilisateurs payants peuvent enregistrer, organiser, surveiller et ouvrir des rapports complets.",
+      availableAfterPayment: "Ce qui devient disponible après le paiement",
+      unlocks: ["Rapport professionnel téléchargeable à 9,90 $ par enquête terminée", "Historique illimité des analyses enregistrées dans votre espace de travail", "Rapports complets téléchargeables après un paiement réussi", "Synthèses d'identité d'entreprise, motifs de décision et actions recommandées", "Liste de surveillance pour entreprises, places de marché, fournisseurs et prestataires de paiement", "Rapports enregistrés, historique d'entreprise et organisation de l'espace de travail au niveau du compte"],
+      upgrade: "Mettre à niveau - 9,90 $",
+      runScanFirst: "Lancer une analyse d'abord",
+    },
+  },
+  de: {
+    about: {
+      eyebrow: "Über ShadowScore",
+      title: "Risikoanalysen für Marktplätze und Zahlungen für digitale Verkäufer",
+      description: "ShadowScore hilft Verkäufern, Risiken bei Marktplätzen, Verifizierung, Compliance und Auszahlungen zu verstehen, bevor sie Umsatz, Kontozugang oder Zahlungsabläufe beeinträchtigen.",
+      focus: "Wir konzentrieren uns auf die Bereiche, in denen Verkäufer die Auswirkungen zuerst spüren: eBay, Amazon, Walmart, Etsy, TikTok Shop, PayPal, Payoneer und Stripe. Wir priorisieren Marktplatz- und Zahlungsnachweise gegenüber allgemeinem URL-Scanning.",
+      independence: "ShadowScore ist unabhängig und beansprucht keinen Zugang zu internen Marktplatzsystemen. Die Plattform nutzt vom Verkäufer bereitgestellte Nachweise, öffentliche Richtlinien, sichtbare Betriebssignale und strukturierte Risikoanalysen.",
+    },
+    plans: {
+      eyebrow: "Tarife",
+      title: "Wechseln Sie von der Vorschau zu operativen Erkenntnissen.",
+      description: "Beginnen Sie mit einer kostenlosen Vorschau und schalten Sie bei hilfreichen Nachweisen einen herunterladbaren professionellen Bericht für 9,90 $ frei. Kostenlose Nutzer können Vorschauen ausführen. Zahlende Nutzer können vollständige Berichte speichern, organisieren, überwachen und öffnen.",
+      availableAfterPayment: "Was nach der Zahlung verfügbar wird",
+      unlocks: ["Herunterladbarer professioneller Bericht für 9,90 $ je abgeschlossener Untersuchung", "Unbegrenzter gespeicherter Scanverlauf im Arbeitsbereich", "Vollständige herunterladbare Berichte nach erfolgreicher Zahlung", "Zusammenfassungen zur Unternehmensidentität, Entscheidungsgründe und empfohlene Maßnahmen", "Beobachtungsliste für Unternehmen, Marktplätze, Lieferanten und Zahlungsanbieter", "Gespeicherte Berichte, Unternehmensverlauf und Organisation des Arbeitsbereichs auf Kontoebene"],
+      upgrade: "Upgrade - 9,90 $",
+      runScanFirst: "Zuerst einen Scan durchführen",
+    },
+  },
+};
+
+export const publicPages: Record<Locale, PublicPageTranslation> = publicPageTranslations;
+
 /**
  * Localize report prose while preserving the report-specific facts embedded in
  * it. Report narratives are stored with the report in English, so replacing a
