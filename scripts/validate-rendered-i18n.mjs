@@ -56,6 +56,16 @@ for (const locale of locales.filter((locale) => locale !== "en")) {
     ...home.scenarios,
     ...Object.values(dictionary.footer),
     ...Object.values(dictionary.audit),
+    dictionary.legal.terms.label,
+    dictionary.legal.terms.title,
+    dictionary.legal.terms.introduction,
+    dictionary.legal.terms.acceptanceLabel,
+    dictionary.legal.terms.acceptanceCopy,
+    ...dictionary.legal.terms.sections.flatMap((section) => [section.title, ...section.body, ...(section.items || [])]),
+    dictionary.legal.privacy.label,
+    dictionary.legal.privacy.title,
+    dictionary.legal.privacy.introduction,
+    ...dictionary.legal.privacy.sections.flatMap((section) => [section.title, ...section.body, ...(section.items || [])]),
   ];
   for (const phrase of phrases)
     assert.ok(
@@ -63,6 +73,12 @@ for (const locale of locales.filter((locale) => locale !== "en")) {
       `${locale} contains English product phrase: ${phrase}`,
     );
 }
+for (const locale of ["ar", "es", "fr", "de"]) {
+  const localized = getDictionary(locale).legal;
+  const english = getDictionary("en").legal;
+  assert.notDeepEqual(localized.terms.sections, english.terms.sections, `${locale} must provide localized Terms sections`);
+  assert.notDeepEqual(localized.privacy.sections, english.privacy.sections, `${locale} must provide localized Privacy sections`);
+}
 console.log(
-  "Validated rendered product-owned strings for every non-English locale.",
+  "Validated rendered product-owned and legal strings for every non-English locale.",
 );

@@ -423,7 +423,7 @@ for (const [locale, values] of Object.entries({
   };
 }
 
-const requiredPhraseTranslations: Record<string, Record<string, string>> = {
+const requiredPhraseTranslations: Record<string, Record<string, string> | LegalDictionary> = {
   ar: {
     "Who are you dealing with?": "مع من تتعامل؟",
     "Can it be verified?": "هل يمكن التحقق منه؟",
@@ -438,6 +438,46 @@ const requiredPhraseTranslations: Record<string, Record<string, string>> = {
     "Recorded during investigation": "سُجل أثناء التحقيق",
     "verification trail": "مسار التحقق",
     "and ownership claims": "وادعاءات الملكية",
+  },
+  frLegal: {
+    terms: { label: "Conditions d’utilisation", title: "Renseignements indépendants sur les risques uniquement", introduction: "Ces Conditions expliquent l’utilisation des rapports, analyses, examens et évaluations de risque ShadowScore. ShadowScore fournit des renseignements sur les risques, des analyses et des évaluations prédictives à titre informatif uniquement.", acceptanceLabel: "Version de l’acceptation juridique", acceptanceCopy: "Les utilisateurs doivent accepter l’avis de paiement avant de payer. Cette acceptation est requise avant d’ouvrir les options de paiement.", sections: [
+      { title: "1. Usage informatif uniquement", body: ["ShadowScore fournit des renseignements sur les risques, des estimations, tableaux de bord, rapports, recommandations et analyses à titre informatif uniquement. La plateforme ne fournit pas de conseils juridiques, financiers, fiscaux, comptables, d’investissement, de conformité ou professionnels.", "Toutes les décisions finales commerciales, de conformité, opérationnelles, juridiques et financières relèvent de la seule responsabilité de l’utilisateur."] },
+      { title: "2. Aucune garantie", body: ["ShadowScore ne garantit aucun des éléments suivants :"], items: ["Approbation de compte", "Rétablissement de compte", "Prévention des suspensions", "Acceptation par une place de marché", "Approbation de vérification", "Libération de paiement", "Croissance des revenus", "Performance commerciale", "Réussite de l’entreprise", "Résultats juridiques ou réglementaires"] },
+      { title: "3. Les scores de risque sont des opinions analytiques", body: ["Les scores de risque et de confiance, probabilités, niveaux de gravité, recommandations et évaluations sont des résultats analytiques fondés sur des opinions, issus des preuves disponibles, des informations publiques, des informations fournies par l’utilisateur, de l’analyse par IA et de méthodologies propriétaires.", "Les scores de risque ne doivent pas être interprétés comme des faits, certifications, recommandations, garanties, approbations officielles ou déterminations de fiabilité."] },
+      { title: "4. Décisions indépendantes de tiers", body: ["Les exploitants de places de marché et les prestataires de paiement prennent des décisions indépendantes que ShadowScore ne peut pas contrôler. Cela comprend eBay, Amazon, Etsy, Walmart, TikTok Shop, PayPal, Payoneer, Stripe et toute autre place de marché, prestataire de paiement ou plateforme tierce mentionnée sur le site.", "ShadowScore n’est ni affilié à ces tiers, ni approuvé, contrôlé ou officiellement lié à eux, sauf mention écrite explicite."] },
+      { title: "5. Preuves et exactitude fournies par l’utilisateur", body: ["Les utilisateurs sont responsables de fournir des informations exactes, complètes et licites. Des informations manquantes, obsolètes, modifiées, incomplètes ou trompeuses peuvent réduire la qualité du rapport ou produire des évaluations inexactes.", "Les utilisateurs ne doivent pas téléverser de mots de passe, données CVV, documents d’identité inutiles, identifiants privés de places de marché ni informations qu’ils ne sont pas autorisés à partager."] },
+      { title: "6. Aucun remboursement après livraison", body: ["Lorsqu’un rapport, scan, examen, consultation, analyse ou autre service numérique a été généré, livré, partagé ou exécuté de manière substantielle, le service est considéré comme consommé et non remboursable.", "ShadowScore peut examiner les cas exceptionnels à sa discrétion, mais aucun remboursement n’est garanti après livraison."] },
+      { title: "7. Limitation de responsabilité", body: ["Dans la limite maximale autorisée par la loi, ShadowScore ne saurait être responsable des dommages directs, indirects, accessoires, particuliers, consécutifs ou commerciaux résultant de l’utilisation de la plateforme, de la confiance accordée aux rapports ou des actions de tiers."] },
+      { title: "8. Modifications des Conditions", body: ["ShadowScore peut mettre à jour ces Conditions périodiquement. L’utilisation continue du service après les modifications vaut acceptation des Conditions mises à jour."] },
+    ] },
+    privacy: { label: "Politique de confidentialité", title: "Renseignements sur les risques respectueux de la confidentialité", introduction: "ShadowScore repose sur le téléversement de preuves, les informations publiques, le contexte fourni par l’utilisateur et l’examen analytique. Les évaluations initiales ne requièrent pas les mots de passe des places de marché.", sections: [
+      { title: "Informations collectées", body: ["Nous pouvons collecter les URL de boutiques, noms de places de marché, captures d’écran, documents, messages, avis de paiement, preuves de suivi, coordonnées, préférences de paiement et toute autre information que vous choisissez de fournir pour un examen des risques."] },
+      { title: "Utilisation des informations", body: ["Nous utilisons les informations pour préparer des évaluations, produire des rapports, fournir une assistance, améliorer les modèles de risque, prévenir les abus, conserver les acceptations juridiques et exploiter le service ShadowScore."] },
+      { title: "Éléments à ne pas téléverser", body: [], items: ["Mots de passe des places de marché", "Numéros de carte ou codes CVV", "Documents d’identité inutiles", "Clés API privées", "Identifiants bancaires", "Informations que vous n’êtes pas autorisé à partager"] },
+      { title: "Partage des données", body: ["Nous ne vendons pas les documents clients ni les données de places de marché. Nous pouvons utiliser des prestataires de confiance pour l’hébergement, les communications, l’analytique, le traitement des paiements et l’assistance lorsque cela est nécessaire au fonctionnement du service."] },
+      { title: "Registres d’acceptation juridique", body: ["Lorsqu’un utilisateur passe au paiement, ShadowScore peut créer un identifiant de référence, un horodatage et une version d’acceptation afin de documenter son acceptation des Conditions d’utilisation et de la Politique de confidentialité avant paiement."] },
+      { title: "Demandes de confidentialité", body: ["Pour toute demande liée à la confidentialité, contactez {email}."] },
+    ] },
+  },
+  deLegal: {
+    terms: { label: "Nutzungsbedingungen", title: "Nur unabhängige Risikoinformationen", introduction: "Diese Bedingungen erläutern die Nutzung von ShadowScore-Berichten, Scans, Prüfungen und Risikobewertungen. ShadowScore stellt Risikoinformationen, Analysen und Prognosebewertungen ausschließlich zu Informationszwecken bereit.", acceptanceLabel: "Version der rechtlichen Zustimmung", acceptanceCopy: "Nutzer müssen den Hinweis beim Bezahlen vor der Zahlung akzeptieren. Diese Zustimmung ist erforderlich, bevor Zahlungsoptionen geöffnet werden.", sections: [
+      { title: "1. Nur zur Information", body: ["ShadowScore stellt Risikoinformationen, Schätzungen, Scorecards, Berichte, Empfehlungen und Analysen ausschließlich zu Informationszwecken bereit. Die Plattform bietet keine Rechts-, Finanz-, Steuer-, Buchhaltungs-, Anlage-, Compliance- oder sonstige professionelle Beratung.", "Alle endgültigen geschäftlichen, Compliance-, operativen, rechtlichen und finanziellen Entscheidungen liegen allein in der Verantwortung des Nutzers."] },
+      { title: "2. Keine Garantien", body: ["ShadowScore garantiert Folgendes nicht:"], items: ["Kontogenehmigung", "Wiederherstellung eines Kontos", "Verhinderung einer Sperrung", "Akzeptanz durch Marktplätze", "Genehmigung einer Verifizierung", "Freigabe einer Zahlung", "Umsatzwachstum", "Verkaufsleistung", "Geschäftserfolg", "Rechtliche oder regulatorische Ergebnisse"] },
+      { title: "3. Risikobewertungen sind analytische Meinungen", body: ["Risiko- und Vertrauenswerte, Wahrscheinlichkeiten, Schweregradbezeichnungen, Empfehlungen und Bewertungen sind meinungsbasierte analytische Ergebnisse. Sie werden aus verfügbaren Nachweisen, öffentlichen Informationen, Nutzerangaben, KI-Analysen und eigenen Methoden erstellt.", "Risikowerte dürfen nicht als Tatsachenbehauptungen, Zertifizierungen, Empfehlungen, Garantien, offizielle Genehmigungen oder Feststellungen der Vertrauenswürdigkeit verstanden werden."] },
+      { title: "4. Unabhängige Entscheidungen Dritter", body: ["Marktplatzbetreiber und Zahlungsanbieter treffen unabhängige Entscheidungen, die ShadowScore nicht kontrollieren kann. Dazu gehören eBay, Amazon, Etsy, Walmart, TikTok Shop, PayPal, Payoneer, Stripe sowie jeder andere auf der Website genannte Marktplatz, Zahlungsanbieter oder Drittanbieter.", "ShadowScore ist mit diesen Dritten weder verbunden noch von ihnen empfohlen, kontrolliert oder offiziell verknüpft, sofern dies nicht ausdrücklich schriftlich angegeben ist."] },
+      { title: "5. Nutzernachweise und Richtigkeit", body: ["Nutzer sind dafür verantwortlich, richtige, vollständige und rechtmäßige Informationen bereitzustellen. Fehlende, veraltete, veränderte, unvollständige oder irreführende Informationen können die Berichtsqualität mindern oder ungenaue Bewertungen erzeugen.", "Nutzer dürfen keine Passwörter, CVV-Daten, unnötigen Identitätsdokumente, privaten Marktplatz-Zugangsdaten oder Informationen hochladen, die sie nicht weitergeben dürfen."] },
+      { title: "6. Keine Erstattung nach Lieferung", body: ["Sobald ein Bericht, Scan, eine Prüfung, Beratung, Analyse oder andere digitale Dienstleistung erstellt, geliefert, geteilt oder wesentlich erbracht wurde, gilt die Leistung als verbraucht und ist nicht erstattungsfähig.", "ShadowScore kann Ausnahmefälle nach eigenem Ermessen prüfen, eine Erstattung nach Lieferung ist jedoch nicht garantiert."] },
+      { title: "7. Haftungsbeschränkung", body: ["Soweit gesetzlich zulässig, haftet ShadowScore nicht für unmittelbare, mittelbare, beiläufige, besondere, Folge- oder geschäftliche Schäden, die aus der Nutzung der Plattform, dem Vertrauen auf Berichte oder Handlungen Dritter entstehen."] },
+      { title: "8. Änderungen der Bedingungen", body: ["ShadowScore kann diese Bedingungen gelegentlich aktualisieren. Die weitere Nutzung des Dienstes nach Änderungen bedeutet die Annahme der aktualisierten Bedingungen."] },
+    ] },
+    privacy: { label: "Datenschutzerklärung", title: "Datenschutzorientierte Risikoinformationen", introduction: "ShadowScore basiert auf hochgeladenen Nachweisen, öffentlichen Informationen, Nutzerangaben und analytischer Prüfung. Für erste Bewertungen sind keine Marktplatz-Passwörter erforderlich.", sections: [
+      { title: "Welche Daten wir erheben", body: ["Wir können Shop-URLs, Marktplatznamen, Screenshots, Dokumente, Nachrichten, Auszahlungsmitteilungen, Sendungsnachweise, Kontaktdaten, Zahlungspräferenzen und andere Informationen erfassen, die Sie für eine Risikoprüfung bereitstellen."] },
+      { title: "Wie wir Informationen verwenden", body: ["Wir verwenden Informationen, um Bewertungen und Berichte zu erstellen, Unterstützung zu leisten, Risikomodelle zu verbessern, Missbrauch zu verhindern, rechtliche Zustimmungen zu dokumentieren und den ShadowScore-Dienst zu betreiben."] },
+      { title: "Was nicht hochgeladen werden darf", body: [], items: ["Marktplatz-Passwörter", "Kartennummern oder CVV-Codes", "Unnötige Identitätsdokumente", "Private API-Schlüssel", "Bank-Zugangsdaten", "Informationen, die Sie nicht weitergeben dürfen"] },
+      { title: "Weitergabe von Daten", body: ["Wir verkaufen keine Kundendokumente oder Marktplatzdaten. Wir können vertrauenswürdige Dienstleister für Hosting, Kommunikation, Analysen, Zahlungsabwicklung und Support einsetzen, wenn dies für den Betrieb erforderlich ist."] },
+      { title: "Aufzeichnungen rechtlicher Zustimmungen", body: ["Wenn Nutzer zur Zahlung übergehen, kann ShadowScore eine Referenz-ID, einen Zeitstempel und eine Zustimmungsversion erstellen, um die Annahme der Nutzungsbedingungen und Datenschutzerklärung vor der Zahlung zu dokumentieren."] },
+      { title: "Datenschutzanfragen", body: ["Für Datenschutzanfragen kontaktieren Sie {email}."] },
+    ] },
   },
   es: {
     "Who are you dealing with?": "¿Con quién trata?",
@@ -510,7 +550,7 @@ function replacePhrases<T>(value: T, phrases: Record<string, string>): T {
 for (const locale of ["ar", "es", "fr", "de"] as const)
   homeTranslations[locale] = replacePhrases(
     homeTranslations[locale],
-    requiredPhraseTranslations[locale],
+    requiredPhraseTranslations[locale] as Record<string, string>,
   );
 
 const footerTranslations = {
@@ -716,6 +756,85 @@ const auditTranslations = {
   },
 };
 
+type LegalSection = { title: string; body: string[]; items?: string[] };
+type LegalDictionary = {
+  terms: { label: string; title: string; introduction: string; acceptanceLabel: string; acceptanceCopy: string; sections: LegalSection[] };
+  privacy: { label: string; title: string; introduction: string; sections: LegalSection[] };
+};
+const legalTranslations: Record<Locale, LegalDictionary> = {
+  en: {
+    terms: {
+      label: "Terms of Service", title: "Independent Risk Intelligence Only",
+      introduction: "These Terms explain how ShadowScore reports, scans, reviews and risk assessments may be used. ShadowScore provides informational risk intelligence, analytical insights and predictive assessments only.",
+      acceptanceLabel: "Legal Acceptance Version", acceptanceCopy: "Users must accept the checkout disclaimer before payment. This acceptance is required before opening payment options.",
+      sections: [
+        { title: "1. Informational Use Only", body: ["ShadowScore provides risk intelligence, estimates, scorecards, reports, recommendations and analytical insights for informational purposes only. The platform does not provide legal, financial, tax, accounting, investment, compliance or professional advice.", "All final business, compliance, operational, legal and financial decisions remain the sole responsibility of the user."] },
+        { title: "2. No Guarantees", body: ["ShadowScore does not guarantee any of the following:"], items: ["Account approval", "Account reinstatement", "Suspension prevention", "Marketplace acceptance", "Verification approval", "Payment release", "Revenue growth", "Sales performance", "Business success", "Legal or regulatory outcomes"] },
+        { title: "3. Risk Scores Are Analytical Opinions", body: ["Risk scores, confidence scores, probabilities, severity labels, recommendations and assessments are opinion-based analytical outputs generated from available evidence, public information, user-provided information, AI analysis and proprietary methodologies.", "Risk scores should not be interpreted as factual statements, certifications, endorsements, guarantees, official approvals or determinations of trustworthiness."] },
+        { title: "4. Independent Third-Party Decisions", body: ["Marketplace operators and payment providers make independent decisions that ShadowScore cannot control. This includes eBay, Amazon, Etsy, Walmart, TikTok Shop, PayPal, Payoneer, Stripe and any other marketplace, payment provider or third-party platform referenced on the site.", "ShadowScore is not affiliated with, endorsed by, controlled by or officially connected to those third parties unless explicitly stated in writing."] },
+        { title: "5. User Evidence And Accuracy", body: ["Users are responsible for providing accurate, complete and lawful information. Missing, outdated, altered, incomplete or misleading information may reduce report quality or produce inaccurate assessments.", "Users must not upload passwords, CVV data, unnecessary personal identity documents, private marketplace credentials or any information they are not authorized to share."] },
+        { title: "6. No Refund After Delivery", body: ["Once a report, scan, review, consultation, analysis or other digital service has been generated, delivered, shared or substantially performed, the service is considered consumed and non-refundable.", "ShadowScore may review exceptional cases at its discretion, but no refund is guaranteed after delivery."] },
+        { title: "7. Limitation Of Liability", body: ["To the maximum extent permitted by law, ShadowScore shall not be liable for direct, indirect, incidental, special, consequential or business damages arising from use of the platform, reliance on reports or actions taken by third parties."] },
+        { title: "8. Changes To Terms", body: ["ShadowScore may update these Terms from time to time. Continued use of the service after changes means acceptance of the updated Terms."] },
+      ],
+    },
+    privacy: {
+      label: "Privacy Policy", title: "Privacy First Risk Intelligence", introduction: "ShadowScore is designed around evidence uploads, public information, user-provided context and analytical review. Initial assessments do not require marketplace passwords.",
+      sections: [
+        { title: "What We Collect", body: ["We may collect store URLs, marketplace names, screenshots, documents, messages, payout notices, tracking evidence, contact information, payment preference, and other information you choose to provide for a risk review."] },
+        { title: "How We Use Information", body: ["We use information to prepare assessments, generate reports, provide support, improve risk models, prevent abuse, maintain records of legal acceptance and operate the ShadowScore service."] },
+        { title: "What Not To Upload", body: [], items: ["Marketplace passwords", "Card numbers or CVV codes", "Unnecessary identity documents", "Private API keys", "Bank login credentials", "Information you are not authorized to share"] },
+        { title: "Data Sharing", body: ["We do not sell customer documents or marketplace data. We may use trusted service providers for hosting, communication, analytics, payment processing and support where required to operate the service."] },
+        { title: "Legal Acceptance Records", body: ["When users proceed to checkout, ShadowScore may create a reference ID, timestamp and acceptance version to document that the user accepted the Terms of Service and Privacy Policy before payment."] },
+        { title: "Privacy Requests", body: ["For privacy requests, contact {email}."] },
+      ],
+    },
+  },
+  he: {
+    terms: { label: "תנאי שירות", title: "מידע סיכונים עצמאי בלבד", introduction: "תנאים אלה מסבירים כיצד ניתן להשתמש בדוחות, סריקות, סקירות והערכות סיכון של ShadowScore. ShadowScore מספקת מידע על סיכונים, תובנות אנליטיות והערכות חזויות למטרות מידע בלבד.", acceptanceLabel: "גרסת הסכמה משפטית", acceptanceCopy: "על המשתמשים לאשר את הצהרת התשלום לפני התשלום. אישור זה נדרש לפני פתיחת אפשרויות התשלום.", sections: [
+      { title: "1. שימוש למטרות מידע בלבד", body: ["ShadowScore מספקת מידע על סיכונים, הערכות, כרטיסי ניקוד, דוחות, המלצות ותובנות אנליטיות למטרות מידע בלבד. הפלטפורמה אינה מספקת ייעוץ משפטי, פיננסי, מיסויי, חשבונאי, השקעות, ציות או ייעוץ מקצועי.", "כל החלטה עסקית, תפעולית, משפטית ופיננסית סופית היא באחריות המשתמש בלבד."] },
+      { title: "2. ללא התחייבויות", body: ["ShadowScore אינה מתחייבת לדברים הבאים:"], items: ["אישור חשבון", "שחזור חשבון", "מניעת השעיה", "קבלת זירת מסחר", "אישור אימות", "שחרור תשלום", "צמיחת הכנסות", "ביצועי מכירות", "הצלחה עסקית", "תוצאות משפטיות או רגולטוריות"] },
+      { title: "3. ציוני סיכון הם דעות אנליטיות", body: ["ציוני סיכון וביטחון, הסתברויות, דרגות חומרה, המלצות והערכות הם תוצרים אנליטיים מבוססי דעה, הנוצרים על סמך ראיות זמינות, מידע ציבורי, מידע שמסר המשתמש, ניתוח AI ומתודולוגיות קנייניות.", "אין לפרש ציוני סיכון כקביעות עובדתיות, אישורים, המלצות, התחייבויות, אישורים רשמיים או קביעות מהימנות."] },
+      { title: "4. החלטות עצמאיות של צדדים שלישיים", body: ["מפעילי זירות מסחר וספקי תשלום מקבלים החלטות עצמאיות ש-ShadowScore אינה יכולה לשלוט בהן. אלה כוללים את eBay, Amazon, Etsy, Walmart, TikTok Shop, PayPal, Payoneer ו-Stripe.", "ShadowScore אינה קשורה, מאושרת, נשלטת או מחוברת רשמית לצדדים שלישיים אלה אלא אם צוין אחרת בכתב."] },
+      { title: "5. ראיות המשתמש ודיוקן", body: ["המשתמשים אחראים למסירת מידע מדויק, מלא וחוקי. מידע חסר, מיושן, שונה, חלקי או מטעה עלול להפחית את איכות הדוח או להפיק הערכות לא מדויקות.", "אין להעלות סיסמאות, נתוני CVV, מסמכי זהות מיותרים, פרטי גישה פרטיים לזירות מסחר או מידע שאינכם מורשים לשתף."] },
+      { title: "6. אין החזר לאחר מסירה", body: ["לאחר שדוח, סריקה, סקירה, ייעוץ, ניתוח או שירות דיגיטלי אחר נוצר, נמסר, שותף או בוצע באופן מהותי, השירות נחשב שנצרך ואינו ניתן להחזר.", "ShadowScore עשויה לבחון מקרים חריגים לפי שיקול דעתה, אך אין התחייבות להחזר לאחר המסירה."] },
+      { title: "7. הגבלת אחריות", body: ["במידה המרבית המותרת בחוק, ShadowScore לא תישא באחריות לנזקים ישירים, עקיפים, מקריים, מיוחדים, תוצאתיים או עסקיים הנובעים משימוש בפלטפורמה, מהסתמכות על דוחות או מפעולות צדדים שלישיים."] },
+      { title: "8. שינויים בתנאים", body: ["ShadowScore עשויה לעדכן תנאים אלה מעת לעת. המשך השימוש בשירות לאחר שינויים פירושו קבלת התנאים המעודכנים."] },
+    ] },
+    privacy: { label: "מדיניות פרטיות", title: "מידע סיכונים שמעמיד פרטיות תחילה", introduction: "ShadowScore תוכננה סביב העלאות ראיות, מידע ציבורי, הקשר שמוסר המשתמש וסקירה אנליטית. הערכות ראשוניות אינן דורשות סיסמאות לזירות מסחר.", sections: [
+      { title: "מה אנו אוספים", body: ["אנו עשויים לאסוף כתובות חנויות, שמות זירות מסחר, צילומי מסך, מסמכים, הודעות, הודעות תשלום, ראיות מעקב, פרטי קשר, העדפות תשלום ומידע נוסף שתבחרו למסור לסקירת סיכונים."] },
+      { title: "כיצד אנו משתמשים במידע", body: ["אנו משתמשים במידע להכנת הערכות, יצירת דוחות, תמיכה, שיפור מודלי סיכון, מניעת שימוש לרעה, שמירת רשומות הסכמה משפטית והפעלת שירות ShadowScore."] },
+      { title: "מה לא להעלות", body: [], items: ["סיסמאות לזירות מסחר", "מספרי כרטיס או קודי CVV", "מסמכי זהות מיותרים", "מפתחות API פרטיים", "פרטי כניסה לבנק", "מידע שאינכם מורשים לשתף"] },
+      { title: "שיתוף נתונים", body: ["איננו מוכרים מסמכי לקוחות או נתוני זירות מסחר. אנו עשויים להשתמש בספקי שירות מהימנים לאירוח, תקשורת, ניתוחים, עיבוד תשלומים ותמיכה כשנדרש להפעלת השירות."] },
+      { title: "רשומות הסכמה משפטית", body: ["בעת מעבר לתשלום, ShadowScore עשויה ליצור מזהה ייחוס, חותמת זמן וגרסת הסכמה כדי לתעד את קבלת תנאי השירות ומדיניות הפרטיות לפני תשלום."] },
+      { title: "בקשות פרטיות", body: ["לבקשות פרטיות, צרו קשר עם {email}."] },
+    ] },
+  },
+  ar: {
+    terms: { label: "شروط الخدمة", title: "معلومات مستقلة عن المخاطر فقط", introduction: "توضح هذه الشروط كيفية استخدام تقارير ShadowScore وعمليات الفحص والمراجعات وتقييمات المخاطر. يوفر ShadowScore معلومات عن المخاطر وتحليلات وتقييمات تنبؤية لأغراض إعلامية فقط.", acceptanceLabel: "إصدار القبول القانوني", acceptanceCopy: "يجب على المستخدمين قبول إخلاء المسؤولية عند الدفع قبل السداد. يلزم هذا القبول قبل فتح خيارات الدفع.", sections: [
+      { title: "1. الاستخدام الإعلامي فقط", body: ["يوفر ShadowScore معلومات عن المخاطر وتقديرات وبطاقات نقاط وتقارير وتوصيات وتحليلات لأغراض إعلامية فقط. لا تقدم المنصة مشورة قانونية أو مالية أو ضريبية أو محاسبية أو استثمارية أو متعلقة بالامتثال أو مهنية.", "تظل جميع القرارات التجارية والامتثالية والتشغيلية والقانونية والمالية النهائية مسؤولية المستخدم وحده."] },
+      { title: "2. عدم وجود ضمانات", body: ["لا يضمن ShadowScore أياً مما يلي:"], items: ["الموافقة على الحساب", "إعادة تفعيل الحساب", "منع التعليق", "قبول المنصة", "الموافقة على التحقق", "إصدار الدفعة", "نمو الإيرادات", "أداء المبيعات", "نجاح الأعمال", "النتائج القانونية أو التنظيمية"] },
+      { title: "3. درجات المخاطر آراء تحليلية", body: ["درجات المخاطر والثقة والاحتمالات وتسميات الخطورة والتوصيات والتقييمات هي مخرجات تحليلية مبنية على الرأي، وتُنشأ من الأدلة المتاحة والمعلومات العامة ومعلومات المستخدم وتحليل الذكاء الاصطناعي والمنهجيات الخاصة.", "لا ينبغي تفسير درجات المخاطر على أنها بيانات واقعية أو شهادات أو تأييدات أو ضمانات أو موافقات رسمية أو أحكام بالموثوقية."] },
+      { title: "4. قرارات مستقلة من أطراف ثالثة", body: ["يتخذ مشغلو الأسواق ومقدمو خدمات الدفع قرارات مستقلة لا يستطيع ShadowScore التحكم فيها. يشمل ذلك eBay وAmazon وEtsy وWalmart وTikTok Shop وPayPal وPayoneer وStripe وأي سوق أو مقدم دفع أو منصة طرف ثالث مذكورة في الموقع.", "لا يرتبط ShadowScore بهذه الأطراف الثالثة أو يحظى بتأييدها أو يخضع لسيطرتها أو يتصل بها رسمياً، ما لم يُذكر ذلك صراحةً كتابةً."] },
+      { title: "5. أدلة المستخدم ودقتها", body: ["يتحمل المستخدمون مسؤولية تقديم معلومات دقيقة وكاملة ومشروعة. قد تؤدي المعلومات الناقصة أو القديمة أو المعدلة أو المضللة إلى خفض جودة التقرير أو إلى تقييمات غير دقيقة.", "يجب على المستخدمين عدم رفع كلمات المرور أو بيانات CVV أو وثائق الهوية غير الضرورية أو بيانات اعتماد الأسواق الخاصة أو أي معلومات غير مصرح لهم بمشاركتها."] },
+      { title: "6. لا استرداد بعد التسليم", body: ["بعد إنشاء تقرير أو فحص أو مراجعة أو استشارة أو تحليل أو خدمة رقمية أخرى أو تسليمها أو مشاركتها أو تنفيذها بشكل جوهري، تعتبر الخدمة مستهلكة وغير قابلة للاسترداد.", "قد يراجع ShadowScore الحالات الاستثنائية وفق تقديره، لكن لا يوجد ضمان للاسترداد بعد التسليم."] },
+      { title: "7. تحديد المسؤولية", body: ["إلى أقصى حد يسمح به القانون، لا يتحمل ShadowScore مسؤولية الأضرار المباشرة أو غير المباشرة أو العرضية أو الخاصة أو التبعية أو التجارية الناتجة عن استخدام المنصة أو الاعتماد على التقارير أو إجراءات الأطراف الثالثة."] },
+      { title: "8. تغييرات الشروط", body: ["قد يحدّث ShadowScore هذه الشروط من وقت لآخر. يعني استمرار استخدام الخدمة بعد التغييرات قبول الشروط المحدثة."] },
+    ] },
+    privacy: { label: "سياسة الخصوصية", title: "معلومات مخاطر تضع الخصوصية أولاً", introduction: "صُمم ShadowScore حول رفع الأدلة والمعلومات العامة والسياق الذي يقدمه المستخدم والمراجعة التحليلية. لا تتطلب التقييمات الأولية كلمات مرور الأسواق.", sections: [
+      { title: "ما الذي نجمعه", body: ["قد نجمع عناوين المتاجر وأسماء الأسواق ولقطات الشاشة والمستندات والرسائل وإشعارات الدفعات وأدلة التتبع ومعلومات الاتصال وتفضيلات الدفع وغيرها من المعلومات التي تختار تقديمها لمراجعة المخاطر."] },
+      { title: "كيف نستخدم المعلومات", body: ["نستخدم المعلومات لإعداد التقييمات وإنشاء التقارير وتقديم الدعم وتحسين نماذج المخاطر ومنع إساءة الاستخدام والاحتفاظ بسجلات القبول القانوني وتشغيل خدمة ShadowScore."] },
+      { title: "ما يجب عدم رفعه", body: [], items: ["كلمات مرور الأسواق", "أرقام البطاقات أو رموز CVV", "وثائق الهوية غير الضرورية", "مفاتيح API الخاصة", "بيانات تسجيل الدخول المصرفي", "معلومات غير مصرح لك بمشاركتها"] },
+      { title: "مشاركة البيانات", body: ["لا نبيع مستندات العملاء أو بيانات الأسواق. قد نستخدم مقدمي خدمات موثوقين للاستضافة والاتصالات والتحليلات ومعالجة المدفوعات والدعم عند الحاجة لتشغيل الخدمة."] },
+      { title: "سجلات القبول القانوني", body: ["عندما ينتقل المستخدمون إلى الدفع، قد ينشئ ShadowScore معرّفاً مرجعياً وطابعاً زمنياً وإصدار قبول لتوثيق قبول المستخدم لشروط الخدمة وسياسة الخصوصية قبل الدفع."] },
+      { title: "طلبات الخصوصية", body: ["لإرسال طلبات الخصوصية، تواصل مع {email}."] },
+    ] },
+  },
+  es: { terms: { label: "Términos del servicio", title: "Información de riesgos independiente", introduction: "Estas condiciones explican el uso de los servicios de ShadowScore.", acceptanceLabel: "Versión de aceptación legal", acceptanceCopy: "Debe aceptar el aviso antes de pagar.", sections: ["Uso informativo", "Sin garantías", "Puntuaciones analíticas", "Decisiones de terceros", "Evidencia del usuario", "Sin reembolso tras la entrega", "Limitación de responsabilidad", "Cambios en los términos"].map((title) => ({ title, body: ["Consulte esta sección para conocer las condiciones aplicables al uso de ShadowScore."] })) }, privacy: { label: "Política de privacidad", title: "Información de riesgos que prioriza la privacidad", introduction: "ShadowScore utiliza evidencia e información proporcionada para realizar revisiones.", sections: ["Información recopilada", "Uso de la información", "Contenido que no debe cargar", "Compartir datos", "Registros de aceptación legal", "Solicitudes de privacidad"].map((title) => ({ title, body: ["Esta sección explica cómo ShadowScore trata esta información."] })) } },
+  fr: { terms: { label: "Conditions d’utilisation", title: "Renseignements indépendants sur les risques", introduction: "Ces conditions expliquent l’utilisation des services ShadowScore.", acceptanceLabel: "Version de l’acceptation juridique", acceptanceCopy: "Vous devez accepter l’avis avant le paiement.", sections: ["Usage informatif", "Aucune garantie", "Scores analytiques", "Décisions de tiers", "Preuves de l’utilisateur", "Aucun remboursement après livraison", "Limitation de responsabilité", "Modifications des conditions"].map((title) => ({ title, body: ["Cette section présente les conditions applicables à l’utilisation de ShadowScore."] })) }, privacy: { label: "Politique de confidentialité", title: "Renseignements sur les risques respectueux de la confidentialité", introduction: "ShadowScore utilise les preuves et informations fournies pour effectuer des examens.", sections: ["Informations collectées", "Utilisation des informations", "Éléments à ne pas téléverser", "Partage des données", "Registres d’acceptation juridique", "Demandes de confidentialité"].map((title) => ({ title, body: ["Cette section explique le traitement de ces informations par ShadowScore."] })) } },
+  de: { terms: { label: "Nutzungsbedingungen", title: "Unabhängige Risikoinformationen", introduction: "Diese Bedingungen erläutern die Nutzung der ShadowScore-Dienste.", acceptanceLabel: "Version der rechtlichen Zustimmung", acceptanceCopy: "Vor der Zahlung muss der Hinweis akzeptiert werden.", sections: ["Nutzung zu Informationszwecken", "Keine Garantien", "Analytische Risikowerte", "Entscheidungen Dritter", "Nutzernachweise", "Keine Erstattung nach Lieferung", "Haftungsbeschränkung", "Änderungen der Bedingungen"].map((title) => ({ title, body: ["Dieser Abschnitt beschreibt die Bedingungen für die Nutzung von ShadowScore."] })) }, privacy: { label: "Datenschutzerklärung", title: "Datenschutzorientierte Risikoinformationen", introduction: "ShadowScore verwendet bereitgestellte Nachweise und Informationen für Prüfungen.", sections: ["Erhobene Daten", "Verwendung von Informationen", "Nicht hochzuladende Inhalte", "Weitergabe von Daten", "Aufzeichnungen rechtlicher Zustimmungen", "Datenschutzanfragen"].map((title) => ({ title, body: ["Dieser Abschnitt erläutert den Umgang von ShadowScore mit diesen Informationen."] })) } },
+};
+
 const en = {
   nav: {
     investigations: "Investigations",
@@ -786,6 +905,7 @@ const en = {
   home: homeTranslations.en,
   footer: footerTranslations.en,
   audit: auditTranslations.en,
+  legal: legalTranslations.en,
 };
 type Dictionary = typeof en;
 
@@ -859,6 +979,7 @@ const translations: Record<Exclude<Locale, "en">, Dictionary> = {
     home: homeTranslations.he,
     footer: footerTranslations.he,
     audit: auditTranslations.he,
+    legal: legalTranslations.he,
   },
   ar: {
     nav: {
@@ -969,6 +1090,7 @@ const translations: Record<Exclude<Locale, "en">, Dictionary> = {
     home: homeTranslations.ar,
     footer: footerTranslations.ar,
     audit: auditTranslations.ar,
+    legal: legalTranslations.ar,
   },
   es: {
     nav: {
@@ -1079,6 +1201,7 @@ const translations: Record<Exclude<Locale, "en">, Dictionary> = {
     home: homeTranslations.es,
     footer: footerTranslations.es,
     audit: auditTranslations.es,
+    legal: legalTranslations.es,
   },
   fr: {
     nav: {
@@ -1189,6 +1312,7 @@ const translations: Record<Exclude<Locale, "en">, Dictionary> = {
     home: homeTranslations.fr,
     footer: footerTranslations.fr,
     audit: auditTranslations.fr,
+    legal: legalTranslations.fr,
   },
   de: {
     nav: {
@@ -1299,6 +1423,7 @@ const translations: Record<Exclude<Locale, "en">, Dictionary> = {
     home: homeTranslations.de,
     footer: footerTranslations.de,
     audit: auditTranslations.de,
+    legal: legalTranslations.de,
   },
 };
 

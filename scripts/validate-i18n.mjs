@@ -2,6 +2,15 @@ import assert from "node:assert/strict";
 import { directionForLocale, getDictionary, locales, localizeReportText } from "../lib/i18n/index.ts";
 
 function assertCompleteDictionary(dictionary, canonical, path = "") {
+  if (path === "legal.terms.sections" || path === "legal.privacy.sections") {
+    assert.equal(dictionary.length, canonical.length, `${path} must retain every legal section`);
+    for (const section of dictionary) {
+      assert.equal(typeof section.title, "string", `${path} title must be a string`);
+      assert.ok(Array.isArray(section.body) && section.body.every((value) => typeof value === "string"), `${path} body must contain strings`);
+      if (section.items) assert.ok(section.items.every((value) => typeof value === "string"), `${path} items must contain strings`);
+    }
+    return;
+  }
   assert.deepEqual(Object.keys(dictionary).sort(), Object.keys(canonical).sort(), `${path || "dictionary"} has a different key set`);
   for (const key of Object.keys(canonical)) {
     const currentPath = path ? `${path}.${key}` : key;
