@@ -17,6 +17,11 @@ for (const locale of locales) {
   const dictionary = getDictionary(locale);
   assertCompleteDictionary(dictionary, english);
   assert.equal(directionForLocale(locale), ["he", "ar"].includes(locale) ? "rtl" : "ltr");
+  if (locale !== "en") {
+    for (const [key, value] of Object.entries(dictionary.intakeUi)) {
+      assert.notEqual(value, english.intakeUi[key], `${locale}.intakeUi.${key} must be localized`);
+    }
+  }
 }
 const canonical = { evidenceId: "ev-1", decision: "REVIEW", score: "needs_review", source: "rdap.org", observedAt: "2026-07-19T00:00:00Z" };
 for (const locale of locales) assert.deepEqual(canonical, { ...canonical }, `${locale} changed canonical content`);
