@@ -25,6 +25,35 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+button,
+a,
+select {
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (max-width: 639px) {
+  .investigation-console::before {
+    display: none;
+  }
+
+  .signal-card,
+  .provider-chip,
+  .reasoning-step {
+    animation: none;
+    opacity: 1;
+  }
+}
+
 .investigation-console::before {
   content: "";
   position: absolute;
@@ -154,6 +183,10 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
   .investigation-console::before,
   .signal-card,
   .reasoning-step,
@@ -182,7 +215,8 @@ body {
 .risk-status { border: 1px solid rgb(248 113 113 / 0.35); border-radius: 9999px; background: var(--ss-risk-soft); padding: 0.25rem 0.625rem; font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #fecaca; }
 .timeline-list { position: relative; display: grid; gap: 0.75rem; border-left: 1px solid rgb(255 255 255 / 0.14); padding-left: 1.25rem; }
 .timeline-item { position: relative; border: 1px solid rgb(255 255 255 / 0.1); border-radius: 0.875rem; background: rgb(0 0 0 / 0.25); padding: 1rem; }
-.timeline-marker { position: absolute; left: -1.625rem; top: 1.25rem; height: 0.7rem; width: 0.7rem; border: 2px solid #0a0a0a; border-radius: 9999px; background: var(--ss-accent); }
+.timeline-list { border-inline-start: 1px solid rgb(255 255 255 / 0.14); border-left: 0; padding-inline-start: 1.25rem; padding-left: 0; }
+.timeline-marker { position: absolute; inset-inline-start: -1.625rem; top: 1.25rem; height: 0.7rem; width: 0.7rem; border: 2px solid #0a0a0a; border-radius: 9999px; background: var(--ss-accent); }
 .timeline-marker-risk { background: var(--ss-risk); }
 
 .investigation-radar {

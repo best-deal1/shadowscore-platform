@@ -40,7 +40,7 @@ const socialLinks = [
 ];
 
 function linkClass(active: boolean) {
-  return `rounded-full px-3 py-2 transition focus:outline-none focus:ring-2 focus:ring-red-300 ${active ? "bg-white/10 text-white" : "text-zinc-400 hover:text-white"}`;
+  return `min-h-11 rounded-full px-3 py-2 transition focus:outline-none focus:ring-2 focus:ring-red-300 ${active ? "bg-white/10 text-white" : "text-zinc-400 hover:text-white"}`;
 }
 
 export default function ShadowScoreLayout({
@@ -101,6 +101,7 @@ export default function ShadowScoreLayout({
             <img
               src="/shadowscore-shield-v8.png"
               alt=""
+              aria-hidden="true"
               className="h-9 w-9 rounded-xl bg-black object-contain p-1"
             />
             <div className="text-xl font-black tracking-tight">
@@ -164,8 +165,9 @@ export default function ShadowScoreLayout({
             aria-expanded={menuOpen}
             aria-controls="mobile-navigation"
             onClick={() => setMenuOpen((open) => !open)}
-            className="rounded-xl border border-white/10 px-3 py-2 text-sm font-black text-white focus:outline-none focus:ring-2 focus:ring-red-300 lg:hidden"
+            className="flex min-h-11 items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-sm font-black text-white focus:outline-none focus:ring-2 focus:ring-red-300 lg:hidden"
           >
+            <span aria-hidden="true" className="text-lg leading-none">{menuOpen ? "×" : "☰"}</span>
             {t.nav.menu}
           </button>
         </div>
@@ -173,8 +175,7 @@ export default function ShadowScoreLayout({
           <nav
             id="mobile-navigation"
             aria-label="Mobile navigation"
-            onClick={() => setMenuOpen(false)}
-            className="border-t border-white/10 bg-black px-4 py-4 lg:hidden"
+            className="border-t border-white/10 bg-black px-4 py-4 shadow-2xl lg:hidden"
           >
             <div className="grid gap-2">
               <label className="sr-only" htmlFor="mobile-language-selector">
@@ -187,7 +188,7 @@ export default function ShadowScoreLayout({
                 onChange={(event) =>
                   void setLocale(event.target.value as Locale)
                 }
-                className="rounded-xl border border-white/15 bg-black px-4 py-3 text-sm font-bold text-white"
+                className="min-h-12 rounded-xl border border-white/15 bg-black px-4 py-3 text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-red-300"
               >
                 {locales.map((item) => (
                   <option key={item} value={item}>
@@ -197,7 +198,7 @@ export default function ShadowScoreLayout({
               </select>
               <Link
                 href="/intake"
-                className="rounded-2xl bg-red-600 px-4 py-3 text-center text-sm font-black text-white"
+                className="min-h-12 rounded-2xl bg-red-600 px-4 py-3 text-center text-sm font-black text-white focus:outline-none focus:ring-2 focus:ring-red-300"
               >
                 {t.nav.start}
               </Link>
@@ -232,7 +233,7 @@ export default function ShadowScoreLayout({
 
       <main>{children}</main>
 
-      <footer className="border-t border-white/10 bg-black px-6 py-12">
+      <footer className="border-t border-white/10 bg-black px-5 py-12 sm:px-6">
         <div className="mx-auto grid max-w-7xl gap-8 md:grid-cols-4">
           {footerGroups.map((group) => (
             <nav
