@@ -68,3 +68,15 @@ for (const pageName of ["security", "contact", "login", "signup", "example"]) {
   assert.notDeepEqual(userPages.he[pageName], userPages.en[pageName], `Hebrew ${pageName} page copy must be localized`);
 }
 console.log("Validated localized Hebrew copy for every public account, contact, security, and example-report route.");
+
+const { applicationCopy } = await import("../lib/i18n/index.ts");
+const applicationEnglish = applicationCopy.en;
+for (const locale of locales) {
+  assertCompleteDictionary(applicationCopy[locale], applicationEnglish, `${locale}.applicationCopy`);
+  if (locale !== "en") {
+    for (const [sectionName, section] of Object.entries(applicationCopy[locale]))
+      for (const [key, value] of Object.entries(section))
+        assert.notEqual(value, applicationEnglish[sectionName][key], `${locale}.applicationCopy.${sectionName}.${key} must not fall back to English`);
+  }
+}
+console.log("Validated localized workspace, monitoring, and account UI copy for every supported locale.");
