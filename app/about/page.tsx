@@ -1,19 +1,26 @@
+"use client";
+
 import ShadowScoreLayout from "../../components/ShadowScoreLayout";
+import { useLocale } from "../../components/LocaleProvider";
+import { publicPages } from "../../lib/i18n";
 
 export default function AboutPage() {
+  const { locale } = useLocale();
+  const page = publicPages[locale].about;
+
   return (
     <ShadowScoreLayout>
       <section className="mx-auto max-w-4xl px-6 py-20">
-        <div className="text-sm uppercase tracking-[0.28em] text-red-300">About ShadowScore</div>
-        <h1 className="mt-4 text-5xl font-black">Marketplace & Payment Risk Intelligence For Digital Sellers</h1>
+        <div className="text-sm uppercase tracking-[0.28em] text-red-300">{page.eyebrow}</div>
+        <h1 className="mt-4 text-5xl font-black">{page.title}</h1>
         <p className="mt-6 text-lg leading-8 text-zinc-400">
-          ShadowScore helps sellers understand marketplace, verification, compliance and payout risk before revenue, account access or payment flow are affected.
+          {page.description}
         </p>
         <p className="mt-6 leading-8 text-zinc-400">
-          We focus on the places where sellers feel the pain first: eBay, Amazon, Walmart, Etsy, TikTok Shop, PayPal, Payoneer and Stripe. We intentionally prioritize marketplace and payment evidence over generic URL scanning.
+          {page.focus}
         </p>
         <p className="mt-6 leading-8 text-zinc-400">
-          ShadowScore is independent and does not claim access to internal marketplace systems. The platform is built around seller-supplied evidence, public policies, visible operational signals and structured risk analysis.
+          {page.independence}
         </p>
       </section>
     </ShadowScoreLayout>

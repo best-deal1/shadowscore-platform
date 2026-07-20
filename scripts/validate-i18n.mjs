@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { directionForLocale, getDictionary, locales, localizeReportText } from "../lib/i18n/index.ts";
+import { directionForLocale, getDictionary, locales, localizeReportText, publicPages } from "../lib/i18n/index.ts";
 
 function assertCompleteDictionary(dictionary, canonical, path = "") {
   if (path === "legal.terms.sections" || path === "legal.privacy.sections") {
@@ -35,6 +35,14 @@ for (const locale of locales) {
     }
   }
 }
+for (const locale of locales) {
+  const page = publicPages[locale];
+  assert.equal(page.plans.unlocks.length, publicPages.en.plans.unlocks.length, `${locale}.plans.unlocks must retain every plan feature`);
+  assert.ok(Object.values(page.about).every((value) => value.trim().length > 0), `${locale}.about must contain copy`);
+  assert.ok(Object.values(page.plans).filter((value) => typeof value === "string").every((value) => value.trim().length > 0), `${locale}.plans must contain copy`);
+}
+for (const locale of ["ar", "es", "fr", "de"])
+  assert.notDeepEqual(publicPages[locale], publicPages.he, `${locale} must not reuse Hebrew public-page translations`);
 const canonical = { evidenceId: "ev-1", decision: "REVIEW", score: "needs_review", source: "rdap.org", observedAt: "2026-07-19T00:00:00Z" };
 for (const locale of locales) assert.deepEqual(canonical, { ...canonical }, `${locale} changed canonical content`);
 
