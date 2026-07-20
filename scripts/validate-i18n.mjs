@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { directionForLocale, getDictionary, locales } from "../lib/i18n/index.ts";
+import { directionForLocale, getDictionary, locales, localizeReportText } from "../lib/i18n/index.ts";
 
 function assertCompleteDictionary(dictionary, canonical, path = "") {
   assert.deepEqual(Object.keys(dictionary).sort(), Object.keys(canonical).sort(), `${path || "dictionary"} has a different key set`);
@@ -25,4 +25,20 @@ for (const locale of locales) {
 }
 const canonical = { evidenceId: "ev-1", decision: "REVIEW", score: "needs_review", source: "rdap.org", observedAt: "2026-07-19T00:00:00Z" };
 for (const locale of locales) assert.deepEqual(canonical, { ...canonical }, `${locale} changed canonical content`);
-console.log(`Validated ${locales.length} complete locale dictionaries, RTL direction, and canonical presentation boundaries.`);
+
+const reportItems = [
+  "Acme Ltd is presented as small business associated with acme.example.",
+  "Allowed: Request the company registration document.",
+  "Blocked until verification: Send payment to account 1234.",
+  "The main follow-up is to confirm the beneficial owner.",
+  "Certificate issuer from TLS handshake",
+];
+for (const locale of locales.filter((locale) => locale !== "en")) {
+  const localized = reportItems.map((item) => localizeReportText(item, locale));
+  assert.equal(new Set(localized).size, reportItems.length, `${locale} must preserve each distinct report item`);
+  assert.ok(localized.every((item) => item.trim().length > 0), `${locale} must not replace report content with placeholders`);
+  assert.ok(localized.some((item, index) => item !== reportItems[index]), `${locale} must localize report prose`);
+  assert.ok(localized[0].includes("Acme Ltd") && localized[0].includes("acme.example"), `${locale} must preserve report-specific facts`);
+  assert.ok(localized[1].includes("company registration document") && localized[2].includes("account 1234"), `${locale} must preserve requested verification details`);
+}
+console.log(`Validated ${locales.length} complete locale dictionaries, RTL direction, canonical presentation boundaries, and semantic report item localization.`);
