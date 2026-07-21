@@ -1,4 +1,5 @@
 import type { EvidenceItem, EvidenceRef } from "../evidence";
+import type { CorrelationSummary } from "../correlation";
 import type { ProviderResult } from "../providers/types";
 import type { VerificationDecisionOutput } from "../decisionEngine/model";
 
@@ -31,6 +32,7 @@ export type ReasoningContradiction = {
   id: string;
   why: string;
   conflictingEvidence: ReasoningEvidenceReference[];
+  relationshipEvidenceIds: string[];
   strongerEvidence: ReasoningEvidenceReference | null;
   affectsDecision: boolean;
   explanation: string;
@@ -59,5 +61,6 @@ export type ReasoningOutput = {
 export type ReasoningInput = {
   evidenceItems: EvidenceItem[];
   providerResults?: ProviderResult[];
+  correlationSummary?: CorrelationSummary;
   decision?: Pick<VerificationDecisionOutput, "decision" | "reasons" | "verificationConfidence" | "positiveEvidenceCount" | "missingEvidenceCount" | "negativeEvidenceCount">;
 };

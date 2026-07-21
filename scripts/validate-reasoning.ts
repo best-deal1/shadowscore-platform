@@ -1,5 +1,6 @@
 import { buildEvidenceItems } from "../lib/evidence";
 import { buildVerificationDecision } from "../lib/decisionEngine/model";
+import { correlateEvidence } from "../lib/correlation";
 import { loadReferenceProviderSnapshots, referenceProviderSnapshot } from "../lib/decisionEngine/snapshots";
 import { buildReasoning, deterministicReasoningHash } from "../lib/reasoning";
 import type { EvidenceItem } from "../lib/evidence";
@@ -30,9 +31,16 @@ const cases = [
 export function runReasoningValidationSuite() {
   return cases.map((testCase) => {
     const decision = testCase.decision || buildVerificationDecision({ evidenceItems: testCase.evidenceItems, audience: "paid", targetType: "website" });
-    const first = buildReasoning({ evidenceItems: testCase.evidenceItems, decision });
-    const second = buildReasoning({ evidenceItems: testCase.evidenceItems, decision });
-    const passed = deterministicReasoningHash(first) === deterministicReasoningHash(second) && first.steps.every((step) => step.supportingEvidence.length > 0);
+    const correlationSummary = correlateEvidence({ evidenceItems: testCase.evidenceItems, targetType: "website" });
+    const first = buildReasoning({ evidenceItems: testCase.evidenceItems, correlationSummary, decision });
+    const second = buildReasoning({ evidenceItems: testCase.evidenceItems, correlationSummary, decision });
+    const relationshipEvidenceIdsAreComplete = correlationSummary.contradictions.every((contradiction) => {
+      const expected = [...new Set(contradiction.evidence.map((evidence) => evidence.evidenceId))].sort();
+      const reasoning = first.contradictions.find((candidate) => JSON.stringify(candidate.relationshipEvidenceIds) === JSON.stringify(expected));
+      if (!reasoning) return false;
+      return JSON.stringify(reasoning.relationshipEvidenceIds) === JSON.stringify(expected) && expected.every((id) => reasoning.conflictingEvidence.some((evidence) => evidence.evidenceId === id));
+    });
+    const passed = deterministicReasoningHash(first) === deterministicReasoningHash(second) && first.steps.every((step) => step.supportingEvidence.length > 0) && relationshipEvidenceIdsAreComplete;
     return { label: testCase.label, passed, steps: first.steps.length, graphNodes: first.graph.nodes.length, graphEdges: first.graph.edges.length, decision: decision.decision, confidence: decision.verificationConfidence, graph: JSON.stringify(first.graph), inferenceChain: first.steps.map((step) => `${step.observation} -> ${step.inferredFact} -> ${step.contribution}`).join(" | "), evidenceTrace: first.steps.map((step) => `${step.id}: ${step.supportingEvidence.map((evidence) => `${evidence.provider}/${evidence.evidenceId}`).join(",")}`).join(" | "), decisionExplanation: first.summary.decisionBasis.join(" "), confidencePropagation: first.summary.confidencePropagation.join(" | ") };
   });
 }

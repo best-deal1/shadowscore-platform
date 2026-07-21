@@ -128,7 +128,7 @@ export async function buildReadyReport(input: {
     timeline: trustTimeline,
     audience: "paid",
   });
-  const reasoning = buildReasoning({ evidenceItems, providerResults, decision });
+  const reasoning = buildReasoning({ evidenceItems, providerResults, correlationSummary, decision });
   const decisionIntelligence = evaluateDecisionEvidence({
     businessProfile: canonicalBusinessProfile,
     executionPlan,
