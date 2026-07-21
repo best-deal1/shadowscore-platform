@@ -2,6 +2,7 @@ import type { EvidenceItem } from "../evidence";
 import { buildReasoningGraph } from "./reasoningGraph";
 import { summarizeReasoning } from "./reasoningSummary";
 import { validateReasoning } from "./reasoningValidation";
+import type { CorrelationContradiction } from "../correlation";
 import type { ReasoningContradiction, ReasoningEvidenceReference, ReasoningInput, ReasoningOutput, ReasoningStep } from "./reasoningTypes";
 
 export const REASONING_ENGINE_VERSION = "reasoning-engine-v1";
@@ -51,9 +52,43 @@ function buildStep(item: EvidenceItem, all: EvidenceItem[]): ReasoningStep {
 }
 
 function contradictionKey(item: EvidenceItem) { return item.title.toLowerCase().replace(/confirmed|possible|missing|mismatch|conflict/g, "").trim(); }
-function detectContradictions(items: EvidenceItem[]): ReasoningContradiction[] {
+function relationshipEvidenceIds(contradiction: CorrelationContradiction) {
+  return [...new Set(contradiction.evidence.map((endpoint) => endpoint.evidenceId).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+}
+
+function correlationEvidenceReference(evidenceId: string, contradiction: CorrelationContradiction, evidenceById: Map<string, EvidenceItem>): ReasoningEvidenceReference {
+  const item = evidenceById.get(evidenceId);
+  if (item) return ref(item);
+  const endpoint = contradiction.evidence.find((candidate) => candidate.evidenceId === evidenceId);
+  return {
+    evidenceId,
+    provider: endpoint?.source || "correlation-intelligence",
+    source: endpoint?.source || "correlation-intelligence",
+    title: endpoint ? `${endpoint.role}: ${endpoint.value}` : contradiction.title,
+    category: "Negative",
+    confidence: contradiction.severity === "critical" ? 95 : contradiction.severity === "high" ? 90 : 75,
+    refs: [],
+  };
+}
+
+function correlationReasoning(contradiction: CorrelationContradiction, evidenceById: Map<string, EvidenceItem>): ReasoningContradiction {
+  const evidenceIds = relationshipEvidenceIds(contradiction);
+  const conflictingEvidence = evidenceIds.map((evidenceId) => correlationEvidenceReference(evidenceId, contradiction, evidenceById));
+  const strongerEvidence = conflictingEvidence.sort((a, b) => b.confidence - a.confidence || a.evidenceId.localeCompare(b.evidenceId))[0] || null;
+  return {
+    id: `relationship-${slug(contradiction.id)}`,
+    why: contradiction.title,
+    conflictingEvidence,
+    relationshipEvidenceIds: evidenceIds,
+    strongerEvidence,
+    affectsDecision: true,
+    explanation: `${contradiction.explanation} Relationship evidence IDs: ${evidenceIds.join(", ") || "none"}.`,
+  };
+}
+
+function detectContradictions(items: EvidenceItem[], correlationContradictions: CorrelationContradiction[] = []): ReasoningContradiction[] {
   const positives = items.filter((item) => item.category === "Verified");
-  return items.filter((item) => item.category === "Negative").map((negative) => {
+  const evidenceContradictions: ReasoningContradiction[] = items.filter((item) => item.category === "Negative").map((negative) => {
     const conflicts = positives.filter((positive) => contradictionKey(positive).split(/\s+/).some((part) => part.length > 3 && contradictionKey(negative).includes(part))).slice(0, 2);
     const evidence = [negative, ...conflicts].sort((a, b) => b.confidence - a.confidence || a.id.localeCompare(b.id));
     const stronger = evidence[0] || negative;
@@ -61,17 +96,19 @@ function detectContradictions(items: EvidenceItem[]): ReasoningContradiction[] {
       id: `contradiction-${slug(negative.id)}`,
       why: `${negative.title} conflicts with evidence that otherwise supports verification.`,
       conflictingEvidence: evidence.map(ref),
+      relationshipEvidenceIds: [],
       strongerEvidence: ref(stronger),
       affectsDecision: true,
       explanation: `${stronger.title} is strongest because it has ${stronger.confidence >= 85 ? "Very High" : stronger.confidence >= 65 ? "High" : stronger.confidence >= 40 ? "Medium" : "Low"} inferred confidence; confirmed negative evidence affects the final decision while missing or unknown evidence does not.`,
     };
   });
+  return evidenceContradictions.concat(correlationContradictions.map((contradiction) => correlationReasoning(contradiction, new Map(items.map((item) => [item.id, item])))));
 }
 
 export function buildReasoning(input: ReasoningInput): ReasoningOutput {
   const evidenceItems = [...input.evidenceItems].sort((a, b) => a.id.localeCompare(b.id));
   const steps = evidenceItems.map((item) => buildStep(item, evidenceItems));
-  const contradictions = detectContradictions(evidenceItems);
+  const contradictions = detectContradictions(evidenceItems, input.correlationSummary?.contradictions);
   const output = { engineVersion: REASONING_ENGINE_VERSION, steps, contradictions, graph: buildReasoningGraph({ steps, contradictions, decision: input.decision }), summary: summarizeReasoning({ steps, contradictions, decision: input.decision }) };
   validateReasoning(output);
   return output;
