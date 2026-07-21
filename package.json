@@ -32,6 +32,7 @@
     "validate:business-identity-intelligence": "node --experimental-strip-types scripts/validate-business-identity-intelligence.mjs",
     "validate:business-intelligence": "node --experimental-strip-types scripts/validate-business-intelligence.mjs",
     "validate:platform-capabilities": "node --experimental-strip-types tests/platform-capabilities.mjs",
+    "validate:intelligence-layer": "node --experimental-strip-types tests/intelligence-layer.mjs",
     "test:preview-flow": "node tests/free-scan-preview-flow.mjs",
     "validate:canonical-decision-identity": "node --experimental-strip-types scripts/validate-canonical-decision-identity.mjs",
     "validate:report-contract": "node scripts/validate-report-contract.mjs",
