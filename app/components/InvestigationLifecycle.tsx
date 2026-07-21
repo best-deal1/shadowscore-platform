@@ -81,7 +81,7 @@ export default function InvestigationLifecycle({
           <h2 className="mt-2 text-xl font-black text-white">{target || "Target"}</h2>
           <p className="mt-1 text-sm text-zinc-400">Work is recorded as each source returns evidence.</p>
         </div>
-        <div className={`rounded-full border px-3 py-1.5 text-xs font-bold ${running ? "border-amber-300/30 bg-amber-400/10 text-amber-100" : failed ? "border-red-400/30 bg-red-500/10 text-red-100" : "border-emerald-400/25 bg-emerald-500/10 text-emerald-100"}`}>{running ? "Active investigation" : failed ? "Investigation interrupted" : "Investigation complete"}</div>
+        <div className={`rounded-xl border px-4 py-2 text-sm font-black ${running ? "border-amber-300/30 bg-amber-400/10 text-amber-100" : failed ? "border-red-400/30 bg-red-500/10 text-red-100" : "border-emerald-400/25 bg-emerald-500/10 text-emerald-100"}`}>{running ? "Active investigation" : failed ? "Investigation interrupted" : "Investigation complete"}</div>
       </div>
 
       <div className="mt-5 grid gap-6 xl:grid-cols-[1.05fr_.95fr]">
@@ -90,7 +90,7 @@ export default function InvestigationLifecycle({
           <ol className="mt-4 space-y-2">
             {visibleStages.map((stage, index) => {
               const status = stageStatus(index);
-              return <li key={stage} className={`flex items-center justify-between gap-3 rounded-xl border px-3 py-2.5 text-sm ${statusStyle(status)}`}><span className="font-medium">{stage}</span><span className="shrink-0 text-xs font-bold uppercase tracking-[0.12em]">{status}</span></li>;
+              return <li key={stage} className={`flex items-center justify-between gap-4 rounded-2xl border px-4 py-3.5 text-base ${statusStyle(status)}`}><span className="font-semibold">{stage}</span><span className="shrink-0 rounded-lg border border-current/30 bg-black/15 px-2.5 py-1 text-sm font-black uppercase tracking-[0.08em]">{status}</span></li>;
             })}
           </ol>
         </div>

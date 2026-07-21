@@ -276,7 +276,7 @@ export default function HomeClient() {
                     ))}
                   </div>
                   <div className="relative hidden h-[386px] overflow-hidden rounded-[24px] border border-white/10 bg-[radial-gradient(circle_at_center,rgba(220,38,38,0.14),transparent_45%)] sm:block">
-                    <div className="reasoning-question absolute left-4 top-4 z-10 rounded-full border border-white/10 bg-black/70 px-3 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-200">
+                    <div className="reasoning-question absolute left-4 top-4 z-10 rounded-full border border-white/10 bg-black/70 px-4 py-3 text-xs font-black uppercase tracking-[0.2em] text-zinc-200">
                       {t.home.discoveryQuestion}
                     </div>
                     <svg
@@ -558,16 +558,16 @@ export default function HomeClient() {
                   </div>
                   <div className="investigation-radar relative mt-4 hidden h-[360px] overflow-hidden rounded-[26px] border border-white/10 bg-black sm:block">
                     <div className="radar-sweep absolute inset-0" />
-                    <div className="absolute left-[16%] top-[17%] rounded-full border border-sky-300/50 bg-sky-400/10 px-3 py-2 text-[10px] font-black text-sky-100">
+                    <div className="absolute left-[16%] top-[17%] rounded-full border border-sky-300/50 bg-sky-400/10 px-4 py-3 text-xs font-black text-sky-100">
                       supplier-pay.test
                     </div>
-                    <div className="absolute right-[12%] top-[25%] rounded-full border border-amber-300/40 bg-amber-400/10 px-3 py-2 text-[10px] font-black text-amber-100">
+                    <div className="absolute right-[12%] top-[25%] rounded-full border border-amber-300/40 bg-amber-400/10 px-4 py-3 text-xs font-black text-amber-100">
                       {t.home.productJourney[0].title}
                     </div>
-                    <div className="absolute bottom-[18%] left-[23%] rounded-full border border-red-300/50 bg-red-500/10 px-3 py-2 text-[10px] font-black text-red-100">
+                    <div className="absolute bottom-[18%] left-[23%] rounded-full border border-red-300/50 bg-red-500/10 px-4 py-3 text-xs font-black text-red-100">
                       {t.home.reasoningSteps[3].label}
                     </div>
-                    <div className="absolute bottom-[14%] right-[14%] rounded-full border border-white/20 bg-white/[0.08] px-3 py-2 text-[10px] font-black text-white">
+                    <div className="absolute bottom-[14%] right-[14%] rounded-full border border-white/20 bg-white/[0.08] px-4 py-3 text-xs font-black text-white">
                       {t.home.productJourney[1].title}
                     </div>
                     <div className="absolute left-1/2 top-1/2 flex h-32 w-32 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full border border-red-400/50 bg-red-500/10 text-center shadow-[0_0_50px_rgba(248,113,113,0.14)]">
@@ -575,7 +575,7 @@ export default function HomeClient() {
                         {t.home.confidence}
                       </span>
                       <strong className="mt-2 text-xl text-white">62%</strong>
-                      <span className="mt-1 text-[9px] font-bold text-red-100">
+                      <span className="mt-1 text-xs font-bold text-red-100">
                         {t.home.confidenceValue}
                       </span>
                     </div>
@@ -585,7 +585,7 @@ export default function HomeClient() {
                     <div className="mt-4 grid gap-2">
                       {["supplier-pay.test", t.home.productJourney[0].title, t.home.reasoningSteps[3].label, t.home.productJourney[1].title].map((label) => <div key={label} className="rounded-xl border border-white/10 px-3 py-3 text-xs font-black text-zinc-100">{label}</div>)}
                     </div>
-                    <div className="mt-4 rounded-2xl border border-red-400/50 bg-red-500/10 p-4 text-center"><span className="ui-label text-red-100">{t.home.confidence}</span><strong className="mt-2 block text-xl text-white">62%</strong><span className="mt-1 block text-[9px] font-bold text-red-100">{t.home.confidenceValue}</span></div>
+                    <div className="mt-4 rounded-2xl border border-red-400/50 bg-red-500/10 p-4 text-center"><span className="ui-label text-red-100">{t.home.confidence}</span><strong className="mt-2 block text-xl text-white">62%</strong><span className="mt-1 block text-xs font-bold text-red-100">{t.home.confidenceValue}</span></div>
                   </div>
                 </div>
               </div>
