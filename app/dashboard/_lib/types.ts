@@ -1,5 +1,9 @@
 export type RiskLevel = "Critical" | "High" | "Medium" | "Low";
-export type InvestigationStatus = "In review" | "Collecting evidence" | "Ready for decision" | "Monitoring";
+export type InvestigationStatus =
+  | "In review"
+  | "Collecting evidence"
+  | "Ready for decision"
+  | "Monitoring";
 
 export type Investigation = {
   id: string;
@@ -12,11 +16,18 @@ export type Investigation = {
   evidenceCount: number;
   nextAction: string;
   evidenceSummary: string;
+  riskReasons: string[];
 };
 
 export type Activity = {
   id: string;
-  type: "Evidence" | "Risk change" | "Monitoring" | "Analyst action" | "Report" | "Assignment";
+  type:
+    | "Evidence"
+    | "Risk change"
+    | "Monitoring"
+    | "Analyst action"
+    | "Report"
+    | "Assignment";
   title: string;
   detail: string;
   time: string;
@@ -32,6 +43,19 @@ export type MonitoringAlert = {
   detectedAt: string;
   investigationId: string;
   acknowledged: boolean;
+  businessImpact: string;
 };
 
-export type SavedView = { id: string; label: string; count: number; filter: "all" | "assigned" | "high-risk" | "evidence" | "decision" | "recent" | "monitoring" };
+export type SavedView = {
+  id: string;
+  label: string;
+  count: number;
+  filter:
+    | "all"
+    | "assigned"
+    | "high-risk"
+    | "evidence"
+    | "decision"
+    | "recent"
+    | "monitoring";
+};
