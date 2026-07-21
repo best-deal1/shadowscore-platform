@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { dashboardGreeting, dashboardText } from "../_lib/copy";
 import Link from "next/link";
 import ShadowScoreLayout from "../../../components/ShadowScoreLayout";
+import { getPlatformCapabilityCatalog } from "@/lib/platform";
 import {
   activities,
   alerts as initialAlerts,
@@ -24,6 +25,7 @@ import {
 
 const filters = ["All risk", "Critical", "High", "Medium", "Low"] as const;
 type RiskFilter = (typeof filters)[number];
+const platformCapabilities = getPlatformCapabilityCatalog().capabilities;
 
 function matchesView(item: Investigation, view: SavedView["filter"]) {
   if (view === "assigned") return item.analyst === "You";
@@ -79,13 +81,13 @@ export function AnalystDashboard() {
     <ShadowScoreLayout>
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-10">
         <section
-          aria-label={dashboardText(locale, "Decision intelligence")}
+          aria-label={dashboardText(locale, "Command Center")}
           className="rounded-3xl border border-sky-400/25 bg-sky-500/[0.07] p-5 sm:p-7"
         >
           <div className="flex flex-wrap items-start justify-between gap-5">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.22em] text-sky-300">
-                {dashboardText(locale, "Decision intelligence")}
+                {dashboardText(locale, "Command Center")}
               </p>
               <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
                 {dashboardGreeting(locale, currentUserName)}
@@ -95,7 +97,7 @@ export function AnalystDashboard() {
               href="/investigations"
               className="min-h-11 rounded-xl bg-red-600 px-4 py-3 text-sm font-bold text-white hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-300"
             >
-              {dashboardText(locale, "Start investigation")}
+              {dashboardText(locale, "Start business analysis")}
             </Link>
           </div>
           <div className="mt-5 grid gap-3 text-sm leading-6 text-zinc-300 sm:grid-cols-2">
@@ -108,7 +110,7 @@ export function AnalystDashboard() {
                   3{" "}
                   {dashboardText(
                     locale,
-                    "investigations are ready for a final decision.",
+                    "business analyses are ready for a final decision.",
                   )}
                 </li>
                 <li>
@@ -145,7 +147,7 @@ export function AnalystDashboard() {
           className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
         >
           <KpiCard
-            label="Active investigations"
+            label="Active business analyses"
             value="24"
             detail="6 assigned to you"
             locale={locale}
@@ -187,7 +189,7 @@ export function AnalystDashboard() {
           <KpiCard
             label="New evidence, 24h"
             value="41"
-            detail="Added to 12 investigations"
+            detail="Added to 12 business analyses"
             tone="sky"
             locale={locale}
           />
@@ -215,7 +217,7 @@ export function AnalystDashboard() {
             <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <label className="sm:col-span-2">
                 <span className="sr-only">
-                  {dashboardText(locale, "Search investigations")}
+                  {dashboardText(locale, "Search business analyses")}
                 </span>
                 <input
                   value={query}
@@ -256,7 +258,7 @@ export function AnalystDashboard() {
                 <thead className="bg-black/35 text-xs uppercase tracking-wider text-zinc-500">
                   <tr>
                     <th className="p-3">
-                      {dashboardText(locale, "Investigation")}
+                      {dashboardText(locale, "Business analysis")}
                     </th>
                     <th className="p-3">{dashboardText(locale, "Risk")}</th>
                     <th className="p-3">
@@ -322,7 +324,7 @@ export function AnalystDashboard() {
                 className="mt-5 rounded-2xl border border-dashed border-white/15 p-8 text-center"
               >
                 <h3 className="font-bold text-white">
-                  {dashboardText(locale, "No investigations match this view")}
+                  {dashboardText(locale, "No business analyses match this view")}
                 </h3>
                 <p className="mt-2 text-sm text-zinc-400">
                   {dashboardText(
@@ -481,6 +483,43 @@ export function AnalystDashboard() {
             </div>
           </div>
         </section>
+        <section
+          aria-label={dashboardText(locale, "Platform capabilities")}
+          className="mt-8 rounded-3xl border border-sky-400/20 bg-sky-500/[0.04] p-5 sm:p-6"
+        >
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-sky-300">
+                {dashboardText(locale, "Trust Intelligence Platform")}
+              </p>
+              <h2 className="mt-1 text-2xl font-black">
+                {dashboardText(locale, "Platform capabilities")}
+              </h2>
+            </div>
+            <p className="max-w-xl text-sm leading-6 text-zinc-400">
+              {dashboardText(
+                locale,
+                "Every decision uses reusable intelligence engines and evidence relationships.",
+              )}
+            </p>
+          </div>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {platformCapabilities.map((capability) => (
+              <article
+                key={capability.id}
+                className="rounded-2xl border border-white/10 bg-black/25 p-4"
+              >
+                <p className="font-bold text-white">{capability.name}</p>
+                <p className="mt-2 text-sm leading-5 text-zinc-400">
+                  {capability.description}
+                </p>
+                <p className="mt-3 text-xs font-bold text-sky-200">
+                  {capability.outputs[0]}
+                </p>
+              </article>
+            ))}
+          </div>
+        </section>
         <section className="mt-8 grid gap-6 lg:grid-cols-[1fr_2fr]">
           <aside className="rounded-3xl border border-white/10 bg-white/[0.035] p-5">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-500">
@@ -507,7 +546,7 @@ export function AnalystDashboard() {
             <div className="flex items-end justify-between gap-4">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-500">
-                  {dashboardText(locale, "Recent investigations")}
+                  {dashboardText(locale, "Recent business analyses")}
                 </p>
                 <h2 className="mt-1 text-2xl font-black">
                   {dashboardText(locale, "Evidence at a glance")}

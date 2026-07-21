@@ -1,5 +1,7 @@
 # ShadowScore production architecture
 
+ShadowScore is Business Trust Infrastructure. Product surfaces consume reusable Trust Intelligence capabilities rather than becoming separate sources of business logic. The capability catalog in `lib/platform` defines the shared platform vocabulary and is available as metadata at `GET /api/platform/capabilities`.
+
 ## Engine responsibilities
 
 ShadowScore keeps collection, interpretation, and presentation separate. Engines exchange typed report data and do not render product UI.
@@ -14,6 +16,8 @@ ShadowScore keeps collection, interpretation, and presentation separate. Engines
 | Knowledge Graph | Stores entities and relationships for the investigation. | Knowledge graph snapshot. |
 | Decision Engine | Evaluates evidence for a decision and its confidence. | Decision output and decision integrity data. |
 | Executive Decision Brief | Converts approved report data into a business-readable narrative. | Canonical narrative sections and source provenance. |
+
+For the complete capability catalog, integration boundary, and rule for adding a new engine, see [Trust Intelligence Platform](./TRUST_INTELLIGENCE_PLATFORM.md).
 
 `lib/reportPipeline.ts` is the server-side coordinator. It is responsible for ordering engine calls, payment gating, report versioning, and assembling `ShadowScoreReport`. Individual engines remain responsible only for their own domain output.
 
