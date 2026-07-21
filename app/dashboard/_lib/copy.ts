@@ -2,10 +2,17 @@ import type { Locale } from "@/lib/i18n";
 
 const he: Record<string, string> = {
   "Decision intelligence": "מודיעין לקבלת החלטות",
+  "Command Center": "מרכז פיקוד",
+  "Trust Intelligence Platform": "פלטפורמת מודיעין אמון",
+  "Platform capabilities": "יכולות הפלטפורמה",
+  "Every decision uses reusable intelligence engines and evidence relationships.":
+    "כל החלטה משתמשת במנועי מודיעין חוזרים ובקשרי ראיות.",
   "Good morning": "בוקר טוב",
   Today: "היום",
   "investigations are ready for a final decision.":
     "חקירות מוכנות להחלטה סופית.",
+  "business analyses are ready for a final decision.":
+    "ניתוחים עסקיים מוכנים להחלטה סופית.",
   "monitoring alerts require immediate review.":
     "התראות ניטור דורשות בדיקה מיידית.",
   "Portfolio risk increased by": "סיכון התיק עלה ב־",
@@ -15,8 +22,10 @@ const he: Record<string, string> = {
   "Review INV-1042 before processing additional payments.":
     "בדקו את INV-1042 לפני עיבוד תשלומים נוספים.",
   "Start investigation": "התחלת חקירה",
+  "Start business analysis": "התחלת ניתוח עסקי",
   "Executive overview": "סקירה ניהולית",
   "Active investigations": "חקירות פעילות",
+  "Active business analyses": "ניתוחים עסקיים פעילים",
   "assigned to you": "מוקצות לך",
   "Open alerts": "התראות פתוחות",
   "require review now": "דורשות בדיקה כעת",
@@ -30,11 +39,13 @@ const he: Record<string, string> = {
   "Across active cases": "בכל המקרים הפעילים",
   "New evidence, 24h": "ראיות חדשות, 24 שעות",
   "Added to 12 investigations": "נוספו ל־12 חקירות",
+  "Added to 12 business analyses": "נוספו ל־12 ניתוחים עסקיים",
   "Priority work": "עבודה בעדיפות",
   "Analyst queue": "תור האנליסט",
   "Show queue": "הצגת התור",
   "Preview empty state": "הצגת מצב ריק",
   "Search investigations": "חיפוש חקירות",
+  "Search business analyses": "חיפוש ניתוחים עסקיים",
   "Search name or ID": "חיפוש שם או מזהה",
   "Filter by risk": "סינון לפי סיכון",
   "Sort queue": "מיון התור",
@@ -43,6 +54,7 @@ const he: Record<string, string> = {
   "Sort: latest update": "מיון: עדכון אחרון",
   "Sort: confidence": "מיון: רמת ביטחון",
   Investigation: "חקירה",
+  "Business analysis": "ניתוח עסקי",
   Risk: "סיכון",
   Confidence: "רמת ביטחון",
   Status: "סטטוס",
@@ -50,6 +62,7 @@ const he: Record<string, string> = {
   Evidence: "ראיות",
   "Next action": "הפעולה הבאה",
   "No investigations match this view": "אין חקירות התואמות לתצוגה זו",
+  "No business analyses match this view": "אין ניתוחים עסקיים התואמים לתצוגה זו",
   "Change a filter or search term to return to active work.":
     "שנו סינון או מונח חיפוש כדי לחזור לעבודה הפעילה.",
   "Clear filters": "ניקוי מסננים",
@@ -73,6 +86,7 @@ const he: Record<string, string> = {
   "Saved views": "תצוגות שמורות",
   "Return to work": "חזרה לעבודה",
   "Recent investigations": "חקירות אחרונות",
+  "Recent business analyses": "ניתוחים עסקיים אחרונים",
   "Evidence at a glance": "סקירת ראיות",
   "View all": "הצגת הכול",
   "Open case": "פתיחת התיק",
