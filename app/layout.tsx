@@ -5,12 +5,12 @@ import { defaultLocale, directionForLocale, isLocale } from "../lib/i18n";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ShadowScore | Business Due Diligence & Risk Intelligence",
+  title: "ShadowScore | Trust Intelligence",
   description:
     "Business due diligence and risk intelligence powered by AI-assisted evidence analysis, relationship mapping, and source-backed recommendations.",
   metadataBase: new URL("https://shadowscore.io"),
   openGraph: {
-    title: "ShadowScore | Business Due Diligence & Risk Intelligence",
+    title: "ShadowScore | Trust Intelligence",
     description:
       "Business due diligence and risk intelligence with AI-assisted evidence analysis, relationship mapping, and a recorded source trail.",
     url: "https://shadowscore.io",
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "ShadowScore | Business Due Diligence & Risk Intelligence",
+    title: "ShadowScore | Trust Intelligence",
     description:
       "Business due diligence and risk intelligence powered by AI-assisted evidence analysis and relationship mapping.",
     images: ["/marketplaces-monitor-enterprise-v5.png"],
@@ -40,7 +40,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const locale = isLocale(localeCookie) ? localeCookie : defaultLocale;
   return (
     <html lang={locale} dir={directionForLocale(locale)}>
-      <body><LocaleProvider locale={locale}>{children}</LocaleProvider></body>
+      <body><LocaleProvider locale={locale}>{children}</LocaleProvider><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@graph": [{ "@type": "Organization", name: "ShadowScore", url: "https://shadowscore.io", logo: "https://shadowscore.io/shadowscore-shield-v8.png", description: "Trust intelligence for source-backed business verification, due diligence, and vendor risk assessment." }, { "@type": "WebSite", name: "ShadowScore", url: "https://shadowscore.io", description: "Business verification and risk intelligence platform." }] }) }} /></body>
     </html>
   );
 }
