@@ -5,14 +5,14 @@ import { defaultLocale, directionForLocale, isLocale } from "../lib/i18n";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ShadowScore | Trust Intelligence",
+  title: "ShadowScore | Business Due Diligence and Company Verification",
   description:
-    "Business due diligence and risk intelligence powered by AI-assisted evidence analysis, relationship mapping, and source-backed recommendations.",
+    "Verify companies, suppliers, sellers, partners, and investment opportunities with source-backed business identity, risk, relationship, and evidence intelligence.",
   metadataBase: new URL("https://shadowscore.io"),
   openGraph: {
-    title: "ShadowScore | Trust Intelligence",
+    title: "ShadowScore | Business Due Diligence and Company Verification",
     description:
-      "Business due diligence and risk intelligence with AI-assisted evidence analysis, relationship mapping, and a recorded source trail.",
+      "Verify companies, suppliers, sellers, partners, and investment opportunities with source-backed business identity, risk, relationship, and evidence intelligence.",
     url: "https://shadowscore.io",
     siteName: "ShadowScore",
     images: [
@@ -23,9 +23,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "ShadowScore | Trust Intelligence",
+    title: "ShadowScore | Business Due Diligence and Company Verification",
     description:
-      "Business due diligence and risk intelligence powered by AI-assisted evidence analysis and relationship mapping.",
+      "Verify companies, suppliers, sellers, partners, and investment opportunities with source-backed business identity, risk, relationship, and evidence intelligence.",
     images: ["/marketplaces-monitor-enterprise-v5.png"],
   },
   icons: {

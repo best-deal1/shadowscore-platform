@@ -1,0 +1,5 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { pageMetadata } from "../../lib/seo";
+export const metadata: Metadata = { ...pageMetadata({ title: "ShadowScore | דוגמת דוח מידע עסקי", description: "דוגמת דוח מידע עסקי ובדיקת נאותות עם החלטה, סיכון, ראיות ופעולות מומלצות.", path: "/he/sample-report" }), alternates: { canonical: "/he/sample-report", languages: { en: "/sample-report", he: "/he/sample-report" } } };
+export default function HebrewSample() { return <main dir="rtl" className="min-h-screen bg-[#07111f] px-6 py-20 text-slate-100"><article className="mx-auto max-w-4xl rounded-3xl border border-white/10 bg-white/[.03] p-8"><p className="inline-flex rounded-full bg-amber-300 px-3 py-1 text-xs font-bold text-slate-950">נתוני הדגמה</p><h1 className="mt-6 text-4xl font-black">דוגמת דוח מידע עסקי</h1><p className="mt-5 text-lg leading-8 text-slate-300">הדוגמה מציגה החלטה, רמת סיכון, רמת ודאות, כיסוי ראיות, סתירות ופעולות מומלצות. היא אינה חקירה פעילה.</p><Link href="/intake" className="mt-8 inline-flex rounded-full bg-sky-400 px-6 py-3 font-bold text-slate-950">התחלת בדיקת נאותות</Link></article></main>; }
