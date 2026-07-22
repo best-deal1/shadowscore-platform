@@ -25,17 +25,26 @@ const seededInvestigations = [
   createPreviewInvestigation({ investigationId: "inv-harborline", target: "Harborline Components", userId: "maya-chen", createdAt: "2026-07-20T09:00:00.000Z" }),
 ];
 
-class MemoryInvestigationRepository implements InvestigationRepository {
-  private records = seededInvestigations;
+type InvestigationStore = typeof globalThis & { __shadowScoreInvestigations?: Investigation[] };
 
-  async list() { return [...this.records].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)); }
+function records() {
+  const store = globalThis as InvestigationStore;
+  return store.__shadowScoreInvestigations ?? (store.__shadowScoreInvestigations = seededInvestigations);
+}
+
+function replaceRecords(nextRecords: Investigation[]) {
+  (globalThis as InvestigationStore).__shadowScoreInvestigations = nextRecords;
+}
+
+class MemoryInvestigationRepository implements InvestigationRepository {
+  async list() { return [...records()].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)); }
   async create(seed: InvestigationSeed) {
     const record = createPreviewInvestigation(seed);
-    this.records = [record, ...this.records];
+    replaceRecords([record, ...records()]);
     return record;
   }
   async save(investigation: Investigation) {
-    this.records = this.records.map((record) => record.investigationId === investigation.investigationId ? investigation : record);
+    replaceRecords(records().map((record) => record.investigationId === investigation.investigationId ? investigation : record));
     return investigation;
   }
 }
