@@ -1,9 +1,5 @@
 import type { Metadata } from "next";
-import { pageMetadata } from "./lib/seo";
-import HomeClient from "./HomeClient";
-
-export const metadata: Metadata = pageMetadata({ title: "ShadowScore | Trust Intelligence and Business Verification", description: "ShadowScore provides source-backed business verification, due diligence, vendor risk assessment, fraud detection, and continuous monitoring.", path: "/" });
-
-export default function Home() {
-  return <HomeClient />;
-}
+import MarketingHome from "./components/MarketingHome";
+import { siteUrl } from "./lib/marketing";
+export const metadata: Metadata = { title: "ShadowScore | Business Due Diligence and Company Verification", description: "Verify companies, suppliers, sellers, partners, and investment opportunities with source-backed business identity, risk, relationship, and evidence intelligence.", alternates: { canonical: "/", languages: { en: "/", he: "/he", "x-default": "/" } }, openGraph: { title: "ShadowScore | Business Due Diligence and Company Verification", description: "Verify companies, suppliers, sellers, partners, and investment opportunities with source-backed business identity, risk, relationship, and evidence intelligence.", url: siteUrl, type: "website" }, twitter: { card: "summary_large_image", title: "ShadowScore | Business Due Diligence and Company Verification", description: "Verify companies, suppliers, sellers, partners, and investment opportunities with source-backed business identity, risk, relationship, and evidence intelligence." } };
+export default function Home() { return <MarketingHome />; }

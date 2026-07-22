@@ -16,13 +16,13 @@ import {
 import { getCurrentUser, type ShadowScoreUser } from "../lib/auth";
 
 const primaryNav = [
-  { href: "/dashboard", label: "Dashboard", key: "dashboard" },
-  { href: "/investigations", label: "Investigations", key: "investigations" },
-  { href: "/reports", label: "Reports", key: "reports" },
-  { href: "/monitoring", label: "Monitoring", key: "monitoring" },
-  { href: "/upgrade", label: "Plans", key: "plans" },
-  { href: "/workspace", label: "Workspace", key: "workspace" },
-  { href: "/account", label: "Account", key: "account" },
+  { href: "/business-due-diligence", label: "Product" },
+  { href: "/supplier-verification", label: "Solutions" },
+  { href: "/sample-report", label: "Sample report" },
+  { href: "/methodology", label: "Methodology" },
+  { href: "/company-check", label: "Company checks" },
+  { href: "/upgrade", label: "Pricing" },
+  { href: "/security", label: "Security" },
 ];
 
 const mobilePublicNav = [
@@ -121,7 +121,7 @@ export default function ShadowScoreLayout({
                 className={linkClass(pathname === item.href)}
                 aria-current={pathname === item.href ? "page" : undefined}
               >
-                {t.nav[item.key as keyof typeof t.nav] || item.label}
+                {item.label}
               </Link>
             ))}
           </nav>
@@ -222,9 +222,7 @@ export default function ShadowScoreLayout({
                   className={linkClass(pathname === item.href)}
                   aria-current={pathname === item.href ? "page" : undefined}
                 >
-                  {"key" in item
-                    ? t.nav[item.key as keyof typeof t.nav]
-                    : item.label}
+                  {item.label}
                 </Link>
               ))}
             </div>
