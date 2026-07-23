@@ -1,50 +1,12 @@
+"use client";
+import { useEffect, useState } from "react";
 import type { Locale } from "@/lib/i18n";
+import { getCurrentSession } from "@/lib/auth";
 import type { CasePriority, CaseQueueItemDto, CaseStatus } from "@/lib/workspace/domain";
 import { workspaceCopy } from "./locale";
-
-const statusLabels: Record<Locale, Record<CaseStatus, string>> = {
-  en: { draft: "Draft", active: "Active", awaiting_input: "Awaiting input", under_review: "Under review", monitoring: "Monitoring", closed: "Closed", archived: "Archived" },
-  he: { draft: "טיוטה", active: "פעיל", awaiting_input: "ממתין למידע", under_review: "בסקירה", monitoring: "בניטור", closed: "סגור", archived: "בארכיון" },
-  ar: { draft: "مسودة", active: "نشطة", awaiting_input: "بانتظار معلومات", under_review: "قيد المراجعة", monitoring: "تحت المراقبة", closed: "مغلقة", archived: "مؤرشفة" },
-  es: { draft: "Borrador", active: "Activo", awaiting_input: "En espera de información", under_review: "En revisión", monitoring: "En monitoreo", closed: "Cerrado", archived: "Archivado" },
-  fr: { draft: "Brouillon", active: "Actif", awaiting_input: "En attente d’informations", under_review: "En revue", monitoring: "Sous surveillance", closed: "Fermé", archived: "Archivé" },
-  de: { draft: "Entwurf", active: "Aktiv", awaiting_input: "Warten auf Informationen", under_review: "In Prüfung", monitoring: "In Überwachung", closed: "Geschlossen", archived: "Archiviert" },
-};
-const priorityLabels: Record<Locale, Record<CasePriority, string>> = {
-  en: { low: "Low", normal: "Normal", high: "High", critical: "Critical" }, he: { low: "נמוכה", normal: "רגילה", high: "גבוהה", critical: "קריטית" }, ar: { low: "منخفضة", normal: "عادية", high: "مرتفعة", critical: "حرجة" }, es: { low: "Baja", normal: "Normal", high: "Alta", critical: "Crítica" }, fr: { low: "Faible", normal: "Normale", high: "Haute", critical: "Critique" }, de: { low: "Niedrig", normal: "Normal", high: "Hoch", critical: "Kritisch" },
-};
-
-function formatDate(value: string | null, locale: Locale, fallback: string) {
-  if (!value) return fallback;
-  return new Intl.DateTimeFormat(locale, { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }).format(new Date(value));
-}
-
-export function CaseQueue({ cases, locale }: { cases: readonly CaseQueueItemDto[]; locale: Locale }) {
-  const copy = workspaceCopy[locale];
-  return (
-    <section className="case-queue" aria-labelledby="case-queue-title">
-      <div className="case-queue-heading">
-        <div>
-          <p className="workspace-eyebrow">{copy.queueEyebrow}</p>
-          <h1 id="case-queue-title">{copy.queueTitle}</h1>
-          <p className="case-queue-description">{copy.queueDescription}</p>
-        </div>
-      </div>
-      <div className="case-queue-summary"><strong>{cases.length}</strong> {copy.casesCount}</div>
-      <div className="case-table-wrap">
-        <table className="case-table">
-          <caption className="sr-only">{copy.queueTitle}</caption>
-          <thead><tr><th scope="col">{copy.case}</th><th scope="col">{copy.priority}</th><th scope="col">{copy.owner}</th><th scope="col">{copy.due}</th><th scope="col">{copy.alertsLabel}</th><th scope="col">{copy.updated}</th></tr></thead>
-          <tbody>{cases.map((item) => <tr key={item.id}>
-            <th scope="row"><span className="case-title">{item.title}</span><span className="case-target">{item.target}</span><span className={`case-status case-status-${item.status}`}>{statusLabels[locale][item.status]}</span></th>
-            <td><span className={`case-priority case-priority-${item.priority}`}>{priorityLabels[locale][item.priority]}</span></td>
-            <td>{item.ownerName ?? copy.unassigned}</td>
-            <td>{formatDate(item.dueAt, locale, copy.noDueDate)}</td>
-            <td>{item.openAlertCount > 0 ? <span className="case-alert-count"><span aria-hidden="true">!</span> {item.openAlertCount}</span> : "—"}</td>
-            <td>{formatDate(item.updatedAt, locale, copy.noDueDate)}</td>
-          </tr>)}</tbody>
-        </table>
-      </div>
-    </section>
-  );
-}
+const statuses:CaseStatus[]=["draft","active","awaiting_input","under_review","monitoring","closed","archived"]; const priorities:CasePriority[]=["low","normal","high","critical"];
+function formatDate(v:string|null,l:Locale,f:string){return v?new Intl.DateTimeFormat(l,{month:"short",day:"numeric",year:"numeric",timeZone:"UTC"}).format(new Date(v)):f;}
+export function CaseQueue({locale}:{locale:Locale}){const copy=workspaceCopy[locale], [cases,setCases]=useState<CaseQueueItemDto[]>([]),[state,setState]=useState<"loading"|"ready"|"error"|"denied">("loading"),[query,setQuery]=useState(""),[status,setStatus]=useState(""),[cursor,setCursor]=useState<string|null>(null),[next,setNext]=useState<string|null>(null),[create,setCreate]=useState(false),[message,setMessage]=useState("");
+ const load=async(reset=true)=>{setState("loading");const session=getCurrentSession();if(!session?.accessToken){setState("denied");return;}const p=new URLSearchParams({limit:"25"});if(query)p.set("query",query);if(status)p.set("status",status);if(!reset&&cursor)p.set("cursor",cursor);const r=await fetch(`/api/cases?${p}`,{headers:{Authorization:`Bearer ${session.accessToken}`}});if(r.status===403||r.status===401){setState("denied");return;}if(!r.ok){setState("error");return;}const d=await r.json();setCases(reset?d.cases:[...cases,...d.cases]);setNext(d.nextCursor);setCursor(d.nextCursor);setState("ready");}; useEffect(()=>{const timer=setTimeout(()=>{void load(true);},0);return()=>clearTimeout(timer);},[]); // eslint-disable-line react-hooks/exhaustive-deps
+ const submit=async(form:HTMLFormElement)=>{const session=getCurrentSession();if(!session?.accessToken)return;const fd=new FormData(form);const r=await fetch("/api/cases",{method:"POST",headers:{Authorization:`Bearer ${session.accessToken}`,"Content-Type":"application/json","Idempotency-Key":crypto.randomUUID()},body:JSON.stringify({title:fd.get("title"),investigationId:fd.get("investigationId"),priority:fd.get("priority"),ownerId:fd.get("ownerId")||undefined,dueAt:fd.get("dueAt")?new Date(String(fd.get("dueAt"))).toISOString():undefined})});if(!r.ok){setMessage("The case could not be created. Check the required fields and try again.");return;}setCreate(false);setMessage("Case created.");void load(true);};
+ return <section className="case-queue" aria-labelledby="case-queue-title"><div className="case-queue-heading"><div><p className="workspace-eyebrow">{copy.queueEyebrow}</p><h1 id="case-queue-title">{copy.queueTitle}</h1><p className="case-queue-description">{copy.queueDescription}</p></div><button className="workspace-primary-button" onClick={()=>setCreate(true)}>{copy.newCase}</button></div><form className="mt-5 flex flex-wrap gap-3" onSubmit={e=>{e.preventDefault();void load(true);}}><label>Search <input value={query} onChange={e=>setQuery(e.target.value)} className="border p-2" /></label><label>Status <select value={status} onChange={e=>setStatus(e.target.value)} className="border p-2"><option value="">All</option>{statuses.map(x=><option key={x}>{x}</option>)}</select></label><button className="border px-3" type="submit">Apply filters</button></form>{message&&<p role="status">{message}</p>}{state==="loading"?<p role="status">Loading cases…</p>:state==="denied"?<p role="alert">You do not have access to this workspace.</p>:state==="error"?<p role="alert">Cases could not be loaded. Try again.</p>:<><div className="case-queue-summary"><strong>{cases.length}</strong> {copy.casesCount}</div>{cases.length===0?<p>{query||status?"No cases match these filters.":"No cases have been created yet."}</p>:<div className="case-table-wrap"><table className="case-table"><caption className="sr-only">{copy.queueTitle}</caption><thead><tr><th>{copy.case}</th><th>{copy.priority}</th><th>{copy.owner}</th><th>{copy.due}</th><th>{copy.updated}</th></tr></thead><tbody>{cases.map(i=><tr key={i.id}><th><span className="case-title">{i.title}</span><span className="case-target">{i.target}</span><span className={`case-status case-status-${i.status}`}>{i.status}</span></th><td>{i.priority}</td><td>{i.ownerName??copy.unassigned}</td><td>{formatDate(i.dueAt,locale,copy.noDueDate)}</td><td>{formatDate(i.updatedAt,locale,copy.noDueDate)}</td></tr>)}</tbody></table></div>}{next&&<button className="border px-3 py-2" onClick={()=>void load(false)}>Load more</button>}</>}{create&&<div role="dialog" aria-modal="true" aria-labelledby="new-case-title" className="mt-5 border bg-white p-5"><h2 id="new-case-title">{copy.newCase}</h2><form onSubmit={e=>{e.preventDefault();void submit(e.currentTarget);}} className="grid gap-3"><label>Title <input required name="title" maxLength={240} /></label><label>Investigation ID or intake reference <input required name="investigationId" maxLength={240} /></label><label>Priority <select name="priority" defaultValue="normal">{priorities.map(x=><option key={x}>{x}</option>)}</select></label><label>Owner <input name="ownerId" /></label><label>Due date <input name="dueAt" type="date" /></label><div><button className="workspace-primary-button">Create case</button><button type="button" className="ml-3" onClick={()=>setCreate(false)}>Cancel</button></div></form></div>}</section>}
