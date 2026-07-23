@@ -92,9 +92,9 @@ export default function IntakePage() {
               </div>
             </div>
 
-            <a href="/analysis" className="mt-6 block rounded-2xl bg-red-600 px-7 py-5 text-center text-sm font-black uppercase tracking-[0.16em] shadow-[0_0_28px_rgba(220,38,38,0.28)] hover:bg-red-500">
+            <Link href="/analysis" className="mt-6 block rounded-2xl bg-red-600 px-7 py-5 text-center text-sm font-black uppercase tracking-[0.16em] shadow-[0_0_28px_rgba(220,38,38,0.28)] hover:bg-red-500">
               Start Analysis
-            </a>
+            </Link>
           </div>
         </div>
       </section>

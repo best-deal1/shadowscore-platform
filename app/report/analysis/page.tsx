@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 const signals = [
   {
     name: "Tracking Integrity",
@@ -38,16 +40,16 @@ export default function AnalysisPage() {
     <main className="min-h-screen bg-black px-6 py-10 text-white">
       <div className="mx-auto max-w-7xl">
         <div className="flex items-center justify-between">
-          <a href="/intake" className="text-sm text-zinc-500 transition hover:text-white">
+          <Link href="/intake" className="text-sm text-zinc-500 transition hover:text-white">
             ← Back to Intake
-          </a>
+          </Link>
 
-          <a
+          <Link
             href="/report"
             className="rounded-2xl bg-red-600 px-5 py-3 text-sm font-semibold transition hover:bg-red-500"
           >
             Generate Intelligence Report
-          </a>
+          </Link>
         </div>
 
         <section className="mt-12">

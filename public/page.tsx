@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
 const WHATSAPP_NUMBER = "972557293979";
@@ -164,7 +165,7 @@ I would like to begin a private ShadowScore review.`;
             <a href="#coverage" className="hover:text-white">Coverage</a>
             <a href="#cases" className="hover:text-white">Cases</a>
             <a href="#pricing" className="hover:text-white">Pricing</a>
-            <a href="/intake" className="text-red-300 hover:text-red-200">Console</a>
+            <Link href="/intake" className="text-red-300 hover:text-red-200">Console</Link>
           </nav>
 
           <button onClick={() => openWhatsApp(selectedPlan)} className="rounded-xl bg-red-600 px-5 py-3 text-sm font-bold shadow-[0_0_26px_rgba(220,38,38,0.35)] hover:bg-red-500">
