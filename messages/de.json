@@ -1,0 +1,17 @@
+{
+  "marketing": {
+    "title": "Unternehmensprüfung | ShadowScore",
+    "description": "Quellenbasierte Unternehmensprüfung für Entscheidungen zu Unternehmen, Lieferanten und Partnern.",
+    "eyebrow": "Unternehmensprüfung",
+    "intro": "Prüfen Sie Unternehmensidentität, Quellen, Beziehungen und Beweislücken vor einer geschäftlichen Entscheidung.",
+    "cta": "Prüfung starten",
+    "sample": "Beispielbericht ansehen",
+    "breadcrumb": "ShadowScore",
+    "related": "Ähnliche Prüfungen entdecken",
+    "faq": "Häufige Fragen",
+    "next": "Nächsten Schritt klären",
+    "notice": "ShadowScore liefert unabhängige Informationen zu Geschäftsidentität und Risiko. Fehlende Nachweise werden als Lücke erfasst.",
+    "home": "Startseite",
+    "language": "Sprache"
+  }
+}

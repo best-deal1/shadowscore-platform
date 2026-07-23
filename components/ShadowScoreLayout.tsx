@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { useLocale } from "./LocaleProvider";
-import { localeNames, locales, type Locale } from "../lib/i18n";
+import { localeNames, type Locale } from "../lib/i18n";
+import { localizedPath, supportedLocales, type SupportedLocale } from "../lib/i18n/localization";
 import {
   CONTACT_EMAIL,
   SUPPORT_EMAIL,
@@ -50,6 +51,8 @@ export default function ShadowScoreLayout({
   children: ReactNode;
 }) {
   const pathname = usePathname() || "/";
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { locale, t } = useLocale();
   const footerGroups = [
     {
@@ -78,14 +81,17 @@ export default function ShadowScoreLayout({
       ],
     },
   ];
-  const setLocale = async (next: Locale) => {
+  const setLocale = async (next: Locale | SupportedLocale) => {
     if (next === locale) return;
     await fetch("/api/locale", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ locale: next }),
     });
-    window.location.reload();
+    const destination = localizedPath(pathname, next as SupportedLocale);
+    const query = searchParams.toString();
+    router.push(query ? `${destination}?${query}` : destination);
+    router.refresh();
   };
   const [menuOpen, setMenuOpen] = useState(false);
   const [user] = useState<ShadowScoreUser | null>(() => getCurrentUser());
@@ -137,9 +143,9 @@ export default function ShadowScoreLayout({
               onChange={(event) => void setLocale(event.target.value as Locale)}
               className="rounded-full border border-white/15 bg-black px-3 py-2 text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-red-300"
             >
-              {locales.map((item) => (
+              {supportedLocales.map((item) => (
                 <option key={item} value={item}>
-                  {localeNames[item]}
+                  {localeNames[item as Locale] ?? item}
                 </option>
               ))}
             </select>
@@ -191,9 +197,9 @@ export default function ShadowScoreLayout({
                 }
                 className="min-h-12 rounded-xl border border-white/15 bg-black px-4 py-3 text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-red-300"
               >
-                {locales.map((item) => (
+                {supportedLocales.map((item) => (
                   <option key={item} value={item}>
-                    {localeNames[item]}
+                    {localeNames[item as Locale] ?? item}
                   </option>
                 ))}
               </select>
