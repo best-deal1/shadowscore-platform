@@ -1,5 +1,4 @@
-import { cookies } from "next/headers";
-import { defaultLocale, isLocale, type Locale } from "@/lib/i18n";
+import type { Locale } from "@/lib/i18n";
 
 export const workspaceCopy: Record<Locale, {
   productName: string; workspace: string; cases: string; alerts: string; monitoring: string; evidence: string; timeline: string; skipToContent: string;
@@ -12,9 +11,3 @@ export const workspaceCopy: Record<Locale, {
   fr: { productName: "ShadowScore", workspace: "Espace de travail", cases: "Dossiers", alerts: "Alertes", monitoring: "Surveillance", evidence: "Éléments", timeline: "Chronologie", skipToContent: "Aller au contenu", queueEyebrow: "File des dossiers", queueTitle: "Dossiers actifs", queueDescription: "Examinez les enquêtes en cours et leurs prochaines actions.", newCase: "Nouveau dossier", casesCount: "dossiers", case: "Dossier", priority: "Priorité", owner: "Responsable", due: "Échéance", alertsLabel: "Alertes ouvertes", updated: "Mis à jour", unassigned: "Non attribué", noDueDate: "Aucune échéance" },
   de: { productName: "ShadowScore", workspace: "Arbeitsbereich", cases: "Fälle", alerts: "Warnungen", monitoring: "Überwachung", evidence: "Belege", timeline: "Zeitleiste", skipToContent: "Zum Inhalt springen", queueEyebrow: "Fallwarteschlange", queueTitle: "Aktive Fälle", queueDescription: "Prüfen Sie aktuelle Untersuchungen und ihre nächsten Schritte.", newCase: "Neuer Fall", casesCount: "Fälle", case: "Fall", priority: "Priorität", owner: "Verantwortlich", due: "Fällig", alertsLabel: "Offene Warnungen", updated: "Aktualisiert", unassigned: "Nicht zugewiesen", noDueDate: "Kein Fälligkeitsdatum" },
 };
-
-export async function getWorkspaceLocale() {
-  const localeCookie = (await cookies()).get("shadowscore_locale")?.value;
-  const locale = isLocale(localeCookie) ? localeCookie : defaultLocale;
-  return { locale, copy: workspaceCopy[locale] };
-}

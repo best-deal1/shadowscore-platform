@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Locale } from "@/lib/i18n";
-import { workspaceCopy } from "./locale";
+import { workspaceCopy } from "./workspace-copy";
 
 const navItems = [
   { key: "cases", href: "/workspace", icon: "▣" },
