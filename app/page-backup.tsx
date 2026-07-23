@@ -216,7 +216,7 @@ I would like to begin a private ShadowScore review.`;
             <a href="#pricing" className="transition hover:text-white">Pricing</a>
             <a href={TIKTOK_URL} target="_blank" rel="noreferrer" className="transition hover:text-white">TikTok</a>
             <a href="#exposure" className="transition hover:text-white">Exposure</a>
-            <a href="/intake" className="text-red-300 transition hover:text-red-200">Console</a>
+            <Link href="/intake" className="text-red-300 transition hover:text-red-200">Console</Link>
             
             
           </nav>
@@ -519,9 +519,9 @@ I would like to begin a private ShadowScore review.`;
                 ShadowScore can help sellers assess evidence readiness, organize marketplace documentation and understand likely exposure areas. Where relevant, qualified sellers may be introduced to independent consultants. Results are never guaranteed.
               </p>
             </div>
-            <a href="/intake" className="rounded-2xl bg-red-600 px-7 py-4 text-center font-bold hover:bg-red-500">
+            <Link href="/intake" className="rounded-2xl bg-red-600 px-7 py-4 text-center font-bold hover:bg-red-500">
               Check Exposure Readiness
-            </a>
+            </Link>
           </div>
         </div>
       </section>
@@ -706,12 +706,12 @@ I would like to begin a private ShadowScore review.`;
               </p>
             </div>
 
-            <a
+            <Link
               href="/intake"
               className="rounded-2xl bg-red-600 px-7 py-4 text-center font-semibold transition hover:bg-red-500"
             >
               Enter Console
-            </a>
+            </Link>
           </div>
         </div>
       </section>
@@ -809,10 +809,10 @@ I would like to begin a private ShadowScore review.`;
         <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-6">
           <div className="text-sm uppercase tracking-[0.28em] text-red-300">Legal & Trust</div>
           <div className="mt-5 flex flex-wrap gap-5 text-sm text-zinc-400">
-            <a href="/about" className="hover:text-white">About</a>
-            <a href="/privacy" className="hover:text-white">Privacy Policy</a>
-            <a href="/terms" className="hover:text-white">Terms of Service</a>
-            <a href="/security" className="hover:text-white">Security & Data Handling</a>
+            <Link href="/about" className="hover:text-white">About</Link>
+            <Link href="/privacy" className="hover:text-white">Privacy Policy</Link>
+            <Link href="/terms" className="hover:text-white">Terms of Service</Link>
+            <Link href="/security" className="hover:text-white">Security & Data Handling</Link>
             <a href="https://www.tiktok.com/@shadowscore8" target="_blank" rel="noreferrer" className="hover:text-white">TikTok</a>
           </div>
           <p className="mt-5 max-w-4xl text-sm leading-7 text-zinc-500">
