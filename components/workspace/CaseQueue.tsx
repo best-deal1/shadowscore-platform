@@ -1,6 +1,8 @@
+"use client";
+
 import type { Locale } from "@/lib/i18n";
 import type { CasePriority, CaseQueueItemDto, CaseStatus } from "@/lib/workspace/domain";
-import { workspaceCopy } from "./locale";
+import { workspaceCopy } from "./workspace-copy";
 
 const statusLabels: Record<Locale, Record<CaseStatus, string>> = {
   en: { draft: "Draft", active: "Active", awaiting_input: "Awaiting input", under_review: "Under review", monitoring: "Monitoring", closed: "Closed", archived: "Archived" },
