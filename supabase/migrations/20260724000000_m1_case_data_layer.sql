@@ -33,3 +33,36 @@ create table if not exists public.cases (
 
 create index if not exists cases_organization_updated_at_idx on public.cases (organization_id, updated_at desc);
 create index if not exists cases_organization_public_id_idx on public.cases (organization_id, public_id);
+
+-- Preserve archived rows from the prior schema while installing the workflow constraint.
+alter table public.cases drop constraint if exists cases_status_check;
+alter table public.cases add constraint cases_status_check check (
+  status in ('draft', 'active', 'awaiting_input', 'under_review', 'monitoring', 'closed', 'archived')
+);
+
+create or replace function public.enforce_case_workflow()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.status is distinct from old.status and not (
+    (old.status = 'draft' and new.status = 'active')
+    or (old.status = 'active' and new.status in ('awaiting_input', 'under_review'))
+    or (old.status = 'awaiting_input' and new.status = 'active')
+    or (old.status = 'under_review' and new.status in ('monitoring', 'closed'))
+    or (old.status = 'monitoring' and new.status in ('closed', 'archived'))
+    or (old.status = 'closed' and new.status = 'archived')
+  ) then
+    raise exception 'Invalid case status transition from % to %', old.status, new.status;
+  end if;
+
+  new.version := old.version + 1;
+  new.updated_at := now();
+  return new;
+end;
+$$;
+
+drop trigger if exists cases_workflow_before_update on public.cases;
+create trigger cases_workflow_before_update
+before update on public.cases
+for each row execute function public.enforce_case_workflow();

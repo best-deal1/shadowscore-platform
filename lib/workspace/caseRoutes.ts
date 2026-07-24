@@ -1,5 +1,5 @@
 import { resolveWorkspaceActor, WorkspaceAccessError, type SupabaseRequest } from "./actor.ts";
-import { CaseAccessError, CaseNotFoundError, CaseService, CaseValidationError, type CreateCaseInput, type UpdateCaseInput } from "./cases.ts";
+import { CaseAccessError, CaseConflictError, CaseNotFoundError, CaseService, CaseValidationError, type CreateCaseInput, type UpdateCaseInput } from "./cases.ts";
 import { CaseRepository } from "./caseRepository.ts";
 import { supabaseFetch } from "../supabase.ts";
 
@@ -9,6 +9,7 @@ const defaultDependencies: Dependencies = { resolveActor: (token) => resolveWork
 function errorResponse(error: unknown) {
   if (error instanceof WorkspaceAccessError || error instanceof CaseAccessError) return Response.json({ error: error.message }, { status: 401 });
   if (error instanceof CaseValidationError) return Response.json({ error: error.message }, { status: 400 });
+  if (error instanceof CaseConflictError) return Response.json({ error: error.message }, { status: 409 });
   if (error instanceof CaseNotFoundError) return Response.json({ error: error.message }, { status: 404 });
   return Response.json({ error: "Unable to process the case request." }, { status: 500 });
 }
