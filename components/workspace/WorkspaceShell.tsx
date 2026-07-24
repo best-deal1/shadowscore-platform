@@ -1,17 +1,15 @@
 import Link from "next/link";
 import type { Locale } from "@/lib/i18n";
+import type { WorkspaceActor } from "@/lib/workspace/actor";
 import { workspaceCopy } from "./workspace-copy";
+import { workspaceActorDisplayName } from "./actor-display";
 
-const navItems = [
-  { key: "cases", href: "/workspace", icon: "▣" },
-  { key: "alerts", href: "/alerts", icon: "!" },
-  { key: "monitoring", href: "/monitoring", icon: "◌" },
-  { key: "evidence", href: "/workspace#evidence", icon: "◇" },
-  { key: "timeline", href: "/workspace#timeline", icon: "↗" },
-] as const;
+const navItems = [{ key: "cases", href: "/workspace", icon: "▣" }] as const;
 
-export function WorkspaceShell({ children, locale }: { children: React.ReactNode; locale: Locale }) {
+export function WorkspaceShell({ children, locale, actor }: { children: React.ReactNode; locale: Locale; actor: WorkspaceActor }) {
   const copy = workspaceCopy[locale];
+  const accountName = workspaceActorDisplayName(actor);
+  const avatarInitial = accountName.slice(0, 1).toUpperCase();
   return (
     <div className="workspace-shell">
       <a className="workspace-skip-link" href="#workspace-content">{copy.skipToContent}</a>
@@ -22,8 +20,8 @@ export function WorkspaceShell({ children, locale }: { children: React.ReactNode
         </Link>
         <p className="workspace-context">{copy.workspace}</p>
         <div className="workspace-account">
-          <span className="workspace-avatar" aria-hidden="true">A</span>
-          <span className="workspace-account-name">Analyst</span>
+          <span className="workspace-avatar" aria-hidden="true">{avatarInitial}</span>
+          <span className="workspace-account-name">{accountName}</span>
         </div>
       </header>
       <div className="workspace-frame">
@@ -32,7 +30,7 @@ export function WorkspaceShell({ children, locale }: { children: React.ReactNode
           <ul>
             {navItems.map((item) => (
               <li key={item.key}>
-                <Link className={`workspace-nav-link${item.key === "cases" ? " is-current" : ""}`} href={item.href} aria-current={item.key === "cases" ? "page" : undefined}>
+                <Link className="workspace-nav-link is-current" href={item.href} aria-current="page">
                   <span aria-hidden="true" className="workspace-nav-icon">{item.icon}</span>
                   {copy[item.key]}
                 </Link>

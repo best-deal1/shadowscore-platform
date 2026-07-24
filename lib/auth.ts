@@ -20,9 +20,13 @@ function makeId(prefix: string) {
   return `${prefix}-${now}-${rand}`;
 }
 
-function persistSession(session: ShadowScoreSession) {
+async function persistSession(session: ShadowScoreSession) {
   if (typeof window === "undefined") return;
   window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+  if (session.accessToken) {
+    const response = await fetch("/api/auth/session", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ accessToken: session.accessToken }) });
+    if (!response.ok) throw new Error("Could not establish the workspace session.");
+  }
 }
 
 type SupabaseAuthResponse = {
@@ -58,7 +62,7 @@ export async function signupUser(name: string, email: string, password: string) 
       body: JSON.stringify({ email: cleanEmail, password: cleanPassword, data: { name: cleanName } }),
     });
     const session = toSession(auth, cleanName);
-    persistSession(session);
+    await persistSession(session);
     return getCurrentUserFromSession(session);
   }
 
@@ -66,7 +70,7 @@ export async function signupUser(name: string, email: string, password: string) 
   const now = new Date().toISOString();
   const user = { id: makeId("SSU"), name: cleanName, email: cleanEmail, password: cleanPassword, createdAt: now, lastLoginAt: now };
   devUsers.set(cleanEmail, user);
-  persistSession({ userId: user.id, email: user.email, name: user.name, startedAt: now });
+  await persistSession({ userId: user.id, email: user.email, name: user.name, startedAt: now });
   return user;
 }
 
@@ -80,7 +84,7 @@ export async function loginUser(email: string, password: string) {
       body: JSON.stringify({ email: cleanEmail, password: cleanPassword }),
     });
     const session = toSession(auth, cleanEmail);
-    persistSession(session);
+    await persistSession(session);
     return getCurrentUserFromSession(session);
   }
 
