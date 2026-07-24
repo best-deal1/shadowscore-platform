@@ -1,5 +1,17 @@
 import type { Metadata } from "next";
 import MarketingHome from "./components/MarketingHome";
 import { siteUrl } from "./lib/marketing";
-export const metadata: Metadata = { title: "ShadowScore | Business Due Diligence and Company Verification", description: "Verify companies, suppliers, sellers, partners, and investment opportunities with source-backed business identity, risk, relationship, and evidence intelligence.", alternates: { canonical: "/", languages: { en: "/", he: "/he", "x-default": "/" } }, openGraph: { title: "ShadowScore | Business Due Diligence and Company Verification", description: "Verify companies, suppliers, sellers, partners, and investment opportunities with source-backed business identity, risk, relationship, and evidence intelligence.", url: siteUrl, type: "website" }, twitter: { card: "summary_large_image", title: "ShadowScore | Business Due Diligence and Company Verification", description: "Verify companies, suppliers, sellers, partners, and investment opportunities with source-backed business identity, risk, relationship, and evidence intelligence." } };
-export default function Home() { return <MarketingHome />; }
+
+const description = "Organize business due diligence cases, review active investigations, and track each case's next action.";
+
+export const metadata: Metadata = {
+  title: "ShadowScore | Investigation Workspace",
+  description,
+  alternates: { canonical: "/", languages: { en: "/", he: "/he", "x-default": "/" } },
+  openGraph: { title: "ShadowScore | Investigation Workspace", description, url: siteUrl, type: "website" },
+  twitter: { card: "summary_large_image", title: "ShadowScore | Investigation Workspace", description },
+};
+
+export default function Home() {
+  return <MarketingHome />;
+}
