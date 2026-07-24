@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { directionForLocale, getDictionary, locales, localizeReportText, publicPages } from "../lib/i18n/index.ts";
+import { catalogLocales, directionForLocale, getDictionary, locales, localizeReportText, publicPages } from "../lib/i18n/index.ts";
 
 function assertCompleteDictionary(dictionary, canonical, path = "") {
   if (path === "legal.terms.sections" || path === "legal.privacy.sections") {
@@ -22,7 +22,9 @@ function assertCompleteDictionary(dictionary, canonical, path = "") {
 }
 
 const english = getDictionary("en");
-for (const locale of locales) {
+assert.deepEqual(locales, ["en"], "English must be the only configured UI locale");
+
+for (const locale of catalogLocales) {
   const dictionary = getDictionary(locale);
   assertCompleteDictionary(dictionary, english);
   assert.equal(directionForLocale(locale), ["he", "ar"].includes(locale) ? "rtl" : "ltr");
@@ -35,7 +37,7 @@ for (const locale of locales) {
     }
   }
 }
-for (const locale of locales) {
+for (const locale of catalogLocales) {
   const page = publicPages[locale];
   assert.equal(page.plans.unlocks.length, publicPages.en.plans.unlocks.length, `${locale}.plans.unlocks must retain every plan feature`);
   assert.ok(Object.values(page.about).every((value) => value.trim().length > 0), `${locale}.about must contain copy`);
@@ -44,7 +46,7 @@ for (const locale of locales) {
 for (const locale of ["ar", "es", "fr", "de"])
   assert.notDeepEqual(publicPages[locale], publicPages.he, `${locale} must not reuse Hebrew public-page translations`);
 const canonical = { evidenceId: "ev-1", decision: "REVIEW", score: "needs_review", source: "rdap.org", observedAt: "2026-07-19T00:00:00Z" };
-for (const locale of locales) assert.deepEqual(canonical, { ...canonical }, `${locale} changed canonical content`);
+for (const locale of catalogLocales) assert.deepEqual(canonical, { ...canonical }, `${locale} changed canonical content`);
 
 const reportItems = [
   "Acme Ltd is presented as small business associated with acme.example.",
@@ -53,7 +55,7 @@ const reportItems = [
   "The main follow-up is to confirm the beneficial owner.",
   "Certificate issuer from TLS handshake",
 ];
-for (const locale of locales.filter((locale) => locale !== "en")) {
+for (const locale of catalogLocales.filter((locale) => locale !== "en")) {
   const localized = reportItems.map((item) => localizeReportText(item, locale));
   assert.equal(new Set(localized).size, reportItems.length, `${locale} must preserve each distinct report item`);
   assert.ok(localized.every((item) => item.trim().length > 0), `${locale} must not replace report content with placeholders`);
@@ -61,7 +63,7 @@ for (const locale of locales.filter((locale) => locale !== "en")) {
   assert.ok(localized[0].includes("Acme Ltd") && localized[0].includes("acme.example"), `${locale} must preserve report-specific facts`);
   assert.ok(localized[1].includes("company registration document") && localized[2].includes("account 1234"), `${locale} must preserve requested verification details`);
 }
-console.log(`Validated ${locales.length} complete locale dictionaries, RTL direction, canonical presentation boundaries, and semantic report item localization.`);
+console.log(`Validated ${catalogLocales.length} complete locale dictionaries, RTL direction, canonical presentation boundaries, and semantic report item localization.`);
 
 const userPages = (await import("../lib/i18n/index.ts")).userPageCopy;
 for (const pageName of ["security", "contact", "login", "signup", "example"]) {
@@ -71,7 +73,7 @@ console.log("Validated localized Hebrew copy for every public account, contact, 
 
 const { applicationCopy } = await import("../lib/i18n/index.ts");
 const applicationEnglish = applicationCopy.en;
-for (const locale of locales) {
+for (const locale of catalogLocales) {
   assertCompleteDictionary(applicationCopy[locale], applicationEnglish, `${locale}.applicationCopy`);
   if (locale !== "en") {
     for (const [sectionName, section] of Object.entries(applicationCopy[locale]))
