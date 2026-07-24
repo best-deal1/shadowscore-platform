@@ -95,6 +95,27 @@ export interface TimelineEvent {
   payload: Record<string, unknown>;
 }
 
+export type TimelineCategory = "all" | "case" | "evidence" | "finding" | "analyst" | "decision" | "monitoring" | "report";
+
+/** Safe activity data intended for the browser. It never includes raw provider output. */
+export interface TimelineEventDto {
+  id: string;
+  occurredAt: IsoTimestamp;
+  recordedAt: IsoTimestamp;
+  eventType: string;
+  category: Exclude<TimelineCategory, "all">;
+  actorType: TimelineEvent["actorType"];
+  actorId: string | null;
+  title: string;
+  detail: string | null;
+  referenceIds: readonly string[];
+}
+
+export interface TimelinePageDto {
+  events: readonly TimelineEventDto[];
+  nextCursor: string | null;
+}
+
 /** A browser-safe queue representation. It deliberately excludes raw evidence and provider output. */
 export interface CaseQueueItemDto {
   id: OpaqueCaseId;
