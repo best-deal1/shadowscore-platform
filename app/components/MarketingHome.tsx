@@ -74,7 +74,7 @@ export default function MarketingHome() {
               See an example report format.
             </h2>
             <p className="mt-4 leading-7 text-slate-300">
-              The sample report demonstrates a possible review format. It is not a live investigation or a description of workspace output.
+              The sample report demonstrates a possible review format. It does not represent a live investigation or actual ShadowScore report output.
             </p>
             <Link href="/sample-report" className="mt-7 inline-flex rounded-full border border-white/20 px-5 py-3 font-bold hover:bg-white/10">
               View illustrative sample
