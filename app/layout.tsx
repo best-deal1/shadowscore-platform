@@ -4,6 +4,25 @@ import { LocaleProvider } from "../components/LocaleProvider";
 import { defaultLocale, directionForLocale, isLocale } from "../lib/i18n";
 import "./globals.css";
 
+const organizationJsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      name: "ShadowScore",
+      url: "https://shadowscore.io",
+      logo: "https://shadowscore.io/shadowscore-shield-v8.png",
+      description: "Trust intelligence for source-backed business verification, due diligence, and vendor risk assessment.",
+    },
+    {
+      "@type": "WebSite",
+      name: "ShadowScore",
+      url: "https://shadowscore.io",
+      description: "Business verification and risk intelligence platform.",
+    },
+  ],
+};
+
 export const metadata: Metadata = {
   title: "ShadowScore | Business Due Diligence and Company Verification",
   description:
@@ -38,9 +57,18 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const localeCookie = (await cookies()).get("shadowscore_locale")?.value;
   const locale = isLocale(localeCookie) ? localeCookie : defaultLocale;
+
   return (
     <html lang={locale} dir={directionForLocale(locale)}>
-      <body><LocaleProvider locale={locale}>{children}</LocaleProvider><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@graph": [{ "@type": "Organization", name: "ShadowScore", url: "https://shadowscore.io", logo: "https://shadowscore.io/shadowscore-shield-v8.png", description: "Trust intelligence for source-backed business verification, due diligence, and vendor risk assessment." }, { "@type": "WebSite", name: "ShadowScore", url: "https://shadowscore.io", description: "Business verification and risk intelligence platform." }] }) }} /></body>
+      <body>
+        <LocaleProvider locale={locale}>{children}</LocaleProvider>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(organizationJsonLd).replace(/</g, "\\u003c"),
+          }}
+        />
+      </body>
     </html>
   );
 }
