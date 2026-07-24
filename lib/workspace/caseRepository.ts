@@ -30,9 +30,9 @@ export class CaseRepository implements CaseStore {
     const row = await this.request<CaseRow[]>("/rest/v1/cases", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({ organization_id: actor.organizationId, investigation_id: input.investigationId, title: input.title, priority: input.priority, due_at: input.dueAt ?? null, owner_id: actor.userId }) }, this.accessToken);
     return mapRow(row[0]);
   }
-  async update(actor: WorkspaceActor, publicId: string, input: UpdateCaseInput): Promise<Case | null> {
+  async update(actor: WorkspaceActor, publicId: string, input: UpdateCaseInput, expectedVersion: number): Promise<Case | null> {
     const payload = { ...(input.title === undefined ? {} : { title: input.title }), ...(input.priority === undefined ? {} : { priority: input.priority }), ...(input.dueAt === undefined ? {} : { due_at: input.dueAt }), ...(input.status === undefined ? {} : { status: input.status }) };
-    const rows = await this.request<CaseRow[]>(`/rest/v1/cases?public_id=eq.${encodeURIComponent(publicId)}&organization_id=eq.${encodeURIComponent(actor.organizationId)}`, { method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify(payload) }, this.accessToken);
+    const rows = await this.request<CaseRow[]>(`/rest/v1/cases?public_id=eq.${encodeURIComponent(publicId)}&organization_id=eq.${encodeURIComponent(actor.organizationId)}&version=eq.${expectedVersion}`, { method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify(payload) }, this.accessToken);
     return rows[0] ? mapRow(rows[0]) : null;
   }
 }
