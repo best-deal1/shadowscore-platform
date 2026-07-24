@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import MarketingHome from "./components/MarketingHome";
 import { siteUrl } from "./lib/marketing";
 
-const title = "ShadowScore | Investigation Workspace";
-const description = "Organize business due diligence cases, review active investigations, and track each case's next action.";
+const title = "ShadowScore | Business Due Diligence & Company Verification";
+const description = "Verify companies, suppliers, partners, marketplaces, and investment opportunities using source-backed business identity, risk, relationship, and evidence intelligence.";
 
 export const metadata: Metadata = {
   title,

@@ -24,12 +24,12 @@ const organizationJsonLd = {
 };
 
 export const metadata: Metadata = {
-  title: "ShadowScore | Business Due Diligence and Company Verification",
+  title: "ShadowScore | Business Due Diligence & Company Verification",
   description:
     "Verify companies, suppliers, sellers, partners, and investment opportunities with source-backed business identity, risk, relationship, and evidence intelligence.",
   metadataBase: new URL("https://shadowscore.io"),
   openGraph: {
-    title: "ShadowScore | Business Due Diligence and Company Verification",
+    title: "ShadowScore | Business Due Diligence & Company Verification",
     description:
       "Verify companies, suppliers, sellers, partners, and investment opportunities with source-backed business identity, risk, relationship, and evidence intelligence.",
     url: "https://shadowscore.io",
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "ShadowScore | Business Due Diligence and Company Verification",
+    title: "ShadowScore | Business Due Diligence & Company Verification",
     description:
       "Verify companies, suppliers, sellers, partners, and investment opportunities with source-backed business identity, risk, relationship, and evidence intelligence.",
     images: ["/marketplaces-monitor-enterprise-v5.png"],

@@ -8,20 +8,23 @@ export default function MarketingHome() {
         <section className="bg-[radial-gradient(circle_at_78%_10%,rgba(14,165,233,.22),transparent_30%),#07111f] px-6 py-24 sm:py-32">
           <div className="mx-auto max-w-6xl">
             <p className="text-xs font-bold uppercase tracking-[.24em] text-sky-300">
-              Investigation workspace
+              Business Due Diligence &amp; Company Verification
             </p>
-            <h1 className="mt-6 max-w-5xl text-5xl font-black tracking-tight sm:text-7xl">
-              Organize business due diligence cases.
+            <p className="mt-6 text-lg font-bold tracking-wide text-sky-100">
+              Know Before You Trust™
+            </p>
+            <h1 className="mt-3 max-w-5xl text-5xl font-black tracking-tight sm:text-7xl">
+              Make better business decisions with evidence.
             </h1>
             <p className="mt-7 max-w-3xl text-xl leading-8 text-slate-300">
-              Start a case, keep active investigations in one workspace, and review the next action for each case.
+              Verify companies, suppliers, partners, marketplaces, and investment opportunities using source-backed business identity, risk, relationship, and evidence intelligence.
             </p>
-            <div className="mt-10 flex flex-wrap gap-4" aria-label="Start a case or view a sample">
+            <div className="mt-10 flex flex-wrap gap-4" aria-label="Start a due diligence review or view a sample">
               <MarketingCta
                 event="hero_cta_clicked"
                 className="rounded-full bg-sky-400 px-7 py-4 font-bold text-slate-950 hover:bg-sky-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
               >
-                Start a case
+                Start a Due Diligence Review
               </MarketingCta>
               <Link
                 href="/sample-report"
@@ -37,24 +40,28 @@ export default function MarketingHome() {
           <div className="mx-auto max-w-6xl">
             <p className="text-xs font-bold uppercase tracking-[.22em] text-sky-300">Workflow</p>
             <h2 id="workflow-heading" className="mt-4 text-3xl font-bold">
-              Keep each investigation ready for review.
+              Follow a clear evidence-to-decision workflow.
             </h2>
-            <ol className="mt-8 grid gap-5 md:grid-cols-4">
+            <ol className="mt-8 grid gap-5 md:grid-cols-5">
               <li>
-                <h3 className="text-2xl font-bold">Start a case</h3>
-                <p className="mt-3 leading-7 text-slate-300">Enter the business or organization you want to review.</p>
+                <h3 className="text-2xl font-bold">Case</h3>
+                <p className="mt-3 leading-7 text-slate-300">Open a business due diligence review for the company or counterparty.</p>
               </li>
               <li>
-                <h3 className="text-2xl font-bold">Review the case</h3>
-                <p className="mt-3 leading-7 text-slate-300">View active cases and their next actions in one workspace.</p>
+                <h3 className="text-2xl font-bold">Evidence</h3>
+                <p className="mt-3 leading-7 text-slate-300">Review source-backed business identity, relationship, and risk evidence.</p>
               </li>
               <li>
-                <h3 className="text-2xl font-bold">Record progress</h3>
-                <p className="mt-3 leading-7 text-slate-300">Keep investigation notes and progress organized as information is gathered.</p>
+                <h3 className="text-2xl font-bold">Findings</h3>
+                <p className="mt-3 leading-7 text-slate-300">Document material findings and the evidence that supports them.</p>
               </li>
               <li>
-                <h3 className="text-2xl font-bold">Make your decision</h3>
-                <p className="mt-3 leading-7 text-slate-300">Use the case record to support your analyst review.</p>
+                <h3 className="text-2xl font-bold">Decision</h3>
+                <p className="mt-3 leading-7 text-slate-300">Record a decision supported by the case evidence and findings.</p>
+              </li>
+              <li>
+                <h3 className="text-2xl font-bold">Report</h3>
+                <p className="mt-3 leading-7 text-slate-300">Prepare a report for business stakeholders.</p>
               </li>
             </ol>
           </div>
