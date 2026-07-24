@@ -1,9 +1,11 @@
 import { CaseQueue } from "@/components/workspace/CaseQueue";
 import { getWorkspaceLocale } from "@/components/workspace/server-locale";
-import { placeholderCaseQueue } from "@/lib/workspace/placeholder-data";
+import { requireWorkspaceActor } from "@/lib/workspace/actor.server";
+import { listWorkspaceQueue } from "@/lib/workspace/queue.server";
 
 export default async function WorkspacePage() {
-  const locale = await getWorkspaceLocale();
+  const [actor, locale] = await Promise.all([requireWorkspaceActor(), getWorkspaceLocale()]);
+  const queue = await listWorkspaceQueue(actor);
 
-  return <CaseQueue cases={placeholderCaseQueue} locale={locale} />;
+  return <CaseQueue cases={queue.cases} locale={locale} />;
 }
