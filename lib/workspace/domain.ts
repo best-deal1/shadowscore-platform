@@ -27,6 +27,33 @@ export type TaskStatus =
 export type AlertState = "open" | "acknowledged" | "resolved" | "suppressed";
 export type AlertSeverity = "low" | "medium" | "high" | "critical";
 export type FindingKind = "positive" | "risk" | "contradiction" | "gap" | "analyst_note";
+export type FindingSeverity = "informational" | "low" | "medium" | "high" | "critical";
+export type FindingConfidence = "low" | "medium" | "high";
+
+export interface EvidenceItemSummary {
+  id: Uuid;
+  label: string;
+  source: string;
+  capturedAt: IsoTimestamp;
+}
+
+export interface Finding {
+  id: Uuid;
+  publicId: string;
+  caseId: Uuid;
+  organizationId: Uuid;
+  title: string;
+  narrative: string;
+  severity: FindingSeverity;
+  confidence: FindingConfidence;
+  tags: readonly string[];
+  evidence: readonly EvidenceItemSummary[];
+  version: number;
+  createdBy: Uuid;
+  updatedBy: Uuid;
+  createdAt: IsoTimestamp;
+  updatedAt: IsoTimestamp;
+}
 export type DecisionOutcome = "pass" | "proceed_with_verification" | "review" | "fail" | "no_decision";
 
 export interface Organization {

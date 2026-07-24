@@ -15,5 +15,5 @@ export default async function CaseDetailsPage({ params }: PageProps<"/cases/[cas
     if (error instanceof CaseNotFoundError) notFound();
     throw error;
   }
-  return <CaseDetailsWorkspace caseDetail={caseDetail} ownerName={actor.name} />;
+  return <CaseDetailsWorkspace caseDetail={caseDetail} ownerName={actor.name} canEdit={actor.role !== "viewer"} />;
 }
