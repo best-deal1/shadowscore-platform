@@ -5,12 +5,13 @@ import ShadowScoreLayout from "@/app/components/ShadowScoreLayout";
 import { useLocale } from "@/components/LocaleProvider";
 import type { CaseDto } from "@/lib/workspace/cases";
 import type { TimelineCategory, TimelineEventDto, TimelinePageDto } from "@/lib/workspace/domain";
+import { FindingsWorkspace } from "./FindingsWorkspace";
 
 type Tab = "overview" | "timeline" | "evidence" | "findings" | "decision" | "report";
 const tabs: { id: Tab; label: string }[] = [{ id: "overview", label: "Overview" }, { id: "timeline", label: "Timeline" }, { id: "evidence", label: "Evidence" }, { id: "findings", label: "Findings" }, { id: "decision", label: "Decision" }, { id: "report", label: "Report" }];
 const filters: { id: TimelineCategory; label: string }[] = [{ id: "all", label: "All" }, { id: "case", label: "Case" }, { id: "evidence", label: "Evidence" }, { id: "finding", label: "Findings" }, { id: "analyst", label: "Analyst" }, { id: "decision", label: "Decision" }, { id: "monitoring", label: "Monitoring" }, { id: "report", label: "Reports" }];
 
-export function CaseDetailsWorkspace({ caseDetail, ownerName }: { caseDetail: CaseDto; ownerName: string }) {
+export function CaseDetailsWorkspace({ caseDetail, ownerName, canEdit }: { caseDetail: CaseDto; ownerName: string; canEdit: boolean }) {
   const { locale } = useLocale();
   const [tab, setTab] = useState<Tab>("overview");
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -28,7 +29,7 @@ export function CaseDetailsWorkspace({ caseDetail, ownerName }: { caseDetail: Ca
       <dl className="mt-6 grid gap-x-6 gap-y-4 border-t border-white/10 pt-5 text-sm sm:grid-cols-2 lg:grid-cols-4"><Meta label={text("Owner")} value={ownerName || text("Unassigned")} /><Meta label={text("Due date")} value={caseDetail.dueAt ? exactDate(caseDetail.dueAt, locale) : text("No due date")} /><Meta label={text("Last updated")} value={relativeTime(caseDetail.updatedAt)} title={exactDate(caseDetail.updatedAt, locale)} /><Meta label={text("Case reference")} value={caseDetail.id} /><Meta label={text("Investigation type")} value={text("Business due diligence")} /></dl>
     </header>
     <div className="mt-5 overflow-x-auto border-b border-white/10"><div role="tablist" aria-label={text("Case sections")} className="flex min-w-max gap-1">{tabs.map((item, index) => <button key={item.id} ref={(node) => { tabRefs.current[index] = node; }} id={`${tabId}-${item.id}-tab`} role="tab" aria-selected={tab === item.id} aria-controls={`${tabId}-${item.id}-panel`} tabIndex={tab === item.id ? 0 : -1} onKeyDown={(event) => moveTab(event, index)} onClick={() => setTab(item.id)} className={`min-h-11 border-b-2 px-4 text-sm font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-sky-300 ${tab === item.id ? "border-sky-400 text-sky-200" : "border-transparent text-zinc-400 hover:text-zinc-100"}`}>{text(item.label)}</button>)}</div></div>
-    {tabs.map((item) => <section key={item.id} id={`${tabId}-${item.id}-panel`} role="tabpanel" aria-labelledby={`${tabId}-${item.id}-tab`} hidden={tab !== item.id} className="pt-6">{item.id === "timeline" ? <Timeline caseId={caseDetail.id} text={text} /> : <Placeholder tab={item.label} text={text} />}</section>)}
+    {tabs.map((item) => <section key={item.id} id={`${tabId}-${item.id}-panel`} role="tabpanel" aria-labelledby={`${tabId}-${item.id}-tab`} hidden={tab !== item.id} className="pt-6">{item.id === "timeline" ? <Timeline caseId={caseDetail.id} text={text} /> : item.id === "findings" ? <FindingsWorkspace caseId={caseDetail.id} canEdit={canEdit} /> : <Placeholder tab={item.label} text={text} />}</section>)}
   </main></ShadowScoreLayout>;
 }
 

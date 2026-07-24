@@ -1,5 +1,16 @@
 @import "tailwindcss";
 
+.control {
+  width: 100%;
+  border-radius: 0.625rem;
+  border: 1px solid rgb(255 255 255 / 0.15);
+  background: rgb(255 255 255 / 0.04);
+  padding: 0.7rem 0.8rem;
+  color: #f4f4f5;
+  font-weight: 400;
+}
+.control:focus { outline: 2px solid #7dd3fc; outline-offset: 2px; }
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
