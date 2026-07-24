@@ -41,6 +41,16 @@ export class TimelineRepository implements TimelineStore {
     const cases = await this.request<{ id: string }[]>(`/rest/v1/cases?select=id&public_id=eq.${encodeURIComponent(publicCaseId)}&organization_id=eq.${encodeURIComponent(actor.organizationId)}&limit=1`, {}, this.accessToken);
     if (!cases[0]) return null;
     const filters = [`case_id=eq.${encodeURIComponent(cases[0].id)}`, "order=occurred_at.desc,id.desc", `limit=${query.limit + 1}`];
+    const categoryFilters: Record<Exclude<TimelineCategory, "all">, string> = {
+      case: "or=(event_type.like.case.*,event_type.like.task.*)",
+      evidence: "or=(event_type.like.evidence.*,event_type.like.relationship.*)",
+      finding: "event_type=like.finding.*",
+      analyst: "or=(event_type.like.comment.*,event_type.like.note.*)",
+      decision: "event_type=like.decision.*",
+      monitoring: "or=(event_type.like.alert.*,event_type.like.subscription.*,event_type.like.monitoring.*)",
+      report: "event_type=like.report.*",
+    };
+    if (query.category !== "all") filters.push(categoryFilters[query.category]);
     const cursor = decodeCursor(query.cursor);
     if (query.cursor && !cursor) return { events: [], nextCursor: null };
     if (cursor) filters.push(`or=${encodeURIComponent(`(occurred_at.lt.${cursor.occurredAt},and(occurred_at.eq.${cursor.occurredAt},id.lt.${cursor.id}))`)}`);
