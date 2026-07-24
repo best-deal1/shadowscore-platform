@@ -45,7 +45,8 @@
     "validate:intake-merge-markers": "node scripts/validate-intake-merge-markers.mjs",
     "validate:i18n": "node --experimental-strip-types scripts/validate-i18n.mjs",
     "validate:rendered-i18n": "node --experimental-strip-types scripts/validate-rendered-i18n.mjs",
-    "test:investigation-details-flow": "node tests/investigation-details-flow.mjs"
+    "test:investigation-details-flow": "node tests/investigation-details-flow.mjs",
+    "test": "node --experimental-strip-types tests/case-data-layer.test.mjs"
   },
   "dependencies": {
     "next": "16.2.6",
