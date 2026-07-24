@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { getDictionary, locales } from "../lib/i18n/index.ts";
+import { catalogLocales, getDictionary } from "../lib/i18n/index.ts";
 
 const phrases = [
   "Who are you dealing with?",
@@ -16,7 +16,7 @@ const phrases = [
   "verification trail",
   "and ownership claims",
 ];
-for (const locale of locales.filter((locale) => locale !== "en")) {
+for (const locale of catalogLocales.filter((locale) => locale !== "en")) {
   const dictionary = getDictionary(locale);
   const { home, positioning } = dictionary;
   const renderedStrings = [

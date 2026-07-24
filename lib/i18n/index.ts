@@ -1,6 +1,15 @@
-export const locales = ["en", "he", "ar", "es", "fr", "de"] as const;
-export type Locale = (typeof locales)[number];
-export const defaultLocale: Locale = "en";
+/**
+ * Translation catalogs remain available independently from the locales exposed
+ * by this deployment. This preserves the existing i18n boundary when another
+ * locale is configured in the future.
+ */
+export const catalogLocales = ["en", "he", "ar", "es", "fr", "de"] as const;
+export type Locale = (typeof catalogLocales)[number];
+
+/** Locales configured for the product UI. English is currently the only one. */
+export const locales = ["en"] as const satisfies readonly Locale[];
+export type ConfiguredLocale = (typeof locales)[number];
+export const defaultLocale: ConfiguredLocale = "en";
 export const rtlLocales: readonly Locale[] = ["he", "ar"];
 export const localeNames: Record<Locale, string> = {
   en: "English",
@@ -10,7 +19,7 @@ export const localeNames: Record<Locale, string> = {
   fr: "Français",
   de: "Deutsch",
 };
-export const isLocale = (value: string | undefined): value is Locale =>
+export const isLocale = (value: string | undefined): value is ConfiguredLocale =>
   !!value && (locales as readonly string[]).includes(value);
 export const directionForLocale = (locale: Locale) =>
   rtlLocales.includes(locale) ? "rtl" : "ltr";
