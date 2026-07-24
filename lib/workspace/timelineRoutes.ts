@@ -5,7 +5,11 @@ import { TimelineAccessError, TimelineNotFoundError, TimelineService, TimelineVa
 
 type Dependencies = { resolveActor: (token: string | undefined) => ReturnType<typeof resolveWorkspaceActor>; service: (token: string) => TimelineService };
 const defaults: Dependencies = { resolveActor: (token) => resolveWorkspaceActor(token, supabaseFetch as SupabaseRequest), service: (token) => new TimelineService(new TimelineRepository(supabaseFetch, token)) };
-const token = (request: Request) => request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+const token = (request: Request) => {
+  const bearer = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+  if (bearer) return bearer;
+  return request.headers.get("cookie")?.match(/(?:^|;\s*)shadowscore_access_token=([^;]+)/)?.[1];
+};
 
 function errorResponse(error: unknown) {
   if (error instanceof WorkspaceAccessError || error instanceof TimelineAccessError) return Response.json({ error: error.message }, { status: 401 });
