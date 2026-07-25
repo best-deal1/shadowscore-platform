@@ -7,6 +7,7 @@ import type { CaseDto } from "@/lib/workspace/cases";
 import type { TimelineCategory, TimelineEventDto, TimelinePageDto } from "@/lib/workspace/domain";
 import { caseDetailsCopy, type CaseDetailsCopy } from "@/lib/workspace/caseDetailsCopy";
 import { FindingsWorkspace } from "./FindingsWorkspace";
+import { DecisionWorkspace } from "./DecisionWorkspace";
 
 type Tab = "overview" | "timeline" | "evidence" | "findings" | "decision" | "report";
 const tabs: Tab[] = ["overview", "timeline", "evidence", "findings", "decision", "report"];
@@ -30,7 +31,7 @@ export function CaseDetailsWorkspace({ caseDetail, ownerName, canEdit }: { caseD
       <dl className="mt-6 grid gap-x-6 gap-y-4 border-t border-white/10 pt-5 text-sm sm:grid-cols-2 lg:grid-cols-4"><Meta label={copy.owner} value={ownerName || copy.unassigned} /><Meta label={copy.dueDate} value={caseDetail.dueAt ? exactDate(caseDetail.dueAt, locale) : copy.noDueDate} /><Meta label={copy.lastUpdated} value={relativeTime(caseDetail.updatedAt)} title={exactDate(caseDetail.updatedAt, locale)} /><Meta label={copy.caseReference} value={caseDetail.id} /><Meta label={copy.investigationType} value={copy.businessDueDiligence} /></dl>
     </header>
     <div className="mt-5 overflow-x-auto border-b border-white/10"><div role="tablist" aria-label={copy.caseSections} className="flex min-w-max gap-1">{tabs.map((item, index) => <button key={item} ref={(node) => { tabRefs.current[index] = node; }} id={`${tabId}-${item}-tab`} role="tab" aria-selected={tab === item} aria-controls={`${tabId}-${item}-panel`} tabIndex={tab === item ? 0 : -1} onKeyDown={(event) => moveTab(event, index)} onClick={() => setTab(item)} className={`min-h-11 border-b-2 px-4 text-sm font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-sky-300 ${tab === item ? "border-sky-400 text-sky-200" : "border-transparent text-zinc-400 hover:text-zinc-100"}`}>{copy.tabs[item]}</button>)}</div></div>
-    {tabs.map((item) => <section key={item} id={`${tabId}-${item}-panel`} role="tabpanel" aria-labelledby={`${tabId}-${item}-tab`} hidden={tab !== item} className="pt-6">{item === "timeline" ? <Timeline caseId={caseDetail.id} copy={copy} /> : item === "findings" ? <FindingsWorkspace caseId={caseDetail.id} canEdit={canEdit} /> : <Placeholder tab={copy.tabs[item]} copy={copy} />}</section>)}
+    {tabs.map((item) => <section key={item} id={`${tabId}-${item}-panel`} role="tabpanel" aria-labelledby={`${tabId}-${item}-tab`} hidden={tab !== item} className="pt-6">{item === "timeline" ? <Timeline caseId={caseDetail.id} copy={copy} /> : item === "findings" ? <FindingsWorkspace caseId={caseDetail.id} canEdit={canEdit} /> : item === "decision" ? <DecisionWorkspace caseId={caseDetail.id} canEdit={canEdit} /> : <Placeholder tab={copy.tabs[item]} copy={copy} />}</section>)}
   </main></ShadowScoreLayout>;
 }
 
