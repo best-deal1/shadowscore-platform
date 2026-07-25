@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "baseline": {
+    "kind": "acceptance-target",
+    "corpusSize": 20,
+    "providerInventorySize": 11,
+    "requiredProviderCount": 8,
+    "minimumSiteCompletionRate": 0.95,
+    "minimumRequiredModuleCompletionRate": 0.90,
+    "minimumEvidenceCoverageRate": 0.90,
+    "maximumP95DurationMs": 15000,
+    "maximumUnexpectedFailureRate": 0.05
+  },
+  "checks": [
+    { "id": "corpus-fixed", "scope": "configuration", "method": "deterministic", "pass": "Corpus contains exactly 20 unique valid domains." },
+    { "id": "provider-coverage", "scope": "configuration", "method": "deterministic", "pass": "Inventory contains each production Website Intelligence module once." },
+    { "id": "required-completion", "scope": "live", "method": "measured", "pass": "At least 90% of required module runs complete." },
+    { "id": "site-completion", "scope": "live", "method": "measured", "pass": "At least 95% of sites return one or more completed modules." },
+    { "id": "evidence-coverage", "scope": "live", "method": "measured", "pass": "At least 90% of completed modules return evidence." },
+    { "id": "latency", "scope": "live", "method": "measured", "pass": "The site-level p95 duration is at most 15000 ms." },
+    { "id": "failure-budget", "scope": "live", "method": "measured", "pass": "At most 5% of module runs fail unexpectedly. Declared placeholders are unavailable, not failed." },
+    { "id": "contract", "scope": "output", "method": "deterministic", "pass": "Every result includes status, source, confidence, evidence, findings, summary, and duration." },
+    { "id": "pilot-readiness", "scope": "recommendation", "method": "derived", "pass": "All live thresholds pass before a pilot is recommended." }
+  ],
+  "recommendation": {
+    "status": "conditional",
+    "statement": "Proceed with a limited pilot after a flagged live run meets every acceptance target.",
+    "conditions": [
+      "Treat reputation and screenshot results as declared evidence gaps until approved providers are configured.",
+      "Retain module-level provenance and availability states in pilot reports.",
+      "Do not use these validation metrics as a numeric business risk score."
+    ]
+  }
+}

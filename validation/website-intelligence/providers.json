@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "providers": [
+    { "moduleId": "domain", "name": "RDAP public registry", "mode": "live", "dependency": "rdap.org", "requiredForPilot": true },
+    { "moduleId": "dns", "name": "Authoritative DNS resolver", "mode": "live", "dependency": "system DNS", "requiredForPilot": true },
+    { "moduleId": "ssl", "name": "TLS handshake", "mode": "live", "dependency": "target port 443", "requiredForPilot": true },
+    { "moduleId": "http", "name": "Website response", "mode": "live", "dependency": "target HTTPS endpoint", "requiredForPilot": true },
+    { "moduleId": "security_headers", "name": "HTTPS response headers", "mode": "live", "dependency": "target HTTPS endpoint", "requiredForPilot": true },
+    { "moduleId": "technology", "name": "Website HTML", "mode": "live", "dependency": "target HTML", "requiredForPilot": false },
+    { "moduleId": "infrastructure", "name": "DNS resolver", "mode": "live", "dependency": "system DNS", "requiredForPilot": true },
+    { "moduleId": "email", "name": "DNS TXT records", "mode": "live", "dependency": "system DNS", "requiredForPilot": true },
+    { "moduleId": "reputation", "name": "Local indicator assessment", "mode": "placeholder", "dependency": "approved threat-intelligence provider", "requiredForPilot": false },
+    { "moduleId": "quality", "name": "Website response", "mode": "live", "dependency": "target HTML and discovery files", "requiredForPilot": true },
+    { "moduleId": "screenshot", "name": "Screenshot engine", "mode": "placeholder", "dependency": "approved browser capture provider", "requiredForPilot": false }
+  ]
+}
