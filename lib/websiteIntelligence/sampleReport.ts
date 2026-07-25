@@ -1,5 +1,5 @@
-import type { CanonicalWebsiteReport } from "./canonicalReport";
-import { WEBSITE_REPORT_SCHEMA_VERSION } from "./canonicalReport";
+import type { CanonicalWebsiteReport } from "./canonicalReport.ts";
+import { WEBSITE_REPORT_SCHEMA_VERSION } from "./canonicalReport.ts";
 
 const observedAt = "2026-07-25T10:00:00.000Z";
 
