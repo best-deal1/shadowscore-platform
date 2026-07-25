@@ -1,0 +1,84 @@
+{
+  "auditVersion": 1,
+  "site": {
+    "id": "WI-18",
+    "domain": "hapoalim.co.il",
+    "segment": "financial-services",
+    "region": "israel"
+  },
+  "target": "homepage user-facing sample report",
+  "audited": true,
+  "endToEndCompleted": false,
+  "blocker": "The homepage sample route accepts no website input and does not import or consume WebsiteIntelligenceReport.",
+  "canonicalRenderedReport": {
+    "route": "/sample-report",
+    "dataMode": "static-demonstration",
+    "metrics": {
+      "recommendedDecision": "Proceed only after verification",
+      "riskLevel": "Medium",
+      "decisionConfidence": "82%",
+      "evidenceCoverage": "68%"
+    },
+    "sections": [
+      "Key finding",
+      "Contradictions and missing evidence",
+      "Recommended action and source appendix"
+    ],
+    "factualClaims": [
+      "The business identity is supported.",
+      "Payment-account ownership remains unresolved.",
+      "The review records conflicting address information and an unresolved beneficiary-account verification request."
+    ]
+  },
+  "checks": {
+    "reportGeneration": {
+      "status": "fail",
+      "generatedForSite": false,
+      "uncaughtErrors": 0,
+      "reason": "No generation function is called by the route."
+    },
+    "contract": {
+      "status": "fail",
+      "schemaValidated": false,
+      "requiredSectionsValidated": true,
+      "reason": "The rendered constants have no canonical report schema or report model."
+    },
+    "evidenceTraceability": {
+      "status": "fail",
+      "supportedClaims": 0,
+      "factualClaims": 3,
+      "evidenceItems": 0
+    },
+    "hallucinationAndContradiction": {
+      "status": "fail",
+      "unsupportedClaims": [
+        "The business identity is supported.",
+        "Payment-account ownership remains unresolved.",
+        "The review records conflicting address information and an unresolved beneficiary-account verification request."
+      ],
+      "contradictions": [],
+      "genericCrossDomainReport": true
+    },
+    "scoringAndDecision": {
+      "status": "fail",
+      "derivedScore": false,
+      "missingDataHandlingValidated": false,
+      "visibleValuesInternallyConsistent": true
+    },
+    "presentation": {
+      "status": "partial",
+      "sectionsPresent": true,
+      "internalFieldsExposed": false,
+      "desktopStaticReview": "pass",
+      "mobileStaticReview": "pass",
+      "emptyAndPartialStates": "not implemented"
+    },
+    "repeatability": {
+      "status": "pass",
+      "runsReviewed": 3,
+      "unstableFields": [],
+      "note": "The constant source produces identical visible content for every domain."
+    }
+  },
+  "result": "fail"
+}
