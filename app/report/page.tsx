@@ -8,6 +8,7 @@ import { EmptyState, ErrorState, LoadingState } from "../../components/AsyncStat
 import InvestigationTimeline from "../components/InvestigationTimeline";
 import { WebsiteIntelligenceReportView } from "../components/WebsiteIntelligenceReport";
 import { WebsiteIntelligenceDashboard } from "../components/WebsiteIntelligenceDashboard";
+import { WebsiteChangeTimeline } from "../components/WebsiteChangeTimeline";
 import { getCurrentSession } from "../../lib/auth";
 import { getWorkspace, type ShadowScoreReport } from "../../lib/workspace";
 import { TechnicalValue, useLocale } from "../../components/LocaleProvider";
@@ -113,7 +114,7 @@ function ExecutiveBrief({ report }: { report: ShadowScoreReport }) {
 
       {report.reportSummary?.investigationTimeline && <InvestigationTimeline className="mt-5" title={t.report.status} items={report.reportSummary.investigationTimeline.map((item) => ({ title: localize(item.label), description: localize(item.status === "unavailable" ? "Evidence was unavailable for this stage." : `Stage ${item.status}.`), evidenceSource: item.source, status: item.status, timestamp: item.observedAt, risk: item.status === "failed" }))} />}
 
-      {report.reportSummary?.canonicalWebsiteReport && <section className="mt-5 rounded-3xl border border-white/10 bg-black/35 p-6" aria-label="Website Intelligence"><WebsiteIntelligenceDashboard report={report.reportSummary.canonicalWebsiteReport} /><div className="my-10 border-t border-white/10" /><WebsiteIntelligenceReportView report={report.reportSummary.canonicalWebsiteReport} /></section>}
+      {report.reportSummary?.canonicalWebsiteReport && <section className="mt-5 rounded-3xl border border-white/10 bg-black/35 p-6" aria-label="Website Intelligence"><WebsiteIntelligenceDashboard report={report.reportSummary.canonicalWebsiteReport} /><div className="my-10 border-t border-white/10" /><WebsiteIntelligenceReportView report={report.reportSummary.canonicalWebsiteReport} /><WebsiteChangeTimeline changes={report.reportSummary.websiteChangeTimeline || report.reportSummary.websiteChangeReport?.changes || []} /></section>}
 
       <section className="mt-8 border-t border-white/10 pt-6" aria-label="Source provenance">
         <h2 className="text-xs font-black uppercase tracking-[0.28em] text-red-200">{t.report.provenance}</h2>

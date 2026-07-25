@@ -6,6 +6,8 @@ export { registerWebsiteModule, websiteModules } from "./registry";
 export { normalizeWebsiteEvidence } from "./evidence";
 export { toCanonicalWebsiteReport, WEBSITE_REPORT_SCHEMA_VERSION } from "./canonicalReport";
 export type { CanonicalWebsiteReport, CanonicalWebsiteEvidence, CanonicalWebsiteFinding } from "./canonicalReport";
+export { detectWebsiteChanges, getWebsiteChangeTimeline, loadWebsiteChangeTimeline, persistWebsiteScan } from "./history";
+export type { StoredWebsiteScan, WebsiteChange, WebsiteChangeCategory, WebsiteChangeClassification, WebsiteChangeReport } from "./history";
 
 function domainFor(target: string) { try { return new URL(target.includes("://") ? target : `https://${target}`).hostname.toLowerCase(); } catch { return target.trim().toLowerCase().replace(/^www\./, ""); } }
 function unavailable(moduleId: WebsiteModuleResult["moduleId"], moduleName: string, source: string, message: string, started: number): WebsiteModuleResult {
