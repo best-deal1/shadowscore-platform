@@ -44,6 +44,7 @@
     "validate:website-intelligence": "node scripts/validate-website-intelligence.mjs",
     "validate:website-intelligence-live": "node --experimental-strip-types scripts/validate-website-intelligence-live.mjs",
     "test:website-intelligence-validation": "node --test tests/website-intelligence-validation.test.mjs",
+    "test:canonical-website-report": "node --test tests/canonical-website-report.test.mjs",
     "validate:intake-merge-markers": "node scripts/validate-intake-merge-markers.mjs",
     "validate:i18n": "node --experimental-strip-types scripts/validate-i18n.mjs",
     "validate:rendered-i18n": "node --experimental-strip-types scripts/validate-rendered-i18n.mjs",

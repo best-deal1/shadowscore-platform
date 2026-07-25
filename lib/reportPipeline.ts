@@ -9,7 +9,7 @@ import { buildIdentityProfile } from "./identityEngine";
 import { buildBusinessProfile } from "./businessProfileEngine";
 import { buildBusinessIdentityIntelligence } from "./businessIdentityIntelligence";
 import { buildBusinessIntelligence } from "./businessIntelligence";
-import { investigateWebsite, normalizeWebsiteEvidence } from "./websiteIntelligence";
+import { investigateWebsite, normalizeWebsiteEvidence, toCanonicalWebsiteReport } from "./websiteIntelligence";
 import { buildShadowScorecard } from "./scoring";
 import { buildInvestigationTimeline } from "./investigation/timeline";
 import { buildBusinessIdentityKnowledgeScan, BusinessKnowledgeGraph } from "./knowledgeGraph";
@@ -62,6 +62,7 @@ export async function buildReadyReport(input: {
   executionFlow.push("✓ Execution plan created");
   const { providerResults, executionRecords } = await providerManager.runExecutionPlan(providerContext, executionPlan.executionPlan, executionPlan.skippedEngines);
   const websiteIntelligence = intake.scanMode === "website" ? await investigateWebsite({ target: intake.target }) : undefined;
+  const canonicalWebsiteReport = websiteIntelligence ? toCanonicalWebsiteReport(websiteIntelligence) : undefined;
   const websiteEvidenceItems = websiteIntelligence ? normalizeWebsiteEvidence(websiteIntelligence) : [];
   const providerEvidenceItems = buildEvidenceItems({
     providerResults,
@@ -203,6 +204,7 @@ export async function buildReadyReport(input: {
       businessIdentityIntelligence,
       businessIntelligence,
       websiteIntelligence,
+      canonicalWebsiteReport,
       scorecard,
       investigationTimeline,
       execution: {
