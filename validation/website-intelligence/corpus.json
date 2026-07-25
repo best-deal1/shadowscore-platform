@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "description": "Fixed public-domain corpus for Website Intelligence pilot validation.",
+  "sites": [
+    { "id": "WI-01", "domain": "google.com", "segment": "global-platform", "region": "global" },
+    { "id": "WI-02", "domain": "microsoft.com", "segment": "global-platform", "region": "global" },
+    { "id": "WI-03", "domain": "amazon.com", "segment": "commerce", "region": "global" },
+    { "id": "WI-04", "domain": "apple.com", "segment": "commerce", "region": "global" },
+    { "id": "WI-05", "domain": "github.com", "segment": "technology", "region": "global" },
+    { "id": "WI-06", "domain": "openai.com", "segment": "technology", "region": "global" },
+    { "id": "WI-07", "domain": "cloudflare.com", "segment": "infrastructure", "region": "global" },
+    { "id": "WI-08", "domain": "stripe.com", "segment": "financial-services", "region": "global" },
+    { "id": "WI-09", "domain": "paypal.com", "segment": "financial-services", "region": "global" },
+    { "id": "WI-10", "domain": "shopify.com", "segment": "commerce", "region": "global" },
+    { "id": "WI-11", "domain": "wix.com", "segment": "technology", "region": "global" },
+    { "id": "WI-12", "domain": "canva.com", "segment": "technology", "region": "global" },
+    { "id": "WI-13", "domain": "bbc.com", "segment": "media", "region": "united-kingdom" },
+    { "id": "WI-14", "domain": "nytimes.com", "segment": "media", "region": "united-states" },
+    { "id": "WI-15", "domain": "wikipedia.org", "segment": "nonprofit", "region": "global" },
+    { "id": "WI-16", "domain": "mozilla.org", "segment": "nonprofit", "region": "global" },
+    { "id": "WI-17", "domain": "leumi.co.il", "segment": "financial-services", "region": "israel" },
+    { "id": "WI-18", "domain": "hapoalim.co.il", "segment": "financial-services", "region": "israel" },
+    { "id": "WI-19", "domain": "ksp.co.il", "segment": "commerce", "region": "israel" },
+    { "id": "WI-20", "domain": "keter.com", "segment": "manufacturing", "region": "global" }
+  ]
+}

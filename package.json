@@ -42,6 +42,8 @@
     "validate:accessibility": "node scripts/validate-accessibility.mjs",
     "validate:production": "npm run validate:report-contract && npm run validate:reasoning-boundary && npm run validate:business-intelligence && npm run validate:platform-capabilities && npm run validate:decision-integrity && npm run validate:public-browser-boundary && npm run validate:accessibility && npm run validate:intake-merge-markers && npm run validate:i18n && npm run validate:rendered-i18n && npm run lint",
     "validate:website-intelligence": "node scripts/validate-website-intelligence.mjs",
+    "validate:website-intelligence-live": "node --experimental-strip-types scripts/validate-website-intelligence-live.mjs",
+    "test:website-intelligence-validation": "node --test tests/website-intelligence-validation.test.mjs",
     "validate:intake-merge-markers": "node scripts/validate-intake-merge-markers.mjs",
     "validate:i18n": "node --experimental-strip-types scripts/validate-i18n.mjs",
     "validate:rendered-i18n": "node --experimental-strip-types scripts/validate-rendered-i18n.mjs",
