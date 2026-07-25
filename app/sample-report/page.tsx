@@ -1,6 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { WebsiteIntelligenceReportView } from "../components/WebsiteIntelligenceReport";
 import { JsonLd } from "../components/MarketingPage";
 import { pageMetadata } from "../lib/seo";
-export const metadata: Metadata = pageMetadata({ title: "Sample Business Due Diligence Report | ShadowScore", description: "View a demonstration business due diligence report with decision, risk, evidence coverage, contradictions, and recommended actions.", path: "/sample-report" });
-export default function SampleReport() { const rows = [["Recommended decision", "Proceed only after verification"], ["Risk level", "Medium"], ["Decision confidence", "82%"], ["Evidence coverage", "68%"]]; return <main className="min-h-screen bg-[#07111f] px-6 py-20 text-slate-100"><JsonLd data={{ "@context": "https://schema.org", "@type": "Article", headline: "Sample business due diligence report" }} /><article className="mx-auto max-w-4xl rounded-3xl border border-white/10 bg-white/[.03] p-7 sm:p-12"><p className="inline-flex rounded-full bg-amber-300 px-3 py-1 text-xs font-bold text-slate-950">Demonstration data</p><h1 className="mt-6 text-4xl font-black">Sample business due diligence report</h1><p className="mt-4 text-lg leading-8 text-slate-300">This demonstration shows how a review can surface evidence, uncertainty, and a decision path. It is not a live investigation.</p><dl className="mt-10 grid gap-4 sm:grid-cols-2">{rows.map(([label, value]) => <div key={label} className="rounded-2xl border border-white/10 p-5"><dt className="text-sm text-slate-400">{label}</dt><dd className="mt-2 text-xl font-bold">{value}</dd></div>)}</dl><div className="mt-10 space-y-5"><section><h2 className="text-2xl font-bold">Key finding</h2><p className="mt-2 text-slate-300">The business identity is supported, but payment-account ownership remains unresolved.</p></section><section><h2 className="text-2xl font-bold">Contradictions and missing evidence</h2><p className="mt-2 text-slate-300">The review records conflicting address information and an unresolved beneficiary-account verification request.</p></section><section><h2 className="text-2xl font-bold">Recommended action and source appendix</h2><p className="mt-2 text-slate-300">Verify the beneficiary account before transferring funds. The full report format includes source references, connected entities, evidence provenance, methodology, and limitations.</p></section></div><Link href="/intake" className="mt-10 inline-flex rounded-full bg-sky-400 px-6 py-3 font-bold text-slate-950">Start due diligence</Link></article></main>; }
+import { sampleWebsiteIntelligenceReport } from "../../lib/websiteIntelligence/sampleReport";
+
+export const metadata: Metadata = pageMetadata({ title: "Sample Website Intelligence Report | ShadowScore", description: "View a demonstration Website Intelligence report with findings, evidence sources, coverage, actions, and limitations.", path: "/sample-report" });
+
+export default function SampleReport() {
+  return <main className="min-h-screen bg-[#07111f] px-6 py-20 text-slate-100">
+    <JsonLd data={{ "@context": "https://schema.org", "@type": "Article", headline: "Sample Website Intelligence report" }} />
+    <article className="mx-auto max-w-5xl rounded-3xl border border-white/10 bg-white/[.03] p-7 sm:p-12">
+      <p className="mb-8 inline-flex rounded-full bg-amber-300 px-3 py-1 text-xs font-bold text-slate-950">Demonstration data</p>
+      <WebsiteIntelligenceReportView report={sampleWebsiteIntelligenceReport} />
+      <Link href="/intake" className="mt-10 inline-flex rounded-full bg-sky-400 px-6 py-3 font-bold text-slate-950">Start due diligence</Link>
+    </article>
+  </main>;
+}

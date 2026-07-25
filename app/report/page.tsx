@@ -6,6 +6,7 @@ import Link from "next/link";
 import ShadowScoreLayout from "../../components/ShadowScoreLayout";
 import { EmptyState, ErrorState, LoadingState } from "../../components/AsyncState";
 import InvestigationTimeline from "../components/InvestigationTimeline";
+import { WebsiteIntelligenceReportView } from "../components/WebsiteIntelligenceReport";
 import { getCurrentSession } from "../../lib/auth";
 import { getWorkspace, type ShadowScoreReport } from "../../lib/workspace";
 import { TechnicalValue, useLocale } from "../../components/LocaleProvider";
@@ -111,14 +112,7 @@ function ExecutiveBrief({ report }: { report: ShadowScoreReport }) {
 
       {report.reportSummary?.investigationTimeline && <InvestigationTimeline className="mt-5" title={t.report.status} items={report.reportSummary.investigationTimeline.map((item) => ({ title: localize(item.label), description: localize(item.status === "unavailable" ? "Evidence was unavailable for this stage." : `Stage ${item.status}.`), evidenceSource: item.source, status: item.status, timestamp: item.observedAt, risk: item.status === "failed" }))} />}
 
-      {report.reportSummary?.websiteIntelligence && <section className="mt-5 rounded-3xl border border-white/10 bg-black/35 p-6" aria-label="Website Intelligence">
-        <h2 className="text-xs font-black uppercase tracking-[0.28em] text-red-200">{t.report.website}</h2>
-        <p className="mt-3 text-sm leading-6 text-zinc-300">{localize(report.reportSummary.websiteIntelligence.executiveSummary)}</p>
-        <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          {[[t.report.content.technicalHealth, report.reportSummary.websiteIntelligence.technicalHealth], [t.report.content.securityPosture, report.reportSummary.websiteIntelligence.securityPosture], [t.report.content.infrastructureMaturity, report.reportSummary.websiteIntelligence.infrastructureMaturity], [t.report.content.websiteTrustIndicators, report.reportSummary.websiteIntelligence.trustIndicators]].map(([title, body]) => <div key={title} className="rounded-2xl border border-white/10 bg-black/30 p-4"><h3 className="text-xs font-black uppercase tracking-wider text-zinc-300">{localize(title)}</h3><p className="mt-2 text-sm leading-6 text-zinc-400">{localize(body)}</p></div>)}
-        </div>
-        <div className="mt-5"><ListCard title={t.report.content.recommendationActions} items={report.reportSummary.websiteIntelligence.recommendedActions.map(localize)} numbered emptyMessage={t.report.content.noWebsiteActions} /></div>
-      </section>}
+      {report.reportSummary?.canonicalWebsiteReport && <section className="mt-5 rounded-3xl border border-white/10 bg-black/35 p-6" aria-label="Website Intelligence"><WebsiteIntelligenceReportView report={report.reportSummary.canonicalWebsiteReport} /></section>}
 
       <section className="mt-8 border-t border-white/10 pt-6" aria-label="Source provenance">
         <h2 className="text-xs font-black uppercase tracking-[0.28em] text-red-200">{t.report.provenance}</h2>
