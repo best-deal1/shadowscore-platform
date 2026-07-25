@@ -1,0 +1,231 @@
+{
+  "auditVersion": 1,
+  "target": "homepage user-facing sample report",
+  "canonicalPath": {
+    "homepage": "app/page.tsx -> app/components/MarketingHome.tsx",
+    "link": "/sample-report",
+    "renderer": "app/sample-report/page.tsx",
+    "reportModel": null,
+    "websiteIntelligencePath": "lib/websiteIntelligence/index.ts -> investigateWebsite()",
+    "connectedToWebsiteIntelligence": false
+  },
+  "dataMode": "static-demonstration",
+  "routeSourceSha256": "693b79501643f933f122a2b75c764baf7a1255df68bc71f5c323122c25851e18",
+  "corpusSize": 20,
+  "sitesAudited": 20,
+  "homepageReportsGenerated": 0,
+  "reportGenerationSuccessRate": 0,
+  "evidenceTraceability": {
+    "supportedClaims": 0,
+    "factualClaims": 3,
+    "rate": 0
+  },
+  "unsupportedClaimCount": 3,
+  "contradictionCount": 0,
+  "schemaContractFailures": 20,
+  "repeatedReportGroups": [
+    {
+      "routeSourceSha256": "693b79501643f933f122a2b75c764baf7a1255df68bc71f5c323122c25851e18",
+      "siteCount": 20,
+      "reason": "The route ignores the site and renders one constant report."
+    }
+  ],
+  "repeatability": {
+    "runsReviewed": 3,
+    "stableFields": "all visible fields",
+    "unstableFields": [],
+    "limitation": "Static source review. The route has no generation input or run state."
+  },
+  "supplementalLivePipelineRun": {
+    "date": "2026-07-25",
+    "scope": "Internal Website Intelligence only. This output is not consumed by the homepage sample.",
+    "sitesReturningInternalReport": 20,
+    "modulesCompletedPerSite": 3,
+    "modulesUnavailablePerSite": 8,
+    "harnessResult": "failed before execution because scripts/validate-website-intelligence-live.mjs requires the wrong compiled path",
+    "manualHarnessResult": "20 internal reports returned after requiring the actual compiled path"
+  },
+  "overallResult": "fail",
+  "rows": [
+    {
+      "site": "google.com",
+      "reportGenerated": false,
+      "contract": "fail",
+      "evidence": "fail",
+      "unsupportedClaims": 3,
+      "contradictions": 0,
+      "result": "fail"
+    },
+    {
+      "site": "microsoft.com",
+      "reportGenerated": false,
+      "contract": "fail",
+      "evidence": "fail",
+      "unsupportedClaims": 3,
+      "contradictions": 0,
+      "result": "fail"
+    },
+    {
+      "site": "amazon.com",
+      "reportGenerated": false,
+      "contract": "fail",
+      "evidence": "fail",
+      "unsupportedClaims": 3,
+      "contradictions": 0,
+      "result": "fail"
+    },
+    {
+      "site": "apple.com",
+      "reportGenerated": false,
+      "contract": "fail",
+      "evidence": "fail",
+      "unsupportedClaims": 3,
+      "contradictions": 0,
+      "result": "fail"
+    },
+    {
+      "site": "github.com",
+      "reportGenerated": false,
+      "contract": "fail",
+      "evidence": "fail",
+      "unsupportedClaims": 3,
+      "contradictions": 0,
+      "result": "fail"
+    },
+    {
+      "site": "openai.com",
+      "reportGenerated": false,
+      "contract": "fail",
+      "evidence": "fail",
+      "unsupportedClaims": 3,
+      "contradictions": 0,
+      "result": "fail"
+    },
+    {
+      "site": "cloudflare.com",
+      "reportGenerated": false,
+      "contract": "fail",
+      "evidence": "fail",
+      "unsupportedClaims": 3,
+      "contradictions": 0,
+      "result": "fail"
+    },
+    {
+      "site": "stripe.com",
+      "reportGenerated": false,
+      "contract": "fail",
+      "evidence": "fail",
+      "unsupportedClaims": 3,
+      "contradictions": 0,
+      "result": "fail"
+    },
+    {
+      "site": "paypal.com",
+      "reportGenerated": false,
+      "contract": "fail",
+      "evidence": "fail",
+      "unsupportedClaims": 3,
+      "contradictions": 0,
+      "result": "fail"
+    },
+    {
+      "site": "shopify.com",
+      "reportGenerated": false,
+      "contract": "fail",
+      "evidence": "fail",
+      "unsupportedClaims": 3,
+      "contradictions": 0,
+      "result": "fail"
+    },
+    {
+      "site": "wix.com",
+      "reportGenerated": false,
+      "contract": "fail",
+      "evidence": "fail",
+      "unsupportedClaims": 3,
+      "contradictions": 0,
+      "result": "fail"
+    },
+    {
+      "site": "canva.com",
+      "reportGenerated": false,
+      "contract": "fail",
+      "evidence": "fail",
+      "unsupportedClaims": 3,
+      "contradictions": 0,
+      "result": "fail"
+    },
+    {
+      "site": "bbc.com",
+      "reportGenerated": false,
+      "contract": "fail",
+      "evidence": "fail",
+      "unsupportedClaims": 3,
+      "contradictions": 0,
+      "result": "fail"
+    },
+    {
+      "site": "nytimes.com",
+      "reportGenerated": false,
+      "contract": "fail",
+      "evidence": "fail",
+      "unsupportedClaims": 3,
+      "contradictions": 0,
+      "result": "fail"
+    },
+    {
+      "site": "wikipedia.org",
+      "reportGenerated": false,
+      "contract": "fail",
+      "evidence": "fail",
+      "unsupportedClaims": 3,
+      "contradictions": 0,
+      "result": "fail"
+    },
+    {
+      "site": "mozilla.org",
+      "reportGenerated": false,
+      "contract": "fail",
+      "evidence": "fail",
+      "unsupportedClaims": 3,
+      "contradictions": 0,
+      "result": "fail"
+    },
+    {
+      "site": "leumi.co.il",
+      "reportGenerated": false,
+      "contract": "fail",
+      "evidence": "fail",
+      "unsupportedClaims": 3,
+      "contradictions": 0,
+      "result": "fail"
+    },
+    {
+      "site": "hapoalim.co.il",
+      "reportGenerated": false,
+      "contract": "fail",
+      "evidence": "fail",
+      "unsupportedClaims": 3,
+      "contradictions": 0,
+      "result": "fail"
+    },
+    {
+      "site": "ksp.co.il",
+      "reportGenerated": false,
+      "contract": "fail",
+      "evidence": "fail",
+      "unsupportedClaims": 3,
+      "contradictions": 0,
+      "result": "fail"
+    },
+    {
+      "site": "keter.com",
+      "reportGenerated": false,
+      "contract": "fail",
+      "evidence": "fail",
+      "unsupportedClaims": 3,
+      "contradictions": 0,
+      "result": "fail"
+    }
+  ]
+}
