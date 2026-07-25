@@ -1,2 +1,3 @@
-import { getTrustGraphService } from "@/lib/trustGraph";
-export async function GET(_request: Request, context: { params: Promise<{ entityId: string }> }) { const { entityId } = await context.params; return Response.json(getTrustGraphService().getDecisions(entityId)); }
+import { createTrustGraphRouteHandlers } from "@/lib/trustGraph/routes";
+const handler = createTrustGraphRouteHandlers().getDecisions;
+export async function GET(request: Request, context: { params: Promise<{ entityId: string }> }) { return handler(request, (await context.params).entityId); }
