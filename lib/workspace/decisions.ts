@@ -1,5 +1,5 @@
-import type { Decision, DecisionConfidence, DecisionOutcome, DecisionRisk, Finding } from "./domain.ts";
-import type { WorkspaceActor } from "./actor.ts";
+import type { Decision, DecisionConfidence, DecisionOutcome, DecisionRisk, Finding } from "./domain";
+import type { WorkspaceActor } from "./actor";
 export type LinkedFindingDto=Pick<Finding,"publicId"|"title"|"severity"|"confidence">;
 export type DecisionDto=Omit<Decision,"caseId"|"organizationId"|"createdBy"|"updatedBy"|"findings">&{findings:LinkedFindingDto[]};
 export type DecisionInput={outcome:DecisionOutcome;rationale:string;risk:DecisionRisk;confidence:DecisionConfidence;recommendedActions:string[];conditions:string[];findingIds:string[]};

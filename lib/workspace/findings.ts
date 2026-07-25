@@ -1,5 +1,5 @@
-import type { EvidenceItemSummary, Finding, FindingConfidence, FindingSeverity } from "./domain.ts";
-import type { WorkspaceActor } from "./actor.ts";
+import type { EvidenceItemSummary, Finding, FindingConfidence, FindingSeverity } from "./domain";
+import type { WorkspaceActor } from "./actor";
 
 export type FindingDto = Omit<Finding, "caseId" | "organizationId" | "createdBy" | "updatedBy">;
 export type FindingInput = { title: string; narrative: string; severity: FindingSeverity; confidence: FindingConfidence; tags: string[]; evidenceIds: string[] };

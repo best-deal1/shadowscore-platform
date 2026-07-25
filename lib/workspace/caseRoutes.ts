@@ -1,7 +1,7 @@
-import { resolveWorkspaceActor, WorkspaceAccessError, type SupabaseRequest } from "./actor.ts";
-import { CaseAccessError, CaseConflictError, CaseNotFoundError, CaseService, CaseValidationError, type CreateCaseInput, type UpdateCaseInput } from "./cases.ts";
-import { CaseRepository } from "./caseRepository.ts";
-import { supabaseFetch } from "../supabase.ts";
+import { resolveWorkspaceActor, WorkspaceAccessError, type SupabaseRequest } from "./actor";
+import { CaseAccessError, CaseConflictError, CaseNotFoundError, CaseService, CaseValidationError, type CreateCaseInput, type UpdateCaseInput } from "./cases";
+import { CaseRepository } from "./caseRepository";
+import { supabaseFetch } from "../supabase";
 
 type Dependencies = { resolveActor: (token: string | undefined) => ReturnType<typeof resolveWorkspaceActor>; service: (token: string) => CaseService };
 const defaultDependencies: Dependencies = { resolveActor: (token) => resolveWorkspaceActor(token, supabaseFetch as SupabaseRequest), service: (token) => new CaseService(new CaseRepository(supabaseFetch, token)) };

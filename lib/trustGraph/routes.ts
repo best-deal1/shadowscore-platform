@@ -1,7 +1,7 @@
-import { supabaseFetch } from "../supabase.ts";
-import { resolveWorkspaceActor, WorkspaceAccessError, type SupabaseRequest, type WorkspaceActor } from "../workspace/actor.ts";
-import { getTrustGraphService, TrustGraphAccessError, TrustGraphNotFoundError, type TrustGraphService } from "./service.ts";
-import type { CreateRelationshipInput, RecordDecisionInput, TrustGraphTrust, UpsertEntityInput } from "./types.ts";
+import { supabaseFetch } from "../supabase";
+import { resolveWorkspaceActor, WorkspaceAccessError, type SupabaseRequest, type WorkspaceActor } from "../workspace/actor";
+import { getTrustGraphService, TrustGraphAccessError, TrustGraphNotFoundError, type TrustGraphService } from "./service";
+import type { CreateRelationshipInput, RecordDecisionInput, TrustGraphTrust, UpsertEntityInput } from "./types";
 
 type Dependencies = {
   resolveActor: (token: string | undefined) => Promise<WorkspaceActor>;

@@ -1,5 +1,5 @@
-import type { TimelineCategory, TimelinePageDto } from "./domain.ts";
-import type { WorkspaceActor } from "./actor.ts";
+import type { TimelineCategory, TimelinePageDto } from "./domain";
+import type { WorkspaceActor } from "./actor";
 
 export class TimelineAccessError extends Error {}
 export class TimelineNotFoundError extends Error {}

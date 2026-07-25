@@ -1,5 +1,5 @@
-import type { Case, CasePriority, CaseStatus } from "./domain.ts";
-import type { WorkspaceActor } from "./actor.ts";
+import type { Case, CasePriority, CaseStatus } from "./domain";
+import type { WorkspaceActor } from "./actor";
 
 export type CaseDto = {
   id: string;
