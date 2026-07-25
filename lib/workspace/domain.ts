@@ -55,6 +55,14 @@ export interface Finding {
   updatedAt: IsoTimestamp;
 }
 export type DecisionOutcome = "pass" | "proceed_with_verification" | "review" | "fail" | "no_decision";
+export type DecisionRisk = "low" | "medium" | "high" | "critical";
+export type DecisionConfidence = "low" | "medium" | "high";
+export interface Decision {
+  id: Uuid; publicId: string; caseId: Uuid; organizationId: Uuid;
+  outcome: DecisionOutcome; rationale: string; risk: DecisionRisk; confidence: DecisionConfidence;
+  recommendedActions: readonly string[]; conditions: readonly string[]; findings: readonly Finding[];
+  version: number; createdBy: Uuid; updatedBy: Uuid; createdAt: IsoTimestamp; updatedAt: IsoTimestamp;
+}
 
 export interface Organization {
   id: Uuid;
