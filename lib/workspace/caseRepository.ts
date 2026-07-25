@@ -1,6 +1,6 @@
-import type { Case } from "./domain.ts";
-import type { WorkspaceActor } from "./actor.ts";
-import type { CaseStore, CreateCaseInput, UpdateCaseInput } from "./cases.ts";
+import type { Case } from "./domain";
+import type { WorkspaceActor } from "./actor";
+import type { CaseStore, CreateCaseInput, UpdateCaseInput } from "./cases";
 
 type CaseRow = { id: string; public_id: string; organization_id: string; investigation_id: string; title: string; status: Case["status"]; priority: Case["priority"]; owner_id: string | null; due_at: string | null; version: number; created_at: string; updated_at: string };
 export type CaseRepositoryRequest = <T>(path: string, init?: RequestInit, accessToken?: string) => Promise<T>;

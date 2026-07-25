@@ -1,6 +1,6 @@
-import { InMemoryTrustGraphStore, type TrustGraphStore } from "./store.ts";
-import type { CreateRelationshipInput, RecordDecisionInput, TrustGraphEntity, TrustGraphTimelineEvent, TrustGraphTrust, UpsertEntityInput } from "./types.ts";
-import type { WorkspaceActor } from "../workspace/actor.ts";
+import { InMemoryTrustGraphStore, type TrustGraphStore } from "./store";
+import type { CreateRelationshipInput, RecordDecisionInput, TrustGraphEntity, TrustGraphTimelineEvent, TrustGraphTrust, UpsertEntityInput } from "./types";
+import type { WorkspaceActor } from "../workspace/actor";
 
 export class TrustGraphAccessError extends Error {}
 export class TrustGraphNotFoundError extends Error {}

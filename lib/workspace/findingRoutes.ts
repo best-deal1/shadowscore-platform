@@ -1,7 +1,7 @@
-import { resolveWorkspaceActor, WorkspaceAccessError, type SupabaseRequest } from "./actor.ts";
-import { supabaseFetch } from "../supabase.ts";
-import { FindingRepository } from "./findingRepository.ts";
-import { FindingAccessError, FindingConflictError, FindingNotFoundError, FindingService, FindingValidationError } from "./findings.ts";
+import { resolveWorkspaceActor, WorkspaceAccessError, type SupabaseRequest } from "./actor";
+import { supabaseFetch } from "../supabase";
+import { FindingRepository } from "./findingRepository";
+import { FindingAccessError, FindingConflictError, FindingNotFoundError, FindingService, FindingValidationError } from "./findings";
 type Dependencies = { resolveActor: (token?: string) => ReturnType<typeof resolveWorkspaceActor>; service: (token: string) => FindingService };
 const defaults: Dependencies = { resolveActor: (token) => resolveWorkspaceActor(token, supabaseFetch as SupabaseRequest), service: (token) => new FindingService(new FindingRepository(supabaseFetch, token)) };
 const token = (request: Request) => request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") || request.headers.get("cookie")?.match(/(?:^|;\s*)shadowscore_access_token=([^;]+)/)?.[1];

@@ -1,7 +1,7 @@
-import { resolveWorkspaceActor, WorkspaceAccessError, type SupabaseRequest } from "./actor.ts";
-import { supabaseFetch } from "../supabase.ts";
-import { TimelineRepository } from "./timelineRepository.ts";
-import { TimelineAccessError, TimelineNotFoundError, TimelineService, TimelineValidationError } from "./timeline.ts";
+import { resolveWorkspaceActor, WorkspaceAccessError, type SupabaseRequest } from "./actor";
+import { supabaseFetch } from "../supabase";
+import { TimelineRepository } from "./timelineRepository";
+import { TimelineAccessError, TimelineNotFoundError, TimelineService, TimelineValidationError } from "./timeline";
 
 type Dependencies = { resolveActor: (token: string | undefined) => ReturnType<typeof resolveWorkspaceActor>; service: (token: string) => TimelineService };
 const defaults: Dependencies = { resolveActor: (token) => resolveWorkspaceActor(token, supabaseFetch as SupabaseRequest), service: (token) => new TimelineService(new TimelineRepository(supabaseFetch, token)) };

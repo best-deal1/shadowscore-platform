@@ -1,4 +1,4 @@
-import type { MembershipRole } from "./domain.ts";
+import type { MembershipRole } from "./domain";
 
 export type WorkspaceActor = {
   userId: string;

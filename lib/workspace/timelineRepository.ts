@@ -1,6 +1,6 @@
-import type { TimelineCategory, TimelineEventDto, TimelinePageDto } from "./domain.ts";
-import type { WorkspaceActor } from "./actor.ts";
-import type { TimelineStore } from "./timeline.ts";
+import type { TimelineCategory, TimelineEventDto, TimelinePageDto } from "./domain";
+import type { WorkspaceActor } from "./actor";
+import type { TimelineStore } from "./timeline";
 
 type TimelineRow = { id: string; occurred_at: string; recorded_at: string; event_type: string; actor_type: TimelineEventDto["actorType"]; actor_id: string | null; payload: Record<string, unknown>; reference_ids: string[] | null };
 export type TimelineRepositoryRequest = <T>(path: string, init?: RequestInit, accessToken?: string) => Promise<T>;

@@ -1,6 +1,6 @@
-import type { WorkspaceActor } from "./actor.ts";
-import type { EvidenceItemSummary, Finding } from "./domain.ts";
-import type { FindingInput, FindingStore, FindingsWorkspaceDto, UpdateFindingInput } from "./findings.ts";
+import type { WorkspaceActor } from "./actor";
+import type { EvidenceItemSummary, Finding } from "./domain";
+import type { FindingInput, FindingStore, FindingsWorkspaceDto, UpdateFindingInput } from "./findings";
 
 type Request = <T>(path: string, init?: RequestInit, token?: string) => Promise<T>;
 type FindingRow = { id: string; public_id: string; case_id: string; organization_id: string; title: string; narrative: string; severity: Finding["severity"]; confidence: Finding["confidence"]; tags: string[]; version: number; created_by: string; updated_by: string; created_at: string; updated_at: string; evidence_items?: Array<{ evidence_items: EvidenceRow }> };

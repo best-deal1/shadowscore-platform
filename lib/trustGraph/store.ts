@@ -1,4 +1,4 @@
-import type { CreateRelationshipInput, RecordDecisionInput, TrustGraphDecision, TrustGraphEntity, TrustGraphRelationship, TrustGraphTimelineEvent, TrustGraphTrust, UpsertEntityInput } from "./types.ts";
+import type { CreateRelationshipInput, RecordDecisionInput, TrustGraphDecision, TrustGraphEntity, TrustGraphRelationship, TrustGraphTimelineEvent, TrustGraphTrust, UpsertEntityInput } from "./types";
 
 export interface TrustGraphStore {
   getEntity(organizationId: string, id: string): TrustGraphEntity | undefined;
