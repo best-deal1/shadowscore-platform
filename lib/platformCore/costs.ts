@@ -1,0 +1,4 @@
+export type UsageEvent={investigationJobId:string;workspaceId:string|null;provider:string;outcome:"completed"|"failed";cacheHit:boolean;estimatedCostUsd:number|null;actualCostUsd:number|null;requestStartedAt:string};
+export function summarizeUsage(events:readonly UsageEvent[]){return events.reduce((out,event)=>{const cost=event.actualCostUsd??event.estimatedCostUsd??0;out.totalCostUsd+=cost;out.byProvider[event.provider]=(out.byProvider[event.provider]??0)+cost;if(event.cacheHit)out.cacheHits+=1;if(event.outcome==="failed")out.failedCallCostUsd+=cost;return out;},{totalCostUsd:0,byProvider:{} as Record<string,number>,cacheHits:0,failedCallCostUsd:0});}
+export type ProviderCostRule={kind:"fixed";usd:number}|{kind:"quantity";usdPerUnit:number}|{kind:"unknown"};
+export function estimateProviderCost(rule:ProviderCostRule,quantity=1){return rule.kind==="unknown"?null:rule.kind==="fixed"?rule.usd:rule.usdPerUnit*quantity;}

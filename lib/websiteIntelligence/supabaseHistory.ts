@@ -6,7 +6,7 @@ function fromRow(row: ScanRow): WebsiteScanSnapshot { return { scanId: row.scan_
 
 /** Supabase adapter for the append-only website_intelligence_scans table. */
 export class SupabaseWebsiteScanHistoryRepository implements WebsiteScanHistoryRepository {
-  constructor(private readonly userId: string, private readonly accessToken: string) {}
+  constructor(private readonly userId: string, private readonly accessToken: string, private readonly linkage?: { subjectId: string; investigationJobId?: string }) {}
   async latest(target: string) {
     const rows = await supabaseFetch<ScanRow[]>(`/rest/v1/website_intelligence_scans?target=eq.${encodeURIComponent(target)}&select=*&order=scanned_at.desc&limit=1`, {}, this.accessToken);
     return rows[0] ? fromRow(rows[0]) : undefined;
@@ -16,6 +16,6 @@ export class SupabaseWebsiteScanHistoryRepository implements WebsiteScanHistoryR
     return rows.map(fromRow);
   }
   async append(snapshot: WebsiteScanSnapshot) {
-    await supabaseFetch("/rest/v1/website_intelligence_scans", { method: "POST", body: JSON.stringify({ scan_id: snapshot.scanId, user_id: this.userId, target: snapshot.target, scanned_at: snapshot.scannedAt, previous_scan_id: snapshot.changeReport.previousScanId, scan_snapshot: snapshot.report, change_report: snapshot.changeReport }) }, this.accessToken);
+    await supabaseFetch("/rest/v1/website_intelligence_scans", { method: "POST", body: JSON.stringify({ scan_id: snapshot.scanId, user_id: this.userId, target: snapshot.target, scanned_at: snapshot.scannedAt, previous_scan_id: snapshot.changeReport.previousScanId, scan_snapshot: snapshot.report, change_report: snapshot.changeReport, subject_id: this.linkage?.subjectId, investigation_job_id: this.linkage?.investigationJobId }) }, this.accessToken);
   }
 }
