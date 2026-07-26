@@ -1,6 +1,15 @@
 import type { WebsiteAlertSeverity } from "./alerts";
 export type WebsiteMonitoringStatus = "Active" | "Paused";
 export type WebsiteWatchlistEntry = { id: string; tenantId: string; domain: string; status: WebsiteMonitoringStatus; createdAt: string; lastScannedAt: string | null; latestRiskLevel: WebsiteAlertSeverity | "None"; latestChangeCount: number; nextScanAt: string | null };
+export type WebsiteWatchlistScanMetadata = Pick<WebsiteWatchlistEntry, "lastScannedAt" | "latestRiskLevel" | "latestChangeCount" | "nextScanAt">;
+
+export interface WebsiteWatchlistRepository {
+  list(tenantId: string): Promise<WebsiteWatchlistEntry[]>;
+  add(tenantId: string, input: string): Promise<WebsiteWatchlistEntry>;
+  setStatus(tenantId: string, id: string, status: WebsiteMonitoringStatus): Promise<void>;
+  remove(tenantId: string, id: string): Promise<void>;
+  updateScanMetadata(tenantId: string, domain: string, metadata: WebsiteWatchlistScanMetadata): Promise<void>;
+}
 
 export function normalizeWatchlistDomain(input: string) {
   const value = input.trim(); if (!value) throw new Error("Domain is required.");
@@ -11,10 +20,11 @@ export function normalizeWatchlistDomain(input: string) {
 }
 
 type WatchGlobal = typeof globalThis & { __websiteWatchlist?: WebsiteWatchlistEntry[] };
-export class MemoryWebsiteWatchlistRepository {
+export class MemoryWebsiteWatchlistRepository implements WebsiteWatchlistRepository {
   private records() { const root = globalThis as WatchGlobal; return root.__websiteWatchlist ?? (root.__websiteWatchlist = []); }
   async list(tenantId: string) { return structuredClone(this.records().filter((item) => item.tenantId === tenantId)); }
   async add(tenantId: string, input: string, now = new Date()) { const domain = normalizeWatchlistDomain(input); if (this.records().some((item) => item.tenantId === tenantId && item.domain === domain)) throw new Error("This domain is already on the watchlist."); const item: WebsiteWatchlistEntry = { id: crypto.randomUUID(), tenantId, domain, status: "Active", createdAt: now.toISOString(), lastScannedAt: null, latestRiskLevel: "None", latestChangeCount: 0, nextScanAt: null }; this.records().push(item); return structuredClone(item); }
   async setStatus(tenantId: string, id: string, status: WebsiteMonitoringStatus) { const item = this.records().find((entry) => entry.tenantId === tenantId && entry.id === id); if (!item) throw new Error("Watchlist entry not found."); item.status = status; }
   async remove(tenantId: string, id: string) { const index = this.records().findIndex((entry) => entry.tenantId === tenantId && entry.id === id); if (index < 0) throw new Error("Watchlist entry not found."); this.records().splice(index, 1); }
+  async updateScanMetadata(tenantId: string, domain: string, metadata: WebsiteWatchlistScanMetadata) { const item = this.records().find((entry) => entry.tenantId === tenantId && entry.domain === normalizeWatchlistDomain(domain)); if (!item) return; Object.assign(item, metadata); }
 }
