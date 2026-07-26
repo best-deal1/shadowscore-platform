@@ -1,0 +1,8 @@
+{
+  "version": "trust-benchmark@1.0.0",
+  "cases": [
+    {"id":"verified-business","signals":[{"dimension":"identity","factor":"verified_identifier","effect":"positive","strength":1,"confidence":1}],"expected":{"identity":[65,100]}},
+    {"id":"sanctioned-business","signals":[{"dimension":"compliance","factor":"sanctions","effect":"negative","strength":1,"confidence":1}],"expected":{"compliance":[0,30]}},
+    {"id":"sparse-business","signals":[],"expected":{"overall":[49,51],"confidence":[0,0]}}
+  ]
+}
