@@ -14,7 +14,6 @@ import { analyzeRisk } from "../../../../lib/riskEngine";
 import { resolveBusinessIdentity } from "../../../../lib/businessIdentityResolver";
 import { applyCanonicalIdentityToBusinessProfile, applyCanonicalIdentityToIdentityProfile } from "../../../../lib/canonicalReportIdentity";
 import { ProviderManager, createDefaultProviders } from "../../../../lib/providers";
-import { resolveCompanyTarget } from "../../../../lib/providers/companyEvidenceCatalog";
 import type { ProviderExecutionContext, ProviderResult } from "../../../../lib/providers/types";
 
 const productionProviderManager = new ProviderManager().registerMany(createDefaultProviders());
@@ -113,14 +112,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "A website or business target is required." }, { status: 400 });
     }
 
-    const resolution = resolveCompanyTarget(target);
     const context: ProviderExecutionContext = {
       intakeId: `free-scan-${Date.now().toString(36)}`,
       scanMode: body.scanMode || "website",
-      target: resolution.resolvedTarget,
-      requestedTarget: resolution.requestedTarget,
-      companyId: resolution.company?.id,
-      companyTicker: resolution.company?.ticker,
+      target,
+      requestedTarget: target,
       platform: body.platform || "Website / Business",
       caseType: body.caseType,
       email: body.email,
@@ -194,10 +190,8 @@ export async function POST(request: Request) {
       reportReadyEvent: { type: "free-preview-ready", status: "ready", ready: true, emittedAt: generatedAt },
       executedAt: generatedAt,
       targetResolution: {
-        requestedTarget: resolution.requestedTarget,
-        resolvedTarget: resolution.resolvedTarget,
-        companyId: resolution.company?.id,
-        legalName: resolution.company?.legalName,
+        requestedTarget: target,
+        resolvedTarget: context.target,
       },
       providerRegistry: productionProviderManager.listProviders(),
       executionBudget: { budgetMs: previewRun.telemetry.budgetMs, elapsedMs: previewRun.telemetry.elapsedMs, hardMaximumMs: 12_000 },
