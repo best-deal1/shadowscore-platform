@@ -1,0 +1,10 @@
+import { canTransitionAlertStatus, type WebsiteAlert, type WebsiteAlertStatus } from "./alerts";
+import { normalizeWatchlistDomain, type WebsiteWatchlistEntry } from "./watchlist";
+const watchKey = (tenant: string) => `shadowscore.website-watchlist.${tenant}`;
+const alertKey = (tenant: string) => `shadowscore.website-alerts.${tenant}`;
+function read<T>(key: string): T[] { try { return JSON.parse(localStorage.getItem(key) || "[]"); } catch { return []; } }
+export function listBrowserWatchlist(tenant: string) { return read<WebsiteWatchlistEntry>(watchKey(tenant)); }
+export function addBrowserWatchlist(tenant: string, input: string) { const domain = normalizeWatchlistDomain(input); const items = listBrowserWatchlist(tenant); if (items.some((item) => item.domain === domain)) throw new Error("This domain is already on the watchlist."); items.push({ id: crypto.randomUUID(), tenantId: tenant, domain, status: "Active", createdAt: new Date().toISOString(), lastScannedAt: null, latestRiskLevel: "None", latestChangeCount: 0, nextScanAt: null }); localStorage.setItem(watchKey(tenant), JSON.stringify(items)); return items; }
+export function updateBrowserWatchlist(tenant: string, id: string, action: "pause" | "resume" | "remove") { let items = listBrowserWatchlist(tenant); if (action === "remove") items = items.filter((item) => item.id !== id); else items = items.map((item) => item.id === id ? { ...item, status: action === "pause" ? "Paused" as const : "Active" as const } : item); localStorage.setItem(watchKey(tenant), JSON.stringify(items)); return items; }
+export function listBrowserAlerts(tenant: string) { return read<WebsiteAlert>(alertKey(tenant)); }
+export function updateBrowserAlertStatus(tenant: string, id: string, status: WebsiteAlertStatus) { const items = listBrowserAlerts(tenant).map((item) => { if (item.id !== id) return item; if (!canTransitionAlertStatus(item.status, status)) throw new Error("Invalid alert status transition."); return { ...item, status }; }); localStorage.setItem(alertKey(tenant), JSON.stringify(items)); return items; }
