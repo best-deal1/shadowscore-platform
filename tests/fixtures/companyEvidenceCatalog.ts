@@ -1,3 +1,4 @@
+// Validation fixture only. Production code must obtain company evidence from live providers.
 export type CompanyEvidenceRecord = {
   id: string;
   names: string[];
