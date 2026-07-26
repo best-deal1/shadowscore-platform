@@ -11,10 +11,10 @@ const valueCards = [
 ];
 
 const plans = [
-  { name: "Community", price: "$49", period: "one-time", label: "Start here", description: "A focused trust review for a single organization.", features: ["Trust score and key findings", "Entity identity review", "Executive PDF snapshot", "Recommended next actions"], cta: "Start Free", href: "/intake" },
-  { name: "Professional", price: "$99", period: "per review", label: "Save Time", description: "Deeper investigation for recurring business decisions.", features: ["Full evidence review", "Entity relationship analysis", "Trust timeline", "Downloadable report"], cta: "Choose Professional", href: "/intake" },
-  { name: "Business", price: "$199", period: "per investigation", label: "Most Popular", value: "Best Value", description: "Investigation and monitoring for operational teams.", features: ["Continuous monitoring", "Team investigation workspace", "API and webhooks", "Priority support"], cta: "Choose Business", href: "/intake", featured: true },
-  { name: "Enterprise", price: "$299", period: "per month", label: "Enterprise ready", description: "Controls and deployment support for larger programs.", features: ["SSO and audit logs", "Custom policies and collectors", "Private deployment options", "Dedicated onboarding"], cta: "Contact Sales", href: "/contact" },
+  { name: "Community", price: "Free", period: "", label: "Start here", description: "Core trust intelligence for individuals evaluating an organization.", features: ["Trust score and key findings", "Entity identity review", "Community workspace", "Recommended next actions"], cta: "Start Free", href: "/intake" },
+  { name: "Professional", price: "$49", period: "per month", label: "Professional", description: "Investigation tools and reports for recurring business decisions.", features: ["Full evidence review", "Entity relationship analysis", "Trust timeline", "Downloadable reports"], cta: "Choose Professional", href: "/intake" },
+  { name: "Business", price: "$199", period: "per month", label: "Most popular", value: "Best value", description: "Monitoring and team workflows for operational risk programs.", features: ["Continuous monitoring", "Team investigation workspace", "API and webhooks", "Priority support"], cta: "Choose Business", href: "/intake", featured: true },
+  { name: "Enterprise", price: "Contact Sales", period: "", label: "Enterprise", description: "Governance controls and deployment support for larger programs.", features: ["SSO and audit logs", "Custom policies and collectors", "Private deployment options", "Dedicated onboarding"], cta: "Contact Sales", href: "/contact" },
 ];
 
 type Availability = boolean | string;
@@ -29,19 +29,10 @@ const comparison: Array<[string, Availability, Availability, Availability, Avail
   ["Enterprise Deployment", false, false, false, true],
 ];
 
-const creditPackages = [
-  ["Starter", "$50", "550 Credits", "For occasional source checks"],
-  ["Team", "$150", "1,800 Credits", "For active investigation teams"],
-  ["Scale", "$300", "3,900 Credits", "For monitoring and API workflows"],
-  ["Enterprise", "$500", "7,000 Credits", "Best value"],
-];
-
 const faqs = [
-  ["How does billing work?", "Choose a plan for included capacity. Additional usage and credit purchases are billed separately."],
+  ["How does billing work?", "Professional and Business are billed monthly. Contact sales for Enterprise billing terms."],
   ["Can I cancel anytime?", "Yes. You can cancel a recurring subscription before its next billing date."],
-  ["What happens if I exceed usage?", "Your workspace uses available credits for additional capacity. We show usage before you add more credits."],
-  ["How are credits consumed?", "Credits fund additional source collection, monitoring runs, investigations, and report generation. Usage varies by workflow and source."],
-  ["Do unused credits expire?", "Purchased credits remain available while your account is active."],
+  ["What happens if I reach a plan limit?", "You can upgrade your plan or contact sales to discuss additional capacity."],
   ["Do you offer annual billing?", "Yes. Contact sales for annual Business and Enterprise terms."],
 ];
 
@@ -80,8 +71,6 @@ export default function UpgradePage() {
         </section>
 
         <section className="pricing-section" aria-labelledby="compare-title"><div className="pricing-heading"><p className="pricing-eyebrow">Compare plans</p><h2 id="compare-title">Capabilities at a glance</h2><p>Review the access, workflow, and governance included with each plan.</p></div><div className="pricing-table-wrap"><table><caption className="sr-only">ShadowScore plan feature comparison</caption><thead><tr><th scope="col">Capability</th>{plans.map(plan => <th scope="col" key={plan.name} className={plan.featured ? "is-featured" : ""}>{plan.name}</th>)}</tr></thead><tbody>{comparison.map(([feature, ...values]) => <tr key={feature}><th scope="row">{feature}</th>{values.map((value, i) => <td key={plans[i].name} className={plans[i].featured ? "is-featured" : ""}><AvailabilityValue value={value} /></td>)}</tr>)}</tbody></table></div></section>
-
-        <section className="pricing-section grid gap-6 lg:grid-cols-2" aria-label="Usage and credit pricing"><article className="pricing-panel"><p className="pricing-eyebrow">Usage pricing</p><h2>Expand capacity when you need it</h2><p>Additional professional reports remain <strong className="text-white">$9.90 per completed investigation</strong>. Provider and monitoring usage draws from your credit balance.</p><div className="pricing-note">Only pay for additional capacity beyond your subscription.</div></article><article className="pricing-panel"><p className="pricing-eyebrow">Credits</p><h2>Fund additional intelligence</h2><p>Credits are used for source collection, monitoring runs, additional investigations, and report generation.</p><div className="mt-7 grid gap-3 sm:grid-cols-2">{creditPackages.map(([name, price, credits, note]) => <div className={`credit-card ${name === "Enterprise" ? "is-best" : ""}`} key={name}><div className="flex justify-between gap-3"><h3>{name}</h3><strong>{price}</strong></div><p className="mt-3 text-lg font-black text-white">{credits}</p><span>{note}</span></div>)}</div></article></section>
 
         <section className="pricing-section" aria-labelledby="trust-title"><div className="pricing-heading"><p className="pricing-eyebrow">Built for accountable decisions</p><h2 id="trust-title">Why customers trust ShadowScore</h2><p>Every assessment preserves the evidence, logic, and history behind the decision.</p></div><div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{[["Evidence-backed", "Findings link to the records and signals that support them."],["Deterministic", "Defined rules produce consistent results from the same evidence."],["Versioned", "Changes to evidence, policies, and decisions remain traceable."],["Explainable", "Teams can review how each finding and recommendation was formed."],["Continuous Monitoring", "New events can trigger review as business conditions change."],["Append-only audit trail", "The decision history preserves prior events and recorded actions."]].map(([title, body], index) => <article className="trust-card" key={title}><span>0{index + 1}</span><h3>{title}</h3><p>{body}</p></article>)}</div></section>
 
