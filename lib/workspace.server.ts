@@ -1,6 +1,8 @@
 import { buildReadyReport, canGenerateReport } from "./reportPipeline";
 import { getMutableMemoryWorkspace } from "./workspaceStore";
 import { presentReportForEndUser, type WorkspaceSession } from "./workspace";
+import { isSupabaseConfigured } from "./supabase";
+import { SupabaseWebsiteScanHistoryRepository } from "./websiteIntelligence/supabaseHistory";
 
 export async function markPaymentPaidAndGenerateReport(session: WorkspaceSession, paymentIntentId: string) {
   const workspace = getMutableMemoryWorkspace(session.userId);
@@ -12,7 +14,8 @@ export async function markPaymentPaidAndGenerateReport(session: WorkspaceSession
   intake.paymentStatus = "paid";
   intake.reportStatus = "generating";
   if (!canGenerateReport(intent)) throw new Error("Payment is not paid.");
-  const report = await buildReadyReport({ intake, paymentIntent: intent });
+  const websiteHistoryRepository = isSupabaseConfigured() && session.accessToken ? new SupabaseWebsiteScanHistoryRepository(session.userId, session.accessToken) : undefined;
+  const report = await buildReadyReport({ intake, paymentIntent: intent, websiteHistoryRepository });
   workspace.reports = [report, ...workspace.reports.filter((item) => item.paymentIntentId !== intent.id)].slice(0, 25);
   intake.reportStatus = "ready";
   return presentReportForEndUser(report);
