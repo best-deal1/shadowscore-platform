@@ -177,3 +177,32 @@ Wave 5 is complete when the platform can demonstrate that:
 The primary measure is the quality of continuously improving understanding. Report volume is a delivery metric.
 
 Wave 5 succeeds when fragmented observations can be joined into real-world entities with consistent outcomes, visible uncertainty, complete provenance, and reproducible decisions. This capability allows every later trust answer to explain why it applies to that entity, which evidence supports it, what changed, and what could change next.
+
+## Wave 5 reference implementation
+
+The reference resolver is implemented in `lib/entityIntelligence`. It uses deterministic normalization, candidate blocking, verified-identifier rules, and weighted similarity. `entity-resolver@1.0.0` and `organization-resolution-policy@1.0.0` identify the exact resolver and policy used for every decision.
+
+### Decision sequence
+
+1. Preserve the raw observation and calculate a normalized comparison value.
+2. Generate candidates inside the same workspace from registration, domain, phone, email, and name anchors.
+3. Extract attribute comparisons and retain their weights, similarity, contribution, and evidence references.
+4. Block consolidation when registration identifiers conflict.
+5. Resolve exact verified identifiers before applying weighted thresholds.
+6. Return `ABSTAIN` when the minimum evidence requirement is not met.
+7. Append the decision. Analyst review appends a superseding decision and never edits the prior record.
+8. Rebuild the current entity projection from the decision ledger.
+
+### Product and API surfaces
+
+- `GET /api/entity-intelligence?q=atlas` searches visible entities and returns current decisions and benchmark metrics.
+- `POST /api/entity-intelligence` evaluates two visible entity identifiers.
+- `GET /api/entity-intelligence/reviews` returns the analyst queue.
+- `POST /api/entity-intelligence/reviews` records an approved, rejected, split, or deferred review with an actor and reason.
+- `/entity-intelligence` presents candidate comparison, decision explanations, relationship context, evidence history, and benchmark metrics.
+
+The API returns `entity-intelligence-api@1.0.0` as its schema version. Production persistence is defined by `20260726080000_entity_intelligence_wave_5.sql`. Observation and decision tables reject updates and deletes. Corrections use superseding records.
+
+### Benchmark release gate
+
+The checked-in golden dataset contains positive pairs, hard negatives, multilingual names, spelling changes, shared attributes, historical names, acquisitions, identifier conflicts, and false merge and false split traps. Run `npm run test:entity-intelligence` to calculate and validate precision, recall, F1, false merge rate, false split rate, abstention rate, calibration error, and review rate. False merge behavior is tested independently because incorrect consolidation is the primary identity risk.

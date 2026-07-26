@@ -55,7 +55,8 @@
     "test:activity-timeline": "node --experimental-strip-types tests/activity-timeline.test.mjs",
     "test:evidence-platform": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types --test tests/evidence-platform-wave-2.test.mjs",
     "test:collector-runtime": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types --test tests/collector-runtime-wave-3.test.mjs",
-    "test:knowledge-layer": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types --test tests/knowledge-layer-wave-4.test.mjs"
+    "test:knowledge-layer": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types --test tests/knowledge-layer-wave-4.test.mjs",
+    "test:entity-intelligence": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types --test tests/entity-intelligence-wave-5.test.mjs"
   },
   "dependencies": {
     "next": "16.2.6",
