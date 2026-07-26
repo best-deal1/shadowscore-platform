@@ -33,6 +33,9 @@ export type ProviderExecutionContext = {
   intakeId: string;
   scanMode: string;
   target: string;
+  requestedTarget?: string;
+  companyId?: string;
+  companyTicker?: string;
   platform: string;
   caseType?: string;
   email?: string;

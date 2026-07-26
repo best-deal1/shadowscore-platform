@@ -216,11 +216,13 @@ export function buildVerificationDecision(input: {
   const hasCompoundingUncertainty = reviewOnlyNegativeEvidenceItems.length >= 2 || (reviewOnlyNegativeEvidenceItems.length >= 1 && reviewOnlyCorrelationContradictions.length >= 1);
   const hasCoreOwnershipGap = missingSignals.some((item) => /ownership|owner|beneficial/i.test(item));
   const hasStrongBusinessEvidence = positiveEvidenceCount >= 3 && infrastructureScore >= 70 && identityScore >= 60 && !hasCoreOwnershipGap;
+  const cannotMakeTrustDecision = completedProviders === 0 || positiveEvidenceCount === 0;
 
   let decision: VerificationDecision = "PROCEED_WITH_VERIFICATION";
   if (confirmedRiskEligible) decision = "FAIL";
   else if (hasMaterialContradiction || hasCompoundingUncertainty) decision = "REVIEW";
   else if (hasStrongBusinessEvidence) decision = "PASS";
+  else if (cannotMakeTrustDecision) decision = "REVIEW";
 
   const reasons = unique([
     `Positive evidence count is ${positiveEvidenceCount}.`,
@@ -269,7 +271,9 @@ export function buildVerificationDecision(input: {
       : decision === "PROCEED_WITH_VERIFICATION"
         ? "Proceed with verification: no confirmed risk was found, but collect ownership or documentation before major commitment."
         : decision === "REVIEW"
-          ? "Review is required because material contradictions or compounding uncertainty were detected."
+          ? cannotMakeTrustDecision
+            ? "A trust decision cannot yet be made. Collect verifiable identity, infrastructure, or official-source evidence."
+            : "Review is required because material contradictions or compounding uncertainty were detected."
           : "Confirmed negative indicators require investigation before proceeding.",
     limitedPreview: input.audience === "free",
     canonicalDecision,

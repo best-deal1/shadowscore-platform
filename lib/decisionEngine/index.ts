@@ -52,7 +52,9 @@ export function buildDecision(input: {
       : model.decision === "PROCEED_WITH_VERIFICATION"
         ? "No confirmed risk was found. Additional ownership or documentation should be collected before a major commitment."
         : model.decision === "REVIEW"
-          ? "Material contradictions or compounding uncertainty require human review before proceeding."
+          ? model.positiveEvidenceCount === 0
+            ? "A trust decision cannot yet be made because the investigation did not collect sufficient verifiable evidence."
+            : "Material contradictions or compounding uncertainty require human review before proceeding."
           : "Confirmed negative indicators require investigation before proceeding.",
     recommendedAction: model.recommendedAction,
     limitedPreview: input.audience === "free",
