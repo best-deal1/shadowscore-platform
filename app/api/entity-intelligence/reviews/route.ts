@@ -1,0 +1,4 @@
+import { demoDecisions } from "@/lib/entityIntelligence";
+const actions=new Set(["approved","rejected","split","deferred"]);
+export async function GET(){return Response.json({queue:demoDecisions.filter(decision=>decision.review.status==="pending")});}
+export async function POST(request:Request){const body=await request.json() as {decisionId?:string;action?:string;actorId?:string;reason?:string};if(!body.decisionId||!actions.has(body.action??"")||!body.actorId||!body.reason?.trim())return Response.json({error:"Decision, action, actor, and reason are required."},{status:400});return Response.json({auditEvent:{eventId:`review-${body.decisionId}-${Date.now()}`,decisionId:body.decisionId,action:body.action,actorId:body.actorId,reason:body.reason,recordedAt:new Date().toISOString()}},{status:201});}
