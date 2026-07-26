@@ -6,3 +6,4 @@ export * from "./costs";
 export * from "./billing";
 export * from "./usage";
 export * from "./entitlements";
+export * from "../knowledge";
