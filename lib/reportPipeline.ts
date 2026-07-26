@@ -12,6 +12,8 @@ import { buildBusinessIntelligence } from "./businessIntelligence";
 import { normalizeWebsiteEvidence, toCanonicalWebsiteReport } from "./websiteIntelligence";
 import { investigateAndRecordWebsite } from "./websiteIntelligence/monitoring";
 import type { WebsiteScanHistoryRepository } from "./websiteIntelligence/history";
+import type { WebsiteAlertRepository } from "./websiteIntelligence/alerts";
+import type { WebsiteWatchlistRepository } from "./websiteIntelligence/watchlist";
 import { buildShadowScorecard } from "./scoring";
 import { buildInvestigationTimeline } from "./investigation/timeline";
 import { buildBusinessIdentityKnowledgeScan, BusinessKnowledgeGraph } from "./knowledgeGraph";
@@ -39,6 +41,9 @@ export async function buildReadyReport(input: {
   reportId?: string;
   createdAt?: string;
   websiteHistoryRepository?: WebsiteScanHistoryRepository;
+  websiteAlertRepository?: WebsiteAlertRepository;
+  websiteWatchlistRepository?: WebsiteWatchlistRepository;
+  websiteTenantId?: string;
 }): Promise<ShadowScoreReport> {
   const { intake, paymentIntent } = input;
 
@@ -64,7 +69,8 @@ export async function buildReadyReport(input: {
   const executionPlan = planFromClassification(classification);
   executionFlow.push("✓ Execution plan created");
   const { providerResults, executionRecords } = await providerManager.runExecutionPlan(providerContext, executionPlan.executionPlan, executionPlan.skippedEngines);
-  const websiteMonitoring = intake.scanMode === "website" ? await investigateAndRecordWebsite({ target: intake.target }, input.websiteHistoryRepository) : undefined;
+  const alerting = input.websiteTenantId && input.websiteAlertRepository ? { tenantId: input.websiteTenantId, repository: input.websiteAlertRepository, watchlistRepository: input.websiteWatchlistRepository } : undefined;
+  const websiteMonitoring = intake.scanMode === "website" ? await investigateAndRecordWebsite({ target: intake.target }, input.websiteHistoryRepository, alerting) : undefined;
   const websiteIntelligence = websiteMonitoring?.report;
   const canonicalWebsiteReport = websiteIntelligence ? toCanonicalWebsiteReport(websiteIntelligence) : undefined;
   const websiteEvidenceItems = websiteIntelligence ? normalizeWebsiteEvidence(websiteIntelligence) : [];
@@ -210,7 +216,8 @@ export async function buildReadyReport(input: {
       websiteIntelligence,
       canonicalWebsiteReport,
       websiteChangeReport: websiteMonitoring?.snapshot.changeReport,
-      websiteChangeTimeline: websiteMonitoring?.history.map((snapshot) => ({ scanId: snapshot.scanId, scannedAt: snapshot.scannedAt, summary: snapshot.changeReport.summary, changeCount: snapshot.changeReport.changes.length })),
+      websiteAlertSummary: websiteMonitoring ? { count: websiteMonitoring.alerts.length, severities: websiteMonitoring.alerts.reduce<Record<string, number>>((summary, alert) => ({ ...summary, [alert.severity]: (summary[alert.severity] || 0) + 1 }), {}) } : undefined,
+      websiteChangeTimeline: websiteMonitoring?.history.map((snapshot) => ({ scanId: snapshot.scanId, scannedAt: snapshot.scannedAt, summary: snapshot.changeReport.summary, changeCount: snapshot.changeReport.changes.length, alertIds: websiteMonitoring.alerts.filter((alert) => alert.currentScanId === snapshot.scanId).map((alert) => alert.id) })),
       scorecard,
       investigationTimeline,
       execution: {
