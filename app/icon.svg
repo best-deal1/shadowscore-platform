@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 80" role="img" aria-labelledby="title desc">
+  <title id="title">ShadowScore infinity mark</title>
+  <desc id="desc">Connected observations form a continuous intelligence loop around a resolution point.</desc>
+  <defs>
+    <linearGradient id="flow" x1="12" y1="15" x2="148" y2="65" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#38BDF8"/><stop offset=".48" stop-color="#8B5CF6"/><stop offset="1" stop-color="#34D399"/>
+    </linearGradient>
+    <radialGradient id="core"><stop stop-color="#fff"/><stop offset=".35" stop-color="#C4B5FD"/><stop offset="1" stop-color="#7C3AED"/></radialGradient>
+    <filter id="glow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <path d="M80 40C62 14 44 10 29 15C10 21 8 48 24 61C41 74 62 60 80 40C98 20 119 6 136 19C152 32 150 59 131 65C116 70 98 66 80 40Z" fill="none" stroke="url(#flow)" stroke-width="5" stroke-linecap="round" stroke-dasharray="1 9"/>
+  <path d="M80 40C62 14 44 10 29 15C10 21 8 48 24 61C41 74 62 60 80 40C98 20 119 6 136 19C152 32 150 59 131 65C116 70 98 66 80 40Z" fill="none" stroke="url(#flow)" stroke-width="1.2" opacity=".55"/>
+  <circle cx="80" cy="40" r="8" fill="#8B5CF6" opacity=".18" filter="url(#glow)"/><circle cx="80" cy="40" r="3.8" fill="url(#core)" filter="url(#glow)"/>
+</svg>
