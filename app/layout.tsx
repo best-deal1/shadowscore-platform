@@ -11,7 +11,7 @@ const organizationJsonLd = {
       "@type": "Organization",
       name: "ShadowScore",
       url: "https://shadowscore.io",
-      logo: "https://shadowscore.io/shadowscore-shield-v8.png",
+      logo: "https://shadowscore.io/brand/shadowscore-infinity.svg",
       description: "Trust intelligence for source-backed business verification, due diligence, and vendor risk assessment.",
     },
     {
@@ -48,9 +48,9 @@ export const metadata: Metadata = {
     images: ["/marketplaces-monitor-enterprise-v5.png"],
   },
   icons: {
-    icon: "/shadowscore-shield-v8.png",
-    shortcut: "/shadowscore-shield-v8.png",
-    apple: "/shadowscore-shield-v8.png",
+    icon: "/brand/shadowscore-infinity.svg",
+    shortcut: "/brand/shadowscore-infinity.svg",
+    apple: "/brand/shadowscore-infinity.svg",
   },
 };
 

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { useLocale } from "./LocaleProvider";
@@ -101,14 +102,15 @@ export default function ShadowScoreLayout({
             aria-label="ShadowScore home"
             className="flex items-center gap-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-300"
           >
-            <img
-              src="/shadowscore-shield-v8.png"
+            <Image
+              src="/brand/shadowscore-infinity.svg"
               alt=""
-              aria-hidden="true"
-              className="h-9 w-9 rounded-xl bg-black object-contain p-1"
+              width={160}
+              height={80}
+              className="h-9 w-14 object-contain"
             />
-            <div className="text-xl font-black tracking-tight">
-              Shadow<span className="text-red-500">Score</span>
+            <div className="text-xl font-black tracking-tight text-white">
+              ShadowScore
             </div>
           </Link>
 
@@ -156,7 +158,7 @@ export default function ShadowScoreLayout({
             )}
             <Link
               href="/intake"
-              className="rounded-full bg-red-600 px-5 py-2 text-sm font-black text-white shadow-lg shadow-red-950/40 transition hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-300"
+              className="rounded-full bg-violet-600 px-5 py-2 text-sm font-black text-white shadow-lg shadow-violet-950/40 transition hover:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-300"
             >
               {t.nav.start}
             </Link>
