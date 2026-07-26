@@ -48,9 +48,8 @@ export const metadata: Metadata = {
     images: ["/marketplaces-monitor-enterprise-v5.png"],
   },
   icons: {
-    icon: "/brand/shadowscore-infinity.svg",
-    shortcut: "/brand/shadowscore-infinity.svg",
-    apple: "/brand/shadowscore-infinity.svg",
+    icon: [{ url: "/icon.svg", type: "image/svg+xml", sizes: "any" }],
+    shortcut: [{ url: "/icon.svg", type: "image/svg+xml" }],
   },
 };
 
