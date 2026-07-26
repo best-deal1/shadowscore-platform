@@ -13,3 +13,11 @@ export async function enqueueWebsiteInvestigation(input:{target:string;idempoten
 }
 export async function getInvestigationJob(id:string,accessToken:string){const jobs=await supabaseFetch<JobRow[]>(`/rest/v1/investigation_jobs?investigation_job_id=eq.${encodeURIComponent(id)}&select=*`,{},accessToken);if(!jobs[0])return null;const stages=await supabaseFetch<StageRow[]>(`/rest/v1/investigation_stages?investigation_job_id=eq.${encodeURIComponent(id)}&select=*&order=created_at.asc`,{},accessToken);return {job:mapJob(jobs[0]),stages:stages.map(mapStage)};}
 export async function hasInvestigationEntitlement(workspaceId:string,accessToken:string){const grants=await supabaseFetch<{product_id:string}[]>(`/rest/v1/entitlement_grants?workspace_id=eq.${encodeURIComponent(workspaceId)}&scope=eq.workspace&status=eq.active&select=product_id`,{},accessToken);return grants.length>0;}
+
+type MonthlyUsageRow={period_start:string;investigations_used:number;monitoring_executions:number;ai_usage:number;provider_spend:number;storage_usage:number};
+export async function getWorkspaceMonthlyUsage(workspaceId:string,accessToken:string,at=new Date()){
+  const periodStart=new Date(Date.UTC(at.getUTCFullYear(),at.getUTCMonth(),1)).toISOString();
+  const rows=await supabaseFetch<MonthlyUsageRow[]>(`/rest/v1/workspace_monthly_usage?workspace_id=eq.${encodeURIComponent(workspaceId)}&period_start=eq.${encodeURIComponent(periodStart)}&select=*`,{},accessToken);
+  const row=rows[0];
+  return {periodStart,periodEnd:new Date(Date.UTC(at.getUTCFullYear(),at.getUTCMonth()+1,1)).toISOString(),investigationsUsed:Number(row?.investigations_used??0),investigationsRemaining:null,monitoringExecutions:Number(row?.monitoring_executions??0),aiUsage:Number(row?.ai_usage??0),providerSpend:Number(row?.provider_spend??0),storageUsage:Number(row?.storage_usage??0),monthlyTotals:{currency:"USD",cost:Number(row?.provider_spend??0)}};
+}
