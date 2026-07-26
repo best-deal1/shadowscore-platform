@@ -9,7 +9,9 @@ import { buildIdentityProfile } from "./identityEngine";
 import { buildBusinessProfile } from "./businessProfileEngine";
 import { buildBusinessIdentityIntelligence } from "./businessIdentityIntelligence";
 import { buildBusinessIntelligence } from "./businessIntelligence";
-import { investigateWebsite, normalizeWebsiteEvidence, toCanonicalWebsiteReport } from "./websiteIntelligence";
+import { normalizeWebsiteEvidence, toCanonicalWebsiteReport } from "./websiteIntelligence";
+import { investigateAndRecordWebsite } from "./websiteIntelligence/monitoring";
+import type { WebsiteScanHistoryRepository } from "./websiteIntelligence/history";
 import { buildShadowScorecard } from "./scoring";
 import { buildInvestigationTimeline } from "./investigation/timeline";
 import { buildBusinessIdentityKnowledgeScan, BusinessKnowledgeGraph } from "./knowledgeGraph";
@@ -36,6 +38,7 @@ export async function buildReadyReport(input: {
   paymentIntent: PaymentIntent;
   reportId?: string;
   createdAt?: string;
+  websiteHistoryRepository?: WebsiteScanHistoryRepository;
 }): Promise<ShadowScoreReport> {
   const { intake, paymentIntent } = input;
 
@@ -61,7 +64,8 @@ export async function buildReadyReport(input: {
   const executionPlan = planFromClassification(classification);
   executionFlow.push("✓ Execution plan created");
   const { providerResults, executionRecords } = await providerManager.runExecutionPlan(providerContext, executionPlan.executionPlan, executionPlan.skippedEngines);
-  const websiteIntelligence = intake.scanMode === "website" ? await investigateWebsite({ target: intake.target }) : undefined;
+  const websiteMonitoring = intake.scanMode === "website" ? await investigateAndRecordWebsite({ target: intake.target }, input.websiteHistoryRepository) : undefined;
+  const websiteIntelligence = websiteMonitoring?.report;
   const canonicalWebsiteReport = websiteIntelligence ? toCanonicalWebsiteReport(websiteIntelligence) : undefined;
   const websiteEvidenceItems = websiteIntelligence ? normalizeWebsiteEvidence(websiteIntelligence) : [];
   const providerEvidenceItems = buildEvidenceItems({
@@ -205,6 +209,8 @@ export async function buildReadyReport(input: {
       businessIntelligence,
       websiteIntelligence,
       canonicalWebsiteReport,
+      websiteChangeReport: websiteMonitoring?.snapshot.changeReport,
+      websiteChangeTimeline: websiteMonitoring?.history.map((snapshot) => ({ scanId: snapshot.scanId, scannedAt: snapshot.scannedAt, summary: snapshot.changeReport.summary, changeCount: snapshot.changeReport.changes.length })),
       scorecard,
       investigationTimeline,
       execution: {

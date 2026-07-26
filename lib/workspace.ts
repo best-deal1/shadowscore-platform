@@ -8,6 +8,7 @@ import type { BusinessNarrative } from "./narrative/types";
 import type { BusinessIdentityIntelligenceResult } from "./businessIdentityIntelligence";
 import type { BusinessIntelligenceResult } from "./businessIntelligence";
 import type { CanonicalWebsiteReport, WebsiteIntelligenceReport } from "./websiteIntelligence";
+import type { WebsiteChangeReport } from "./websiteIntelligence/history";
 import type { ShadowScorecard } from "./scoring";
 import type { InvestigationStage } from "./investigation/timeline";
 import type { ReasoningOutput } from "./reasoning";
@@ -68,7 +69,7 @@ export type ShadowScoreReport = {
   providerVersions?: Record<string, string>;
   providerResults?: ProviderResult[];
   evidenceSummary?: unknown;
-  reportSummary?: { message: string; primaryRiskDomain?: string; findingCount?: number; insights?: TrustInsight[]; insightEngineVersion?: string; decision?: DecisionOutput; reasoning?: ReasoningOutput; correlationSummary?: CorrelationSummary; identityProfile?: IdentityProfile; businessNarrative?: BusinessNarrative; businessIdentityResolution?: unknown; businessIdentityIntelligence?: BusinessIdentityIntelligenceResult; businessIntelligence?: BusinessIntelligenceResult; websiteIntelligence?: WebsiteIntelligenceReport; canonicalWebsiteReport?: CanonicalWebsiteReport; scorecard?: ShadowScorecard; investigationTimeline?: InvestigationStage[]; execution?: { completedInSeconds: number; providersExecuted: number; evidenceCollected: number; decisionConfidence?: string }; executionFlow?: string[]; knowledgeGraph?: KnowledgeGraphSnapshot; technicalDetails?: { executed: ProviderExecutionRecord[]; skipped: ProviderExecutionRecord[]; pending: ProviderExecutionRecord[]; failed: ProviderExecutionRecord[] }; sourceProvenance?: Array<{ label: string; completedAt?: string }> };
+  reportSummary?: { message: string; primaryRiskDomain?: string; findingCount?: number; insights?: TrustInsight[]; insightEngineVersion?: string; decision?: DecisionOutput; reasoning?: ReasoningOutput; correlationSummary?: CorrelationSummary; identityProfile?: IdentityProfile; businessNarrative?: BusinessNarrative; businessIdentityResolution?: unknown; businessIdentityIntelligence?: BusinessIdentityIntelligenceResult; businessIntelligence?: BusinessIntelligenceResult; websiteIntelligence?: WebsiteIntelligenceReport; canonicalWebsiteReport?: CanonicalWebsiteReport; websiteChangeReport?: WebsiteChangeReport; websiteChangeTimeline?: Array<{ scanId: string; scannedAt: string; summary: string; changeCount: number }>; scorecard?: ShadowScorecard; investigationTimeline?: InvestigationStage[]; execution?: { completedInSeconds: number; providersExecuted: number; evidenceCollected: number; decisionConfidence?: string }; executionFlow?: string[]; knowledgeGraph?: KnowledgeGraphSnapshot; technicalDetails?: { executed: ProviderExecutionRecord[]; skipped: ProviderExecutionRecord[]; pending: ProviderExecutionRecord[]; failed: ProviderExecutionRecord[] }; sourceProvenance?: Array<{ label: string; completedAt?: string }> };
   topFactors: string[];
 };
 
