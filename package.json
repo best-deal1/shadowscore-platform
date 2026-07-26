@@ -57,7 +57,8 @@
     "test:collector-runtime": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types --test tests/collector-runtime-wave-3.test.mjs",
     "test:knowledge-layer": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types --test tests/knowledge-layer-wave-4.test.mjs",
     "test:entity-intelligence": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types --test tests/entity-intelligence-wave-5.test.mjs",
-    "test:continuous-resolution": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types --test tests/continuous-resolution-wave-5-1.test.mjs"
+    "test:continuous-resolution": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types --test tests/continuous-resolution-wave-5-1.test.mjs",
+    "test:trust-intelligence": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types --test tests/trust-intelligence-wave-6.test.mjs"
   },
   "dependencies": {
     "next": "16.2.6",
