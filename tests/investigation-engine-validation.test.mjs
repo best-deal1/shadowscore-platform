@@ -61,3 +61,19 @@ test("authoritative SEC records retain an adverse event classification", async (
     assert.equal(result.findings[0].severity, "high");
   } finally { globalThis.fetch = originalFetch; }
 });
+
+test("SEC full-text highlights and authoritative document fields reach regulatory classification", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({ hits: { total: { value: 3 }, hits: [
+    { _source: { form: "8-K", file_date: "2025-01-01", display_names: ["Example Corp"] }, highlight: { content: ["Example Corp filed for <em>Chapter 11 bankruptcy</em> protection."] } },
+    { _source: { form: "8-K", file_date: "2025-02-01", display_names: ["Example Corp"], primary_doc_description: "SEC charged Example Corp with securities fraud" } },
+    { _source: { form: "8-K", file_date: "2025-03-01", display_names: ["Example Corp"], items: ["DOJ criminal conviction"] } },
+  ] } }), { status: 200, headers: { "content-type": "application/json" } });
+  try {
+    const result = await new ReputationProvider().execute(context("Example Corp"));
+    assert.deepEqual(result.evidence.slice(1).map((item) => item.regulatoryClassification), ["bankruptcy", "regulatory_action", "criminal_enforcement"]);
+    assert.match(result.evidence[1].value, /Chapter 11 bankruptcy protection/);
+    assert.equal(result.metadata.recordsWithEventText, 3);
+    assert.equal(result.findings.length, 3);
+  } finally { globalThis.fetch = originalFetch; }
+});

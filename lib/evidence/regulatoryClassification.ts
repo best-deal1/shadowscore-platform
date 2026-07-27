@@ -4,7 +4,7 @@ const SANCTIONS = /\b(sanction(?:s|ed)?|ofac|special(?:ly)? designated nationals
 const CRIMINAL = /\b(criminal|convict(?:ed|ion)?|indict(?:ed|ment)?|guilty|sentenc(?:ed|ing)|prosecut(?:ed|ion)|department of justice|\bdoj\b)\b/i;
 const BANKRUPTCY = /\b(bankrupt(?:cy)?|chapter\s+(?:7|11|15)|insolven(?:t|cy)|restructuring proceeding|liquidation proceeding)\b/i;
 const LITIGATION = /\b(litigation|lawsuit|civil action|court action|complaint filed|judgment|injunction)\b/i;
-const REGULATORY_ACTION = /\b(enforcement action|administrative proceeding|cease[- ]and[- ]desist|civil penalty|regulatory settlement|settled charges?|charged by (?:the )?(?:sec|regulator)|regulator(?:y)? action|consent order)\b/i;
+const REGULATORY_ACTION = /\b(enforcement action|administrative proceeding|cease[- ]and[- ]desist|civil penalty|regulatory settlement|settled charges?|charged by (?:the )?(?:sec|regulator)|(?:the )?(?:sec|regulator) charged|securities fraud|fraud charges?|regulator(?:y)? action|consent order)\b/i;
 const ROUTINE_SEC_FORM = /^(?:10-[KQ]|8-K|20-F|40-F|6-K|S-[138]|F-[134]|DEF 14A|PRE 14A|SC 13[DG]|13F-HR|3|4|5)(?:\/?A)?$/i;
 
 export type RegulatoryRecord = { form?: string; rootForms?: string[]; names?: string[]; text?: string };
