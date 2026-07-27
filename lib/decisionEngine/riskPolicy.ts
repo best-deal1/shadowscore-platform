@@ -29,6 +29,7 @@ export function isConfirmedRiskEvidenceText(text: string) {
 
 export function isConfirmedRiskEvidenceItem(item: EvidenceItem) {
   if (item.category !== "Negative") return false;
+  if (item.authoritative && item.regulatoryClassification && item.regulatoryClassification !== "routine") return true;
   const text = `${item.provider} ${item.source} ${item.title} ${item.description} ${item.businessImpact}`;
   if (isIdentityMismatchText(text)) return false;
   return isConfirmedRiskEvidenceText(text);
