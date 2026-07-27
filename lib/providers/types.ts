@@ -14,6 +14,14 @@ export type ProviderStatus = "completed" | "failed" | "skipped";
 
 export type ProviderFailureReason = "Unavailable" | "Rate Limited" | "Not Supported" | "Timeout";
 
+export type RegulatoryEvidenceClassification =
+  | "routine"
+  | "regulatory_action"
+  | "litigation"
+  | "criminal_enforcement"
+  | "bankruptcy"
+  | "sanctions";
+
 export type ProviderFinding = {
   id: string;
   title: string;
@@ -27,6 +35,8 @@ export type ProviderEvidence = {
   label: string;
   value?: string;
   source: string;
+  regulatoryClassification?: RegulatoryEvidenceClassification;
+  authoritative?: boolean;
 };
 
 export type ProviderExecutionContext = {

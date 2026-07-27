@@ -37,11 +37,27 @@ test("reputation evidence is collected dynamically from an authoritative source"
   });
 });
 
-test("public-record matches are not converted into adverse findings", async () => {
+test("routine public-record matches are not converted into adverse findings", async () => {
   await withMockSec(async () => {
     const result = await new ReputationProvider().execute(context("FTX"));
     assert.equal(result.status, "completed");
     assert.deepEqual(result.findings, []);
-    assert.match(String(result.metadata.assessmentPolicy), /not treated as adverse findings/);
+    assert.equal(result.evidence[1].regulatoryClassification, "routine");
+    assert.match(String(result.metadata.assessmentPolicy), /Routine filings support public-record coverage/);
   });
+});
+
+test("authoritative SEC records retain an adverse event classification", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({ hits: { total: { value: 2 }, hits: [
+    { _source: { form: "10-K", file_date: "2025-01-01", display_names: ["Example Corp"] } },
+    { _source: { form: "8-K", file_date: "2025-02-01", display_names: ["Example Corp Chapter 11 bankruptcy proceeding"] } },
+  ] } }), { status: 200, headers: { "content-type": "application/json" } });
+  try {
+    const result = await new ReputationProvider().execute(context("Example Corp"));
+    assert.equal(result.evidence[1].regulatoryClassification, "routine");
+    assert.equal(result.evidence[2].regulatoryClassification, "bankruptcy");
+    assert.equal(result.evidence[2].authoritative, true);
+    assert.equal(result.findings[0].severity, "high");
+  } finally { globalThis.fetch = originalFetch; }
 });

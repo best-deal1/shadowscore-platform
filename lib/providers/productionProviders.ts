@@ -3,6 +3,7 @@ import tls from "node:tls";
 
 import { BaseProvider } from "./BaseProvider";
 import type { ProviderEvidence, ProviderExecutionContext, ProviderFinding, ProviderFailureReason, ProviderHealth, ProviderResult } from "./types";
+import { classifyRegulatoryRecord, isAdverseRegulatoryClassification } from "../evidence/regulatoryClassification";
 
 
 type NormalizedTarget = { domain: string; websiteUrl?: string; email?: string; supported: boolean; reason?: ProviderFailureReason };
@@ -247,9 +248,12 @@ export class ReputationProvider extends ProductionProvider {
     const evidence: ProviderEvidence[] = [{ id: "reputation-query", type: "observation", label: "Regulatory records query", value: query, source: url.toString() }];
     for (const [index, hit] of hits.entries()) {
       const source = hit._source;
-      evidence.push({ id: `sec-record-${index + 1}`, type: "document", label: "SEC public filing record", value: [source?.form, source?.file_date, ...(source?.display_names || [])].filter(Boolean).join(" | ") || "SEC filing", source: url.toString() });
+      const regulatoryClassification = classifyRegulatoryRecord({ form: source?.form, rootForms: source?.root_forms, names: source?.display_names });
+      evidence.push({ id: `sec-record-${index + 1}`, type: "document", label: regulatoryClassification === "routine" ? "Routine SEC filing" : `SEC ${regulatoryClassification.replaceAll("_", " ")}`, value: [source?.form, source?.file_date, ...(source?.display_names || [])].filter(Boolean).join(" | ") || "SEC filing", source: url.toString(), regulatoryClassification, authoritative: true });
     }
-    return { findings: [], evidence, metadata: { integrationStatus: "connected", lookupPerformed: true, authoritative: true, authority: "U.S. Securities and Exchange Commission", sourceType: "live_authoritative_public_records", queryUrl: url.toString(), recordCount: hits.length, totalRecords: payload.hits?.total?.value || 0, assessmentPolicy: "Public filing matches are evidence records. They are not treated as adverse findings without evidence that establishes an adverse event." } };
+    const classificationCounts = evidence.reduce<Record<string, number>>((counts, item) => { if (item.regulatoryClassification) counts[item.regulatoryClassification] = (counts[item.regulatoryClassification] || 0) + 1; return counts; }, {});
+    const findings: ProviderFinding[] = evidence.filter((item) => isAdverseRegulatoryClassification(item.regulatoryClassification)).map((item) => ({ id: `${item.id}-adverse`, title: item.label, description: `An authoritative SEC record was classified as ${item.regulatoryClassification?.replaceAll("_", " ")}.`, severity: item.regulatoryClassification === "criminal_enforcement" || item.regulatoryClassification === "sanctions" ? "critical" : "high" }));
+    return { findings, evidence, metadata: { integrationStatus: "connected", lookupPerformed: true, authoritative: true, authority: "U.S. Securities and Exchange Commission", sourceType: "live_authoritative_public_records", queryUrl: url.toString(), recordCount: hits.length, totalRecords: payload.hits?.total?.value || 0, classificationCounts, assessmentPolicy: "Routine filings support public-record coverage. Authoritative regulatory actions, litigation, criminal enforcement, bankruptcy, and sanctions are adverse evidence classifications." } };
   }
 }
 export class WebsiteMetadataProvider extends ProductionProvider { readonly id = "website-metadata"; readonly name = "Website Metadata Provider"; readonly version = "1.0.0"; readonly category = "business_profile" as const; protected async collect(context: ProviderExecutionContext): Promise<Pick<ProviderResult, "findings" | "evidence" | "metadata">> { const t = this.normalize(context); if (!t.supported || !t.websiteUrl) throw new Error("Not Supported"); const r = await acquireTimedSharedHttp(context); const desc = r.text.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)/i)?.[1]; return { findings: [], evidence: [{ id: "metadata-domain", type: "observation", label: "Website domain", value: t.domain, source: r.finalUrl || r.requestedUrl }, { id: "metadata-description", type: "document", label: "Website metadata description", value: desc || "unavailable", source: r.finalUrl || r.requestedUrl }], metadata: { integrationStatus: "connected", lookupPerformed: true, domain: t.domain, httpOutcome: r.outcome, httpDiagnostics: r.diagnostics, httpAttempts: r.attempts, sharedHttpFetchCount: (context as MutableProviderContext).sharedHttpFetchCount } }; } }
