@@ -12,6 +12,7 @@ function providerResult(evidence) {
 test("classifies distinct authoritative legal and regulatory events", () => {
   assert.equal(classifyRegulatoryRecord({ form: "10-K" }), "routine");
   assert.equal(classifyRegulatoryRecord({ text: "SEC enforcement action and settled charges" }), "regulatory_action");
+  assert.equal(classifyRegulatoryRecord({ text: "SEC charged the company with securities fraud" }), "regulatory_action");
   assert.equal(classifyRegulatoryRecord({ text: "Civil lawsuit and injunction" }), "litigation");
   assert.equal(classifyRegulatoryRecord({ text: "DOJ criminal conviction" }), "criminal_enforcement");
   assert.equal(classifyRegulatoryRecord({ text: "Chapter 11 bankruptcy" }), "bankruptcy");

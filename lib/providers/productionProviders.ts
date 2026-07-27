@@ -235,10 +235,36 @@ export class SPFProvider extends ProductionProvider { readonly id = "spf"; reado
 export class DMARCProvider extends ProductionProvider { readonly id = "dmarc"; readonly name = "DMARC Provider"; readonly version = "2.0.0"; readonly category = "email_authentication" as const; protected async collect(context: ProviderExecutionContext): Promise<Pick<ProviderResult, "findings" | "evidence" | "metadata">> { const t = this.normalize(context); if (!t.supported) throw new Error("Not Supported"); const records = (await txt(`_dmarc.${t.domain}`)).filter((r) => /^v=dmarc1/i.test(r)); return { findings: records.length ? [] : [{ id: "dmarc-missing", title: "DMARC record missing", description: `${t.domain} did not publish a visible DMARC TXT record.`, severity: "medium" as const }], evidence: [{ id: "dmarc-domain", type: "observation", label: "DMARC domain", value: t.domain, source: DNS_SOURCE }, { id: "dmarc-record", type: "configuration", label: "DMARC record", value: records.join(" | ") || "unavailable", source: DNS_SOURCE }], metadata: { integrationStatus: "connected", lookupPerformed: true, domain: t.domain, recordCount: records.length } }; } }
 
 export class BusinessProfileProvider extends ProductionProvider { readonly id = "business-profile"; readonly name = "Public Business Profile Provider"; readonly version = "2.0.0"; readonly category = "business_profile" as const; protected async collect(context: ProviderExecutionContext): Promise<Pick<ProviderResult, "findings" | "evidence" | "metadata">> { const t = this.normalize(context); if (!t.supported || !t.websiteUrl) throw new Error("Not Supported"); const r = await acquireTimedSharedHttp(context); const title = r.diagnostics.responseWasHtml === false ? undefined : r.text.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]?.trim(); const org = r.text.match(/"@type"\s*:\s*"(?:Organization|LocalBusiness)"[\s\S]{0,2000}?"name"\s*:\s*"([^"]+)"/i)?.[1]; const blocked = isErrorPage(r); const outcome = !r.ok ? r.outcome : (blocked ? r.outcome : (org || title ? "completed_with_evidence" : "completed_no_extractable_evidence")); return { findings: [], evidence: [{ id: "profile-domain", type: "observation", label: "Business website domain", value: t.domain, source: r.finalUrl || r.requestedUrl }, { id: "profile-title", type: "document", label: "Business profile title", value: blocked ? "unavailable" : title || "unavailable", source: r.finalUrl || r.requestedUrl }, { id: "profile-organization", type: "document", label: "Business name", value: blocked ? "unavailable" : org || title || "unavailable", source: r.finalUrl || r.requestedUrl }], metadata: { integrationStatus: "connected", lookupPerformed: true, domain: t.domain, countrySupport: "global_public_web", httpOutcome: outcome, errorPageTitleRejected: blocked && Boolean(title), httpDiagnostics: r.diagnostics, httpAttempts: r.attempts, sharedHttpFetchCount: (context as MutableProviderContext).sharedHttpFetchCount } }; } }
-type SecSearchHit = { _id?: string; _source?: { file_date?: string; form?: string; display_names?: string[]; root_forms?: string[] } };
+type SecSearchSource = {
+  file_date?: string;
+  form?: string;
+  display_names?: string[];
+  root_forms?: string[];
+  title?: string;
+  summary?: string;
+  description?: string;
+  primary_doc_description?: string;
+  items?: string | string[];
+};
+type SecSearchHit = { _id?: string; _source?: SecSearchSource; highlight?: Record<string, string | string[]> };
 type SecSearchResponse = { hits?: { total?: { value?: number }; hits?: SecSearchHit[] } };
+
+function readableSecText(value: string) {
+  return value.replace(/<[^>]+>/g, " ").replace(/&(?:nbsp|#160);/gi, " ").replace(/\s+/g, " ").trim();
+}
+
+function secEventText(hit: SecSearchHit) {
+  const source = hit._source;
+  const highlightedText = Object.values(hit.highlight || {}).flatMap((value) => Array.isArray(value) ? value : [value]);
+  const items = Array.isArray(source?.items) ? source.items : source?.items ? [source.items] : [];
+  return [source?.title, source?.summary, source?.description, source?.primary_doc_description, ...items, ...highlightedText]
+    .filter((value): value is string => Boolean(value))
+    .map(readableSecText)
+    .filter(Boolean)
+    .join(" | ");
+}
 export class ReputationProvider extends ProductionProvider {
-  readonly id = "reputation"; readonly name = "Regulatory and Reputation Evidence Provider"; readonly version = "4.0.0"; readonly category = "reputation" as const;
+  readonly id = "reputation"; readonly name = "Regulatory and Reputation Evidence Provider"; readonly version = "4.1.0"; readonly category = "reputation" as const;
   async health(): Promise<ProviderHealth> { return { providerId: this.id, providerVersion: this.version, status: "healthy", checkedAt: new Date().toISOString(), metadata: { category: this.category, providerName: this.name, integration: "sec-edgar-full-text-search", authoritativeSource: SEC_FULL_TEXT_SEARCH_URL } }; }
   protected async collect(context: ProviderExecutionContext): Promise<Pick<ProviderResult, "findings" | "evidence" | "metadata">> {
     const query = (context.requestedTarget || context.target).trim();
@@ -248,12 +274,13 @@ export class ReputationProvider extends ProductionProvider {
     const evidence: ProviderEvidence[] = [{ id: "reputation-query", type: "observation", label: "Regulatory records query", value: query, source: url.toString() }];
     for (const [index, hit] of hits.entries()) {
       const source = hit._source;
-      const regulatoryClassification = classifyRegulatoryRecord({ form: source?.form, rootForms: source?.root_forms, names: source?.display_names });
-      evidence.push({ id: `sec-record-${index + 1}`, type: "document", label: regulatoryClassification === "routine" ? "Routine SEC filing" : `SEC ${regulatoryClassification.replaceAll("_", " ")}`, value: [source?.form, source?.file_date, ...(source?.display_names || [])].filter(Boolean).join(" | ") || "SEC filing", source: url.toString(), regulatoryClassification, authoritative: true });
+      const eventText = secEventText(hit);
+      const regulatoryClassification = classifyRegulatoryRecord({ form: source?.form, rootForms: source?.root_forms, names: source?.display_names, text: eventText });
+      evidence.push({ id: `sec-record-${index + 1}`, type: "document", label: regulatoryClassification === "routine" ? "Routine SEC filing" : `SEC ${regulatoryClassification.replaceAll("_", " ")}`, value: [source?.form, source?.file_date, ...(source?.display_names || []), eventText].filter(Boolean).join(" | ") || "SEC filing", source: url.toString(), regulatoryClassification, authoritative: true });
     }
     const classificationCounts = evidence.reduce<Record<string, number>>((counts, item) => { if (item.regulatoryClassification) counts[item.regulatoryClassification] = (counts[item.regulatoryClassification] || 0) + 1; return counts; }, {});
     const findings: ProviderFinding[] = evidence.filter((item) => isAdverseRegulatoryClassification(item.regulatoryClassification)).map((item) => ({ id: `${item.id}-adverse`, title: item.label, description: `An authoritative SEC record was classified as ${item.regulatoryClassification?.replaceAll("_", " ")}.`, severity: item.regulatoryClassification === "criminal_enforcement" || item.regulatoryClassification === "sanctions" ? "critical" : "high" }));
-    return { findings, evidence, metadata: { integrationStatus: "connected", lookupPerformed: true, authoritative: true, authority: "U.S. Securities and Exchange Commission", sourceType: "live_authoritative_public_records", queryUrl: url.toString(), recordCount: hits.length, totalRecords: payload.hits?.total?.value || 0, classificationCounts, assessmentPolicy: "Routine filings support public-record coverage. Authoritative regulatory actions, litigation, criminal enforcement, bankruptcy, and sanctions are adverse evidence classifications." } };
+    return { findings, evidence, metadata: { integrationStatus: "connected", lookupPerformed: true, authoritative: true, authority: "U.S. Securities and Exchange Commission", sourceType: "live_authoritative_public_records", queryUrl: url.toString(), recordCount: hits.length, totalRecords: payload.hits?.total?.value || 0, recordsWithEventText: hits.filter((hit) => Boolean(secEventText(hit))).length, classificationCounts, assessmentPolicy: "Routine filings support public-record coverage. Filing titles, summaries, descriptions, item labels, and full-text search highlights are classified when the SEC returns them. Authoritative regulatory actions, litigation, criminal enforcement, bankruptcy, and sanctions are adverse evidence classifications." } };
   }
 }
 export class WebsiteMetadataProvider extends ProductionProvider { readonly id = "website-metadata"; readonly name = "Website Metadata Provider"; readonly version = "1.0.0"; readonly category = "business_profile" as const; protected async collect(context: ProviderExecutionContext): Promise<Pick<ProviderResult, "findings" | "evidence" | "metadata">> { const t = this.normalize(context); if (!t.supported || !t.websiteUrl) throw new Error("Not Supported"); const r = await acquireTimedSharedHttp(context); const desc = r.text.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)/i)?.[1]; return { findings: [], evidence: [{ id: "metadata-domain", type: "observation", label: "Website domain", value: t.domain, source: r.finalUrl || r.requestedUrl }, { id: "metadata-description", type: "document", label: "Website metadata description", value: desc || "unavailable", source: r.finalUrl || r.requestedUrl }], metadata: { integrationStatus: "connected", lookupPerformed: true, domain: t.domain, httpOutcome: r.outcome, httpDiagnostics: r.diagnostics, httpAttempts: r.attempts, sharedHttpFetchCount: (context as MutableProviderContext).sharedHttpFetchCount } }; } }
