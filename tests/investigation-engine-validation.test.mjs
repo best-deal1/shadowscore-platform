@@ -77,3 +77,31 @@ test("SEC full-text highlights and authoritative document fields reach regulator
     assert.equal(result.findings.length, 3);
   } finally { globalThis.fetch = originalFetch; }
 });
+
+test("SEC debug telemetry is conditional and returned from the reachable metadata path", async () => {
+  const originalDebug = process.env.DEBUG;
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({ hits: { total: { value: 1 }, hits: [
+    { _source: { form: "8-K", title: "Example Corp bankruptcy" } },
+  ] } }), { status: 200, headers: { "content-type": "application/json" } });
+  try {
+    delete process.env.DEBUG;
+    const standardResult = await new ReputationProvider().execute(context("Example Corp"));
+    assert.equal("rawSecResponse" in standardResult.metadata, false);
+    assert.equal("eventTexts" in standardResult.metadata, false);
+    assert.equal("classifications" in standardResult.metadata, false);
+    assert.equal("secHitCount" in standardResult.metadata, false);
+
+    process.env.DEBUG = "true";
+    const debugResult = await new ReputationProvider().execute(context("Example Corp"));
+    assert.equal(debugResult.metadata.rawSecResponse.hits.total.value, 1);
+    assert.deepEqual(debugResult.metadata.eventTexts, ["Example Corp bankruptcy"]);
+    assert.deepEqual(debugResult.metadata.classifications, ["bankruptcy"]);
+    assert.equal(debugResult.metadata.secHitCount, 1);
+    assert.equal(debugResult.metadata.recordsWithEventText, 1);
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalDebug === undefined) delete process.env.DEBUG;
+    else process.env.DEBUG = originalDebug;
+  }
+});
