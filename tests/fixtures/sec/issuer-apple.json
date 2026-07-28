@@ -1,0 +1,14 @@
+{
+  "cik": "320193",
+  "name": "Apple Inc.",
+  "filings": {
+    "recent": {
+      "accessionNumber": ["0000320193-26-000001"],
+      "filingDate": ["2026-01-02"],
+      "form": ["10-Q"],
+      "primaryDocument": ["aapl-20260102.htm"],
+      "primaryDocDescription": ["Quarterly report"]
+    },
+    "files": []
+  }
+}

@@ -1,6 +1,9 @@
 export { SECClient, SEC_URLS, normalizeCIK } from "./client";
 export type { SECClientOptions } from "./client";
 export { SECRegistry } from "./registry";
+export { SECIssuerRetriever } from "./issuerRetrieval";
+export { canonicalEDGARFilingUrl, mapSECFilingBatch } from "./filingMapper";
+export type { SECFilingBatch, SECIssuerFiling, SECIssuerRetrievalInput, SECIssuerRetrievalResult, SECRetrievalIssue, SECRetrievalIssueCode } from "./filingTypes";
 export { SECAuthoritativeResolver, SEC_AUTHORITATIVE_RESOLVER_VERSION } from "./resolver";
 export type { SECAuthoritativeResolverOptions } from "./resolver";
 export type { SECResolutionCandidate, SECResolutionResult } from "./resolutionTypes";

@@ -3,6 +3,7 @@ import type { SECCompanyTickerDataset, SECSubmissions } from "./types";
 export const SEC_URLS = {
   companyTickersExchange: "https://www.sec.gov/files/company_tickers_exchange.json",
   submissions: (cik: string) => `https://data.sec.gov/submissions/CIK${cik}.json`,
+  submissionFile: (name: string) => `https://data.sec.gov/submissions/${name}`,
 } as const;
 
 const DEFAULT_USER_AGENT = "ShadowScore authoritative registry contact@shadowscore.io";
@@ -34,6 +35,16 @@ export class SECClient {
     if (response.status === 404) return null;
     if (!response.ok) throw new Error(`SEC request failed with status ${response.status}`);
     return response.json() as Promise<SECSubmissions>;
+  }
+
+  async fetchSubmissionFile(name: string): Promise<unknown | null> {
+    if (!/^CIK\d{10}-submissions-\d{3}\.json$/.test(name)) {
+      throw new TypeError("SEC submission filename is invalid");
+    }
+    const response = await this.request(SEC_URLS.submissionFile(name), { headers: this.headers });
+    if (response.status === 404) return null;
+    if (!response.ok) throw new Error(`SEC request failed with status ${response.status}`);
+    return response.json() as Promise<unknown>;
   }
 
   private async fetchJSON<T>(url: string): Promise<T> {
