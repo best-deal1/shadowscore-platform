@@ -23,7 +23,8 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await loginUser(email, password);
-      router.push("/workspace");
+      const requested = new URLSearchParams(window.location.search).get("returnTo") || "/workspace";
+      router.push(requested.startsWith("/") && !requested.startsWith("//") ? requested : "/workspace");
     } catch (err) {
       setError(err instanceof Error ? err.message : page.unavailable);
     } finally {
@@ -63,7 +64,7 @@ export default function LoginPage() {
           </form>
 
           <div className="mt-6 text-sm text-zinc-500">
-            {page.newAccount} <Link href="/signup" className="font-bold text-white hover:text-red-200">{page.createAccount}</Link>
+            {page.newAccount} <Link href={typeof window === "undefined" ? "/signup" : `/signup${window.location.search}`} className="font-bold text-white hover:text-red-200">{page.createAccount}</Link>
           </div>
           <p className="mt-6 text-xs leading-6 text-zinc-600">{page.authentication}</p>
         </div>
