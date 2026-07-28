@@ -5,6 +5,10 @@ import { resolveWebsiteSession } from "@/lib/websiteIntelligence/server";
 
 export async function POST(request: Request) {
   try {
+    const callbackSecret = process.env.PAYMENT_CALLBACK_SECRET;
+    if (!callbackSecret || request.headers.get("x-payment-callback-secret") !== callbackSecret) {
+      return NextResponse.json({ error: "Verified payment callback required." }, { status: 401 });
+    }
     const authenticated = await resolveWebsiteSession(request);
     if (!authenticated) return NextResponse.json({ error: "Authentication is required." }, { status: 401 });
     const body = (await request.json().catch(() => null)) as { paymentIntentId?: unknown } | null;

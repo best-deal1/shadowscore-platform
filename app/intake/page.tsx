@@ -1345,7 +1345,7 @@ export default function IntakePage() {
                     </label>
                     <div className="mt-5 grid gap-3 md:grid-cols-2">
                       <button type="button" onClick={saveLead} className="rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-4 text-sm font-bold text-white hover:border-red-400/30">Save Investigation</button>
-                      <PaymentButtons planName="Downloadable Trust Intelligence Report" price="$9.90" buttonLabel="Unlock Full Report - $9.90" intakeId={intake?.intakeId} />
+                      <PaymentButtons planName="ShadowScore Trust Intelligence Report" price="$9.90" buttonLabel="Unlock Full Report" intakeId={intake?.intakeId} />
                     </div>
                   </div>
                   {leadSaved && <div className="mt-4 rounded-2xl border border-emerald-400/25 bg-emerald-500/10 p-4 text-sm text-emerald-100">Investigation saved. Your full executive report remains locked until payment is confirmed.</div>}

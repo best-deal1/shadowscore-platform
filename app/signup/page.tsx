@@ -34,7 +34,8 @@ export default function SignupPage() {
     setLoading(true);
     try {
       await signupUser(name, email, password);
-      router.push("/workspace");
+      const requested = new URLSearchParams(window.location.search).get("returnTo") || "/workspace";
+      router.push(requested.startsWith("/") && !requested.startsWith("//") ? requested : "/workspace");
     } catch (err) {
       setError(err instanceof Error ? err.message : page.unavailable);
     } finally {
@@ -82,7 +83,7 @@ export default function SignupPage() {
           </form>
 
           <div className="mt-6 text-sm text-zinc-500">
-            {page.existing} <Link href="/login" className="font-bold text-white hover:text-red-200">{page.signIn}</Link>
+            {page.existing} <Link href={typeof window === "undefined" ? "/login" : `/login${window.location.search}`} className="font-bold text-white hover:text-red-200">{page.signIn}</Link>
           </div>
         </div>
       </section>

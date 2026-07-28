@@ -102,6 +102,17 @@ export type PaymentIntent = {
   createdAt: string;
 };
 
+export const REPORT_PRODUCT = {
+  name: "ShadowScore Trust Intelligence Report",
+  price: "$9.90",
+  estimatedGenerationTime: "Usually ready within 2 minutes",
+  includes: ["Executive recommendation", "Verified findings and evidence gaps", "Source trail", "Prioritized action plan"],
+} as const;
+
+export function reportIdForPayment(paymentIntentId: string) {
+  return `locked-${paymentIntentId}`;
+}
+
 export type WorkspaceData = {
   reports: ShadowScoreReport[];
   intakes: ShadowScoreIntake[];
@@ -155,15 +166,16 @@ function mapPaymentIntentRow(row: Record<string, any>): PaymentIntent {
 
 export async function getWorkspace(session: WorkspaceSession): Promise<WorkspaceData> {
   if (isSupabaseConfigured() && session.accessToken) {
-    const [reportRows, entityRows, acceptanceRows, intentRows] = await Promise.all([
+    const [reportRows, intakeRows, entityRows, acceptanceRows, intentRows] = await Promise.all([
       supabaseFetch<Record<string, any>[]>(`/rest/v1/reports?select=*&order=created_at.desc`, {}, session.accessToken),
+      supabaseFetch<Record<string, any>[]>(`/rest/v1/intakes?select=*&order=created_at.desc`, {}, session.accessToken),
       supabaseFetch<Record<string, any>[]>(`/rest/v1/watchlist_entries?select=*&order=updated_at.desc`, {}, session.accessToken),
       supabaseFetch<Record<string, any>[]>(`/rest/v1/legal_acceptances?select=*&order=accepted_at.desc`, {}, session.accessToken),
       supabaseFetch<Record<string, any>[]>(`/rest/v1/payment_intents?select=*&order=created_at.desc`, {}, session.accessToken),
     ]);
     return presentWorkspaceForEndUser({
-      reports: reportRows.map((row) => ({ reportId: row.report_id, acceptanceId: row.acceptance_id, title: row.title, entity: row.entity, platform: row.platform, riskScore: row.risk_score || undefined, confidenceScore: row.confidence_score || undefined, stage: row.stage || "Healthy", createdAt: row.created_at, readyAt: row.ready_at, paymentStatus: row.payment_status || (row.metadata?.paymentStatus as PaymentStatus), reportStatus: row.report_status || "ready", source: row.source, engineVersion: row.risk_engine_version, providerVersions: row.provider_versions || {}, providerResults: row.provider_results || [], evidenceSummary: row.evidence_snapshot || {}, reportSummary: row.metadata?.reportSummary, topFactors: row.top_factors || [] })),
-      intakes: [],
+      reports: reportRows.map((row) => ({ reportId: row.report_id, intakeId: row.intake_id, paymentIntentId: row.payment_intent_id, acceptanceId: row.acceptance_id, title: row.title, entity: row.entity, platform: row.platform, scanMode: row.scan_mode, target: row.target, riskScore: row.risk_score || undefined, confidenceScore: row.confidence_score || undefined, stage: row.stage || "Healthy", createdAt: row.created_at, readyAt: row.ready_at, paymentStatus: row.payment_status || (row.metadata?.paymentStatus as PaymentStatus), reportStatus: row.report_status || "ready", source: row.source, engineVersion: row.risk_engine_version, providerVersions: row.provider_versions || {}, providerResults: row.provider_results || [], evidenceSummary: row.evidence_snapshot || {}, reportSummary: row.metadata?.reportSummary, topFactors: row.top_factors || [] })),
+      intakes: intakeRows.map((row) => ({ intakeId: row.intake_id, userId: row.user_id, scanMode: row.scan_mode, target: row.target, platform: row.platform, caseType: row.case_type, email: row.email, fileNames: row.file_names || [], visibleSignalCategories: row.visible_signal_categories || [], paymentStatus: row.payment_status, reportStatus: row.report_status, createdAt: row.created_at })),
       entities: entityRows.map((row) => ({ id: row.id, name: row.name, type: row.type, status: row.status, lastScore: row.last_score, updatedAt: row.updated_at })),
       acceptances: acceptanceRows.map((row) => ({ reportId: row.report_id || row.payment_intent_id || row.id, planName: row.metadata?.planName || "Checkout", price: row.metadata?.price || "", method: row.metadata?.method || "", acceptedAt: row.accepted_at, legalVersion: row.legal_version, source: row.source })),
       paymentIntents: intentRows.map(mapPaymentIntentRow),
@@ -196,6 +208,14 @@ export async function createIntake(session: WorkspaceSession, record: Omit<Shado
 }
 
 export async function createCheckoutIntent(session: WorkspaceSession, record: { planName: string; price: string; method: string; intakeId?: string }) {
+  if (isSupabaseConfigured() && session.accessToken && record.intakeId) {
+    const activeRows = await supabaseFetch<Record<string, any>[]>(`/rest/v1/payment_intents?select=*&metadata->>intakeId=eq.${encodeURIComponent(record.intakeId)}&status=in.(payment_pending,processing,paid,requires_payment,succeeded)&limit=1`, {}, session.accessToken);
+    if (activeRows[0]) return mapPaymentIntentRow(activeRows[0]);
+  }
+  const existingWorkspace = requireWorkspace(session.userId);
+  const existingIntent = existingWorkspace.paymentIntents.find((item) => item.intakeId === record.intakeId && ["payment_pending", "processing", "paid"].includes(item.paymentStatus));
+  if (existingIntent) return existingIntent;
+
   const now = new Date().toISOString();
   const id = `pi-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   const intent: PaymentIntent = { id, ...record, paymentStatus: "payment_pending", createdAt: now };
@@ -225,7 +245,7 @@ export async function createCheckoutIntent(session: WorkspaceSession, record: { 
           method: "POST",
           body: JSON.stringify({
             user_id: session.userId,
-            report_id: `locked-${createdIntent.id}`,
+            report_id: reportIdForPayment(createdIntent.id),
             intake_id: updatedIntake.intake_id,
             payment_intent_id: createdIntent.id,
             title: "Locked Trust Intelligence Report",
@@ -262,7 +282,7 @@ export async function createCheckoutIntent(session: WorkspaceSession, record: { 
     workspace.intakes = workspace.intakes.map((item) => item.intakeId === record.intakeId ? { ...item, reportStatus: "payment_pending" } : item);
     if (intake) {
       workspace.reports = [{
-        reportId: `locked-${intent.id}`,
+        reportId: reportIdForPayment(intent.id),
         intakeId: intake.intakeId,
         paymentIntentId: intent.id,
         userId: session.userId,
