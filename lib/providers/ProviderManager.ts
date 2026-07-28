@@ -1,4 +1,5 @@
 import type { EnginePlanStep, SkippedEngine } from "../orchestrator/types";
+import { deterministicEntityResolver, type EntityResolver } from "../entityResolution";
 import type { Provider, ProviderExecutionContext, ProviderResult } from "./types";
 
 export type ProviderExecutionState = "executed" | "skipped" | "pending" | "failed";
@@ -81,6 +82,16 @@ function resultClassification(result: ProviderResult): PreviewProviderCompletion
 
 export class ProviderManager {
   private readonly providers = new Map<string, Provider>();
+  private readonly entityResolver: EntityResolver;
+
+  constructor(entityResolver: EntityResolver = deterministicEntityResolver) {
+    this.entityResolver = entityResolver;
+  }
+
+  private resolveContext(context: ProviderExecutionContext): ProviderExecutionContext {
+    if (context.resolvedEntity) return context;
+    return { ...context, resolvedEntity: this.entityResolver.resolve(context) };
+  }
 
   register(provider: Provider) {
     if (this.providers.has(provider.id)) {
@@ -106,6 +117,7 @@ export class ProviderManager {
   }
 
   async runProviders(context: ProviderExecutionContext): Promise<ProviderResult[]> {
+    context = this.resolveContext(context);
     const results: ProviderResult[] = [];
 
     for (const provider of this.providers.values()) {
@@ -116,6 +128,7 @@ export class ProviderManager {
   }
 
   async runFreePreview(context: ProviderExecutionContext, options: { budgetMs?: number; concurrencyLimit?: number } = {}): Promise<PreviewExecutionRun> {
+    context = this.resolveContext(context);
     const started = Date.now();
     const budgetMs = options.budgetMs ?? DEFAULT_PREVIEW_BUDGET_MS;
     const concurrencyLimit = Math.max(1, options.concurrencyLimit ?? DEFAULT_PREVIEW_CONCURRENCY);
@@ -181,6 +194,7 @@ export class ProviderManager {
   }
 
   async runExecutionPlan(context: ProviderExecutionContext, executionPlan: EnginePlanStep[], skippedEngines: SkippedEngine[] = []): Promise<ProviderExecutionRun> {
+    context = this.resolveContext(context);
     const providerResults: ProviderResult[] = [];
     const executionRecords: ProviderExecutionRecord[] = [];
 

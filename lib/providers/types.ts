@@ -1,3 +1,5 @@
+import type { ResolvedEntity } from "../entityResolution";
+
 export type ProviderCategory =
   | "ssl"
   | "dns"
@@ -54,6 +56,7 @@ export type ProviderExecutionContext = {
   paymentIntentId?: string;
   executionProfile?: "free_preview" | "paid_report";
   providerTimeoutMs?: Partial<Record<ProviderCategory | "http", number>>;
+  resolvedEntity?: ResolvedEntity;
 };
 
 export type ProviderHealth = {
