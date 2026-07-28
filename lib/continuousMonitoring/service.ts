@@ -42,3 +42,11 @@ export function addAlert(state: MonitoringState, candidate: AlertCandidate): { s
 }
 export const orderTimeline = (alerts: readonly MonitoringAlert[]) => [...alerts].sort((a, b) => b.detectedAt.localeCompare(a.detectedAt) || b.id.localeCompare(a.id));
 
+export function alertsFromSnapshots(input:{entity:MonitoredEntity;previous:MonitoringSnapshot|null;current:MonitoringSnapshot;providers?:Partial<Record<AlertCategory,string>>}):AlertCandidate[]{
+  if(!input.previous)return [];
+  const categories=new Set<AlertCategory>([...Object.keys(input.previous.values),...Object.keys(input.current.values)] as AlertCategory[]);
+  if(input.previous.trustScore!==input.current.trustScore)categories.add("trust_score");
+  const candidates:AlertCandidate[]=[];
+  for(const category of categories){const previousValue=category==="trust_score"?input.previous.trustScore:input.previous.values[category];const currentValue=category==="trust_score"?input.current.trustScore:input.current.values[category];if(stableString(previousValue)===stableString(currentValue))continue;const label=category.replaceAll("_"," ");candidates.push({monitoredEntityId:input.entity.id,company:input.entity.company,provider:input.providers?.[category]??category,category,severity:calculateSeverity(category,previousValue,currentValue),title:`${label} changed`,description:`A monitoring cycle detected a change in ${label}.`,detectedAt:input.current.capturedAt,previousValue,currentValue});}
+  return candidates;
+}

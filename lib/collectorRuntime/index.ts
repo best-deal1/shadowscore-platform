@@ -6,4 +6,5 @@ export * from "./registry";
 export * from "./planner";
 export * from "./runtime";
 export * from "./services";
+export * from "./orchestration";
 export * from "./websiteCollector";
