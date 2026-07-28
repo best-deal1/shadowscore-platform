@@ -1,0 +1,9 @@
+{
+  "cik": "0000320193",
+  "name": "Apple Inc.",
+  "tickers": ["AAPL"],
+  "exchanges": ["Nasdaq"],
+  "sic": "3571",
+  "stateOfIncorporation": "CA",
+  "website": "https://www.apple.com"
+}
