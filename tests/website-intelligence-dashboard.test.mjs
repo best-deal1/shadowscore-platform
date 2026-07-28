@@ -30,5 +30,5 @@ test("the dashboard renders from the sample fixture above the detailed report", 
   for (const label of ["Evidence coverage", "Assessment summary", "Top recommended actions", "Module status overview", "Evidence limitations"]) assert.match(component, new RegExp(label));
   assert.match(samplePage, /WebsiteIntelligenceDashboard report=\{sampleWebsiteIntelligenceReport\}/);
   assert.ok(samplePage.indexOf("WebsiteIntelligenceDashboard") < samplePage.indexOf("WebsiteIntelligenceReportView report="));
-  assert.match(paidPage, /WebsiteIntelligenceDashboard report=\{report\.reportSummary\.canonicalWebsiteReport\}/);
+  assert.match(paidPage, /ExecutiveIntelligenceReport report=\{report\}/);
 });

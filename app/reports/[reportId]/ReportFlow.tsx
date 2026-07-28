@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import ShadowScoreLayout from "../../../components/ShadowScoreLayout";
+import ExecutiveIntelligenceReport from "../../../components/report/ExecutiveIntelligenceReport";
 import { getCurrentSession } from "../../../lib/auth";
 import { canViewFullReport } from "../../../lib/reportAccess";
 import { PAYPAL_BUSINESS_EMAIL } from "../../../lib/config";
@@ -63,7 +64,7 @@ export default function ReportFlow({ reportId, mode }: { reportId: string; mode:
   const failedGeneration = paid && report?.reportStatus === "failed";
   const sourceCount = report?.reportSummary?.sourceProvenance?.length;
 
-  return <ShadowScoreLayout><main className="mx-auto max-w-4xl px-6 py-14">
+  return <ShadowScoreLayout><main className="mx-auto max-w-6xl px-6 py-14">
     <Link href="/intake" className="text-sm font-bold text-red-200">Back to preview</Link>
     {loading && <p className="mt-10 text-zinc-300">Loading report status...</p>}
     {error && <section className="mt-8 rounded-3xl border border-red-400/30 bg-red-500/10 p-6"><h1 className="text-2xl font-black">Report unavailable</h1><p className="mt-3 text-zinc-300">{error}</p><button onClick={() => void load()} className="mt-5 rounded-xl bg-white px-4 py-3 font-bold text-black">Try again</button></section>}
@@ -75,6 +76,6 @@ export default function ReportFlow({ reportId, mode }: { reportId: string; mode:
 
     {!loading && report && mode === "processing" && <section className="mt-8 rounded-3xl border border-white/10 bg-white/[.035] p-7"><p className={`text-sm font-bold ${paid ? "text-emerald-300" : "text-amber-200"}`}>{paid ? "Payment confirmed" : failedPayment ? "Payment failed" : "Payment processing"}</p><h1 className="mt-3 text-4xl font-black">{ready ? "Your report is ready" : failedGeneration ? "Report generation failed" : paid ? "Your report is being generated" : "Waiting for payment confirmation"}</h1><p className="mt-4 text-zinc-300">{failedGeneration ? "Your payment is confirmed. Retry generation or contact support. You will not be charged again." : "Status is loaded from your account and remains available after a refresh or browser restart."}</p><ol className="mt-8 grid gap-3 sm:grid-cols-5">{["Payment confirmed", "Entity verified", "Evidence collection", "Report generation", "Report ready"].map((step, index) => <li key={step} className={`rounded-xl border p-3 text-xs ${ready || (paid && index < 1) ? "border-emerald-400/40 bg-emerald-500/10" : "border-white/10 text-zinc-500"}`}>{step}</li>)}</ol><div className="mt-7 flex flex-wrap gap-3">{ready && <Link href={`/reports/${reportId}`} className="rounded-xl bg-emerald-400 px-5 py-3 font-black text-black">View Full Report</Link>} {!ready && <button onClick={() => void load()} className="rounded-xl border border-white/15 px-5 py-3 font-bold">Refresh status</button>}<a href="mailto:support@shadowscore.com" className="rounded-xl border border-white/15 px-5 py-3 font-bold">Contact support</a></div></section>}
 
-    {!loading && report && mode === "report" && (ready ? <article className="mt-8 rounded-3xl border border-white/10 bg-white/[.035] p-7"><p className="text-xs font-bold uppercase tracking-[.22em] text-emerald-300">Full report</p><h1 className="mt-3 text-4xl font-black">{report.entity}</h1><p className="mt-4 text-zinc-300">{report.reportSummary?.message || "Your Trust Intelligence report is ready."}</p><div className="mt-7 grid gap-3 sm:grid-cols-2">{report.topFactors.map((item) => <div key={item} className="rounded-xl border border-white/10 p-4 text-sm">{item}</div>)}</div><button disabled className="mt-8 rounded-xl border border-white/10 px-5 py-3 text-zinc-500">Download PDF, Coming soon</button></article> : <section className="mt-8 rounded-3xl border border-amber-400/25 bg-amber-500/10 p-7"><h1 className="text-3xl font-black">Full report locked</h1><p className="mt-3 text-zinc-300">Payment must be confirmed and report generation must be complete.</p><Link href={paid ? `/reports/${reportId}/processing` : `/reports/${reportId}/unlock`} className="mt-6 inline-block rounded-xl bg-white px-5 py-3 font-black text-black">{paid ? "View report status" : "Unlock Full Report"}</Link></section>)}
+    {!loading && report && mode === "report" && (ready ? <ExecutiveIntelligenceReport report={report} /> : <section className="mt-8 rounded-3xl border border-amber-400/25 bg-amber-500/10 p-7"><h1 className="text-3xl font-black">Full report locked</h1><p className="mt-3 text-zinc-300">Payment must be confirmed and report generation must be complete.</p><Link href={paid ? `/reports/${reportId}/processing` : `/reports/${reportId}/unlock`} className="mt-6 inline-block rounded-xl bg-white px-5 py-3 font-black text-black">{paid ? "View report status" : "Unlock Full Report"}</Link></section>)}
   </main></ShadowScoreLayout>;
 }
