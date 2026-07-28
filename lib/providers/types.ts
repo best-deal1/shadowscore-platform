@@ -56,6 +56,7 @@ export type ProviderExecutionContext = {
   paymentIntentId?: string;
   executionProfile?: "free_preview" | "paid_report";
   providerTimeoutMs?: Partial<Record<ProviderCategory | "http", number>>;
+  dkimSelectors?: string[];
   resolvedEntity?: ResolvedEntity;
 };
 
