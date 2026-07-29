@@ -2,85 +2,27 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import ShadowScoreLayout from "@/components/ShadowScoreLayout";
 
-export const metadata: Metadata = {
-  title: "Pricing | ShadowScore",
-  description: "Start with a free business preview. Unlock a full ShadowScore report for $9.90.",
-  alternates: { canonical: "/pricing" },
-};
+export const metadata: Metadata = { title: "Pricing | ShadowScore", description: "Review current ShadowScore report pricing and the planned Community, Professional, Business, and Enterprise plans.", alternates: { canonical: "/pricing" } };
 
-const reportFeatures = [
-  "Decision and recommended next step",
-  "Identity and risk evidence",
-  "Source and evidence trail",
-  "Report saved to your workspace",
+type Status = "Available" | "Coming Soon" | "Planned";
+const statusClass: Record<Status, string> = { Available: "border-emerald-400/30 bg-emerald-400/10 text-emerald-200", "Coming Soon": "border-sky-400/30 bg-sky-400/10 text-sky-200", Planned: "border-white/15 bg-white/5 text-zinc-400" };
+const plans: Array<{ name: string; price: string; period: string; status: Status; description: string; features: Array<{ label: string; status: Status }>; cta: string; href: string; featured?: boolean }> = [
+  { name: "Community", price: "Free", period: "", status: "Available", description: "Core business checks for an individual decision.", features: [{ label: "Business preview", status: "Available" }, { label: "Initial decision and reasons", status: "Available" }, { label: "Recommended next steps", status: "Available" }], cta: "Start free preview", href: "/intake" },
+  { name: "Professional", price: "$49", period: "per month", status: "Coming Soon", description: "Recurring investigation tools and reports for individual professionals.", features: [{ label: "Full evidence review", status: "Available" }, { label: "Downloadable reports", status: "Available" }, { label: "Trust timeline", status: "Coming Soon" }], cta: "Start with a report", href: "/intake" },
+  { name: "Business", price: "$199", period: "per month", status: "Planned", description: "Monitoring and shared workflows for operating teams.", features: [{ label: "Continuous monitoring", status: "Coming Soon" }, { label: "Team workspace", status: "Planned" }, { label: "API and webhooks", status: "Planned" }], cta: "Contact us", href: "/contact", featured: true },
+  { name: "Enterprise", price: "Contact Sales", period: "", status: "Planned", description: "Governance and deployment support for larger review programs.", features: [{ label: "SSO and audit logs", status: "Planned" }, { label: "Custom policies and collectors", status: "Planned" }, { label: "Private deployment", status: "Planned" }], cta: "Contact sales", href: "/contact" },
 ];
 
+function StatusBadge({ status }: { status: Status }) { return <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${statusClass[status]}`}>{status}</span>; }
+
 export default function PricingPage() {
-  return (
-    <ShadowScoreLayout>
-      <main className="pricing-page">
-        <section className="pricing-hero px-6 pb-16 pt-20 text-center sm:pt-28">
-          <div className="mx-auto max-w-4xl">
-            <p className="pricing-eyebrow">Clear, one-time pricing</p>
-            <h1 className="mt-6 text-5xl font-black tracking-[-0.045em] text-white sm:text-7xl">
-              Preview first. Pay for the full report when it is useful.
-            </h1>
-            <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-zinc-300">
-              Run a free preview for any business. Unlock the complete evidence-backed report for $9.90.
-            </p>
-          </div>
-        </section>
+  return <ShadowScoreLayout><main className="pricing-page">
+    <section className="pricing-hero px-6 pb-16 pt-20 text-center sm:pt-28"><div className="mx-auto max-w-4xl"><p className="pricing-eyebrow">Pricing and product roadmap</p><h1 className="mt-6 text-5xl font-black tracking-[-0.045em] text-white sm:text-7xl">Choose the right level of business intelligence.</h1><p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-zinc-300">Use the current preview and report options today. Subscription and enterprise capabilities retain the planned pricing structure below.</p><div className="mt-7 flex flex-wrap justify-center gap-2"><StatusBadge status="Available" /><StatusBadge status="Coming Soon" /><StatusBadge status="Planned" /></div></div></section>
 
-        <section className="mx-auto grid max-w-5xl gap-5 px-6 pb-20 md:grid-cols-2" aria-label="ShadowScore pricing options">
-          <article className="pricing-plan">
-            <div>
-              <span className="pricing-pill">Free</span>
-              <h2>Business preview</h2>
-              <div className="mt-5"><strong>$0</strong></div>
-              <p className="mt-5 text-sm leading-6 text-zinc-400">
-                Check the initial decision, supporting signals, and recommended next step before you buy.
-              </p>
-              <ul>
-                <li><span>✓</span>Initial trust decision</li>
-                <li><span>✓</span>Plain-language reason</li>
-                <li><span>✓</span>Top evidence gaps</li>
-                <li><span>✓</span>Recommended next step</li>
-              </ul>
-            </div>
-            <Link className="pricing-secondary" href="/intake">Start free preview</Link>
-          </article>
+    <section className="mx-auto max-w-5xl px-6 pb-14" aria-labelledby="current-offer-title"><article className="rounded-3xl border border-emerald-400/25 bg-emerald-400/[.06] p-7 sm:flex sm:items-center sm:justify-between sm:gap-8"><div><div className="flex flex-wrap items-center gap-3"><StatusBadge status="Available" /><span className="text-xs font-black uppercase tracking-wider text-zinc-400">One-time purchase</span></div><h2 id="current-offer-title" className="mt-4 text-3xl font-black">Professional Report: $9.90</h2><p className="mt-3 max-w-2xl leading-7 text-zinc-300">Run a free preview, then unlock one complete evidence-backed report. The report is saved to your workspace.</p></div><Link className="pricing-primary mt-6 shrink-0 sm:mt-0" href="/intake">Start free preview</Link></article></section>
 
-          <article className="pricing-plan pricing-plan-featured">
-            <div>
-              <span className="pricing-pill">One-time purchase</span>
-              <h2>Full report</h2>
-              <div className="mt-5 flex items-end gap-2"><strong>$9.90</strong><span className="pb-1 text-sm text-zinc-500">per report</span></div>
-              <p className="mt-5 text-sm leading-6 text-zinc-400">
-                Unlock the complete report after reviewing the free preview. Payment is requested only when you choose to continue.
-              </p>
-              <ul>{reportFeatures.map((feature) => <li key={feature}><span>✓</span>{feature}</li>)}</ul>
-            </div>
-            <Link className="pricing-primary" href="/intake">Start with a free preview</Link>
-          </article>
-        </section>
+    <section className="pricing-section pt-4" aria-labelledby="plans-title"><div className="pricing-heading"><p className="pricing-eyebrow">Planned pricing structure</p><h2 id="plans-title">Plans for recurring review</h2><p>Plan prices remain as agreed. Status labels show which capabilities can be used now and which remain on the roadmap.</p></div><div className="mt-14 grid items-stretch gap-5 md:grid-cols-2 xl:grid-cols-4">{plans.map(plan => <article key={plan.name} className={`pricing-plan ${plan.featured ? "pricing-plan-featured" : ""}`}><div><div className="flex items-center justify-between gap-3"><span className="pricing-pill">{plan.name}</span><StatusBadge status={plan.status} /></div><div className="mt-5 flex items-end gap-2"><strong>{plan.price}</strong><span className="pb-1 text-sm text-zinc-500">{plan.period}</span></div><p className="mt-5 min-h-12 text-sm leading-6 text-zinc-400">{plan.description}</p><ul>{plan.features.map(feature => <li key={feature.label} className="items-start justify-between gap-3"><span className="text-zinc-200">{feature.label}</span><StatusBadge status={feature.status} /></li>)}</ul></div><Link className={plan.featured ? "pricing-primary" : "pricing-secondary"} href={plan.href}>{plan.cta}</Link></article>)}</div></section>
 
-        <section className="pricing-section pt-0" aria-labelledby="monitoring-title">
-          <div className="pricing-heading">
-            <p className="pricing-eyebrow">Coming soon</p>
-            <h2 id="monitoring-title">Continuous monitoring</h2>
-            <p>Monitoring plans are in development. Current purchases cover one full report and workspace access for that report.</p>
-          </div>
-        </section>
-
-        <section className="pricing-section pb-28" aria-labelledby="pricing-faq-title">
-          <div className="pricing-heading"><p className="pricing-eyebrow">Purchase details</p><h2 id="pricing-faq-title">Before you unlock a report</h2></div>
-          <div className="mx-auto mt-12 max-w-4xl space-y-3">
-            <details className="pricing-faq"><summary>When do I pay?<span aria-hidden="true">+</span></summary><p>Payment is requested after the free preview, when you choose to unlock the full report.</p></details>
-            <details className="pricing-faq"><summary>Is this a subscription?<span aria-hidden="true">+</span></summary><p>No. The $9.90 purchase unlocks one full report.</p></details>
-            <details className="pricing-faq"><summary>Where is my report saved?<span aria-hidden="true">+</span></summary><p>Your unlocked report is saved to your ShadowScore workspace.</p></details>
-          </div>
-        </section>
-      </main>
-    </ShadowScoreLayout>
-  );
+    <section className="pricing-section pb-28" aria-labelledby="pricing-faq-title"><div className="pricing-heading"><p className="pricing-eyebrow">Purchase details</p><h2 id="pricing-faq-title">Current access and future plans</h2></div><div className="mx-auto mt-12 max-w-4xl space-y-3"><details className="pricing-faq"><summary>What can I buy today?<span aria-hidden="true">+</span></summary><p>The $9.90 one-time purchase unlocks one full report after the free preview.</p></details><details className="pricing-faq"><summary>Can I subscribe today?<span aria-hidden="true">+</span></summary><p>Professional subscriptions are coming soon. Business and Enterprise plans are planned.</p></details><details className="pricing-faq"><summary>Where is my report saved?<span aria-hidden="true">+</span></summary><p>Your unlocked report is saved to your ShadowScore workspace.</p></details></div></section>
+  </main></ShadowScoreLayout>;
 }
