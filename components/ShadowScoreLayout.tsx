@@ -17,14 +17,10 @@ import {
 import { getCurrentUser, type ShadowScoreUser } from "../lib/auth";
 
 const primaryNav = [
-  { href: "/watchlist", label: "Watchlist" },
-  { href: "/alerts", label: "Alerts" },
   { href: "/business-due-diligence", label: "Product" },
-  { href: "/supplier-verification", label: "Solutions" },
   { href: "/sample-report", label: "Sample report" },
   { href: "/methodology", label: "Methodology" },
-  { href: "/company-check", label: "Company checks" },
-  { href: "/upgrade", label: "Pricing" },
+  { href: "/pricing", label: "Pricing" },
   { href: "/security", label: "Security" },
 ];
 
@@ -60,7 +56,7 @@ export default function ShadowScoreLayout({
       links: [
         { href: "/intake", label: t.footer.start },
         { href: "/example-report", label: t.footer.example },
-        { href: "/upgrade", label: t.nav.plans },
+        { href: "/pricing", label: t.nav.plans },
         { href: "/about", label: t.footer.methodology },
       ],
     },
