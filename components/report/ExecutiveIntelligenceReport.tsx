@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import type { ShadowScoreReport } from "../../lib/workspace";
 import { executiveRecommendation, groupExecutiveEvidence, recommendedActions, reportFindings } from "../../lib/executiveReport";
 
@@ -26,11 +27,11 @@ export default function ExecutiveIntelligenceReport({ report }: { report: Shadow
   const verdictTone = /do not|stop|high risk/i.test(recommendation.label) ? "red" : /verify|review/i.test(recommendation.label) ? "amber" : "green";
   const tone = verdictTone === "red" ? "border-red-200 bg-red-50 text-red-900" : verdictTone === "amber" ? "border-amber-200 bg-amber-50 text-amber-950" : "border-emerald-200 bg-emerald-50 text-emerald-950";
 
-  return <article className="mt-8 overflow-hidden rounded-[32px] bg-slate-100 text-slate-700 shadow-2xl shadow-black/30">
+  return <><div className="mb-4 flex flex-wrap items-center justify-between gap-3 print:hidden"><p className="text-sm text-zinc-400">This report is private. A copied URL requires the recipient to sign in to the purchasing Account.</p><div className="flex gap-3"><button type="button" onClick={() => window.print()} className="rounded-xl bg-white px-4 py-3 font-bold text-black">Print Executive Report</button><Link href="/intake" className="rounded-xl bg-cyan-400 px-4 py-3 font-bold text-slate-950">Start Investigation</Link></div></div><article className="executive-report mt-8 overflow-hidden rounded-[32px] bg-slate-100 text-slate-700 shadow-2xl shadow-black/30">
     <header className="bg-slate-950 px-6 py-10 text-white sm:px-10">
-      <p className="text-xs font-bold uppercase tracking-[0.24em] text-cyan-300">Executive report</p>
+      <p className="text-xs font-bold uppercase tracking-[0.24em] text-cyan-300">Executive Report ready</p>
       <div className="mt-4 flex flex-wrap items-end justify-between gap-6">
-        <div><h1 className="text-3xl font-bold tracking-tight sm:text-5xl">{report.reportSummary?.businessNarrative?.businessName || report.target || report.entity}</h1><p className="mt-3 text-sm text-slate-400">Generated {dateTime(report.readyAt || report.createdAt)}</p></div>
+        <div><h1 className="text-3xl font-bold tracking-tight sm:text-5xl">Executive Report</h1><p className="mt-3 text-xl font-bold">{report.reportSummary?.businessNarrative?.businessName || report.target || report.entity}</p><p className="mt-3 text-sm text-slate-400">Investigation {report.intakeId || report.reportId} · Issued {dateTime(report.readyAt || report.createdAt)} · Version 1.0 · Scope: {report.scanMode || report.platform}</p></div>
         <div className="text-left sm:text-right"><p className="text-xs uppercase tracking-wider text-slate-400">Confidence</p><p className="mt-1 text-3xl font-bold">{confidence}</p></div>
       </div>
     </header>
@@ -54,5 +55,5 @@ export default function ExecutiveIntelligenceReport({ report }: { report: Shadow
       {activeTab === "Sources" && <section><h2 className="text-2xl font-bold text-slate-950">Sources</h2><div className="mt-6 grid gap-3 sm:grid-cols-2">{sources.map((source) => <div key={`${source.label}-${source.completedAt}`} className="rounded-2xl border border-slate-200 bg-white p-5"><p className="font-bold text-slate-950">{source.label}</p><p className="mt-2 text-sm text-slate-500">Checked {dateTime(source.completedAt)}</p></div>)}</div></section>}
       {activeTab === "Technical" && <section><h2 className="text-2xl font-bold text-slate-950">Technical details</h2><p className="mt-2 text-slate-500">Audit and engine details for technical review.</p><dl className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 text-sm"><div className="flex justify-between gap-4 border-b border-slate-100 py-3"><dt>Report ID</dt><dd className="font-mono text-slate-950">{report.reportId}</dd></div><div className="flex justify-between gap-4 py-3"><dt>Engine version</dt><dd className="font-mono text-slate-950">{report.engineVersion || "Not recorded"}</dd></div></dl></section>}
     </div>
-  </article>;
+  </article></>;
 }

@@ -392,3 +392,9 @@ select {
 .enterprise-cta { display: grid; align-items: center; gap: 2rem; overflow: hidden; border: 1px solid rgb(248 113 113 / .35); border-radius: 2rem; background: radial-gradient(circle at 100% 0, rgb(220 38 38 / .3), transparent 50%), #100909; padding: clamp(1.75rem, 5vw, 4rem); }.enterprise-cta ul { display: grid; gap: .7rem; color: #d4d4d8; font-size: .9rem; font-weight: 700; }
 @media (min-width: 900px) { .enterprise-cta { grid-template-columns: minmax(0, 1.4fr) minmax(12rem, .7fr) auto; } }
 @media (prefers-reduced-motion: reduce) { .pricing-primary, .pricing-secondary, .pricing-value-card, .pricing-plan { transition: none; }.pricing-primary:hover, .pricing-secondary:hover, .pricing-value-card:hover, .pricing-plan:hover { transform: none; } }
+@media print {
+  body { background: white !important; }
+  header, footer, nav, button, .print\:hidden { display: none !important; }
+  .executive-report { margin: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
+  .executive-report nav { display: none !important; }
+}

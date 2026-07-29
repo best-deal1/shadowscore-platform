@@ -23,8 +23,8 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await loginUser(email, password);
-      const requested = new URLSearchParams(window.location.search).get("returnTo") || "/workspace";
-      router.push(requested.startsWith("/") && !requested.startsWith("//") ? requested : "/workspace");
+      const requested = new URLSearchParams(window.location.search).get("returnTo") || "/investigations";
+      router.push(requested.startsWith("/") && !requested.startsWith("//") ? requested : "/investigations");
     } catch (err) {
       setError(err instanceof Error ? err.message : page.unavailable);
     } finally {

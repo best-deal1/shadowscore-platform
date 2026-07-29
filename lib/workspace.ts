@@ -103,7 +103,7 @@ export type PaymentIntent = {
 };
 
 export const REPORT_PRODUCT = {
-  name: "ShadowScore Trust Intelligence Report",
+  name: "ShadowScore Executive Report",
   price: "$9.90",
   estimatedGenerationTime: "Usually ready within 2 minutes",
   includes: ["Executive recommendation", "Verified findings and evidence gaps", "Source trail", "Prioritized action plan"],
