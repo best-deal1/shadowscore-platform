@@ -1,58 +1,101 @@
 "use client";
 
-import { useState } from "react";
+import Image from "next/image";
 import type { ShadowScoreReport } from "../../lib/workspace";
 import { executiveRecommendation, groupExecutiveEvidence, recommendedActions, reportFindings } from "../../lib/executiveReport";
 
-const tabs = ["Summary", "Risks", "Identity", "Evidence", "Timeline", "Sources", "Technical"] as const;
-type Tab = (typeof tabs)[number];
-
 function dateTime(value?: string) {
   if (!value) return "Not recorded";
-  return new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(value));
+  return new Intl.DateTimeFormat("en", { dateStyle: "long", timeZone: "UTC" }).format(new Date(value));
+}
+
+function statusLabel(value?: string) {
+  return value ? value.replaceAll("_", " ") : "Complete";
 }
 
 export default function ExecutiveIntelligenceReport({ report }: { report: ShadowScoreReport }) {
-  const [activeTab, setActiveTab] = useState<Tab>("Summary");
   const recommendation = executiveRecommendation(report);
   const findings = reportFindings(report);
   const evidenceGroups = groupExecutiveEvidence(report);
+  const allFindings = [...findings.negative, ...findings.warnings, ...findings.positive];
   const scorecard = report.reportSummary?.scorecard?.scores || [];
-  const trustScore = report.riskScore === undefined ? "Not recorded" : `${Math.max(0, 100 - report.riskScore)}`;
-  const confidence = report.confidenceScore === undefined ? "Not recorded" : `${report.confidenceScore}%`;
   const sources = report.reportSummary?.sourceProvenance || [];
   const timeline = report.reportSummary?.investigationTimeline || [];
   const actions = recommendedActions(report);
-  const verdictTone = /do not|stop|high risk/i.test(recommendation.label) ? "red" : /verify|review/i.test(recommendation.label) ? "amber" : "green";
-  const tone = verdictTone === "red" ? "border-red-200 bg-red-50 text-red-900" : verdictTone === "amber" ? "border-amber-200 bg-amber-50 text-amber-950" : "border-emerald-200 bg-emerald-50 text-emerald-950";
+  const target = report.reportSummary?.businessNarrative?.businessName || report.target || report.entity;
+  const trustScore = report.riskScore === undefined ? "N/A" : `${Math.max(0, 100 - report.riskScore)}`;
+  const confidence = report.confidenceScore === undefined ? "N/A" : `${report.confidenceScore}%`;
+  const verdictTone = /do not|stop|high risk/i.test(recommendation.label) ? "report-red" : /verify|review|caution/i.test(recommendation.label) ? "report-amber" : "report-green";
 
-  return <article className="mt-8 overflow-hidden rounded-[32px] bg-slate-100 text-slate-700 shadow-2xl shadow-black/30">
-    <header className="bg-slate-950 px-6 py-10 text-white sm:px-10">
-      <p className="text-xs font-bold uppercase tracking-[0.24em] text-cyan-300">Executive report</p>
-      <div className="mt-4 flex flex-wrap items-end justify-between gap-6">
-        <div><h1 className="text-3xl font-bold tracking-tight sm:text-5xl">{report.reportSummary?.businessNarrative?.businessName || report.target || report.entity}</h1><p className="mt-3 text-sm text-slate-400">Generated {dateTime(report.readyAt || report.createdAt)}</p></div>
-        <div className="text-left sm:text-right"><p className="text-xs uppercase tracking-wider text-slate-400">Confidence</p><p className="mt-1 text-3xl font-bold">{confidence}</p></div>
-      </div>
-    </header>
+  const printReport = () => window.print();
 
-    <section className="border-b border-slate-200 bg-white p-5 sm:p-8">
-      <div className={`rounded-3xl border p-6 sm:p-8 ${tone}`}>
-        <p className="text-xs font-bold uppercase tracking-[0.2em] opacity-70">Trust verdict</p>
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-5"><div><h2 className="text-3xl font-black sm:text-4xl">{recommendation.label}</h2><p className="mt-3 max-w-3xl leading-7 opacity-80">{recommendation.explanation}</p></div><div className="rounded-2xl bg-white/70 px-5 py-4 text-center"><p className="text-xs font-bold uppercase tracking-wider opacity-60">Trust score</p><p className="mt-1 text-3xl font-black">{trustScore}</p></div></div>
-        <div className="mt-6 border-t border-current/15 pt-5"><p className="text-xs font-bold uppercase tracking-wider opacity-60">Recommended action</p><p className="mt-1 text-lg font-bold">{actions[0] || recommendation.label}</p></div>
-      </div>
+  return <article className="executive-report mt-8 text-slate-800">
+    <div className="report-toolbar mb-4 flex items-center justify-between rounded-xl border border-slate-700 bg-slate-900 px-5 py-3 text-white">
+      <div><p className="text-sm font-bold">Executive PDF Report</p><p className="text-xs text-slate-400">Print or save a complete, shareable copy.</p></div>
+      <button type="button" onClick={printReport} className="rounded-lg bg-cyan-400 px-4 py-2 text-sm font-bold text-slate-950 hover:bg-cyan-300">Download PDF</button>
+    </div>
+
+    <section className="report-page report-cover">
+      <div className="report-brand"><Image src="/brand/shadowscore-infinity-mono.svg" alt="" width={54} height={54} priority /><span>SHADOWSCORE</span></div>
+      <div className="report-cover-title"><p>Trust Intelligence</p><h1>Executive<br />Investigation Report</h1><div className="report-rule" /><h2>{target}</h2></div>
+      <dl className="report-cover-meta">
+        <div><dt>Investigation date</dt><dd>{dateTime(report.readyAt || report.createdAt)}</dd></div>
+        <div><dt>Report ID</dt><dd>{report.reportId}</dd></div>
+        <div><dt>Report type</dt><dd>{report.scanMode ? `${report.scanMode} due diligence` : "Trust intelligence"}</dd></div>
+        <div><dt>Classification</dt><dd>Customer confidential</dd></div>
+      </dl>
+      <p className="report-cover-footer">Independent evidence summary prepared by ShadowScore</p>
     </section>
 
-    <nav className="overflow-x-auto border-b border-slate-200 bg-white px-4" aria-label="Report sections"><div className="flex min-w-max gap-1">{tabs.map((tab) => <button key={tab} type="button" onClick={() => setActiveTab(tab)} aria-current={activeTab === tab ? "page" : undefined} className={`border-b-2 px-4 py-4 text-sm font-bold ${activeTab === tab ? "border-cyan-600 text-slate-950" : "border-transparent text-slate-500 hover:text-slate-900"}`}>{tab}</button>)}</div></nav>
+    <section className="report-page">
+      <header className="report-section-header"><span>01</span><div><p>Decision brief</p><h2>Executive Summary</h2></div></header>
+      <div className={`report-verdict ${verdictTone}`}>
+        <div><p>Trust Verdict</p><strong>{recommendation.label}</strong></div>
+        <div><p>Confidence Score</p><strong>{confidence}</strong></div>
+        <div><p>Trust Score</p><strong>{trustScore}<small>/100</small></strong></div>
+      </div>
+      <div className="report-summary-copy"><h3>Executive Recommendation</h3><p>{recommendation.explanation}</p><p>The assessment is based on {sources.length || "the available"} evidence sources and {allFindings.length || "the recorded"} material findings. Review the actions below before making a final business or compliance decision.</p></div>
+      <div className="report-callout"><span>Recommended action</span><strong>{actions[0] || recommendation.label}</strong></div>
+      <h3 className="report-subhead">Key Findings</h3>
+      <ul className="report-findings">{allFindings.slice(0, 6).map((item) => <li key={item.id}><span className={findings.positive.includes(item) ? "positive" : "attention"}>{findings.positive.includes(item) ? "✓" : "!"}</span><div><strong>{item.title}</strong><p>{item.statement}</p></div></li>)}</ul>
+      {!allFindings.length && <p className="report-empty">No material findings were recorded.</p>}
+      <footer className="report-footer"><span>ShadowScore Executive Report</span><span>{report.reportId}</span></footer>
+    </section>
 
-    <div className="min-h-[420px] p-5 sm:p-8">
-      {activeTab === "Summary" && <section><h2 className="text-2xl font-bold text-slate-950">Executive Summary</h2><div className="mt-6 grid gap-4 lg:grid-cols-2"><div className="rounded-2xl border border-slate-200 bg-white p-6"><h3 className="font-bold text-slate-950">Key reasons</h3><ul className="mt-4 space-y-3">{[...findings.positive, ...findings.warnings, ...findings.negative].slice(0, 3).map((item) => <li key={item.id} className="flex gap-3"><span aria-hidden="true">{findings.positive.includes(item) ? "✓" : "!"}</span><span>{item.title}</span></li>)}</ul></div><div className="rounded-2xl border border-slate-200 bg-white p-6"><h3 className="font-bold text-slate-950">Next steps</h3><ol className="mt-4 space-y-3">{actions.slice(0, 3).map((action, index) => <li key={action} className="flex gap-3"><span className="font-bold text-cyan-700">{index + 1}</span><span>{action}</span></li>)}</ol></div></div></section>}
-      {activeTab === "Risks" && <section><h2 className="text-2xl font-bold text-slate-950">Risks</h2><div className="mt-6 grid gap-4 md:grid-cols-2">{[...findings.negative, ...findings.warnings].map((item) => <article key={item.id} className="rounded-2xl border border-amber-200 bg-white p-5"><p className="text-xs font-bold uppercase tracking-wider text-amber-700">{item.category}</p><h3 className="mt-2 font-bold text-slate-950">{item.title}</h3><p className="mt-2 text-sm leading-6">{item.statement}</p></article>)}</div></section>}
-      {activeTab === "Identity" && <section><h2 className="text-2xl font-bold text-slate-950">Identity</h2><dl className="mt-6 grid gap-4 sm:grid-cols-2">{[["Business", report.entity], ["Target", report.target || report.entity], ["Investigation", report.scanMode || report.platform], ["Identity confidence", scorecard.find((item) => item.dimension === "Identity Confidence")?.level || "Not recorded"]].map(([label, value]) => <div key={label} className="rounded-2xl border border-slate-200 bg-white p-5"><dt className="text-xs font-bold uppercase tracking-wider text-slate-500">{label}</dt><dd className="mt-2 font-bold capitalize text-slate-950">{value}</dd></div>)}</dl></section>}
-      {activeTab === "Evidence" && <section><h2 className="text-2xl font-bold text-slate-950">Evidence</h2><div className="mt-6 space-y-4">{evidenceGroups.map((group) => <details key={group.category} className="rounded-2xl border border-slate-200 bg-white p-5"><summary className="cursor-pointer font-bold text-slate-950">{group.category} <span className="font-normal text-slate-500">({group.items.length})</span></summary><div className="mt-4 grid gap-3 sm:grid-cols-2">{group.items.map((item) => <div key={item.id} className="rounded-xl bg-slate-50 p-4"><p className="font-semibold text-slate-950">{item.label}</p><p className="mt-1 text-sm">{item.value}</p><p className="mt-2 text-xs text-slate-500">{item.source}</p></div>)}</div></details>)}</div></section>}
-      {activeTab === "Timeline" && <section><h2 className="text-2xl font-bold text-slate-950">Timeline</h2><ol className="mt-6 space-y-4">{timeline.map((item) => <li key={item.id} className="border-l-2 border-cyan-600 bg-white p-4"><p className="font-bold text-slate-950">{item.label}</p><p className="mt-1 text-sm capitalize text-slate-500">{item.status.replaceAll("_", " ")} · {dateTime(item.observedAt)}</p></li>)}</ol></section>}
-      {activeTab === "Sources" && <section><h2 className="text-2xl font-bold text-slate-950">Sources</h2><div className="mt-6 grid gap-3 sm:grid-cols-2">{sources.map((source) => <div key={`${source.label}-${source.completedAt}`} className="rounded-2xl border border-slate-200 bg-white p-5"><p className="font-bold text-slate-950">{source.label}</p><p className="mt-2 text-sm text-slate-500">Checked {dateTime(source.completedAt)}</p></div>)}</div></section>}
-      {activeTab === "Technical" && <section><h2 className="text-2xl font-bold text-slate-950">Technical details</h2><p className="mt-2 text-slate-500">Audit and engine details for technical review.</p><dl className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 text-sm"><div className="flex justify-between gap-4 border-b border-slate-100 py-3"><dt>Report ID</dt><dd className="font-mono text-slate-950">{report.reportId}</dd></div><div className="flex justify-between gap-4 py-3"><dt>Engine version</dt><dd className="font-mono text-slate-950">{report.engineVersion || "Not recorded"}</dd></div></dl></section>}
-    </div>
+    <section className="report-page">
+      <header className="report-section-header"><span>02</span><div><p>Decision factors</p><h2>Risk Assessment</h2></div></header>
+      <h3 className="report-subhead">Risk Score Card</h3>
+      <div className="report-table-wrap"><table className="report-table"><thead><tr><th>Category</th><th>Status</th><th>Confidence</th><th>Business impact</th></tr></thead><tbody>{scorecard.map((item) => <tr key={item.dimension}><td><strong>{item.dimension}</strong></td><td>{statusLabel(item.level)}</td><td>{item.confidence}</td><td>{item.recommendedImprovements[0] || item.evidenceGaps[0] || item.supportingEvidence[0] || "No material impact recorded."}</td></tr>)}</tbody></table></div>
+      {!scorecard.length && <p className="report-empty">No category scorecard was recorded for this investigation.</p>}
+      <h3 className="report-subhead">Recommended Actions</h3>
+      <ol className="report-actions">{actions.map((action, index) => <li key={action}><span>{String(index + 1).padStart(2, "0")}</span><p>{action}</p></li>)}</ol>
+      <footer className="report-footer"><span>ShadowScore Executive Report</span><span>{report.reportId}</span></footer>
+    </section>
+
+    <section className="report-page">
+      <header className="report-section-header"><span>03</span><div><p>Provider-level review</p><h2>Evidence Summary</h2></div></header>
+      <div className="report-table-wrap"><table className="report-table report-evidence-table"><thead><tr><th>Provider</th><th>Status</th><th>Evidence Quality</th><th>Confidence</th><th>Business Meaning</th></tr></thead><tbody>{sources.map((source) => { const items = evidenceGroups.flatMap((group) => group.items).filter((item) => item.source === source.label); return <tr key={`${source.label}-${source.completedAt}`}><td><strong>{source.label}</strong></td><td>Complete</td><td>{items.length > 1 ? "Corroborating" : items.length ? "Direct" : "Contextual"}</td><td>{confidence}</td><td>{items.slice(0, 2).map((item) => item.label).join(", ") || "Contributed to the investigation assessment."}</td></tr>; })}</tbody></table></div>
+      {!sources.length && <p className="report-empty">No external provider sources were recorded.</p>}
+      <h3 className="report-subhead">Investigation Timeline</h3>
+      <ol className="report-timeline">{timeline.map((item, index) => <li key={item.id}><span>{index + 1}</span><div><strong>{item.label}</strong><p>{statusLabel(item.status)} · {dateTime(item.observedAt)}</p></div></li>)}</ol>
+      {!timeline.length && <p className="report-empty">The investigation was completed on {dateTime(report.readyAt || report.createdAt)}.</p>}
+      <footer className="report-footer"><span>ShadowScore Executive Report</span><span>{report.reportId}</span></footer>
+    </section>
+
+    <section className="report-page">
+      <header className="report-section-header"><span>04</span><div><p>Evidence provenance</p><h2>Sources</h2></div></header>
+      <div className="report-source-list">{sources.map((source) => { const items = evidenceGroups.flatMap((group) => group.items).filter((item) => item.source === source.label); return <article key={`${source.label}-${source.completedAt}`}><div><h3>{source.label}</h3><span>Complete</span></div><p>{items.map((item) => item.label).join(", ") || "Evidence contributed to the overall assessment."}</p><small>Collected {dateTime(source.completedAt)}</small></article>; })}</div>
+      {!sources.length && <p className="report-empty">No external provider sources were recorded.</p>}
+      <footer className="report-footer"><span>ShadowScore Executive Report</span><span>{report.reportId}</span></footer>
+    </section>
+
+    <section className="report-page report-appendix">
+      <header className="report-section-header"><span>A</span><div><p>Technical reviewer material</p><h2>Source Appendix</h2></div></header>
+      <p className="report-intro">Detailed evidence is grouped by technical domain. Values reflect the evidence retained with this report.</p>
+      {evidenceGroups.map((group) => <section key={group.category} className="report-evidence-group"><h3>{group.category}</h3>{group.items.map((item) => <dl key={item.id}><div><dt>Evidence</dt><dd>{item.label}</dd></div><div><dt>Observed value</dt><dd>{item.value || "Recorded"}</dd></div><div><dt>Provider</dt><dd>{item.source}</dd></div><div><dt>Observed</dt><dd>{dateTime(item.observedAt)}</dd></div></dl>)}</section>)}
+      {!evidenceGroups.length && <p className="report-empty">No detailed technical evidence was retained in the customer report.</p>}
+      <div className="report-document-control"><h3>Document control</h3><dl><div><dt>Report ID</dt><dd>{report.reportId}</dd></div><div><dt>Engine version</dt><dd>{report.engineVersion || "Not recorded"}</dd></div><div><dt>Generated</dt><dd>{dateTime(report.readyAt || report.createdAt)}</dd></div></dl></div>
+      <footer className="report-footer"><span>ShadowScore Executive Report</span><span>{report.reportId}</span></footer>
+    </section>
   </article>;
 }

@@ -18,6 +18,20 @@ test("executive report renders every required section and footer field", () => {
   for (const section of ["Executive Summary", "Executive Recommendation", "Risk Score Card", "Key Findings", "Evidence Summary", "Investigation Timeline", "Recommended Actions", "Source Appendix", "Report ID", "Engine version"]) assert.match(component, new RegExp(section));
 });
 
+test("executive report provides a printable PDF document with a cover, sources, and technical appendix", () => {
+  const component = readFileSync(new URL("../components/report/ExecutiveIntelligenceReport.tsx", import.meta.url), "utf8");
+  const styles = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
+  assert.match(component, /onClick=\{printReport\}/);
+  assert.match(component, /Investigation date/);
+  assert.match(component, /Report type/);
+  assert.match(component, /Evidence Quality/);
+  assert.match(component, /Business Meaning/);
+  assert.match(component, /Document control/);
+  assert.match(styles, /@page\{size:A4/);
+  assert.match(styles, /@media print/);
+  assert.match(styles, /break-after:page/);
+});
+
 test("executive summary and recommendation always have fallbacks", () => {
   assert.deepEqual(executiveRecommendation(report({ reportSummary: undefined })), { label: "Proceed with caution", explanation: "Review the available evidence and resolve material gaps before making a commitment." });
   assert.equal(recommendedActions(report({ reportSummary: undefined })).length, 3);
