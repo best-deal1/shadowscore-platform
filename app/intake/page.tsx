@@ -57,6 +57,18 @@ type BusinessNarrative = { decision: string; confidence: string; decisionMode?: 
 type ProviderRegistryItem = { id: string; name: string; version: string; category: string };
 type FreeScanResult = { status?: "ready"; message?: string; reportReadyEvent?: { type: "free-preview-ready"; status: "ready"; ready: true; emittedAt: string }; executedAt: string; targetResolution?: { requestedTarget: string; resolvedTarget: string; companyId?: string; legalName?: string }; providerRegistry?: ProviderRegistryItem[]; providers: FreeScanProviderSummary[]; insights: TrustInsight[]; insightEngineVersion?: string; timeline?: TrustTimelineItem[]; decisionPreview?: DecisionPreview; identityProfile?: IdentityProfile; businessNarrative?: BusinessNarrative };
 
+function plainEnglishReasons(preview: DecisionPreview | undefined, isHighRisk: boolean, isTrusted: boolean) {
+  const text = [...(preview?.topReasons || []), ...(preview?.missingSignals || []), ...(preview?.blockingIssues || [])].join(" ").toLowerCase();
+  const positiveText = (preview?.topReasons || []).join(" ").toLowerCase();
+  const reasons: Array<{ tone: "positive" | "warning"; text: string }> = [];
+  if (/ssl|https|secure connection|active|reachable/.test(positiveText)) reasons.push({ tone: "positive", text: "The website is active and uses a secure connection." });
+  if (isHighRisk) reasons.push({ tone: "warning", text: "The review found signals that require caution." });
+  else reasons.push({ tone: "positive", text: "No significant risk signals were found in this preview." });
+  if (/identity|owner|ownership|registration|whois|business/.test(text) || !isTrusted) reasons.push({ tone: "warning", text: "The business ownership identity still needs verification." });
+  if (reasons.length < 3 && preview?.confidenceLevel === "Low") reasons.push({ tone: "warning", text: "Available public evidence is limited." });
+  return reasons.slice(0, 3);
+}
+
 const CHECKOUT_DRAFT_KEY = "shadowscore.checkout-draft.v1";
 
 const MAX_FILE_SIZE = 15 * 1024 * 1024;
@@ -1269,17 +1281,6 @@ export default function IntakePage() {
               {freeScanRunning ? t.intakeUi.investigating : previewStatus === "ready" ? t.intakeUi.previewReady : t.intakeUi.startInvestigation}
             </button>
 
-            {submitted && canAnalyze && previewStatus !== "idle" && (
-              <InvestigationLifecycle
-                running={previewStatus === "loading"}
-                failed={previewStatus === "failed"}
-                target={activeTarget}
-                startedAt={investigationStartedAt}
-                completedAt={freeScanResult?.executedAt}
-                providers={freeScanResult?.providers}
-              />
-            )}
-
             {submitted && canAnalyze && previewStatus !== "loading" && (
               <div className="mt-8 space-y-6">
                 {freeScanResult?.decisionPreview || freeScanResult?.businessNarrative ? (() => {
@@ -1289,11 +1290,12 @@ export default function IntakePage() {
                   const isTrusted = rawDecision === "PASS" || rawDecision === "YES";
                   const verdict = isHighRisk ? "High Risk" : isTrusted ? "Trusted" : "Verify Before Proceeding";
                   const action = isHighRisk ? "Do not proceed" : isTrusted ? "Proceed" : "Proceed after verification";
-                  const reasons = [...(preview?.topReasons || []), ...(preview?.missingSignals || [])].slice(0, 3);
+                  const reasons = plainEnglishReasons(preview, isHighRisk, isTrusted);
                   return <section className={`rounded-[32px] border p-7 ${isHighRisk ? "border-red-400/30 bg-red-500/10" : isTrusted ? "border-emerald-400/30 bg-emerald-500/10" : "border-amber-300/30 bg-amber-400/10"}`}>
                     <div className="text-xs font-black uppercase tracking-[0.24em] text-zinc-400">Trust verdict</div>
+                    <p className="mt-3 text-sm font-bold text-zinc-300">{freeScanResult.targetResolution?.legalName || freeScanResult.targetResolution?.resolvedTarget || activeTarget}</p>
                     <div className="mt-5 flex flex-wrap items-center justify-between gap-5"><h2 className="text-3xl font-black sm:text-4xl"><span aria-hidden="true">{isHighRisk ? "●" : isTrusted ? "●" : "●"}</span> {verdict}</h2><div><div className="text-xs uppercase tracking-wider text-zinc-400">Confidence</div><div className="mt-1 text-3xl font-black">{preview?.confidenceScore ?? 0}%</div></div></div>
-                    <div className="mt-7 border-t border-white/10 pt-6"><h3 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Why?</h3><ul className="mt-4 space-y-3 text-base">{reasons.map((reason, index) => <li key={reason} className="flex gap-3"><span className={index < (preview?.topReasons.length || 0) ? "text-emerald-300" : "text-amber-200"}>{index < (preview?.topReasons.length || 0) ? "✓" : "!"}</span><span>{reason}</span></li>)}</ul></div>
+                    <div className="mt-7 border-t border-white/10 pt-6"><h3 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Why?</h3><ul className="mt-4 space-y-3 text-base">{reasons.map((reason) => <li key={reason.text} className="flex gap-3"><span className={reason.tone === "positive" ? "text-emerald-300" : "text-amber-200"}>{reason.tone === "positive" ? "✓" : "!"}</span><span>{reason.text}</span></li>)}</ul></div>
                     <div className="mt-7 rounded-2xl bg-black/25 p-5"><div className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Recommended action</div><div className="mt-2 text-xl font-black">{action}</div></div>
                   </section>;
                 })() : null}
@@ -1370,24 +1372,30 @@ export default function IntakePage() {
                 ) : null}
 
                 <section className="rounded-[28px] border border-yellow-400/20 bg-yellow-500/10 p-6 text-sm leading-7 text-yellow-100">
-                  <div className="text-xs uppercase tracking-[0.22em] text-yellow-200">Full investigation</div>
-                  <p className="mt-3 text-lg font-bold text-white">Review the complete decision, risks, evidence, timeline, and sources.</p>
+                  <div className="text-xs uppercase tracking-[0.22em] text-yellow-200">Full report</div>
+                  <p className="mt-3 text-lg font-bold text-white">Get the complete risk review, identity findings, evidence, sources, and next steps.</p>
                   <div className="mt-5 rounded-2xl border border-white/10 bg-black/30 p-5">
                     <label>
                       <div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">Email for full report</div>
                       <input value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white" placeholder="you@example.com" />
                     </label>
-                    <div className="mt-5 grid gap-3 md:grid-cols-2">
-                      <button type="button" onClick={saveLead} className="rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-4 text-sm font-bold text-white hover:border-red-400/30">Save Investigation</button>
-                      <PaymentButtons planName="ShadowScore Trust Intelligence Report" price="$9.90" buttonLabel="Unlock Full Investigation · $9.90" intakeId={intake?.intakeId} />
-                    </div>
+                    <div className="mt-5"><PaymentButtons planName="ShadowScore Trust Intelligence Report" price="$9.90" buttonLabel="Unlock Full Report – $9.90" intakeId={intake?.intakeId} /></div>
+                    <button type="button" onClick={saveLead} className="mx-auto mt-4 block text-xs font-bold text-zinc-400 underline underline-offset-4 hover:text-white">Save for later</button>
                   </div>
                   {leadSaved && <div className="mt-4 rounded-2xl border border-emerald-400/25 bg-emerald-500/10 p-4 text-sm text-emerald-100">Investigation saved. Your full executive report remains locked until payment is confirmed.</div>}
                 </section>
 
                 <details className="rounded-[28px] border border-white/10 bg-black/50 p-6" open={false}>
-                  <summary className="cursor-pointer text-xs uppercase tracking-[0.22em] text-red-300">Technical Details</summary>
+                  <summary className="cursor-pointer text-sm font-bold text-red-200">View technical preview</summary>
                   <div className="mt-5 space-y-5">
+                    <InvestigationLifecycle
+                      running={false}
+                      failed={previewStatus === "failed"}
+                      target={activeTarget}
+                      startedAt={investigationStartedAt}
+                      completedAt={freeScanResult?.executedAt}
+                      providers={freeScanResult?.providers}
+                    />
                     {freeScanResult?.businessNarrative?.sections.find((section) => section.id === "evidenceUsed") ? (
                       <section className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
                         <div className="text-xs uppercase tracking-[0.22em] text-zinc-400">Evidence Used</div>
