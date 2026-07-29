@@ -12,17 +12,7 @@ type Provider = {
 
 type LifecycleStatus = "Running" | "Completed" | "Failed" | "Not applicable";
 
-const stages = [
-  "Target received",
-  "Identity resolution",
-  "Business discovery",
-  "Evidence collection",
-  "Evidence verification",
-  "Contradiction analysis",
-  "Risk assessment",
-  "Executive recommendation",
-  "Professional report",
-];
+const stages = ["Resolving identity", "Collecting evidence", "Analyzing risk", "Building report"];
 
 function statusStyle(status: LifecycleStatus) {
   if (status === "Completed") return "border-emerald-400/25 bg-emerald-500/10 text-emerald-100";
@@ -56,9 +46,7 @@ export default function InvestigationLifecycle({
     return "Completed";
   };
 
-  // The client has only confirmed intake receipt until the provider response arrives.
-  // Keep later stages hidden rather than simulating progress between network events.
-  const visibleStages = running ? stages.slice(0, 2) : stages;
+  const visibleStages = stages;
   const log = running
     ? [
         { text: "Target received", source: "Investigation intake", status: "Completed" as LifecycleStatus, at: startedAt },
@@ -74,12 +62,12 @@ export default function InvestigationLifecycle({
         ];
 
   return (
-    <section aria-live="polite" className="mt-6 rounded-[28px] border border-white/10 bg-[#0a0a0c]/95 p-5 shadow-[0_18px_60px_rgba(0,0,0,.3)]">
+    <section aria-live="polite" className="mt-6 rounded-[28px] border border-white/10 bg-[#0a0a0c]/95 p-6 shadow-[0_18px_60px_rgba(0,0,0,.3)]">
       <div className="flex flex-wrap items-start justify-between gap-4 border-b border-white/10 pb-5">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.24em] text-sky-300">Investigation workspace</p>
-          <h2 className="mt-2 text-xl font-black text-white">{target || "Target"}</h2>
-          <p className="mt-1 text-sm text-zinc-400">Work is recorded as each source returns evidence.</p>
+          <p className="text-xs font-bold uppercase tracking-[0.24em] text-sky-300">Investigation in progress</p>
+          <h2 className="mt-2 text-xl font-black text-white">{target || "Business"}</h2>
+          <p className="mt-1 text-sm text-zinc-400">We are checking identity, evidence, and risk.</p>
         </div>
         <div className={`rounded-xl border px-4 py-2 text-sm font-black ${running ? "border-amber-300/30 bg-amber-400/10 text-amber-100" : failed ? "border-red-400/30 bg-red-500/10 text-red-100" : "border-emerald-400/25 bg-emerald-500/10 text-emerald-100"}`}>{running ? "Active investigation" : failed ? "Investigation interrupted" : "Investigation complete"}</div>
       </div>
@@ -90,7 +78,8 @@ export default function InvestigationLifecycle({
           <ol className="mt-4 space-y-2">
             {visibleStages.map((stage, index) => {
               const status = stageStatus(index);
-              return <li key={stage} className={`flex items-center justify-between gap-4 rounded-2xl border px-4 py-3.5 text-base ${statusStyle(status)}`}><span className="font-semibold">{stage}</span><span className="shrink-0 rounded-lg border border-current/30 bg-black/15 px-2.5 py-1 text-sm font-black uppercase tracking-[0.08em]">{status}</span></li>;
+              const progress = running ? (index === 0 ? 72 : 12) : status === "Completed" ? 100 : 0;
+              return <li key={stage} className={`rounded-2xl border px-4 py-3.5 text-base ${statusStyle(status)}`}><div className="flex items-center justify-between gap-4"><span className="font-semibold">{stage}</span><span className="text-xs font-black uppercase tracking-[0.08em]">{running ? (index === 0 ? "Active" : "Queued") : status}</span></div><div className="mt-3 h-1.5 overflow-hidden rounded-full bg-black/25"><div className="h-full rounded-full bg-current transition-all duration-700" style={{ width: `${progress}%` }} /></div></li>;
             })}
           </ol>
         </div>

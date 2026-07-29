@@ -9,9 +9,9 @@ const intakeRecord = { scanMode: "website", target: "example.com", platform: "We
 const source = (path) => fs.readFileSync(new URL(path, import.meta.url), "utf8");
 
 test("preview to unlock uses the canonical report route", () => assert.match(source("../components/PaymentButtons.tsx"), /\/reports\/\$\{reportIdForPayment\(intent\.id\)\}\/unlock/));
-test("unlock summary states product, final price, contents, timing, account saving, and legal terms", () => {
+test("unlock summary states the purchase type, total, contents, and payment provider", () => {
   const page = source("../app/reports/[reportId]/ReportFlow.tsx");
-  for (const copy of ["Purchase summary", "Final price", "The full report includes", "saved to your account", "Terms of Service"]) assert.ok(page.includes(copy));
+  for (const copy of ["One-time purchase", "Total", "Included in your report", "No subscription", "Payment processed by PayPal"]) assert.ok(page.includes(copy));
   assert.equal(REPORT_PRODUCT.price, "$9.90");
 });
 test("checkout initiation creates one report-scoped intent", async () => {
@@ -39,7 +39,7 @@ test("refresh during generation loads status without restarting generation", () 
   assert.doesNotMatch(page, /markPaymentPaidAndGenerateReport/);
 });
 test("processing route supports direct navigation", () => assert.match(source("../app/reports/[reportId]/processing/page.tsx"), /mode="processing"/));
-test("paid report never renders the payment action", () => assert.match(source("../app/reports/[reportId]/ReportFlow.tsx"), /paid \? <Link[\s\S]*Continue to report status/));
+test("paid report never renders the payment action", () => assert.match(source("../app/reports/[reportId]/ReportFlow.tsx"), /paid \? <Link[\s\S]*>Continue<\/Link> : <button/));
 test("authentication preserves a validated return-to route", () => {
   assert.match(source("../app/login/page.tsx"), /returnTo/);
   assert.match(source("../app/signup/page.tsx"), /!requested\.startsWith\("\/\/"\)/);
