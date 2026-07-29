@@ -976,27 +976,10 @@ export default function IntakePage() {
       <section className="relative z-10 mx-auto max-w-7xl px-6 py-14">
         <div className="grid gap-10 lg:grid-cols-[.82fr_1.18fr]">
           <div>
-            <div className="text-xs uppercase tracking-[0.45em] text-red-300">
-              {t.intakeUi.eyebrow}
-            </div>
-            <h1 className="mt-6 text-5xl font-extrabold leading-tight">
-              {t.intake.title}
-            </h1>
-            <p className="mt-6 max-w-xl text-lg leading-8 text-zinc-400">
-              {t.intake.description}
-            </p>
-            <div className="mt-10 rounded-3xl border border-white/10 bg-white/[0.035] p-6">
-              <div className="font-bold">{t.intakeUi.evidenceReadiness}</div>
-              <p className="mt-4 leading-7 text-zinc-400">
-                {t.intakeUi.evidenceReadinessCopy}
-              </p>
-            </div>
-            <div className="mt-6 rounded-3xl border border-red-400/20 bg-red-500/[0.06] p-6">
-              <div className="font-bold text-red-200">{t.intakeUi.privateByDesign}</div>
-              <p className="mt-3 leading-7 text-zinc-400">
-                {t.intakeUi.privateByDesignCopy}
-              </p>
-            </div>
+            <div className="text-xs uppercase tracking-[0.35em] text-red-300">Business investigation</div>
+            <h1 className="mt-6 text-5xl font-extrabold leading-tight">Can you trust this business?</h1>
+            <p className="mt-6 max-w-lg text-lg leading-8 text-zinc-400">Enter a business name or URL. Get a clear verdict, key reasons, and a recommended action.</p>
+            <div className="mt-10 flex items-center gap-4 text-sm text-zinc-400"><span className="grid size-10 place-items-center rounded-full border border-emerald-400/25 bg-emerald-500/10 text-emerald-200">✓</span><span>People buy confidence. ShadowScore shows the evidence behind it.</span></div>
           </div>
 
           <div className="rounded-[32px] border border-white/10 bg-black/55 p-6 shadow-[0_0_60px_rgba(120,0,20,0.16)] backdrop-blur-xl">
@@ -1299,7 +1282,22 @@ export default function IntakePage() {
 
             {submitted && canAnalyze && previewStatus !== "loading" && (
               <div className="mt-8 space-y-6">
-                <section className="rounded-[28px] border border-red-400/20 bg-red-500/[0.06] p-6">
+                {freeScanResult?.decisionPreview || freeScanResult?.businessNarrative ? (() => {
+                  const preview = freeScanResult.decisionPreview;
+                  const rawDecision = preview?.decision || freeScanResult.businessNarrative?.decisionMode?.proceed || "REVIEW";
+                  const isHighRisk = rawDecision === "FAIL" || rawDecision === "CONFIRMED RISK" || rawDecision === "NO";
+                  const isTrusted = rawDecision === "PASS" || rawDecision === "YES";
+                  const verdict = isHighRisk ? "High Risk" : isTrusted ? "Trusted" : "Verify Before Proceeding";
+                  const action = isHighRisk ? "Do not proceed" : isTrusted ? "Proceed" : "Proceed after verification";
+                  const reasons = [...(preview?.topReasons || []), ...(preview?.missingSignals || [])].slice(0, 3);
+                  return <section className={`rounded-[32px] border p-7 ${isHighRisk ? "border-red-400/30 bg-red-500/10" : isTrusted ? "border-emerald-400/30 bg-emerald-500/10" : "border-amber-300/30 bg-amber-400/10"}`}>
+                    <div className="text-xs font-black uppercase tracking-[0.24em] text-zinc-400">Trust verdict</div>
+                    <div className="mt-5 flex flex-wrap items-center justify-between gap-5"><h2 className="text-3xl font-black sm:text-4xl"><span aria-hidden="true">{isHighRisk ? "●" : isTrusted ? "●" : "●"}</span> {verdict}</h2><div><div className="text-xs uppercase tracking-wider text-zinc-400">Confidence</div><div className="mt-1 text-3xl font-black">{preview?.confidenceScore ?? 0}%</div></div></div>
+                    <div className="mt-7 border-t border-white/10 pt-6"><h3 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Why?</h3><ul className="mt-4 space-y-3 text-base">{reasons.map((reason, index) => <li key={reason} className="flex gap-3"><span className={index < (preview?.topReasons.length || 0) ? "text-emerald-300" : "text-amber-200"}>{index < (preview?.topReasons.length || 0) ? "✓" : "!"}</span><span>{reason}</span></li>)}</ul></div>
+                    <div className="mt-7 rounded-2xl bg-black/25 p-5"><div className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Recommended action</div><div className="mt-2 text-xl font-black">{action}</div></div>
+                  </section>;
+                })() : null}
+                <section className="hidden rounded-[28px] border border-red-400/20 bg-red-500/[0.06] p-6">
                   <div className="text-xs uppercase tracking-[0.22em] text-red-300">Business Identity</div>
                   <div className="mt-5 grid gap-5 md:grid-cols-3">
                     <div className="rounded-2xl border border-white/10 bg-black/50 p-5">
@@ -1327,7 +1325,7 @@ export default function IntakePage() {
                 </section>
 
                 {freeScanResult?.businessNarrative ? (
-                  <section className="rounded-[28px] border border-red-400/20 bg-red-500/[0.06] p-6">
+                  <section className="hidden rounded-[28px] border border-red-400/20 bg-red-500/[0.06] p-6">
                     <div className="text-xs uppercase tracking-[0.22em] text-red-300">Decision preview</div>
                     <div className="mt-4 grid gap-3 md:grid-cols-3">
                       <div className="rounded-2xl border border-white/10 bg-black/40 p-4">
@@ -1372,11 +1370,8 @@ export default function IntakePage() {
                 ) : null}
 
                 <section className="rounded-[28px] border border-yellow-400/20 bg-yellow-500/10 p-6 text-sm leading-7 text-yellow-100">
-                  <div className="text-xs uppercase tracking-[0.22em] text-yellow-200">Why unlock?</div>
-                  <p className="mt-4 text-base font-bold text-white">The free preview is a direction check. The paid report is the executive decision product: what to do, why it matters, and what uncertainty costs if ignored.</p>
-                  <div className="mt-4 grid gap-3 md:grid-cols-3">
-                    {["Final recommendation", "Source-backed appendix", "Action plan for next steps"].map((item) => <div key={item} className="rounded-2xl border border-white/10 bg-black/30 p-4 text-sm font-bold text-yellow-50">✓ {item}</div>)}
-                  </div>
+                  <div className="text-xs uppercase tracking-[0.22em] text-yellow-200">Full investigation</div>
+                  <p className="mt-3 text-lg font-bold text-white">Review the complete decision, risks, evidence, timeline, and sources.</p>
                   <div className="mt-5 rounded-2xl border border-white/10 bg-black/30 p-5">
                     <label>
                       <div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">Email for full report</div>
@@ -1384,7 +1379,7 @@ export default function IntakePage() {
                     </label>
                     <div className="mt-5 grid gap-3 md:grid-cols-2">
                       <button type="button" onClick={saveLead} className="rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-4 text-sm font-bold text-white hover:border-red-400/30">Save Investigation</button>
-                      <PaymentButtons planName="ShadowScore Trust Intelligence Report" price="$9.90" buttonLabel="Unlock Full Report" intakeId={intake?.intakeId} />
+                      <PaymentButtons planName="ShadowScore Trust Intelligence Report" price="$9.90" buttonLabel="Unlock Full Investigation · $9.90" intakeId={intake?.intakeId} />
                     </div>
                   </div>
                   {leadSaved && <div className="mt-4 rounded-2xl border border-emerald-400/25 bg-emerald-500/10 p-4 text-sm text-emerald-100">Investigation saved. Your full executive report remains locked until payment is confirmed.</div>}
