@@ -44,6 +44,20 @@ test("authentication preserves a validated return-to route", () => {
   assert.match(source("../app/login/page.tsx"), /returnTo/);
   assert.match(source("../app/signup/page.tsx"), /!requested\.startsWith\("\/\/"\)/);
 });
+test("an unauthenticated investigation is restored after signup", () => {
+  const intake = source("../app/intake/page.tsx");
+  assert.match(intake, /CHECKOUT_DRAFT_KEY/);
+  assert.match(intake, /\/signup\?returnTo=/);
+  assert.match(intake, /createIntake\(session, draft\)/);
+});
+test("PayPal return is verified on the server before report generation", () => {
+  const flow = source("../app/reports/[reportId]/ReportFlow.tsx");
+  const callback = source("../app/api/payments/paypal/complete/route.ts");
+  assert.match(flow, /rm: "2"/);
+  assert.match(flow, /\/api\/payments\/paypal\/complete/);
+  for (const check of ["payment_status", "invoice", "receiver_email", "mc_currency", "mc_gross"]) assert.ok(callback.includes(check));
+  assert.match(callback, /markPaymentPaidAndGenerateReport/);
+});
 test("browser state cannot unlock a report", () => {
   const access = source("../lib/reportAccess.ts");
   assert.match(access, /paymentStatus === "paid" && report\.reportStatus === "ready"/);

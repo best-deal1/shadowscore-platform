@@ -14,7 +14,7 @@ import { REPORT_PRODUCT, getWorkspace, type PaymentIntent, type ShadowScoreRepor
 type Mode = "unlock" | "processing" | "report";
 
 function paypalUrl(intent: PaymentIntent, reportId: string) {
-  const query = new URLSearchParams({ cmd: "_xclick", business: PAYPAL_BUSINESS_EMAIL, item_name: REPORT_PRODUCT.name, amount: "9.90", currency_code: "USD", invoice: intent.id, custom: reportId, return: `${window.location.origin}/reports/${reportId}/processing` });
+  const query = new URLSearchParams({ cmd: "_xclick", business: PAYPAL_BUSINESS_EMAIL, item_name: REPORT_PRODUCT.name, amount: "9.90", currency_code: "USD", invoice: intent.id, custom: reportId, rm: "2", return: `${window.location.origin}/reports/${reportId}/processing` });
   return `https://www.paypal.com/cgi-bin/webscr?${query}`;
 }
 
@@ -25,6 +25,7 @@ export default function ReportFlow({ reportId, mode }: { reportId: string; mode:
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [confirmingPayment, setConfirmingPayment] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -47,6 +48,23 @@ export default function ReportFlow({ reportId, mode }: { reportId: string; mode:
 
   useEffect(() => { void load(); }, [load]);
   useEffect(() => {
+    if (mode !== "processing" || confirmingPayment) return;
+    const transactionId = new URLSearchParams(window.location.search).get("tx");
+    if (!transactionId) return;
+    setConfirmingPayment(true);
+    void fetch("/api/payments/paypal/complete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reportId, transactionId }),
+    }).then(async (response) => {
+      const body = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(body?.error || "Payment confirmation failed.");
+      window.history.replaceState({}, "", `/reports/${reportId}/processing`);
+      await load();
+    }).catch((cause) => setError(cause instanceof Error ? cause.message : "Payment confirmation failed."))
+      .finally(() => setConfirmingPayment(false));
+  }, [confirmingPayment, load, mode, reportId]);
+  useEffect(() => {
     if (mode !== "processing" || !report || report.reportStatus === "ready" || report.reportStatus === "failed") return;
     const timer = window.setInterval(() => void load(), 5000);
     return () => window.clearInterval(timer);
@@ -66,7 +84,7 @@ export default function ReportFlow({ reportId, mode }: { reportId: string; mode:
 
   return <ShadowScoreLayout><main className="mx-auto max-w-6xl px-6 py-14">
     <Link href="/intake" className="text-sm font-bold text-red-200">Back to preview</Link>
-    {loading && <p className="mt-10 text-zinc-300">Loading report status...</p>}
+    {(loading || confirmingPayment) && <p className="mt-10 text-zinc-300">{confirmingPayment ? "Confirming payment..." : "Loading report status..."}</p>}
     {error && <section className="mt-8 rounded-3xl border border-red-400/30 bg-red-500/10 p-6"><h1 className="text-2xl font-black">Report unavailable</h1><p className="mt-3 text-zinc-300">{error}</p><button onClick={() => void load()} className="mt-5 rounded-xl bg-white px-4 py-3 font-bold text-black">Try again</button></section>}
 
     {!loading && report && mode === "unlock" && <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_.75fr]">

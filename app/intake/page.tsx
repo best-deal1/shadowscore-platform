@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import PaymentButtons from "../../components/PaymentButtons";
 import InvestigationLifecycle from "../components/InvestigationLifecycle";
 import InvestigationTimeline from "../components/InvestigationTimeline";
@@ -55,6 +56,8 @@ type BusinessNarrativeSection = { id: string; title: string; body: string[] };
 type BusinessNarrative = { decision: string; confidence: string; decisionMode?: { proceed: "YES" | "REVIEW" | "NO"; decisionOutcome?: string; decisionLight?: string; riskLevel?: string; headline?: string; userMeaning?: string; allowedActions?: string[]; blockedActions?: string[]; confidence: string; mainRemainingUncertainty: string; recommendedNextAction: string; estimatedEffort: string; businessImpactIfSkipped: "Low" | "Medium" | "High" }; sections: BusinessNarrativeSection[] };
 type ProviderRegistryItem = { id: string; name: string; version: string; category: string };
 type FreeScanResult = { status?: "ready"; message?: string; reportReadyEvent?: { type: "free-preview-ready"; status: "ready"; ready: true; emittedAt: string }; executedAt: string; targetResolution?: { requestedTarget: string; resolvedTarget: string; companyId?: string; legalName?: string }; providerRegistry?: ProviderRegistryItem[]; providers: FreeScanProviderSummary[]; insights: TrustInsight[]; insightEngineVersion?: string; timeline?: TrustTimelineItem[]; decisionPreview?: DecisionPreview; identityProfile?: IdentityProfile; businessNarrative?: BusinessNarrative };
+
+const CHECKOUT_DRAFT_KEY = "shadowscore.checkout-draft.v1";
 
 const MAX_FILE_SIZE = 15 * 1024 * 1024;
 const MIN_FILE_SIZE = 1024;
@@ -534,6 +537,7 @@ function hasHint(fileNames: string[], hints: string[]) {
 }
 
 export default function IntakePage() {
+  const router = useRouter();
   const { t } = useLocale();
   const scanModes: Array<{ id: ScanMode; label: string; eyebrow: string; description: string }> = [
     { id: "website", label: t.intakeUi.websiteBusiness, eyebrow: t.intakeUi.noUploadRequired, description: t.intakeUi.websiteModeDescription },
@@ -573,6 +577,37 @@ export default function IntakePage() {
     setScanMode("website");
     setWebsiteTarget(target);
   }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("resume") !== "checkout" || intake) return;
+    const session = getCurrentSession();
+    const stored = window.sessionStorage.getItem(CHECKOUT_DRAFT_KEY);
+    if (!session || !stored) return;
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        const draft = JSON.parse(stored) as ReturnType<typeof intakeRecord>;
+        const created = await createIntake(session, draft);
+        if (cancelled) return;
+        setScanMode(draft.scanMode);
+        setWebsiteTarget(draft.scanMode === "website" ? draft.target : "");
+        setStore(draft.scanMode === "website" ? "" : draft.target);
+        setEmail(draft.email);
+        setSubmitted(true);
+        setPreviewStatus("ready");
+        setLeadSaved(true);
+        setIntake(created);
+        window.sessionStorage.removeItem(CHECKOUT_DRAFT_KEY);
+        router.replace("/intake");
+      } catch {
+        window.sessionStorage.removeItem(CHECKOUT_DRAFT_KEY);
+        setFreeScanError("The saved investigation could not be restored. Please save it again.");
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [intake, router]);
 
   const displayMarketplace =
     marketplace === "Other"
@@ -877,10 +912,7 @@ export default function IntakePage() {
 
   const saveLead = async () => {
     const session = getCurrentSession();
-    if (session) {
-      const created = await createIntake(session, intakeRecord());
-      setIntake(created);
-    }
+    const record = intakeRecord();
     const lead = {
       createdAt: new Date().toISOString(),
       scanMode,
@@ -901,6 +933,13 @@ export default function IntakePage() {
       warnings: warningIssues.map((item) => `${item.file}: ${item.issue}`),
     };
     sessionStorage.setItem("shadowscore_last_lead", JSON.stringify(lead));
+    if (!session) {
+      sessionStorage.setItem(CHECKOUT_DRAFT_KEY, JSON.stringify(record));
+      router.push(`/signup?returnTo=${encodeURIComponent("/intake?resume=checkout")}`);
+      return;
+    }
+    const created = await createIntake(session, record);
+    setIntake(created);
     setLeadSaved(true);
   };
 
