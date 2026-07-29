@@ -990,8 +990,8 @@ export default function IntakePage() {
           <div>
             <div className="text-xs uppercase tracking-[0.35em] text-red-300">Business investigation</div>
             <h1 className="mt-6 text-5xl font-extrabold leading-tight">Can you trust this business?</h1>
-            <p className="mt-6 max-w-lg text-lg leading-8 text-zinc-400">Enter a business name or URL. Get a clear verdict, key reasons, and a recommended action.</p>
-            <div className="mt-10 flex items-center gap-4 text-sm text-zinc-400"><span className="grid size-10 place-items-center rounded-full border border-emerald-400/25 bg-emerald-500/10 text-emerald-200">✓</span><span>People buy confidence. ShadowScore shows the evidence behind it.</span></div>
+            <p className="mt-6 max-w-lg text-lg leading-8 text-zinc-400">One Business Investigation produces one Executive Report for a one-time price of $9.90.</p>
+            <div className="mt-8 rounded-2xl border border-white/10 bg-white/[.035] p-5"><p className="font-bold">About 3 minutes to start</p><ol className="mt-4 space-y-3 text-sm text-zinc-300"><li>1. Identify the Business</li><li>2. Review the Investigation</li><li>3. Receive the Executive Report</li></ol><p className="mt-4 text-sm text-zinc-400">A Business name or URL is required so we investigate the correct identity. Evidence is optional. Starting is free. Payment occurs after review. No subscription is required.</p></div>
           </div>
 
           <div className="rounded-[32px] border border-white/10 bg-black/55 p-6 shadow-[0_0_60px_rgba(120,0,20,0.16)] backdrop-blur-xl">
@@ -1033,7 +1033,7 @@ export default function IntakePage() {
               <div className="mt-6 grid gap-5 md:grid-cols-2">
                 <label className="md:col-span-2">
                   <div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">
-                    {t.intake.field} *
+                    {t.intake.field} (required)
                   </div>
                   <input
                     value={websiteTarget}
@@ -1372,17 +1372,19 @@ export default function IntakePage() {
                 ) : null}
 
                 <section className="rounded-[28px] border border-yellow-400/20 bg-yellow-500/10 p-6 text-sm leading-7 text-yellow-100">
-                  <div className="text-xs uppercase tracking-[0.22em] text-yellow-200">Full report</div>
-                  <p className="mt-3 text-lg font-bold text-white">Get the complete risk review, identity findings, evidence, sources, and next steps.</p>
+                  <div className="text-xs uppercase tracking-[0.22em] text-yellow-200">Review the Investigation</div>
+                  <p className="mt-3 text-lg font-bold text-white">Confirm the Business and scope before payment.</p>
                   <div className="mt-5 rounded-2xl border border-white/10 bg-black/30 p-5">
+                    <dl className="mb-5 grid gap-3 text-sm sm:grid-cols-2"><div><dt className="text-zinc-500">Business</dt><dd className="font-bold text-white">{freeScanResult?.targetResolution?.legalName || activeTarget}</dd></div><div><dt className="text-zinc-500">Website or profile</dt><dd className="font-bold text-white">{activeTarget}</dd></div><div><dt className="text-zinc-500">Investigation scope</dt><dd className="font-bold text-white">{activeMode.label}</dd></div><div><dt className="text-zinc-500">Optional customer Evidence</dt><dd className="font-bold text-white">{files.length ? `${files.length} file(s)` : "None provided"}</dd></div><div><dt className="text-zinc-500">Deliverable</dt><dd className="font-bold text-white">Executive Report</dd></div><div><dt className="text-zinc-500">One-time price</dt><dd className="font-bold text-white">$9.90</dd></div></dl>
                     <label>
-                      <div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">Email for full report</div>
-                      <input value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white" placeholder="you@example.com" />
+                      <div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">Customer email (required)</div>
+                      <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white" placeholder="you@example.com" />
                     </label>
-                    <div className="mt-5"><PaymentButtons planName="ShadowScore Trust Intelligence Report" price="$9.90" buttonLabel="Unlock Full Report – $9.90" intakeId={intake?.intakeId} /></div>
+                    <p className="mt-3 text-xs text-zinc-400">Used to attach this Investigation to your Account. Correct the Business or scope above before continuing.</p>
+                    <div className="mt-5"><PaymentButtons planName="ShadowScore Executive Report" price="$9.90" buttonLabel="Continue to payment · $9.90" intakeId={intake?.intakeId} /></div>
                     <button type="button" onClick={saveLead} className="mx-auto mt-4 block text-xs font-bold text-zinc-400 underline underline-offset-4 hover:text-white">Save for later</button>
                   </div>
-                  {leadSaved && <div className="mt-4 rounded-2xl border border-emerald-400/25 bg-emerald-500/10 p-4 text-sm text-emerald-100">Investigation saved. Your full executive report remains locked until payment is confirmed.</div>}
+                  {leadSaved && <div className="mt-4 rounded-2xl border border-emerald-400/25 bg-emerald-500/10 p-4 text-sm text-emerald-100">Investigation saved. Payment is required to generate the Executive Report.</div>}
                 </section>
 
                 <details className="rounded-[28px] border border-white/10 bg-black/50 p-6" open={false}>
