@@ -14,6 +14,10 @@ export const PARTNERS_EMAIL = "partners@shadowscore.io";
 // If info@shadowscore.io is not verified in PayPal yet, replace this with the verified PayPal account email.
 export const PAYPAL_BUSINESS_EMAIL = "sales@best-deal.org";
 
+export function getPayPalPdtIdentityToken() {
+  return process.env.PAYPAL_PDT_IDENTITY_TOKEN?.trim() || "";
+}
+
 export function buildWhatsAppUrl(message: string) {
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
 }
