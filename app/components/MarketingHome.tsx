@@ -1,8 +1,10 @@
 import Link from "next/link";
+import ShadowScoreLayout from "@/components/ShadowScoreLayout";
 import { MarketingCta } from "./MarketingAnalytics";
 
 export default function MarketingHome() {
   return (
+    <ShadowScoreLayout>
     <div className="bg-[#07111f] text-slate-100">
       <main>
         <section className="bg-[radial-gradient(circle_at_78%_10%,rgba(14,165,233,.22),transparent_30%),#07111f] px-6 py-24 sm:py-32">
@@ -24,7 +26,7 @@ export default function MarketingHome() {
                 event="hero_cta_clicked"
                 className="rounded-full bg-sky-400 px-7 py-4 font-bold text-slate-950 hover:bg-sky-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
               >
-                Start a Due Diligence Review
+                Start free preview
               </MarketingCta>
               <Link
                 href="/sample-report"
@@ -32,7 +34,18 @@ export default function MarketingHome() {
               >
                 View illustrative sample
               </Link>
+              <Link
+                href="/pricing"
+                className="rounded-full px-7 py-4 font-bold text-sky-200 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+              >
+                See pricing
+              </Link>
             </div>
+            <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-300" aria-label="Purchase information">
+              <li>Free preview before payment</li>
+              <li>Full report: $9.90</li>
+              <li>Reports saved to your workspace</li>
+            </ul>
           </div>
         </section>
 
@@ -83,14 +96,7 @@ export default function MarketingHome() {
         </section>
       </main>
 
-      <footer className="border-t border-white/10 px-6 py-8 text-sm text-slate-400">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
-          <span>ShadowScore</span>
-          <Link href="/methodology" className="font-semibold text-slate-200 hover:text-white">
-            Methodology
-          </Link>
-        </div>
-      </footer>
     </div>
+    </ShadowScoreLayout>
   );
 }
