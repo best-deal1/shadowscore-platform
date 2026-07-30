@@ -70,6 +70,11 @@ for (const pageName of ["security", "contact", "login", "signup", "example"]) {
   assert.notDeepEqual(userPages.he[pageName], userPages.en[pageName], `Hebrew ${pageName} page copy must be localized`);
 }
 console.log("Validated localized Hebrew copy for every public account, contact, security, and example-report route.");
+const expectedHebrewSecuritySections = ["איסוף נתונים מוגבל", "רשומות חקירה מוגנות", "פרטי גישה רגישים נשארים בידיכם"];
+assert.deepEqual(userPages.he.security.sections.map((section) => section.title), expectedHebrewSecuritySections, "Hebrew security copy must preserve the approved security structure");
+for (const key of ["investigationTypeTitle", "selectedInvestigationType", "investigationTypeDescription", "investigationTypeReportDescription"])
+  assert.notEqual(getDictionary("he").intakeUi[key], getDictionary("en").intakeUi[key], `Hebrew intake copy must localize ${key}`);
+console.log("Validated the Hebrew intake and security structure without English fallback.");
 
 const { applicationCopy } = await import("../lib/i18n/index.ts");
 const applicationEnglish = applicationCopy.en;

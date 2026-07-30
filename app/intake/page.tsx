@@ -988,14 +988,17 @@ export default function IntakePage() {
       <section className="relative z-10 mx-auto max-w-7xl px-6 py-14">
         <div className="grid gap-10 lg:grid-cols-[.82fr_1.18fr]">
           <div>
-            <div className="text-xs uppercase tracking-[0.35em] text-red-300">Business investigation</div>
-            <h1 className="mt-6 text-5xl font-extrabold leading-tight">Can you trust this business?</h1>
-            <p className="mt-6 max-w-lg text-lg leading-8 text-zinc-400">One Business Investigation produces one Executive Report for a one-time price of $9.90.</p>
-            <div className="mt-8 rounded-2xl border border-white/10 bg-white/[.035] p-5"><p className="font-bold">About 3 minutes to start</p><ol className="mt-4 space-y-3 text-sm text-zinc-300"><li>1. Identify the Business</li><li>2. Review the Investigation</li><li>3. Receive the Executive Report</li></ol><p className="mt-4 text-sm text-zinc-400">A Business name or URL is required so we investigate the correct identity. Evidence is optional. Starting is free. Payment occurs after review. No subscription is required.</p></div>
+            <div className="text-xs uppercase tracking-[0.35em] text-red-300">{t.intakeUi.investigationEyebrow}</div>
+            <h1 className="mt-6 text-5xl font-extrabold leading-tight">{t.intakeUi.investigationTitle}</h1>
+            <p className="mt-6 max-w-lg text-lg leading-8 text-zinc-400">{t.intakeUi.investigationPrice}</p>
+            <div className="mt-8 rounded-2xl border border-white/10 bg-white/[.035] p-5"><p className="font-bold">{t.intakeUi.investigationTime}</p><ol className="mt-4 space-y-3 text-sm text-zinc-300"><li>1. {t.intakeUi.investigationStepIdentify}</li><li>2. {t.intakeUi.investigationStepReview}</li><li>3. {t.intakeUi.investigationStepReport}</li></ol><p className="mt-4 text-sm text-zinc-400">{t.intakeUi.investigationStartTerms}</p></div>
           </div>
 
           <div className="rounded-[32px] border border-white/10 bg-black/55 p-6 shadow-[0_0_60px_rgba(120,0,20,0.16)] backdrop-blur-xl">
-            <div className="grid gap-3 md:grid-cols-3">
+            <h2 className="text-2xl font-black text-white">{t.intakeUi.investigationTypeTitle}</h2>
+            <p className="mt-2 text-sm leading-6 text-zinc-400">{t.intakeUi.investigationTypeDescription}</p>
+            <p className="mt-1 text-sm leading-6 text-zinc-500">{t.intakeUi.investigationTypeReportDescription}</p>
+            <div className="mt-6 grid gap-3 md:grid-cols-3">
               {scanModes.map((mode) => (
                 <button
                   key={mode.id}
@@ -1021,7 +1024,7 @@ export default function IntakePage() {
 
             <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
               <div className="text-xs uppercase tracking-[0.28em] text-red-300">
-                {t.intakeUi.selectedInvestigation}
+                {t.intakeUi.selectedInvestigationType}
               </div>
               <div className="mt-2 text-xl font-black">{activeMode.label}</div>
               <p className="mt-2 text-sm leading-6 text-zinc-400">
