@@ -1,11 +1,26 @@
-export const productionRequirements = [
+type ProductionRequirement = { key: string; minimumLength: number };
+
+export const paymentProviderConfigurations = [
+  {
+    id: "paypal",
+    name: "PayPal",
+    enabled: true,
+    requirements: [{ key: "PAYMENT_PROVIDER_PAYPAL_PDT_TOKEN", minimumLength: 8 }],
+  },
+] as const;
+
+const platformRequirements: readonly ProductionRequirement[] = [
   { key: "NEXT_PUBLIC_SUPABASE_URL", minimumLength: 12 },
   { key: "NEXT_PUBLIC_SUPABASE_ANON_KEY", minimumLength: 20 },
   { key: "SUPABASE_SERVICE_ROLE_KEY", minimumLength: 20 },
   { key: "INVESTIGATION_WORKER_SECRET", minimumLength: 32 },
-  { key: "PAYPAL_PDT_IDENTITY_TOKEN", minimumLength: 8 },
   { key: "PAYMENT_CALLBACK_SECRET", minimumLength: 32 },
-] as const;
+];
+
+export const productionRequirements: readonly ProductionRequirement[] = [
+  ...platformRequirements,
+  ...paymentProviderConfigurations.filter(({ enabled }) => enabled).flatMap(({ requirements }) => requirements),
+];
 
 export type ProductionEnvironment = Record<string, string | undefined>;
 

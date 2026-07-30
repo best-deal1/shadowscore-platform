@@ -11,7 +11,7 @@ const source = (path) => fs.readFileSync(new URL(path, import.meta.url), "utf8")
 test("preview to unlock uses the canonical report route", () => assert.match(source("../components/PaymentButtons.tsx"), /\/reports\/\$\{reportIdForPayment\(intent\.id\)\}\/unlock/));
 test("unlock summary states the purchase type, total, contents, and payment provider", () => {
   const page = source("../app/reports/[reportId]/ReportFlow.tsx");
-  for (const copy of ["One-time purchase", "Total", "Included in your report", "No subscription", "Payment processed by PayPal"]) assert.ok(page.includes(copy));
+  for (const copy of ["One Business Investigation", "Total", "Executive Report includes", "No subscription", "Payment processed by the selected provider"]) assert.ok(page.includes(copy));
   assert.equal(REPORT_PRODUCT.price, "$9.90");
 });
 test("checkout initiation creates one report-scoped intent", async () => {

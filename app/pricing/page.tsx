@@ -77,7 +77,7 @@ export default function PricingPage() {
               <Link className="pricing-primary" href="/intake">Start Investigation</Link>
             </article>
           </div>
-          <p className="mx-auto mt-6 max-w-2xl text-center text-sm leading-6 text-zinc-400">You will see the Business, Investigation scope, and total price before payment. Payment is processed by PayPal.</p>
+          <p className="mx-auto mt-6 max-w-2xl text-center text-sm leading-6 text-zinc-400">You will see the Business, Investigation scope, and total price before payment. Payment is processed by the selected provider.</p>
         </section>
 
         <section className="pricing-section pb-28" aria-labelledby="pricing-faq-title">
