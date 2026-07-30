@@ -24,6 +24,13 @@ const primaryNav = [
   { href: "/security", label: "Security" },
 ];
 
+const routeLabels: Record<string, string> = {
+  "/business-due-diligence": "Product", "/sample-report": "Sample report",
+  "/methodology": "Methodology", "/pricing": "Pricing", "/security": "Security",
+  "/login": "Sign in", "/signup": "Create account", "/intake": "Start investigation",
+  "/contact": "Contact", "/about": "About", "/privacy": "Privacy", "/terms": "Terms",
+};
+
 const mobilePublicNav = [
   { href: "/about", label: "About" },
   { href: "/security", label: "Security" },
@@ -55,9 +62,9 @@ export default function ShadowScoreLayout({
       title: t.footer.product,
       links: [
         { href: "/intake", label: t.footer.start },
-        { href: "/example-report", label: t.footer.example },
+        { href: "/sample-report", label: t.footer.example },
         { href: "/pricing", label: t.nav.plans },
-        { href: "/about", label: t.footer.methodology },
+        { href: "/methodology", label: t.footer.methodology },
       ],
     },
     {
@@ -91,6 +98,7 @@ export default function ShadowScoreLayout({
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-black text-white">
+      <a href="#main-content" className="sr-only z-[100] rounded-lg bg-white px-4 py-3 font-bold text-black focus:not-sr-only focus:fixed focus:left-4 focus:top-4">Skip to main content</a>
       <header className="sticky top-0 z-50 border-b border-white/10 bg-black/90 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
           <Link
@@ -230,7 +238,16 @@ export default function ShadowScoreLayout({
         ) : null}
       </header>
 
-      <main>{children}</main>
+      {pathname !== "/" && routeLabels[pathname] ? (
+        <nav aria-label="Breadcrumb" className="border-b border-white/[.07] bg-zinc-950/80 px-5 py-3">
+          <ol className="mx-auto flex max-w-7xl items-center gap-2 text-xs font-bold text-zinc-400">
+            <li><Link href="/" className="rounded text-zinc-300 hover:text-white focus:outline-none focus:ring-2 focus:ring-red-300">Home</Link></li>
+            <li aria-hidden="true" className="text-zinc-600">/</li>
+            <li aria-current="page" className="text-zinc-500">{routeLabels[pathname]}</li>
+          </ol>
+        </nav>
+      ) : null}
+      <div id="main-content">{children}</div>
 
       <footer className="border-t border-white/10 bg-black px-5 py-12 sm:px-6">
         <div className="mx-auto grid max-w-7xl gap-8 md:grid-cols-4">
