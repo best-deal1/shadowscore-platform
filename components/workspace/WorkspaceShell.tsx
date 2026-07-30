@@ -4,7 +4,13 @@ import type { WorkspaceActor } from "@/lib/workspace/actor";
 import { workspaceCopy } from "./workspace-copy";
 import { workspaceActorDisplayName } from "./actor-display";
 
-const navItems = [{ label: "Cases", href: "/workspace", icon: "▣" }, { label: "Monitoring", href: "/workspace/monitoring", icon: "◉" }] as const;
+const navItems = [
+  { label: "Investigations", href: "/workspace", icon: "▣" },
+  { label: "Reports", href: "/reports", icon: "▤" },
+  { label: "Monitoring", href: "/workspace/monitoring", icon: "◉" },
+  { label: "Alerts", href: "/alerts", icon: "!" },
+  { label: "History", href: "/archive", icon: "↺" },
+] as const;
 
 export function WorkspaceShell({ children, locale, actor }: { children: React.ReactNode; locale: Locale; actor: WorkspaceActor }) {
   const copy = workspaceCopy[locale];
@@ -30,7 +36,7 @@ export function WorkspaceShell({ children, locale, actor }: { children: React.Re
           <ul>
             {navItems.map((item) => (
               <li key={item.href}>
-                <Link className="workspace-nav-link" href={item.href}>
+                <Link className={`workspace-nav-link${item.href === "/workspace" ? " is-current" : ""}`} href={item.href}>
                   <span aria-hidden="true" className="workspace-nav-icon">{item.icon}</span>
                   {item.label}
                 </Link>
