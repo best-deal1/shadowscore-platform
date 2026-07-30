@@ -15,7 +15,7 @@ import type { ReasoningOutput } from "./reasoning";
 import type { KnowledgeGraphSnapshot } from "./knowledgeGraph/types";
 import type { ProviderExecutionRecord } from "./providers/ProviderManager";
 import type { ProviderResult } from "./providers/types";
-import { supabaseFetch, isSupabaseConfigured } from "./supabase";
+import { supabaseFetch, isSupabaseConfigured, requirePersistentSessionInProduction } from "./supabase";
 import { cloneWorkspace, getMutableMemoryWorkspace } from "./workspaceStore";
 
 export type WorkspaceSession = {
@@ -182,6 +182,7 @@ export async function getWorkspace(session: WorkspaceSession): Promise<Workspace
     });
   }
 
+  requirePersistentSessionInProduction(session.accessToken);
   return presentWorkspaceForEndUser(cloneWorkspace(requireWorkspace(session.userId)));
 }
 
@@ -195,6 +196,7 @@ export async function addWatchlistEntity(session: WorkspaceSession, entity: Shad
     return { id: created.id, name: created.name, type: created.type, status: created.status, lastScore: created.last_score, updatedAt: created.updated_at };
   }
 
+  requirePersistentSessionInProduction(session.accessToken);
   const workspace = requireWorkspace(session.userId);
   workspace.entities = [entity, ...workspace.entities].slice(0, 25);
   return entity;
@@ -202,6 +204,41 @@ export async function addWatchlistEntity(session: WorkspaceSession, entity: Shad
 
 export async function createIntake(session: WorkspaceSession, record: Omit<ShadowScoreIntake, "intakeId" | "userId" | "paymentStatus" | "reportStatus" | "createdAt">) {
   const intake: ShadowScoreIntake = { intakeId: `intake-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`, userId: session.userId, ...record, paymentStatus: "payment_pending", reportStatus: "preview", createdAt: new Date().toISOString() };
+  if (isSupabaseConfigured() && session.accessToken) {
+    const [created] = await supabaseFetch<Record<string, any>[]>("/rest/v1/intakes?select=*", {
+      method: "POST",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify({
+        intake_id: intake.intakeId,
+        user_id: session.userId,
+        scan_mode: intake.scanMode,
+        target: intake.target,
+        platform: intake.platform,
+        case_type: intake.caseType,
+        email: intake.email,
+        file_names: intake.fileNames,
+        visible_signal_categories: intake.visibleSignalCategories,
+        payment_status: intake.paymentStatus,
+        report_status: intake.reportStatus,
+        created_at: intake.createdAt,
+      }),
+    }, session.accessToken);
+    return {
+      intakeId: created.intake_id,
+      userId: created.user_id,
+      scanMode: created.scan_mode,
+      target: created.target,
+      platform: created.platform,
+      caseType: created.case_type,
+      email: created.email,
+      fileNames: created.file_names || [],
+      visibleSignalCategories: created.visible_signal_categories || [],
+      paymentStatus: created.payment_status,
+      reportStatus: created.report_status,
+      createdAt: created.created_at,
+    };
+  }
+  requirePersistentSessionInProduction(session.accessToken);
   const workspace = requireWorkspace(session.userId);
   workspace.intakes = [intake, ...workspace.intakes].slice(0, 25);
   return intake;
@@ -212,6 +249,7 @@ export async function createCheckoutIntent(session: WorkspaceSession, record: { 
     const activeRows = await supabaseFetch<Record<string, any>[]>(`/rest/v1/payment_intents?select=*&metadata->>intakeId=eq.${encodeURIComponent(record.intakeId)}&status=in.(payment_pending,processing,paid,requires_payment,succeeded)&limit=1`, {}, session.accessToken);
     if (activeRows[0]) return mapPaymentIntentRow(activeRows[0]);
   }
+  requirePersistentSessionInProduction(session.accessToken);
   const existingWorkspace = requireWorkspace(session.userId);
   const existingIntent = existingWorkspace.paymentIntents.find((item) => item.intakeId === record.intakeId && ["payment_pending", "processing", "paid"].includes(item.paymentStatus));
   if (existingIntent) return existingIntent;

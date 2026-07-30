@@ -1,7 +1,7 @@
 import { buildReadyReport, canGenerateReport } from "./reportPipeline";
 import { getMutableMemoryWorkspace } from "./workspaceStore";
 import { getWorkspace, presentReportForEndUser, type WorkspaceSession } from "./workspace";
-import { isSupabaseConfigured, supabaseFetch } from "./supabase";
+import { isSupabaseConfigured, requirePersistentSessionInProduction, supabaseFetch } from "./supabase";
 import { SupabaseWebsiteScanHistoryRepository } from "./websiteIntelligence/supabaseHistory";
 import { SupabaseWebsiteAlertRepository } from "./websiteIntelligence/supabaseAlerts";
 import { SupabaseWebsiteWatchlistRepository } from "./websiteIntelligence/supabaseWatchlist";
@@ -33,6 +33,7 @@ export async function markPaymentPaidAndGenerateReport(session: WorkspaceSession
       throw error;
     }
   }
+  requirePersistentSessionInProduction(session.accessToken);
   const workspace = getMutableMemoryWorkspace(session.userId);
   const intent = workspace.paymentIntents.find((item) => item.id === paymentIntentId);
   if (!intent) throw new Error("Payment intent not found.");

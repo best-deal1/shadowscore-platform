@@ -14,6 +14,19 @@ export function isSupabaseConfigured() {
   return Boolean(getSupabaseConfig());
 }
 
+export function requireSupabaseInProduction() {
+  if (process.env.NODE_ENV === "production" && !isSupabaseConfigured()) {
+    throw new Error("Persistent workspace storage is not configured.");
+  }
+}
+
+export function requirePersistentSessionInProduction(accessToken?: string) {
+  requireSupabaseInProduction();
+  if (process.env.NODE_ENV === "production" && !accessToken) {
+    throw new Error("An authenticated persistent workspace session is required.");
+  }
+}
+
 export async function supabaseFetch<T>(path: string, init: RequestInit = {}, accessToken?: string): Promise<T> {
   const config = getSupabaseConfig();
   if (!config) throw new Error("Supabase is not configured.");

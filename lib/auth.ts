@@ -1,4 +1,4 @@
-import { supabaseFetch, isSupabaseConfigured } from "./supabase";
+import { supabaseFetch, isSupabaseConfigured, requireSupabaseInProduction } from "./supabase";
 import type { WorkspaceSession } from "./workspace";
 
 export type ShadowScoreUser = {
@@ -66,6 +66,7 @@ export async function signupUser(name: string, email: string, password: string) 
     return getCurrentUserFromSession(session);
   }
 
+  requireSupabaseInProduction();
   if (devUsers.has(cleanEmail)) throw new Error("An account with this email already exists.");
   const now = new Date().toISOString();
   const user = { id: makeId("SSU"), name: cleanName, email: cleanEmail, password: cleanPassword, createdAt: now, lastLoginAt: now };
@@ -88,6 +89,7 @@ export async function loginUser(email: string, password: string) {
     return getCurrentUserFromSession(session);
   }
 
+  requireSupabaseInProduction();
   const user = devUsers.get(cleanEmail);
   if (!user || user.password !== cleanPassword) throw new Error("Invalid email or password.");
   const updated = { ...user, lastLoginAt: new Date().toISOString() };
