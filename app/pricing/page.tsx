@@ -42,7 +42,7 @@ export default function PricingPage() {
         <section className="pricing-hero px-6 pb-14 pt-20 text-center sm:pt-28">
           <div className="mx-auto max-w-4xl">
             <p className="pricing-eyebrow">Simple, one-time pricing</p>
-            <h1 className="mt-5 text-5xl font-black tracking-[-0.045em] text-white sm:text-7xl">Pricing</h1>
+            <h1 className="mt-5 text-5xl font-black tracking-[-0.045em] text-white sm:text-7xl">Business confidence before you commit</h1>
             <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-zinc-300">
               One Business Investigation produces one Executive Report for a one-time price of $9.90.
             </p>
@@ -52,7 +52,7 @@ export default function PricingPage() {
         <section className="pricing-section pricing-today" aria-labelledby="available-today-title">
           <div className="pricing-heading">
             <p className="pricing-eyebrow">Available today</p>
-            <h2 id="available-today-title">One clear purchase</h2>
+            <h2 id="available-today-title">One Investigation. One Executive Report.</h2>
             <p>Starting is free. Payment is required to generate the Executive Report. No subscription is required.</p>
           </div>
 
@@ -63,14 +63,17 @@ export default function PricingPage() {
                   <p className="pricing-availability">Available now</p>
                   <span className="pricing-purchase-type">One-time purchase</span>
                 </div>
-                <h3>Executive Report</h3>
+                <h3>Business Investigation</h3>
+                <p className="pricing-offer-description">Includes one Executive Report</p>
                 <p className="pricing-offer-price">$9.90</p>
                 <p className="pricing-offer-description">Start free. Confirm the Business and scope, then pay once to generate the report.</p>
                 <ul>
                   <li><CheckIcon />Free Investigation setup and scope review</li>
-                  <li><CheckIcon />Executive report</li>
-                  <li><CheckIcon />Evidence review</li>
-                  <li><CheckIcon />Source references</li>
+                  <li><CheckIcon />Executive Summary</li>
+                  <li><CheckIcon />Risk Analysis</li>
+                  <li><CheckIcon />Supporting Evidence</li>
+                  <li><CheckIcon />Evidence Gaps</li>
+                  <li><CheckIcon />Recommended Actions</li>
                   <li><CheckIcon />Saved to Archive</li>
                 </ul>
               </div>
