@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { catalogLocales, getDictionary } from "../lib/i18n/index.ts";
 
 const phrases = [
@@ -15,6 +16,12 @@ const phrases = [
   "Recorded during investigation",
   "verification trail",
   "and ownership claims",
+  "Select an Investigation Type",
+  "Selected Investigation Type",
+  "Choose the Investigation Type that matches your business decision.",
+  "Each option is one evidence-backed Business Investigation and produces one Executive Report.",
+  "Can you trust this business?",
+  "About 3 minutes to start",
 ];
 for (const locale of catalogLocales.filter((locale) => locale !== "en")) {
   const dictionary = getDictionary(locale);
@@ -58,6 +65,7 @@ for (const locale of catalogLocales.filter((locale) => locale !== "en")) {
     ...home.executiveQuestions.flatMap((item) => [item.question, item.detail]),
     ...home.trustSignals,
     ...home.scenarios,
+    ...Object.values(dictionary.intakeUi),
     ...Object.values(dictionary.footer),
     ...Object.values(dictionary.audit),
     dictionary.legal.terms.label,
@@ -92,3 +100,8 @@ for (const locale of ["ar", "es", "fr", "de"]) {
 console.log(
   "Validated rendered product-owned and legal strings for every non-English locale.",
 );
+
+const intakeSource = await readFile(new URL("../app/intake/page.tsx", import.meta.url), "utf8");
+for (const phrase of phrases.slice(-6))
+  assert.ok(!intakeSource.includes(phrase), `Intake page hard-codes English product phrase: ${phrase}`);
+console.log("Validated that intake product copy renders from the locale dictionary.");
