@@ -56,22 +56,7 @@ export default function PricingPage() {
             <p>Starting is free. Payment is required to generate the Executive Report. No subscription is required.</p>
           </div>
 
-          <div className="pricing-offer-grid">
-            <article className="pricing-offer-card">
-              <div>
-                <p className="pricing-availability">Available now</p>
-                <h3>Start Investigation</h3>
-                <p className="pricing-offer-price">$0</p>
-                <p className="pricing-offer-description">Identify one Business and review the Investigation before payment.</p>
-                <ul>
-                  <li><CheckIcon />Initial decision</li>
-                  <li><CheckIcon />Key findings</li>
-                  <li><CheckIcon />Evidence gaps</li>
-                </ul>
-              </div>
-              <Link className="pricing-secondary" href="/intake">Start Free</Link>
-            </article>
-
+          <div className="pricing-offer-grid pricing-offer-grid-single">
             <article className="pricing-offer-card pricing-offer-card-featured">
               <div>
                 <div className="flex items-center justify-between gap-3">
@@ -80,8 +65,9 @@ export default function PricingPage() {
                 </div>
                 <h3>Executive Report</h3>
                 <p className="pricing-offer-price">$9.90</p>
-                <p className="pricing-offer-description">One-time payment for one Business and one Investigation.</p>
+                <p className="pricing-offer-description">Start free. Confirm the Business and scope, then pay once to generate the report.</p>
                 <ul>
+                  <li><CheckIcon />Free Investigation setup and scope review</li>
                   <li><CheckIcon />Executive report</li>
                   <li><CheckIcon />Evidence review</li>
                   <li><CheckIcon />Source references</li>
@@ -91,6 +77,7 @@ export default function PricingPage() {
               <Link className="pricing-primary" href="/intake">Start Investigation</Link>
             </article>
           </div>
+          <p className="mx-auto mt-6 max-w-2xl text-center text-sm leading-6 text-zinc-400">You will see the Business, Investigation scope, and total price before payment. Payment is processed by PayPal.</p>
         </section>
 
         <section className="pricing-section pb-28" aria-labelledby="pricing-faq-title">
