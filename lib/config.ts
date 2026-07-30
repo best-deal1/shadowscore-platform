@@ -15,7 +15,7 @@ export const PARTNERS_EMAIL = "partners@shadowscore.io";
 export const PAYPAL_BUSINESS_EMAIL = "sales@best-deal.org";
 
 export function getPayPalPdtIdentityToken() {
-  return process.env.PAYPAL_PDT_IDENTITY_TOKEN?.trim() || "";
+  return process.env.PAYMENT_PROVIDER_PAYPAL_PDT_TOKEN?.trim() || "";
 }
 
 export function buildWhatsAppUrl(message: string) {
