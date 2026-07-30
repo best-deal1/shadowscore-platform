@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import ExecutiveIntelligenceReport from "../../../components/report/ExecutiveIntelligenceReport";
+import InvestigationAgent from "./InvestigationAgent";
 import { getCurrentSession } from "../../../lib/auth";
 import { canViewFullReport } from "../../../lib/reportAccess";
 import { PAYPAL_BUSINESS_EMAIL } from "../../../lib/config";
@@ -27,8 +28,8 @@ export default function ReportFlow({ reportId, mode }: { reportId: string; mode:
   const [submitting, setSubmitting] = useState(false);
   const [confirmingPayment, setConfirmingPayment] = useState(false);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (background = false) => {
+    if (!background) setLoading(true);
     setError("");
     const session = getCurrentSession();
     if (!session) {
@@ -43,7 +44,7 @@ export default function ReportFlow({ reportId, mode }: { reportId: string; mode:
       setIntent(workspace.paymentIntents.find((item) => item.id === current.paymentIntentId));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Report status could not be loaded.");
-    } finally { setLoading(false); }
+    } finally { if (!background) setLoading(false); }
   }, [mode, reportId, router]);
 
   useEffect(() => { void load(); }, [load]);
@@ -66,7 +67,7 @@ export default function ReportFlow({ reportId, mode }: { reportId: string; mode:
   }, [confirmingPayment, load, mode, reportId]);
   useEffect(() => {
     if (mode !== "processing" || !report || report.reportStatus === "ready" || report.reportStatus === "failed") return;
-    const timer = window.setInterval(() => void load(), 5000);
+    const timer = window.setInterval(() => void load(true), 5000);
     return () => window.clearInterval(timer);
   }, [load, mode, report]);
 
@@ -94,7 +95,9 @@ export default function ReportFlow({ reportId, mode }: { reportId: string; mode:
       </div>
     </div>}
 
-    {!loading && report && mode === "processing" && <section className="mx-auto mt-8 max-w-4xl rounded-[32px] border border-white/10 bg-white/[.035] p-7 sm:p-10"><p className={`text-sm font-bold ${paid ? "text-emerald-300" : "text-amber-200"}`}>{paid ? "Payment confirmed" : failedPayment ? "Payment failed. Retry payment from the review page." : "Payment processing"}</p><h1 className="mt-3 text-4xl font-black">{ready ? "Executive Report ready" : failedGeneration ? "Report generation failed" : "Investigation in progress"}</h1><dl className="mt-7 grid gap-3 rounded-2xl bg-black/30 p-5 text-sm sm:grid-cols-2"><div><dt className="text-zinc-500">Business</dt><dd className="font-bold">{report.entity}</dd></div><div><dt className="text-zinc-500">Investigation reference</dt><dd className="font-mono">{report.intakeId || report.reportId}</dd></div><div><dt className="text-zinc-500">Transaction reference</dt><dd className="font-mono">{report.paymentIntentId || "Pending"}</dd></div><div><dt className="text-zinc-500">Investigation status</dt><dd>{ready ? "Report ready" : failedGeneration ? "Needs input" : "In progress"}</dd></div><div><dt className="text-zinc-500">Expected delivery</dt><dd>Usually within 2 minutes</dd></div><div><dt className="text-zinc-500">Last updated</dt><dd>{new Date(report.readyAt || report.createdAt).toLocaleString()}</dd></div></dl>{paid && !ready && !failedGeneration && <div className="mt-6 rounded-2xl border border-sky-400/20 bg-sky-500/10 p-5"><p className="font-bold">You can safely close this page. Your Investigation will continue processing.</p><p className="mt-2 text-sm text-zinc-300">Return to Investigations to check progress. Email notification is not currently provided.</p></div>}{failedGeneration && <p className="mt-6 rounded-2xl border border-red-400/30 bg-red-500/10 p-5">Open <Link className="font-bold underline" href="/contact">Support</Link> and include the Investigation reference.</p>}<div className="mt-8 flex flex-wrap gap-3">{ready && <Link href={`/reports/${reportId}`} className="rounded-xl bg-emerald-400 px-5 py-3 font-black text-black">View Executive Report</Link>} {!ready && !failedGeneration && <button onClick={() => void load()} className="rounded-xl border border-white/15 px-5 py-3 font-bold">Refresh status</button>}<Link href="/investigations" className="rounded-xl border border-white/15 px-5 py-3 font-bold">Go to Investigations</Link></div></section>}
+    {!loading && report && mode === "processing" && <div className="mx-auto mt-8 max-w-4xl">
+      {paid && !failedGeneration ? <InvestigationAgent business={report.entity} startedAt={report.createdAt} ready={ready} onComplete={() => router.replace(`/reports/${reportId}`)} /> : <section className="rounded-[32px] border border-white/10 bg-white/[.035] p-7 sm:p-10"><p className={`text-sm font-bold ${failedPayment ? "text-red-300" : "text-amber-200"}`}>{failedPayment ? "Payment failed" : "Payment processing"}</p><h1 className="mt-3 text-4xl font-black">{failedGeneration ? "Report generation failed" : "Preparing investigation"}</h1><p className="mt-4 text-zinc-300">{failedGeneration ? "The investigation needs support before it can continue." : "The investigation will begin after payment confirmation."}</p>{failedGeneration && <p className="mt-6 rounded-2xl border border-red-400/30 bg-red-500/10 p-5">Open <Link className="font-bold underline" href="/contact">Support</Link> and include the investigation reference.</p>}<div className="mt-8 flex flex-wrap gap-3"><Link href={failedPayment ? `/reports/${reportId}/unlock` : "/investigations"} className="rounded-xl border border-white/15 px-5 py-3 font-bold">{failedPayment ? "Retry payment" : "Go to Investigations"}</Link></div></section>}
+    </div>}
 
     {!loading && report && mode === "report" && (ready ? <ExecutiveIntelligenceReport report={report} /> : <section className="mt-8 rounded-3xl border border-amber-400/25 bg-amber-500/10 p-7"><h1 className="text-3xl font-black">Executive Report unavailable</h1><p className="mt-3 text-zinc-300">{paid ? "The Investigation is still in progress. Check its current status." : "Payment is required to generate the Executive Report."}</p><Link href={paid ? `/reports/${reportId}/processing` : `/reports/${reportId}/unlock`} className="mt-6 inline-block rounded-xl bg-white px-5 py-3 font-black text-black">{paid ? "View Investigation status" : "Review and pay"}</Link></section>)}
   </main><footer className="mx-auto flex max-w-6xl flex-wrap justify-center gap-4 border-t border-white/10 px-6 py-6 text-xs text-zinc-500"><Link href="/terms" className="hover:text-white">Terms</Link><Link href="/contact" className="hover:text-white">Support</Link></footer></div>;
