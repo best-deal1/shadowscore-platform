@@ -13,6 +13,8 @@ test("unlock summary states the purchase type, total, contents, and payment prov
   const page = source("../app/reports/[reportId]/ReportFlow.tsx");
   for (const copy of ["One Business Investigation", "Total", "Executive Report includes", "No subscription", "Payment processed by the selected provider"]) assert.ok(page.includes(copy));
   assert.equal(REPORT_PRODUCT.price, "$9.90");
+  assert.equal(REPORT_PRODUCT.amount, "9.90");
+  assert.equal(REPORT_PRODUCT.name, "Quick Investigation");
 });
 test("checkout initiation creates one report-scoped intent", async () => {
   const intake = await createIntake(session, intakeRecord);

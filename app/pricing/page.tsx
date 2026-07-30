@@ -1,27 +1,25 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import ShadowScoreLayout from "@/components/ShadowScoreLayout";
+import { PRICING_PLANS } from "@/lib/pricing";
 
 export const metadata: Metadata = {
   title: "Pricing | ShadowScore",
-  description: "Compare four ShadowScore investigation plans for business trust, relationship, commitment, and monitoring decisions.",
+  description: "Compare ShadowScore investigations from $9.90 and Continuous Monitoring for $299 per month.",
   alternates: { canonical: "/pricing" },
 };
 
 const plans = [
   {
-    name: "Quick Investigation",
-    price: "$49",
-    period: "one time",
+    ...PRICING_PLANS.quick,
     decision: "Should I trust this business?",
     description: "Get a focused trust assessment before a first purchase, payment, or conversation.",
     features: ["Business identity check", "Key risk signals", "Clear trust recommendation"],
     cta: "Start Quick Investigation",
+    featured: false,
   },
   {
-    name: "Professional Investigation",
-    price: "$99",
-    period: "one time",
+    ...PRICING_PLANS.professional,
     decision: "Should I move forward with this supplier, customer, or partner?",
     description: "Assess the relationship before you sign, extend terms, or begin working together.",
     features: ["Full evidence review", "Relationship risk analysis", "Recommended next steps"],
@@ -29,22 +27,20 @@ const plans = [
     featured: true,
   },
   {
-    name: "Business Intelligence Report",
-    price: "$199",
-    period: "one time",
+    ...PRICING_PLANS.businessIntelligence,
     decision: "Should I commit to a high-value business relationship?",
     description: "Support a high-value commitment with a detailed view of the business, its risks, and the available evidence.",
     features: ["Detailed business assessment", "Evidence and risk analysis", "Executive decision report"],
     cta: "Order Intelligence Report",
+    featured: false,
   },
   {
-    name: "Continuous Monitoring",
-    price: "$299",
-    period: "per month",
+    ...PRICING_PLANS.monitoring,
     decision: "Notify me when the business risk changes.",
     description: "Track an active relationship and receive an alert when new information changes its risk profile.",
     features: ["Ongoing risk review", "Material change alerts", "Updated decision context"],
     cta: "Start Monitoring",
+    featured: false,
   },
 ];
 

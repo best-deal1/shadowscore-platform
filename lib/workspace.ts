@@ -17,6 +17,7 @@ import type { ProviderExecutionRecord } from "./providers/ProviderManager";
 import type { ProviderResult } from "./providers/types";
 import { supabaseFetch, isSupabaseConfigured, requirePersistentSessionInProduction } from "./supabase";
 import { cloneWorkspace, getMutableMemoryWorkspace } from "./workspaceStore";
+import { QUICK_INVESTIGATION } from "./pricing";
 
 export type WorkspaceSession = {
   userId: string;
@@ -103,8 +104,9 @@ export type PaymentIntent = {
 };
 
 export const REPORT_PRODUCT = {
-  name: "ShadowScore Executive Report",
-  price: "$9.90",
+  name: QUICK_INVESTIGATION.name,
+  price: QUICK_INVESTIGATION.price,
+  amount: QUICK_INVESTIGATION.amount,
   estimatedGenerationTime: "Usually ready within 2 minutes",
   includes: ["Executive recommendation", "Verified findings and evidence gaps", "Source trail", "Prioritized action plan"],
 } as const;

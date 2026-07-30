@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { PAYPAL_BUSINESS_EMAIL, getPayPalPdtIdentityToken } from "@/lib/config";
 import { resolveWebsiteSession } from "@/lib/websiteIntelligence/server";
 import { markPaymentPaidAndGenerateReport } from "@/lib/workspace.server";
-import type { WorkspaceSession } from "@/lib/workspace";
+import { REPORT_PRODUCT, type WorkspaceSession } from "@/lib/workspace";
 
 const PAYPAL_PDT_URL = "https://www.paypal.com/cgi-bin/webscr";
 
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     if (result.status !== "SUCCESS" || result.values.get("payment_status") !== "Completed") throw new Error("PayPal has not confirmed this payment.");
     if (result.values.get("invoice") !== paymentIntentId) throw new Error("Payment reference does not match this report.");
     if (receiver !== PAYPAL_BUSINESS_EMAIL.toLowerCase()) throw new Error("Payment recipient could not be verified.");
-    if (result.values.get("mc_currency") !== "USD" || result.values.get("mc_gross") !== "9.90") throw new Error("Payment amount could not be verified.");
+    if (result.values.get("mc_currency") !== "USD" || result.values.get("mc_gross") !== REPORT_PRODUCT.amount) throw new Error("Payment amount could not be verified.");
 
     const session: WorkspaceSession = { userId: authenticated.userId, accessToken: authenticated.accessToken, name: "", email: "", startedAt: new Date().toISOString() };
     const report = await markPaymentPaidAndGenerateReport(session, paymentIntentId);
