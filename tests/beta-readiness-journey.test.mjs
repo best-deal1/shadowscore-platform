@@ -25,7 +25,7 @@ test("payment and Investigation statuses remain separate", async () => {
   assert.match(flow, /Payment confirmed/);
   assert.match(flow, /Investigation status/);
   assert.match(flow, /You can safely close this page/);
-  assert.match(flow, /Email notification is not currently provided/);
+  assert.match(flow, /Check its status from Investigations or the Archive/);
 });
 
 test("Archive and report provide retrieval, print identity, and repeat purchase", async () => {

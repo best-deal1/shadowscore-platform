@@ -1078,7 +1078,7 @@ export default function IntakePage() {
                   </label>
                 )}
 
-                <label className="mt-6 grid cursor-pointer place-items-center rounded-3xl border-2 border-dashed border-white/10 bg-white/[0.02] p-14 text-center hover:border-red-500/40">
+                <label aria-label="Optional customer Evidence" className="mt-6 grid cursor-pointer place-items-center rounded-3xl border-2 border-dashed border-white/10 bg-white/[0.02] p-14 text-center hover:border-red-500/40">
                   <input
                     type="file"
                     multiple
@@ -1256,7 +1256,8 @@ export default function IntakePage() {
 
                     <section className="rounded-[28px] border border-yellow-400/20 bg-yellow-500/10 p-6 text-sm leading-7 text-yellow-100">
                       <div className="text-xs uppercase tracking-[0.22em] text-yellow-200">Unlock the Executive Report</div>
-                      <p className="mt-3 text-lg font-bold text-white">Use evidence-backed findings to verify identity, detect commercial inconsistencies, assess payment risk, and document your decision.</p>
+                      <p className="mt-3 text-lg font-bold text-white">Confirm the Business and scope before payment.</p>
+                      <p className="mt-2 text-sm text-yellow-100">Use evidence-backed findings to verify identity, detect commercial inconsistencies, assess payment risk, and document your decision.</p>
                       <div className="mt-5 rounded-2xl border border-white/10 bg-black/30 p-5">
                         <dl className="mb-5 grid gap-3 text-sm sm:grid-cols-2"><div><dt className="text-zinc-500">Business</dt><dd className="font-bold text-white">{businessName}</dd></div><div><dt className="text-zinc-500">Investigation scope</dt><dd className="font-bold text-white">{activeMode.label}</dd></div><div><dt className="text-zinc-500">Deliverable</dt><dd className="font-bold text-white">Executive Report</dd></div><div><dt className="text-zinc-500">One-time price</dt><dd className="font-bold text-white">$9.90</dd></div></dl>
                         <label><div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">Customer email (required)</div><input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white" placeholder="you@example.com" /></label>
