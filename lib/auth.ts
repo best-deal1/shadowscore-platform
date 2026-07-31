@@ -1,4 +1,5 @@
 import { supabaseFetch, isSupabaseConfigured, requireSupabaseInProduction } from "./supabase";
+import { SITE_URL } from "./config";
 import type { WorkspaceSession } from "./workspace";
 
 export type ShadowScoreUser = {
@@ -12,7 +13,13 @@ export type ShadowScoreUser = {
 export type ShadowScoreSession = WorkspaceSession;
 
 const SESSION_STORAGE_KEY = "shadowscore.session.v19";
+const EMAIL_AUTH_REDIRECT_URL = SITE_URL;
 const devUsers = new Map<string, ShadowScoreUser & { password: string }>();
+
+function emailAuthPath(path: string) {
+  const separator = path.includes("?") ? "&" : "?";
+  return `${path}${separator}redirect_to=${encodeURIComponent(EMAIL_AUTH_REDIRECT_URL)}`;
+}
 
 function makeId(prefix: string) {
   const now = Date.now().toString(36).toUpperCase();
@@ -60,7 +67,7 @@ export async function signupUser(name: string, email: string, password: string) 
   if (cleanPassword.length < 8) throw new Error("Password must be at least 8 characters.");
 
   if (isSupabaseConfigured()) {
-    const auth = await supabaseFetch<SupabaseAuthResponse>("/auth/v1/signup", {
+    const auth = await supabaseFetch<SupabaseAuthResponse>(emailAuthPath("/auth/v1/signup"), {
       method: "POST",
       body: JSON.stringify({ email: cleanEmail, password: cleanPassword, data: { name: cleanName } }),
     });
