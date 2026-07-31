@@ -18,6 +18,13 @@ test("executive report renders the decision brief and report sections", () => {
   for (const section of ["Executive Decision Brief", "Decision", "Why", "Business Impact", "Immediate Actions", "Missing Evidence", "Investigation Timeline", "Executive Recommendation", "Source Appendix", "Report ID", "Engine version"]) assert.match(component, new RegExp(section));
 });
 
+test("case file cover precedes the unchanged executive decision brief", () => {
+  const component = readFileSync(new URL("../components/report/ExecutiveIntelligenceReport.tsx", import.meta.url), "utf8");
+  for (const field of ["Case Reference", "Investigation Date", "Business Under Review", "Investigation Type", "Investigation Status", "Evidence Sources Reviewed", "Evidence Items Collected", "Confidence", "Decision", "Case Objective", "Investigation Scope", "Investigation Methodology"]) assert.match(component, new RegExp(field));
+  assert.ok(component.indexOf('id="case-summary"') < component.indexOf('id="decision-brief"'));
+  assert.doesNotMatch(component, /\bAI\b|artificial intelligence/i);
+});
+
 test("decision brief uses evidence-backed reasons and exactly three actions", () => {
   assert.deepEqual(executiveDecisionReasons(report()), [{ id: "f1", statement: "The identity records align.", evidence: "Registry" }]);
   assert.equal(recommendedActions(report()).length, 3);
