@@ -2,17 +2,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import PaymentButtons from "../../components/PaymentButtons";
-import InvestigationLifecycle from "../components/InvestigationLifecycle";
-import InvestigationTimeline from "../components/InvestigationTimeline";
-import AuditMetadata from "../components/AuditMetadata";
 import { getCurrentSession } from "../../lib/auth";
 import { isPreviewReadyResponse, nextPreviewStatus, readPreviewJson } from "../../lib/freeScanPreviewFlow";
 import { createIntake, ShadowScoreIntake } from "../../lib/workspace";
-import { decisionLightDisplayLabel } from "../../lib/canonicalDecision";
 import { useLocale } from "../../components/LocaleProvider";
 
 type Severity = "Low" | "Medium" | "High" | "Critical";
@@ -27,47 +22,7 @@ type Requirement = { label: string; hints: string[] };
 type ScanMode = "website" | "marketplace" | "evidence";
 
 type FileIssue = { file: string; issue: string; severity: "Block" | "Warning" };
-type FreeScanProviderSummary = {
-  providerId: string;
-  providerName: string;
-  providerVersion?: string;
-  category?: string;
-  status: "completed" | "failed" | "skipped";
-  duration: number;
-  error?: string;
-  failureReason?: string;
-  lookupPerformed?: boolean;
-  evidenceCount?: number;
-  findingCount?: number;
-  fields: Array<{ label: string; value: string }>;
-};
-type TrustInsight = {
-  category: "Infrastructure Insight" | "Identity Insight" | "Email/Domain Insight" | "Overall Trust Note";
-  insight: string;
-  riskLevel: "Low" | "Medium" | "High" | "Insufficient Public Evidence";
-  whyItMatters: string;
-  recommendedNextStep: string;
-  evidence: string[];
-};
-type TrustTimelineItem = { title: string; description: string; status: "completed" | "unavailable" | "pending"; evidenceSource: string };
-type DecisionPreview = { decision: "PASS" | "PROCEED_WITH_VERIFICATION" | "REVIEW" | "FAIL" | "CONFIRMED RISK"; decisionLabel: "Evidence supports proceeding" | "Proceed with verification" | "Review required" | "Additional verification recommended" | "Verified negative indicators detected" | "Verified enough to proceed" | "Do not proceed"; decisionColor: "green" | "yellow" | "orange" | "red"; verificationScore: number; confidenceScore: number; identityScore: number; infrastructureScore: number; emailSecurityScore: number; reputationScore: number | "pending"; evidenceCoverageScore: number; confidenceLevel: "Low" | "Medium" | "High"; topReasons: string[]; reasons: string[]; missingSignals: string[]; blockingIssues: string[]; whatThisMeans: string; recommendedAction: string; limitedPreview: boolean };
-type IdentityProfile = { identitySummary: string };
-type BusinessNarrativeSection = { id: string; title: string; body: string[] };
-type BusinessNarrative = { decision: string; confidence: string; decisionMode?: { proceed: "YES" | "REVIEW" | "NO"; decisionOutcome?: string; decisionLight?: string; riskLevel?: string; headline?: string; userMeaning?: string; allowedActions?: string[]; blockedActions?: string[]; confidence: string; mainRemainingUncertainty: string; recommendedNextAction: string; estimatedEffort: string; businessImpactIfSkipped: "Low" | "Medium" | "High" }; sections: BusinessNarrativeSection[] };
-type ProviderRegistryItem = { id: string; name: string; version: string; category: string };
-type FreeScanResult = { status?: "ready"; message?: string; reportReadyEvent?: { type: "free-preview-ready"; status: "ready"; ready: true; emittedAt: string }; executedAt: string; targetResolution?: { requestedTarget: string; resolvedTarget: string; companyId?: string; legalName?: string }; providerRegistry?: ProviderRegistryItem[]; providers: FreeScanProviderSummary[]; insights: TrustInsight[]; insightEngineVersion?: string; timeline?: TrustTimelineItem[]; decisionPreview?: DecisionPreview; identityProfile?: IdentityProfile; businessNarrative?: BusinessNarrative };
-
-function plainEnglishReasons(preview: DecisionPreview | undefined, isHighRisk: boolean, isTrusted: boolean) {
-  const text = [...(preview?.topReasons || []), ...(preview?.missingSignals || []), ...(preview?.blockingIssues || [])].join(" ").toLowerCase();
-  const positiveText = (preview?.topReasons || []).join(" ").toLowerCase();
-  const reasons: Array<{ tone: "positive" | "warning"; text: string }> = [];
-  if (/ssl|https|secure connection|active|reachable/.test(positiveText)) reasons.push({ tone: "positive", text: "The website is active and uses a secure connection." });
-  if (isHighRisk) reasons.push({ tone: "warning", text: "The review found signals that require caution." });
-  else reasons.push({ tone: "positive", text: "No significant risk signals were found in this preview." });
-  if (/identity|owner|ownership|registration|whois|business/.test(text) || !isTrusted) reasons.push({ tone: "warning", text: "The business ownership identity still needs verification." });
-  if (reasons.length < 3 && preview?.confidenceLevel === "Low") reasons.push({ tone: "warning", text: "Available public evidence is limited." });
-  return reasons.slice(0, 3);
-}
+type FreeScanResult = { status?: "ready"; message?: string; reportReadyEvent?: { type: "free-preview-ready"; status: "ready"; ready: true; emittedAt: string }; executedAt: string; targetResolution?: { requestedTarget: string; resolvedTarget: string; legalName?: string }; previewSummary?: { confidence: number; providersQueried: number; evidenceCollected: number; findingsDiscovered: number } };
 
 const CHECKOUT_DRAFT_KEY = "shadowscore.checkout-draft.v1";
 
@@ -571,7 +526,6 @@ export default function IntakePage() {
   const [freeScanRunning, setFreeScanRunning] = useState(false);
   const [previewStatus, setPreviewStatus] = useState<"idle" | "loading" | "ready" | "failed">("idle");
   const [freeScanError, setFreeScanError] = useState("");
-  const [investigationStartedAt, setInvestigationStartedAt] = useState<string>();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -860,7 +814,6 @@ export default function IntakePage() {
     setFreeScanResult(null);
     setPreviewStatus("idle");
     setFreeScanError("");
-    setInvestigationStartedAt(undefined);
   };
 
   const runFreePreview = async () => {
@@ -879,7 +832,6 @@ export default function IntakePage() {
     setFreeScanRunning(true);
     setPreviewStatus("loading");
     setFreeScanResult(null);
-    setInvestigationStartedAt(new Date().toISOString());
 
     try {
       const response = await fetch("/api/free-scan/providers", {
@@ -903,24 +855,6 @@ export default function IntakePage() {
     }
   };
 
-  const providerStatusLabel = (result?: FreeScanProviderSummary) => {
-    if (freeScanRunning) return "Not Checked";
-    if (!result) return "Not Checked";
-    if (result.status === "completed" && result.lookupPerformed === false) return "Not Applicable";
-    if (result.status === "completed") return "Completed";
-    if (result.failureReason === "Timeout") return "Timeout";
-    if (result.failureReason === "Not Supported") return "Not Supported";
-    return "Unavailable";
-  };
-
-  const providerStatusIcon = (status: string) => {
-    if (status === "Completed") return "✓";
-    if (status === "Timeout") return "⏱";
-    if (status === "Not Checked") return "⏳";
-    return "!";
-  };
-
-  const renderValue = (value: string): ReactNode => value || "Unavailable";
 
   const saveLead = async () => {
     const session = getCurrentSession();
@@ -1284,169 +1218,56 @@ export default function IntakePage() {
               {freeScanRunning ? t.intakeUi.investigating : previewStatus === "ready" ? t.intakeUi.previewReady : t.intakeUi.startInvestigation}
             </button>
 
-            {submitted && canAnalyze && previewStatus !== "loading" && (
+            {previewStatus === "failed" && freeScanError && (
+              <div className="mt-6 rounded-2xl border border-red-400/25 bg-red-500/10 p-5 text-sm text-red-100">
+                {freeScanError}
+              </div>
+            )}
+
+            {submitted && canAnalyze && previewStatus === "ready" && (
               <div className="mt-8 space-y-6">
-                {freeScanResult?.decisionPreview || freeScanResult?.businessNarrative ? (() => {
-                  const preview = freeScanResult.decisionPreview;
-                  const rawDecision = preview?.decision || freeScanResult.businessNarrative?.decisionMode?.proceed || "REVIEW";
-                  const isHighRisk = rawDecision === "FAIL" || rawDecision === "CONFIRMED RISK" || rawDecision === "NO";
-                  const isTrusted = rawDecision === "PASS" || rawDecision === "YES";
-                  const verdict = isHighRisk ? "High Risk" : isTrusted ? "Trusted" : "Verify Before Proceeding";
-                  const action = isHighRisk ? "Do not proceed" : isTrusted ? "Proceed" : "Proceed after verification";
-                  const reasons = plainEnglishReasons(preview, isHighRisk, isTrusted);
-                  return <section className={`rounded-[32px] border p-7 ${isHighRisk ? "border-red-400/30 bg-red-500/10" : isTrusted ? "border-emerald-400/30 bg-emerald-500/10" : "border-amber-300/30 bg-amber-400/10"}`}>
-                    <div className="text-xs font-black uppercase tracking-[0.24em] text-zinc-400">Trust verdict</div>
-                    <p className="mt-3 text-sm font-bold text-zinc-300">{freeScanResult.targetResolution?.legalName || freeScanResult.targetResolution?.resolvedTarget || activeTarget}</p>
-                    <div className="mt-5 flex flex-wrap items-center justify-between gap-5"><h2 className="text-3xl font-black sm:text-4xl"><span aria-hidden="true">{isHighRisk ? "●" : isTrusted ? "●" : "●"}</span> {verdict}</h2><div><div className="text-xs uppercase tracking-wider text-zinc-400">Confidence</div><div className="mt-1 text-3xl font-black">{preview?.confidenceScore ?? 0}%</div></div></div>
-                    <div className="mt-7 border-t border-white/10 pt-6"><h3 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Why?</h3><ul className="mt-4 space-y-3 text-base">{reasons.map((reason) => <li key={reason.text} className="flex gap-3"><span className={reason.tone === "positive" ? "text-emerald-300" : "text-amber-200"}>{reason.tone === "positive" ? "✓" : "!"}</span><span>{reason.text}</span></li>)}</ul></div>
-                    <div className="mt-7 rounded-2xl bg-black/25 p-5"><div className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Recommended action</div><div className="mt-2 text-xl font-black">{action}</div></div>
-                  </section>;
-                })() : null}
-                <section className="hidden rounded-[28px] border border-red-400/20 bg-red-500/[0.06] p-6">
-                  <div className="text-xs uppercase tracking-[0.22em] text-red-300">Business Identity</div>
-                  <div className="mt-5 grid gap-5 md:grid-cols-3">
-                    <div className="rounded-2xl border border-white/10 bg-black/50 p-5">
-                      <div className="text-xs uppercase tracking-[0.22em] text-zinc-500">Preview Status</div>
-                      <div className="mt-2 text-xl font-black text-emerald-200">Ready</div>
-                      <p className="mt-2 text-xs leading-5 text-zinc-500">Free preview shows direction only. Paid report unlocks the decision pack.</p>
-                    </div>
-                    <div className="rounded-2xl border border-white/10 bg-black/50 p-5">
-                      <div className="text-xs uppercase tracking-[0.22em] text-zinc-500">Investigation</div>
-                      <div className="mt-2 text-xl font-black text-white">{activeMode.label}</div>
-                      <p className="mt-2 text-xs leading-5 text-zinc-500">{scanMode === "website" ? websiteTarget : activeTarget || displayMarketplace}</p>
-                    </div>
-                    <div className="rounded-2xl border border-white/10 bg-black/50 p-5">
-                      <div className="text-xs uppercase tracking-[0.22em] text-zinc-500">Report</div>
-                      <div className="mt-2 text-xl font-black text-red-100">Locked</div>
-                      <p className="mt-2 text-xs leading-5 text-zinc-500">Executive recommendation, source trail and action plan unlock after payment.</p>
-                    </div>
-                  </div>
-                  {freeScanResult?.identityProfile?.identitySummary ? (
-                    <div className="mt-5 rounded-2xl border border-sky-400/20 bg-sky-500/[0.06] p-4">
-                      <div className="text-xs uppercase tracking-[0.22em] text-sky-200">Identity Summary</div>
-                      <p className="mt-3 text-sm leading-6 text-zinc-300">{freeScanResult.identityProfile.identitySummary}</p>
-                    </div>
-                  ) : null}
-                </section>
-
-                {freeScanResult?.businessNarrative ? (
-                  <section className="hidden rounded-[28px] border border-red-400/20 bg-red-500/[0.06] p-6">
-                    <div className="text-xs uppercase tracking-[0.22em] text-red-300">Decision preview</div>
-                    <div className="mt-4 grid gap-3 md:grid-cols-3">
-                      <div className="rounded-2xl border border-white/10 bg-black/40 p-4">
-                        <div className="text-xs uppercase tracking-[0.2em] text-zinc-500">Decision</div>
-                        <div className="mt-2 text-3xl font-black text-white">{freeScanResult.businessNarrative.decisionMode?.headline || freeScanResult.businessNarrative.decision}</div>
-                        <div className="mt-2 text-xs font-black uppercase tracking-[0.18em] text-yellow-200">{decisionLightDisplayLabel(freeScanResult.businessNarrative.decisionMode?.decisionLight)}</div>
-                      </div>
-                      <div className="rounded-2xl border border-white/10 bg-black/40 p-4">
-                        <div className="text-xs uppercase tracking-[0.2em] text-zinc-500">Main uncertainty</div>
-                        <div className="mt-2 text-lg font-black text-white">{freeScanResult.businessNarrative.decisionMode?.mainRemainingUncertainty || "Business identity"}</div>
-                      </div>
-                      <div className="rounded-2xl border border-white/10 bg-black/40 p-4">
-                        <div className="text-xs uppercase tracking-[0.2em] text-zinc-500">Impact if skipped</div>
-                        <div className="mt-2 text-lg font-black text-white">{freeScanResult.businessNarrative.decisionMode?.businessImpactIfSkipped || "Medium"}</div>
-                      </div>
-                    </div>
-                    {freeScanResult.message ? (
-                      <p className="mt-4 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 p-3 text-sm font-bold leading-6 text-emerald-100">{freeScanResult.message}</p>
-                    ) : null}
-                    {freeScanResult.businessNarrative.decisionMode?.userMeaning ? (
-                      <p className="mt-4 text-sm leading-6 text-zinc-200"><span className="font-bold text-white">What this means:</span> {freeScanResult.businessNarrative.decisionMode.userMeaning}</p>
-                    ) : freeScanResult.decisionPreview?.recommendedAction ? (
-                      <p className="mt-4 text-sm leading-6 text-zinc-200"><span className="font-bold text-white">Recommendation:</span> {freeScanResult.decisionPreview.recommendedAction}</p>
-                    ) : null}
-                    {freeScanResult.businessNarrative.sections.find((section) => section.id === "executiveSummary") ? (
-                      <div className="mt-5 rounded-2xl border border-white/10 bg-black/35 p-5">
-                        <div className="text-xs uppercase tracking-[0.22em] text-zinc-400">Evidence Summary</div>
-                        <div className="mt-3 space-y-3 text-sm leading-6 text-zinc-300">
-                          {freeScanResult.businessNarrative.sections.find((section) => section.id === "executiveSummary")?.body.map((item) => <p key={item}>{item}</p>)}
+                {(() => {
+                  const providersQueried = freeScanResult?.previewSummary?.providersQueried ?? 0;
+                  const evidenceCollected = freeScanResult?.previewSummary?.evidenceCollected ?? files.length;
+                  const findingsDiscovered = freeScanResult?.previewSummary?.findingsDiscovered ?? findings.length;
+                  const confidence = freeScanResult?.previewSummary?.confidence ?? Math.min(95, 45 + (presentEvidence * 8));
+                  const businessName = freeScanResult?.targetResolution?.legalName || freeScanResult?.targetResolution?.resolvedTarget || activeTarget;
+                  return <>
+                    <section className="overflow-hidden rounded-[32px] border border-emerald-400/25 bg-emerald-500/[0.07]">
+                      <div className="border-b border-white/10 p-7 sm:p-9">
+                        <div className="flex flex-wrap items-start justify-between gap-5">
+                          <div><p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-300">Business found</p><h2 className="mt-3 text-3xl font-black text-white sm:text-4xl">{businessName}</h2><p className="mt-3 flex items-center gap-2 text-sm font-bold text-emerald-100"><span aria-hidden="true">✓</span> Investigation completed</p></div>
+                          <div className="rounded-2xl border border-white/10 bg-black/30 px-5 py-4 text-right"><p className="text-xs uppercase tracking-[0.18em] text-zinc-400">Confidence</p><p className="mt-1 text-3xl font-black text-white">{confidence}%</p></div>
                         </div>
+                        <div className="mt-7 rounded-2xl border border-amber-300/20 bg-amber-300/[0.08] p-5"><p className="text-xs font-black uppercase tracking-[0.2em] text-amber-200">Trust status</p><p className="mt-2 text-xl font-black text-white">Verification recommended</p></div>
                       </div>
-                    ) : null}
-                    <div className="mt-5 grid gap-4 md:grid-cols-3">
-                      {freeScanResult.businessNarrative.sections.filter((section) => ["whatWeFound", "whatRequiresVerification", "recommendedNextSteps", "decisionCost", "investigationStory"].includes(section.id)).map((section) => (
-                        <div key={section.id} className="rounded-2xl border border-white/10 bg-black/40 p-5">
-                          <div className="text-xs uppercase tracking-[0.22em] text-red-200">{section.title}</div>
-                          <div className="mt-3 space-y-3 text-sm leading-6 text-zinc-300">{section.body.map((item) => <p key={item}>{item}</p>)}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                ) : null}
+                      <div className="grid gap-px bg-white/10 sm:grid-cols-3">
+                        {[["Providers queried", providersQueried], ["Evidence items collected", evidenceCollected], ["Findings discovered", findingsDiscovered]].map(([label, value]) => <div key={label} className="bg-black/50 p-5"><p className="text-2xl font-black text-white">{value}</p><p className="mt-1 text-xs text-zinc-400">{label}</p></div>)}
+                      </div>
+                    </section>
 
-                <section className="rounded-[28px] border border-yellow-400/20 bg-yellow-500/10 p-6 text-sm leading-7 text-yellow-100">
-                  <div className="text-xs uppercase tracking-[0.22em] text-yellow-200">Review the Investigation</div>
-                  <p className="mt-3 text-lg font-bold text-white">Confirm the Business and scope before payment.</p>
-                  <div className="mt-5 rounded-2xl border border-white/10 bg-black/30 p-5">
-                    <dl className="mb-5 grid gap-3 text-sm sm:grid-cols-2"><div><dt className="text-zinc-500">Business</dt><dd className="font-bold text-white">{freeScanResult?.targetResolution?.legalName || activeTarget}</dd></div><div><dt className="text-zinc-500">Website or profile</dt><dd className="font-bold text-white">{activeTarget}</dd></div><div><dt className="text-zinc-500">Investigation scope</dt><dd className="font-bold text-white">{activeMode.label}</dd></div><div><dt className="text-zinc-500">Optional customer Evidence</dt><dd className="font-bold text-white">{files.length ? `${files.length} file(s)` : "None provided"}</dd></div><div><dt className="text-zinc-500">Deliverable</dt><dd className="font-bold text-white">Executive Report</dd></div><div><dt className="text-zinc-500">One-time price</dt><dd className="font-bold text-white">$9.90</dd></div></dl>
-                    <label>
-                      <div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">Customer email (required)</div>
-                      <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white" placeholder="you@example.com" />
-                    </label>
-                    <p className="mt-3 text-xs text-zinc-400">Used to attach this Investigation to your Account. Correct the Business or scope above before continuing.</p>
-                    <div className="mt-5"><PaymentButtons planName="ShadowScore Executive Report" price="$9.90" buttonLabel="Continue to payment · $9.90" intakeId={intake?.intakeId} /></div>
-                    <button type="button" onClick={saveLead} className="mx-auto mt-4 block text-xs font-bold text-zinc-400 underline underline-offset-4 hover:text-white">Save for later</button>
-                  </div>
-                  {leadSaved && <div className="mt-4 rounded-2xl border border-emerald-400/25 bg-emerald-500/10 p-4 text-sm text-emerald-100">Investigation saved. Payment is required to generate the Executive Report.</div>}
-                </section>
+                    <section className="rounded-[28px] border border-white/10 bg-white/[0.035] p-6 sm:p-8">
+                      <p className="text-xs font-black uppercase tracking-[0.22em] text-red-300">Executive report ready</p>
+                      <h3 className="mt-3 text-2xl font-black text-white">The investigation is complete. The intelligence is ready to unlock.</h3>
+                      <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                        {[`${findingsDiscovered} important findings available`, "Executive recommendation ready", "Ownership analysis available", "Commercial risk assessment available", "Relationship analysis available", "Evidence package available"].map((item) => <div key={item} className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/35 p-4"><span className="font-bold text-zinc-200">{item}</span><span className="ml-4 rounded-full border border-red-300/20 bg-red-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-red-200">Locked</span></div>)}
+                      </div>
+                    </section>
 
-                <details className="rounded-[28px] border border-white/10 bg-black/50 p-6" open={false}>
-                  <summary className="cursor-pointer text-sm font-bold text-red-200">View technical preview</summary>
-                  <div className="mt-5 space-y-5">
-                    <InvestigationLifecycle
-                      running={false}
-                      failed={previewStatus === "failed"}
-                      target={activeTarget}
-                      startedAt={investigationStartedAt}
-                      completedAt={freeScanResult?.executedAt}
-                      providers={freeScanResult?.providers}
-                    />
-                    {freeScanResult?.businessNarrative?.sections.find((section) => section.id === "evidenceUsed") ? (
-                      <section className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-                        <div className="text-xs uppercase tracking-[0.22em] text-zinc-400">Evidence Used</div>
-                        <ul className="mt-3 space-y-2 text-sm leading-6 text-zinc-300">
-                          {freeScanResult.businessNarrative.sections.find((section) => section.id === "evidenceUsed")?.body.map((item) => <li key={item}>• {item}</li>)}
-                        </ul>
-                      </section>
-                    ) : null}
-
-                    {freeScanResult?.decisionPreview ? (
-                      <section className="rounded-2xl border border-red-400/25 bg-red-500/[0.07] p-4">
-                        <div className="text-xs uppercase tracking-[0.22em] text-red-200">Decision Preview</div>
-                        <div className="mt-3 flex flex-wrap items-center gap-3"><div className="text-2xl font-black text-white">Decision: {(freeScanResult.decisionPreview.decision === "FAIL" ? "CONFIRMED RISK" : freeScanResult.decisionPreview.decision)}: {(freeScanResult.decisionPreview.decisionLabel === "Do not proceed" ? "Verified negative indicators detected" : freeScanResult.decisionPreview.decisionLabel === "Verified enough to proceed" ? "Evidence supports proceeding" : freeScanResult.decisionPreview.decisionLabel)}</div><span className="rounded-full border border-white/10 px-3 py-1 text-xs font-bold text-zinc-300">{freeScanResult.decisionPreview.confidenceLevel} confidence</span></div>
-                        <p className="mt-4 text-sm leading-6 text-zinc-300"><span className="font-bold text-zinc-100">What this means:</span> {freeScanResult.decisionPreview.whatThisMeans}</p>
-                        <p className="mt-2 text-sm leading-6 text-zinc-300"><span className="font-bold text-zinc-100">Recommendation:</span> {freeScanResult.decisionPreview.recommendedAction}</p>
-                        <div className="mt-5 grid gap-3 md:grid-cols-2">
-                          <div className="rounded-xl border border-emerald-400/20 bg-emerald-500/10 p-3"><div className="text-xs uppercase tracking-[0.2em] text-emerald-200">Verified Signals</div><ul className="mt-2 space-y-2 text-sm leading-6 text-zinc-200">{freeScanResult.decisionPreview.topReasons.slice(0, 4).map((reason) => <li key={reason}>• {reason}</li>)}</ul></div>
-                          <div className="rounded-xl border border-orange-400/20 bg-orange-500/10 p-3"><div className="text-xs uppercase tracking-[0.2em] text-orange-200">Verification Gaps</div>{freeScanResult.decisionPreview.missingSignals.length ? <ul className="mt-2 space-y-2 text-sm leading-6 text-orange-100">{freeScanResult.decisionPreview.missingSignals.map((signal) => <li key={signal}>• {signal}</li>)}</ul> : <p className="mt-2 text-sm text-zinc-300">No major verification gaps detected in the free preview.</p>}</div>
-                          <div className="rounded-xl border border-red-400/20 bg-red-500/10 p-3"><div className="text-xs uppercase tracking-[0.2em] text-red-200">Confirmed Risks</div>{freeScanResult.decisionPreview.blockingIssues.length ? <ul className="mt-2 space-y-2 text-sm leading-6 text-red-100">{freeScanResult.decisionPreview.blockingIssues.map((issue) => <li key={issue}>• {issue}</li>)}</ul> : <p className="mt-2 text-sm text-zinc-300">No confirmed blocking risk was found in the free preview.</p>}</div>
-                          <div className="rounded-xl border border-white/10 bg-black/30 p-3"><div className="text-xs uppercase tracking-[0.2em] text-zinc-400">Unavailable Sources</div><ul className="mt-2 space-y-2 text-sm leading-6 text-zinc-300">{freeScanResult.providers.filter((provider) => providerStatusLabel(provider) !== "Completed").map((provider) => <li key={provider.providerId}>• {provider.providerName}: {providerStatusLabel(provider)}</li>)}</ul></div>
-                        </div>
-                      </section>
-                    ) : null}
-
-                    {freeScanResult?.insights?.length ? (
-                      <section className="rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.06] p-4">
-                        <div className="text-xs uppercase tracking-[0.22em] text-emerald-200">Signal Review</div>
-                        <div className="mt-3 grid gap-3">{freeScanResult.insights.map((insight) => <div key={insight.category} className="rounded-xl border border-white/10 bg-black/35 p-4"><div className="flex flex-wrap items-center justify-between gap-2"><div className="font-black text-white">{insight.category}</div><span className="rounded-full border border-white/10 px-3 py-1 text-xs font-bold text-zinc-300">{insight.riskLevel}</span></div><p className="mt-3 text-sm leading-6 text-zinc-300">{insight.insight}</p><p className="mt-2 text-xs leading-5 text-zinc-500"><span className="text-zinc-400">Why it matters:</span> {insight.whyItMatters}</p><p className="mt-2 text-xs leading-5 text-zinc-500"><span className="text-zinc-400">Next step:</span> {insight.recommendedNextStep}</p></div>)}</div>
-                      </section>
-                    ) : null}
-
-                    {freeScanResult?.timeline?.length ? (
-                      <InvestigationTimeline items={freeScanResult.timeline.map((item) => ({ ...item, timestamp: freeScanResult.executedAt }))} />
-                    ) : null}
-                    {freeScanResult ? <AuditMetadata compact createdAt={freeScanResult.executedAt} completedAt={freeScanResult.executedAt} engineVersion={freeScanResult.insightEngineVersion} policyVersion="Trust Policy v1.0" sources={freeScanResult.providers.filter((provider) => provider.status === "completed").map((provider) => provider.providerName)} /> : null}
-
-                    {scanMode === "website" && (freeScanRunning || freeScanResult || freeScanError) && (
-                      <section className="rounded-2xl border border-white/10 bg-black/50 p-5">
-                        <div className="text-xs uppercase tracking-[0.22em] text-sky-300">Provider status</div>
-                        <div className="mt-4 grid gap-3 md:grid-cols-2">{(freeScanResult?.providerRegistry || []).map((provider) => { const result = freeScanResult?.providers.find((item) => item.providerId === provider.id); const status = providerStatusLabel(result); return <div key={provider.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"><div className="font-black text-white">{providerStatusIcon(status)} {provider.name}</div><div className="mt-1 text-xs uppercase tracking-[0.18em] text-zinc-500">{provider.category} · v{provider.version} · {status}</div>{result && <div className="mt-3 space-y-2 text-sm text-zinc-300">{result.fields.map((field) => <div key={field.label}><span className="text-zinc-500">{field.label}:</span> {renderValue(field.value)}</div>)}{status !== "Completed" && <div className="text-yellow-100">Status: {status}. {result.error || result.failureReason || "Unavailable"}</div>}</div>}</div>; })}</div>
-                        {freeScanResult?.providerRegistry?.length ? <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] p-3 text-xs leading-5 text-zinc-400">Provider coverage: {freeScanResult.providers.filter((provider) => providerStatusLabel(provider) === "Completed").length} of {freeScanResult.providerRegistry.length} registered providers completed. Target checked: {freeScanResult.targetResolution?.resolvedTarget || activeTarget}.</div> : null}
-                        {freeScanError && <div className="mt-4 rounded-xl border border-red-400/25 bg-red-500/10 p-3 text-sm text-red-100">{freeScanError}</div>}
-                      </section>
-                    )}
-                  </div>
-                </details>
+                    <section className="rounded-[28px] border border-yellow-400/20 bg-yellow-500/10 p-6 text-sm leading-7 text-yellow-100">
+                      <div className="text-xs uppercase tracking-[0.22em] text-yellow-200">Unlock the Executive Report</div>
+                      <p className="mt-3 text-lg font-bold text-white">Review the full findings, risks, ownership analysis, contradictions, payment analysis, recommendation, evidence, and reasoning.</p>
+                      <div className="mt-5 rounded-2xl border border-white/10 bg-black/30 p-5">
+                        <dl className="mb-5 grid gap-3 text-sm sm:grid-cols-2"><div><dt className="text-zinc-500">Business</dt><dd className="font-bold text-white">{businessName}</dd></div><div><dt className="text-zinc-500">Investigation scope</dt><dd className="font-bold text-white">{activeMode.label}</dd></div><div><dt className="text-zinc-500">Deliverable</dt><dd className="font-bold text-white">Executive Report</dd></div><div><dt className="text-zinc-500">One-time price</dt><dd className="font-bold text-white">$9.90</dd></div></dl>
+                        <label><div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">Customer email (required)</div><input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white" placeholder="you@example.com" /></label>
+                        <p className="mt-4 text-sm font-bold leading-6 text-white">One executive report.<br />One-time payment.<br />Available immediately after payment.</p>
+                        <div className="mt-5"><PaymentButtons planName="ShadowScore Executive Report" price="$9.90" buttonLabel="Unlock Executive Report · $9.90" intakeId={intake?.intakeId} /></div>
+                        <button type="button" onClick={saveLead} className="mx-auto mt-4 block text-xs font-bold text-zinc-400 underline underline-offset-4 hover:text-white">Save for later</button>
+                      </div>
+                      {leadSaved && <div className="mt-4 rounded-2xl border border-emerald-400/25 bg-emerald-500/10 p-4 text-sm text-emerald-100">Investigation saved. The Executive Report is ready to unlock.</div>}
+                    </section>
+                  </>;
+                })()}
               </div>
             )}
           </div>
