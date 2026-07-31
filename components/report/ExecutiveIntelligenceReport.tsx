@@ -21,6 +21,24 @@ function levelLabel(level?: string) {
   return level.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
+function caseObjective(report: ShadowScoreReport) {
+  const type = `${report.scanMode || ""} ${report.platform || ""}`.toLowerCase();
+  if (/marketplace|seller/.test(type)) return "Investigate marketplace seller legitimacy before a commercial commitment.";
+  if (/evidence|document/.test(type)) return "Assess supplied business evidence before a commercial decision.";
+  if (/supplier|vendor/.test(type)) return "Verify supplier identity before onboarding or payment.";
+  return "Assess the commercial trustworthiness of the business before payment or another material commitment.";
+}
+
+const investigationScope = [
+  "Business identity",
+  "Ownership",
+  "Digital presence",
+  "Infrastructure",
+  "Payment information",
+  "Independent sources",
+  "Evidence supplied by the customer",
+] as const;
+
 export default function ExecutiveIntelligenceReport({ report }: { report: ShadowScoreReport }) {
   const recommendation = executiveRecommendation(report);
   const findingStories = executiveFindingStories(report);
@@ -44,6 +62,9 @@ export default function ExecutiveIntelligenceReport({ report }: { report: Shadow
   const tone = verdictTone === "red" ? "border-red-300 bg-red-50 text-red-950" : verdictTone === "amber" ? "border-amber-300 bg-amber-50 text-amber-950" : "border-emerald-300 bg-emerald-50 text-emerald-950";
   const identityFindings = findingStories.filter((item) => /identity|business|registr|legal name/i.test(`${item.title} ${item.observation}`));
   const ownershipFindings = findingStories.filter((item) => /owner|domain|registrant/i.test(`${item.title} ${item.observation}`));
+  const caseReference = report.intakeId || report.reportId;
+  const investigationType = levelLabel(report.scanMode || report.platform);
+  const sourceCount = new Set([...sources.map((source) => source.label), ...evidence.map((item) => item.source)].filter(Boolean)).size;
 
   return <>
     <div className="mb-5 flex flex-wrap items-center justify-between gap-4 print:hidden">
@@ -58,19 +79,44 @@ export default function ExecutiveIntelligenceReport({ report }: { report: Shadow
           <p className="rounded-full border border-white/20 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider">Confidential</p>
         </div>
         <div className="mt-9 grid gap-8 lg:grid-cols-[1fr_auto] lg:items-end">
-          <div><p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-300">Executive Report</p><h1 className="mt-3 max-w-3xl text-4xl font-semibold tracking-[-0.035em] sm:text-5xl">{narrative?.businessName || report.target || report.entity}</h1><p className="mt-4 max-w-2xl text-base leading-7 text-slate-300">Business intelligence prepared for executive review and decision support.</p></div>
+          <div><p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-300">Investigation Case File</p><h1 className="mt-3 max-w-3xl text-4xl font-semibold tracking-[-0.035em] sm:text-5xl">{narrative?.businessName || report.target || report.entity}</h1><p className="mt-4 max-w-2xl text-base leading-7 text-slate-300">Commercial due diligence record prepared for executive review and decision support.</p></div>
           <dl className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm lg:min-w-80"><div><dt className="text-slate-400">Report ID</dt><dd className="mt-1 font-mono font-semibold text-white">{report.reportId}</dd></div><div><dt className="text-slate-400">Issued</dt><dd className="mt-1 font-semibold text-white">{dateTime(report.readyAt || report.createdAt)}</dd></div><div><dt className="text-slate-400">Version</dt><dd className="mt-1 font-semibold text-white">1.0</dd></div><div><dt className="text-slate-400">Scope</dt><dd className="mt-1 font-semibold capitalize text-white">{report.scanMode || report.platform}</dd></div></dl>
         </div>
       </header>
 
       <div className="border-b border-slate-300 bg-white px-6 py-6 sm:px-10 lg:px-14">
         <nav aria-label="Report contents" className="flex flex-wrap gap-x-7 gap-y-3 text-xs font-bold uppercase tracking-[0.12em] text-slate-600">
-          {["Summary", "Identity", "Risk analysis", "Evidence", "Actions", "Recommendation"].map((label) => <a key={label} href={`#${label.toLowerCase().replace(" ", "-")}`} className="underline decoration-slate-300 underline-offset-4 hover:text-slate-950">{label}</a>)}
+          {["Case summary", "Decision brief", "Identity", "Risk analysis", "Evidence", "Actions", "Recommendation"].map((label) => <a key={label} href={`#${label.toLowerCase().replace(" ", "-")}`} className="underline decoration-slate-300 underline-offset-4 hover:text-slate-950">{label}</a>)}
         </nav>
       </div>
 
       <div className="px-6 py-8 sm:px-10 lg:px-14 lg:py-12">
-        <section id="summary" aria-labelledby="summary-title">
+        <section id="case-summary" aria-labelledby="case-summary-title" className="break-after-page">
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-800">Case record</p>
+          <h2 id="case-summary-title" className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">Case Summary</h2>
+          <dl className="mt-7 grid border-y border-slate-300 bg-white sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              ["Case Reference", caseReference],
+              ["Investigation Date", dateTime(report.readyAt || report.createdAt)],
+              ["Business Under Review", narrative?.businessName || report.target || report.entity],
+              ["Investigation Type", investigationType],
+              ["Investigation Status", "Completed"],
+              ["Evidence Sources Reviewed", sourceCount],
+              ["Evidence Items Collected", execution?.evidenceCollected ?? evidence.length],
+              ["Confidence", confidence],
+              ["Decision", recommendation.label],
+            ].map(([label, value]) => <div key={label} className="border-b border-slate-200 p-5 sm:border-r sm:[&:nth-child(2n)]:border-r-0 lg:[&:nth-child(2n)]:border-r lg:[&:nth-child(3n)]:border-r-0"><dt className="text-xs font-bold uppercase tracking-wider text-slate-500">{label}</dt><dd className="mt-2 font-semibold text-slate-950">{value}</dd></div>)}
+          </dl>
+
+          <div className="mt-7 grid gap-6 lg:grid-cols-2">
+            <BriefPanel title="Case Objective"><p>{caseObjective(report)}</p></BriefPanel>
+            <BriefPanel title="Investigation Methodology"><p>Conclusions are supported by the available evidence and derived through correlation across the sources reviewed. Findings distinguish verified records, conflicting information, and unresolved evidence gaps.</p></BriefPanel>
+          </div>
+
+          <div className="mt-6 border border-slate-300 bg-white p-5 sm:p-6"><h3 className="text-sm font-bold uppercase tracking-[0.16em] text-slate-500">Investigation Scope</h3><ul className="mt-4 grid gap-x-8 gap-y-3 text-sm sm:grid-cols-2">{investigationScope.map((item) => <li key={item} className="flex items-center gap-3 border-b border-slate-100 pb-2"><span aria-hidden="true" className="text-cyan-800">●</span><span className="font-medium text-slate-950">{item}</span></li>)}</ul></div>
+        </section>
+
+        <section id="decision-brief" aria-labelledby="summary-title" className="mt-12 border-t border-slate-300 pt-10">
           <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-800">01 / Decision brief</p><h2 id="summary-title" className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">Executive Decision Brief</h2>
           <div className={`mt-6 rounded-2xl border p-6 sm:flex sm:items-end sm:justify-between sm:gap-6 ${tone}`}><div><p className="text-xs font-bold uppercase tracking-[0.18em] opacity-70">Decision</p><p className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">{recommendation.label}</p></div><div className="mt-4 sm:mt-0 sm:text-right"><p className="text-xs font-bold uppercase tracking-[0.18em] opacity-70">Confidence</p><p className="mt-1 text-xl font-semibold">{confidence}</p></div></div>
 
