@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { ShadowScoreReport } from "../../lib/workspace";
-import { executiveBusinessImpacts, executiveDecisionReasons, executiveRecommendation, groupExecutiveEvidence, materialEvidenceGaps, recommendedActions, reportFindings } from "../../lib/executiveReport";
+import { executiveBusinessImpacts, executiveDecisionReasons, executiveFindingStories, executiveRecommendation, groupExecutiveEvidence, materialEvidenceGaps, recommendedActions } from "../../lib/executiveReport";
 
 function dateTime(value?: string) {
   if (!value) return "Not recorded";
@@ -23,8 +23,7 @@ function levelLabel(level?: string) {
 
 export default function ExecutiveIntelligenceReport({ report }: { report: ShadowScoreReport }) {
   const recommendation = executiveRecommendation(report);
-  const findings = reportFindings(report);
-  const allFindings = [...findings.negative, ...findings.warnings, ...findings.positive];
+  const findingStories = executiveFindingStories(report);
   const evidenceGroups = groupExecutiveEvidence(report);
   const evidence = evidenceGroups.flatMap((group) => group.items);
   const scorecard = report.reportSummary?.scorecard?.scores || [];
@@ -43,8 +42,8 @@ export default function ExecutiveIntelligenceReport({ report }: { report: Shadow
   const gaps = Array.from(new Set(scorecard.flatMap((item) => item.evidenceGaps))).slice(0, 8);
   const verdictTone = /do not|stop|high risk/i.test(recommendation.label) ? "red" : /verify|review|caution/i.test(recommendation.label) ? "amber" : "green";
   const tone = verdictTone === "red" ? "border-red-300 bg-red-50 text-red-950" : verdictTone === "amber" ? "border-amber-300 bg-amber-50 text-amber-950" : "border-emerald-300 bg-emerald-50 text-emerald-950";
-  const identityFindings = allFindings.filter((item) => /identity|business|registr|legal name/i.test(`${item.category} ${item.title}`));
-  const ownershipFindings = allFindings.filter((item) => /owner|domain|registrant/i.test(`${item.category} ${item.title} ${item.statement}`));
+  const identityFindings = findingStories.filter((item) => /identity|business|registr|legal name/i.test(`${item.title} ${item.observation}`));
+  const ownershipFindings = findingStories.filter((item) => /owner|domain|registrant/i.test(`${item.title} ${item.observation}`));
 
   return <>
     <div className="mb-5 flex flex-wrap items-center justify-between gap-4 print:hidden">
@@ -89,7 +88,7 @@ export default function ExecutiveIntelligenceReport({ report }: { report: Shadow
           <h3 className="sr-only">Key Findings</h3><div className="mt-7 grid gap-6 lg:grid-cols-2"><ReportFindingBlock title="Identity assessment" items={identityFindings} fallback="No separate identity finding was recorded." /><ReportFindingBlock title="Ownership" items={ownershipFindings} fallback="Ownership evidence was not sufficient for a separate conclusion." /></div>
         </section>
 
-        <section id="risk-analysis" aria-labelledby="risk-title" className="mt-12 border-t border-slate-300 pt-10"><p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-800">03 / Exposure review</p><h2 id="risk-title" className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">Risk Analysis</h2><p className="mt-3 max-w-3xl leading-7">Each domain summarizes findings supported by the collected evidence. Missing coverage is listed separately as an evidence gap.</p><div className="mt-7 grid gap-4 md:grid-cols-2">{riskSections.map((section) => { const items = allFindings.filter((item) => section.matcher.test(`${item.category} ${item.title} ${item.statement}`)); return <ReportFindingBlock key={section.title} title={section.title} items={items} fallback="No material finding was recorded in this domain." />; })}</div>
+        <section id="risk-analysis" aria-labelledby="risk-title" className="mt-12 border-t border-slate-300 pt-10"><p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-800">03 / Exposure review</p><h2 id="risk-title" className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">Risk Analysis</h2><p className="mt-3 max-w-3xl leading-7">Each finding explains what the investigation observed, how it affects the commercial decision, which records support it, and what to do before committing funds.</p><div className="mt-7 grid gap-4 md:grid-cols-2">{riskSections.map((section) => { const items = findingStories.filter((item) => section.matcher.test(`${item.title} ${item.observation} ${item.commercialRisk}`)); return <ReportFindingBlock key={section.title} title={section.title} items={items} fallback="No material finding was recorded in this domain." />; })}</div>
         </section>
 
         <section id="evidence" aria-labelledby="evidence-title" className="mt-12 border-t border-slate-300 pt-10"><p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-800">04 / Evidentiary record</p><h2 id="evidence-title" className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">Supporting Evidence</h2><h3 className="sr-only">Evidence Summary</h3><div className="mt-7 space-y-4">{evidenceGroups.length ? evidenceGroups.map((group) => <details key={group.category} className="group border border-slate-300 bg-white p-5" open><summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold text-slate-950"><span>{group.category}</span><span className="text-sm font-normal text-slate-500">{group.items.length} items</span></summary><div className="mt-5 divide-y divide-slate-200 border-t border-slate-200">{group.items.map((item) => <div key={item.id} className="grid gap-2 py-4 sm:grid-cols-[1fr_1.3fr_.8fr]"><p className="font-semibold text-slate-950">{item.label}</p><p className="text-sm">{item.value || "Observed"}</p><p className="text-sm text-slate-500 sm:text-right">{item.source}</p></div>)}</div></details>) : <p className="border border-slate-300 bg-white p-5">No supporting evidence items were recorded.</p>}</div>
@@ -114,6 +113,6 @@ function BriefPanel({ title, children }: { title: string; children: React.ReactN
   return <article className="border border-slate-300 bg-white p-5 sm:p-6"><h3 className="text-sm font-bold uppercase tracking-[0.16em] text-slate-500">{title}</h3><div className="mt-4 text-sm leading-6 text-slate-700">{children}</div></article>;
 }
 
-function ReportFindingBlock({ title, items, fallback }: { title: string; items: ReturnType<typeof reportFindings>["positive"]; fallback: string }) {
-  return <article className="border border-slate-300 bg-white p-6"><h3 className="text-xl font-semibold text-slate-950">{title}</h3><div className="mt-4 space-y-4">{items.length ? items.slice(0, 4).map((item) => <div key={item.id} className="border-t border-slate-200 pt-4 first:border-t-0 first:pt-0"><p className="text-xs font-bold uppercase tracking-wider text-slate-500">{levelLabel(item.direction)}</p><h4 className="mt-1 font-semibold text-slate-950">{item.title}</h4><p className="mt-2 text-sm leading-6">{item.statement}</p></div>) : <p className="text-sm leading-6 text-slate-600">{fallback}</p>}</div></article>;
+function ReportFindingBlock({ title, items, fallback }: { title: string; items: ReturnType<typeof executiveFindingStories>; fallback: string }) {
+  return <article className="border border-slate-300 bg-white p-6"><h3 className="text-xl font-semibold text-slate-950">{title}</h3><div className="mt-4 space-y-5">{items.length ? items.slice(0, 4).map((item) => <div key={item.id} className="border-t border-slate-200 pt-5 first:border-t-0 first:pt-0"><p className="text-xs font-bold uppercase tracking-wider text-slate-500">{levelLabel(item.direction)}</p><h4 className="mt-1 font-semibold text-slate-950">{item.title}</h4><div className="mt-3 space-y-2 text-sm leading-6"><p><strong className="text-slate-950">Observed:</strong> {item.observation}</p><p><strong className="text-slate-950">Why it matters:</strong> {item.whyItMatters}</p><p><strong className="text-slate-950">Commercial risk:</strong> {item.commercialRisk}</p><p><strong className="text-slate-950">Evidence:</strong> {item.evidence}</p><p><strong className="text-slate-950">Next step:</strong> {item.nextStep}</p></div></div>) : <p className="text-sm leading-6 text-slate-600">{fallback}</p>}</div></article>;
 }

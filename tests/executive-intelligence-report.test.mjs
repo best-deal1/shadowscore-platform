@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { executiveBusinessImpacts, executiveDecisionReasons, groupExecutiveEvidence, executiveRecommendation, materialEvidenceGaps, recommendedActions } from "../lib/executiveReport.ts";
+import { executiveBusinessImpacts, executiveDecisionReasons, executiveFindingStories, groupExecutiveEvidence, executiveRecommendation, materialEvidenceGaps, recommendedActions } from "../lib/executiveReport.ts";
 
 const report = (overrides = {}) => ({
   reportId: "report-6", title: "Report", entity: "Acme Ltd", platform: "web", scanMode: "website", stage: "Healthy",
@@ -21,6 +21,25 @@ test("executive report renders the decision brief and report sections", () => {
 test("decision brief uses evidence-backed reasons and exactly three actions", () => {
   assert.deepEqual(executiveDecisionReasons(report()), [{ id: "f1", statement: "The identity records align.", evidence: "Registry" }]);
   assert.equal(recommendedActions(report()).length, 3);
+});
+
+test("important findings explain the observation, consequence, evidence, and next step", () => {
+  assert.deepEqual(executiveFindingStories(report()), [{
+    id: "f1",
+    title: "Identity aligned",
+    direction: "supports_credibility",
+    observation: "The identity records align.",
+    whyItMatters: "It helps confirm that the business receiving the commitment is the business that was reviewed.",
+    commercialRisk: "The risk of contracting with or paying the wrong legal entity is reduced.",
+    evidence: "Registry",
+    nextStep: "Match the final contract, invoice, and payment account to the verified business name before sending funds.",
+  }]);
+  assert.match(executiveRecommendation(report()).explanation, /key finding.*identity records align.*supported by Registry.*risk of contracting.*Required response/s);
+});
+
+test("report presents each part of the finding story in plain business language", () => {
+  const component = readFileSync(new URL("../components/report/ExecutiveIntelligenceReport.tsx", import.meta.url), "utf8");
+  for (const label of ["Observed:", "Why it matters:", "Commercial risk:", "Evidence:", "Next step:"]) assert.match(component, new RegExp(label));
 });
 
 test("decision brief uses material intelligence impacts and gaps", () => {
