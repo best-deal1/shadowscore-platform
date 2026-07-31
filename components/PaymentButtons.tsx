@@ -33,7 +33,7 @@ export default function PaymentButtons({ planName, price, buttonLabel = "Unlock 
 
   return <div className="w-full">
     <button type="button" onClick={beginUnlock} disabled={!intakeId || loading} className="w-full rounded-2xl bg-emerald-500 px-6 py-4 text-sm font-black text-black hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-40">
-      {loading ? "Preparing checkout..." : intakeId ? buttonLabel : "Save investigation to continue"}
+      {loading ? "Opening secure payment..." : intakeId ? buttonLabel : "Save investigation to continue"}
     </button>
     {error && <p className="mt-3 text-sm text-red-200" role="alert">{error}</p>}
   </div>;
