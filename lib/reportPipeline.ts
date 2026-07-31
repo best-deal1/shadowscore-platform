@@ -26,6 +26,7 @@ import { analyzeRisk } from "./riskEngine";
 import type { PaymentIntent, ShadowScoreIntake, ShadowScoreReport } from "./workspace";
 import { resolveBusinessIdentity } from "./businessIdentityResolver";
 import { applyCanonicalIdentityToBusinessProfile, applyCanonicalIdentityToIdentityProfile } from "./canonicalReportIdentity";
+import { buildInvestigationIntelligence } from "./investigationIntelligence";
 
 export const REPORT_ENGINE_VERSION = "report-pipeline-v22";
 
@@ -148,6 +149,13 @@ export async function buildReadyReport(input: {
     contradictionSignals: canonicalBusinessProfile.contradictionSignals,
     businessTrustIntelligence: businessIdentityIntelligence,
   });
+  const investigationIntelligence = buildInvestigationIntelligence({
+    evidenceItems,
+    correlationSummary,
+    businessFindings: businessIntelligence.findings,
+    knowledgeGraph: knowledgeGraph.snapshot(),
+    generatedAt: now,
+  });
   executionFlow.push("✓ Decision generated");
   const scorecard = buildShadowScorecard({ evidenceItems: providerEvidenceItems, websiteEvidence: websiteEvidenceItems });
   const investigationTimeline = buildInvestigationTimeline({ websiteIntelligence, completedAt: now, identityCompleted: true, correlationCompleted: true, businessCompleted: true, decisionCompleted: true, executiveCompleted: true });
@@ -213,6 +221,7 @@ export async function buildReadyReport(input: {
       businessIdentityResolution,
       businessIdentityIntelligence,
       businessIntelligence,
+      investigationIntelligence,
       websiteIntelligence,
       canonicalWebsiteReport,
       websiteChangeReport: websiteMonitoring?.snapshot.changeReport,

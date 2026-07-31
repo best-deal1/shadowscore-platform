@@ -49,9 +49,11 @@ export function groupExecutiveEvidence(report: ShadowScoreReport) {
 
 export function executiveRecommendation(report: ShadowScoreReport) {
   const narrative = report.reportSummary?.businessNarrative;
+  const intelligence = report.reportSummary?.investigationIntelligence;
   const decision = report.reportSummary?.decision?.canonicalDecision || narrative?.decisionMode;
-  const label = decision?.decisionOutcome === "PROCEED" ? "Proceed" : decision?.decisionOutcome === "DO_NOT_PROCEED" ? "Do not proceed" : "Proceed with caution";
-  const explanation = decision?.userMeaning
+  const label = intelligence?.decisionSupport.outcome || (decision?.decisionOutcome === "PROCEED" ? "Proceed" : decision?.decisionOutcome === "DO_NOT_PROCEED" ? "Do Not Proceed" : "Proceed with Conditions");
+  const explanation = intelligence?.executiveInsight
+    || decision?.userMeaning
     || report.reportSummary?.decision?.whatThisMeans
     || narrative?.sections.find((section) => section.id === "executiveSummary")?.body[0]
     || report.reportSummary?.message
@@ -71,6 +73,7 @@ export function reportFindings(report: ShadowScoreReport) {
 
 export function recommendedActions(report: ShadowScoreReport) {
   const items = report.reportSummary?.businessNarrative?.sections.find((section) => section.id === "recommendedNextSteps")?.body || [];
-  const clean = Array.from(new Set(items.map((item) => item.trim()).filter(Boolean)));
+  const gapActions = report.reportSummary?.investigationIntelligence?.evidenceGaps.map((gap) => gap.recommendation) || [];
+  const clean = Array.from(new Set([...gapActions, ...items].map((item) => item.trim()).filter(Boolean)));
   return clean.length ? clean.slice(0, 5) : ["Verify business ownership and registration details.", "Use documented payment terms for the first transaction.", "Review material evidence gaps before proceeding."];
 }
