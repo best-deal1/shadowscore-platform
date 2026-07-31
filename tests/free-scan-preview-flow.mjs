@@ -45,6 +45,18 @@ const source = readFileSync('app/intake/page.tsx', 'utf8');
 assert.match(source, /isPreviewReadyResponse\(payload/, 'intake page checks the preview-ready API response');
 assert.match(source, /setPreviewStatus\("ready"\)/, 'intake page transitions loading state to ready');
 assert.match(source, /setFreeScanRunning\(false\)/, 'intake page clears the running flag');
+assert.match(source, /Executive report ready/, 'free preview teases the completed executive report');
+assert.match(source, /Evidence items collected/, 'free preview shows high-level collection totals');
+assert.match(source, /Unlock Executive Report · \$9\.90/, 'free preview presents the one-time report purchase');
+assert.doesNotMatch(source, /View technical preview/, 'free preview does not expose a technical report');
+assert.doesNotMatch(source, /Why it matters:/, 'free preview does not expose finding explanations');
+assert.doesNotMatch(source, /What this means:/, 'free preview does not expose decision reasoning');
+
+const routeSource = readFileSync('app/api/free-scan/providers/route.ts', 'utf8');
+const responseSource = routeSource.slice(routeSource.indexOf('return NextResponse.json({\n      status: "ready"'));
+assert.match(routeSource, /previewSummary:/, 'free preview API returns only the summary needed by the conversion view');
+assert.doesNotMatch(responseSource, /decisionPreview,\n/, 'free preview API does not return decision details');
+assert.doesNotMatch(responseSource, /insights: insightOutput\.insights/, 'free preview API does not return insight details');
 
 rmSync('.tmp-tests', { recursive: true, force: true });
 console.log('free scan preview completion flow regression tests passed');
