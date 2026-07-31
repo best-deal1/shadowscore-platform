@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { ShadowScoreReport } from "../../lib/workspace";
-import { executiveRecommendation, groupExecutiveEvidence, recommendedActions, reportFindings } from "../../lib/executiveReport";
+import { executiveBusinessImpacts, executiveDecisionReasons, executiveRecommendation, groupExecutiveEvidence, materialEvidenceGaps, recommendedActions, reportFindings } from "../../lib/executiveReport";
 
 function dateTime(value?: string) {
   if (!value) return "Not recorded";
@@ -32,13 +32,17 @@ export default function ExecutiveIntelligenceReport({ report }: { report: Shadow
   const timeline = report.reportSummary?.investigationTimeline || [];
   const narrative = report.reportSummary?.businessNarrative;
   const actions = recommendedActions(report);
+  const decisionReasons = executiveDecisionReasons(report);
+  const businessImpacts = executiveBusinessImpacts(report);
+  const materialGaps = materialEvidenceGaps(report);
+  const execution = report.reportSummary?.execution;
+  const intelligence = report.reportSummary?.investigationIntelligence;
+  const graphSummary = report.reportSummary?.knowledgeGraph?.graphSummary;
   const riskScore = report.riskScore;
-  const riskLabel = riskScore === undefined ? "Not assessed" : riskScore >= 75 ? "Critical" : riskScore >= 50 ? "High" : riskScore >= 25 ? "Medium" : "Low";
   const confidence = report.confidenceScore === undefined ? narrative?.confidence || "Not recorded" : `${report.confidenceScore}%`;
   const gaps = Array.from(new Set(scorecard.flatMap((item) => item.evidenceGaps))).slice(0, 8);
   const verdictTone = /do not|stop|high risk/i.test(recommendation.label) ? "red" : /verify|review|caution/i.test(recommendation.label) ? "amber" : "green";
   const tone = verdictTone === "red" ? "border-red-300 bg-red-50 text-red-950" : verdictTone === "amber" ? "border-amber-300 bg-amber-50 text-amber-950" : "border-emerald-300 bg-emerald-50 text-emerald-950";
-  const riskTone = riskScore === undefined ? "text-slate-700" : riskScore >= 50 ? "text-red-700" : riskScore >= 25 ? "text-amber-700" : "text-emerald-700";
   const identityFindings = allFindings.filter((item) => /identity|business|registr|legal name/i.test(`${item.category} ${item.title}`));
   const ownershipFindings = allFindings.filter((item) => /owner|domain|registrant/i.test(`${item.category} ${item.title} ${item.statement}`));
 
@@ -68,12 +72,17 @@ export default function ExecutiveIntelligenceReport({ report }: { report: Shadow
 
       <div className="px-6 py-8 sm:px-10 lg:px-14 lg:py-12">
         <section id="summary" aria-labelledby="summary-title">
-          <div className="grid gap-8 lg:grid-cols-[1.35fr_.65fr]">
-            <div><p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-800">01 / Decision brief</p><h2 id="summary-title" className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">Executive Summary</h2><p className="mt-5 max-w-3xl text-lg leading-8 text-slate-700">{recommendation.explanation}</p>
-              <div className="mt-7 grid gap-4 sm:grid-cols-2"><div className="border-l-2 border-slate-900 pl-4"><p className="text-xs font-bold uppercase tracking-wider text-slate-500">Primary risk domain</p><p className="mt-2 font-semibold text-slate-950">{report.reportSummary?.primaryRiskDomain || "General business review"}</p></div><div className="border-l-2 border-slate-900 pl-4"><p className="text-xs font-bold uppercase tracking-wider text-slate-500">Evidence reviewed</p><p className="mt-2 font-semibold text-slate-950">{evidence.length} items across {sources.length || evidenceGroups.length} sources</p></div></div>
-            </div>
-            <aside className="rounded-2xl border border-slate-300 bg-white p-6" aria-label="Risk and confidence summary"><h3 className="sr-only">Risk Score Card</h3><p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Overall Risk Score</p><div className="mt-4 flex items-baseline gap-2"><strong className={`text-6xl font-semibold tracking-[-0.06em] ${riskTone}`}>{riskScore ?? "N/A"}</strong>{riskScore !== undefined && <span className="text-lg text-slate-400">/ 100</span>}</div><p className={`mt-2 text-sm font-bold uppercase tracking-[0.18em] ${riskTone}`}>{riskLabel} risk</p><div className="my-6 h-px bg-slate-200" /><p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Confidence Level</p><p className="mt-2 text-2xl font-semibold text-slate-950">{confidence}</p></aside>
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-800">01 / Decision brief</p><h2 id="summary-title" className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">Executive Decision Brief</h2>
+          <div className={`mt-6 rounded-2xl border p-6 sm:flex sm:items-end sm:justify-between sm:gap-6 ${tone}`}><div><p className="text-xs font-bold uppercase tracking-[0.18em] opacity-70">Decision</p><p className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">{recommendation.label}</p></div><div className="mt-4 sm:mt-0 sm:text-right"><p className="text-xs font-bold uppercase tracking-[0.18em] opacity-70">Confidence</p><p className="mt-1 text-xl font-semibold">{confidence}</p></div></div>
+
+          <div className="mt-6 grid gap-6 lg:grid-cols-2">
+            <BriefPanel title="Why"><ul className="space-y-4">{decisionReasons.length ? decisionReasons.map((reason) => <li key={reason.id} className="border-b border-slate-200 pb-3 last:border-0 last:pb-0"><p className="font-medium text-slate-950">{reason.statement}</p><p className="mt-1 text-xs font-semibold uppercase tracking-wider text-cyan-800">Evidence: {reason.evidence}</p></li>) : <li>{recommendation.explanation}</li>}</ul></BriefPanel>
+            <BriefPanel title="Business Impact"><ul className="list-disc space-y-3 pl-5 marker:text-cyan-800">{businessImpacts.length ? businessImpacts.map((impact) => <li key={impact}>{impact}</li>) : <li>{riskScore !== undefined && riskScore < 25 ? "Available evidence indicates low current business exposure." : "Resolve the decision conditions before making a commitment."}</li>}</ul></BriefPanel>
+            <BriefPanel title="Immediate Actions"><ol className="space-y-3">{actions.map((action, index) => <li key={action} className="grid grid-cols-[2rem_1fr] gap-2"><span className="font-mono text-sm font-bold text-cyan-800">{index + 1}.</span><span className="font-medium text-slate-950">{action}</span></li>)}</ol></BriefPanel>
+            <BriefPanel title="Missing Evidence"><div className="space-y-4">{materialGaps.length ? materialGaps.map((gap) => <div key={gap.id}><p className="font-medium text-slate-950">{gap.missingEvidence}</p><p className="mt-1 text-sm text-slate-600">Confidence impact: {gap.confidenceImpact}</p></div>) : <p>No material evidence gaps currently affect confidence.</p>}</div></BriefPanel>
           </div>
+
+          <div className="mt-6 border border-slate-300 bg-slate-50 p-5"><h3 className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Investigation Timeline</h3><dl className="mt-4 grid grid-cols-2 gap-x-5 gap-y-4 sm:grid-cols-3 lg:grid-cols-6">{[["Evidence collected", execution?.evidenceCollected ?? evidence.length], ["Providers executed", execution?.providersExecuted ?? sources.length], ["Contradictions found", intelligence?.contradictions.length ?? 0], ["Relationships discovered", intelligence?.relationships.length ?? graphSummary?.relationshipCount ?? 0], ["Confidence", confidence], ["Generation time", execution ? `${execution.completedInSeconds}s` : "Not recorded"]].map(([label, value]) => <div key={label}><dt className="text-xs text-slate-500">{label}</dt><dd className="mt-1 text-lg font-semibold text-slate-950">{value}</dd></div>)}</dl></div>
         </section>
 
         <section id="identity" aria-labelledby="identity-title" className="mt-12 border-t border-slate-300 pt-10"><p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-800">02 / Entity profile</p><h2 id="identity-title" className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">Business Identity</h2><dl className="mt-6 grid border-y border-slate-300 bg-white sm:grid-cols-2 lg:grid-cols-4">{[["Legal or trading name", narrative?.businessName || report.entity], ["Reviewed target", report.target || report.entity], ["Investigation type", report.scanMode || report.platform], ["Identity confidence", levelLabel(scorecard.find((item) => item.dimension === "Identity Confidence")?.level)]].map(([label, value]) => <div key={label} className="border-b border-slate-200 p-5 last:border-b-0 sm:border-r sm:[&:nth-child(2n)]:border-r-0 lg:border-b-0 lg:[&:nth-child(2n)]:border-r lg:last:border-r-0"><dt className="text-xs font-bold uppercase tracking-wider text-slate-500">{label}</dt><dd className="mt-2 font-semibold capitalize text-slate-950">{value}</dd></div>)}</dl>
@@ -99,6 +108,10 @@ export default function ExecutiveIntelligenceReport({ report }: { report: Shadow
       <footer className="border-t border-slate-300 bg-white px-6 py-7 text-xs leading-5 text-slate-500 sm:px-10 lg:px-14"><div className="grid gap-5 sm:grid-cols-3"><p><strong className="block text-slate-700">Report ID</strong>{report.reportId}</p><p><strong className="block text-slate-700">Engine version</strong>{report.engineVersion || "Not recorded"}</p><p><strong className="block text-slate-700">Prepared</strong>{dateTime(report.readyAt || report.createdAt)}</p></div><p className="mt-6 max-w-4xl">This report provides decision support based on the evidence available at the time of review. Final business, legal, financial, and compliance decisions remain the responsibility of the reader.</p></footer>
     </article>
   </>;
+}
+
+function BriefPanel({ title, children }: { title: string; children: React.ReactNode }) {
+  return <article className="border border-slate-300 bg-white p-5 sm:p-6"><h3 className="text-sm font-bold uppercase tracking-[0.16em] text-slate-500">{title}</h3><div className="mt-4 text-sm leading-6 text-slate-700">{children}</div></article>;
 }
 
 function ReportFindingBlock({ title, items, fallback }: { title: string; items: ReturnType<typeof reportFindings>["positive"]; fallback: string }) {

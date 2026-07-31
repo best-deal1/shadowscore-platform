@@ -75,5 +75,28 @@ export function recommendedActions(report: ShadowScoreReport) {
   const items = report.reportSummary?.businessNarrative?.sections.find((section) => section.id === "recommendedNextSteps")?.body || [];
   const gapActions = report.reportSummary?.investigationIntelligence?.evidenceGaps.map((gap) => gap.recommendation) || [];
   const clean = Array.from(new Set([...gapActions, ...items].map((item) => item.trim()).filter(Boolean)));
-  return clean.length ? clean.slice(0, 5) : ["Verify business ownership and registration details.", "Use documented payment terms for the first transaction.", "Review material evidence gaps before proceeding."];
+  const fallbacks = ["Verify business ownership and registration details.", "Use documented payment terms for the first transaction.", "Review material evidence gaps before proceeding."];
+  return [...clean, ...fallbacks.filter((item) => !clean.includes(item))].slice(0, 3);
+}
+
+export function executiveDecisionReasons(report: ShadowScoreReport) {
+  const findings = report.reportSummary?.businessIntelligence?.findings || [];
+  return findings.slice(0, 5).map((finding) => ({
+    id: finding.id,
+    statement: finding.statement,
+    evidence: Array.from(new Set(finding.evidence.map((item) => item.source))).join(", ") || "Evidence record",
+  }));
+}
+
+export function executiveBusinessImpacts(report: ShadowScoreReport) {
+  const intelligence = report.reportSummary?.investigationIntelligence;
+  const impacts = [
+    ...(intelligence?.risks.map((risk) => risk.businessImpact) || []),
+    ...(intelligence?.contradictions.map((item) => item.whyItMatters) || []),
+  ];
+  return Array.from(new Set(impacts.map((item) => item.trim()).filter(Boolean))).slice(0, 3);
+}
+
+export function materialEvidenceGaps(report: ShadowScoreReport) {
+  return (report.reportSummary?.investigationIntelligence?.evidenceGaps || []).slice(0, 3);
 }
