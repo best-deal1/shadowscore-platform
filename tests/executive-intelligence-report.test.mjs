@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { groupExecutiveEvidence, executiveRecommendation, recommendedActions } from "../lib/executiveReport.ts";
+import { executiveBusinessImpacts, executiveDecisionReasons, groupExecutiveEvidence, executiveRecommendation, materialEvidenceGaps, recommendedActions } from "../lib/executiveReport.ts";
 
 const report = (overrides = {}) => ({
   reportId: "report-6", title: "Report", entity: "Acme Ltd", platform: "web", scanMode: "website", stage: "Healthy",
@@ -13,13 +13,25 @@ const report = (overrides = {}) => ({
   ...overrides,
 });
 
-test("executive report renders every required section and footer field", () => {
+test("executive report renders the decision brief and report sections", () => {
   const component = readFileSync(new URL("../components/report/ExecutiveIntelligenceReport.tsx", import.meta.url), "utf8");
-  for (const section of ["Executive Summary", "Executive Recommendation", "Risk Score Card", "Key Findings", "Evidence Summary", "Investigation Timeline", "Recommended Actions", "Source Appendix", "Report ID", "Engine version"]) assert.match(component, new RegExp(section));
+  for (const section of ["Executive Decision Brief", "Decision", "Why", "Business Impact", "Immediate Actions", "Missing Evidence", "Investigation Timeline", "Executive Recommendation", "Source Appendix", "Report ID", "Engine version"]) assert.match(component, new RegExp(section));
+});
+
+test("decision brief uses evidence-backed reasons and exactly three actions", () => {
+  assert.deepEqual(executiveDecisionReasons(report()), [{ id: "f1", statement: "The identity records align.", evidence: "Registry" }]);
+  assert.equal(recommendedActions(report()).length, 3);
+});
+
+test("decision brief uses material intelligence impacts and gaps", () => {
+  const intelligence = { risks: [{ businessImpact: "Payment could reach an unrelated entity." }], contradictions: [], evidenceGaps: [{ id: "g1", missingEvidence: "VAT certificate", recommendation: "Request it.", confidenceImpact: "Would confirm registration." }] };
+  const brief = report({ reportSummary: { ...report().reportSummary, investigationIntelligence: intelligence } });
+  assert.deepEqual(executiveBusinessImpacts(brief), ["Payment could reach an unrelated entity."]);
+  assert.deepEqual(materialEvidenceGaps(brief), intelligence.evidenceGaps);
 });
 
 test("executive summary and recommendation always have fallbacks", () => {
-  assert.deepEqual(executiveRecommendation(report({ reportSummary: undefined })), { label: "Proceed with caution", explanation: "Review the available evidence and resolve material gaps before making a commitment." });
+  assert.deepEqual(executiveRecommendation(report({ reportSummary: undefined })), { label: "Proceed with Conditions", explanation: "Review the available evidence and resolve material gaps before making a commitment." });
   assert.equal(recommendedActions(report({ reportSummary: undefined })).length, 3);
 });
 
