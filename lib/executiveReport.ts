@@ -12,6 +12,17 @@ export type ExecutiveEvidence = {
   observedAt?: string;
 };
 
+export type ExecutiveFindingStory = {
+  id: string;
+  title: string;
+  direction: "supports_credibility" | "weakens_credibility" | "needs_review";
+  observation: string;
+  whyItMatters: string;
+  commercialRisk: string;
+  evidence: string;
+  nextStep: string;
+};
+
 const categoryMatchers: Array<[EvidenceCategory, RegExp]> = [
   ["Business Registration", /registr|incorpor|company|sec|legal name|filing/i],
   ["Email", /email|dmarc|spf|mail/i],
@@ -52,12 +63,19 @@ export function executiveRecommendation(report: ShadowScoreReport) {
   const intelligence = report.reportSummary?.investigationIntelligence;
   const decision = report.reportSummary?.decision?.canonicalDecision || narrative?.decisionMode;
   const label = intelligence?.decisionSupport.outcome || (decision?.decisionOutcome === "PROCEED" ? "Proceed" : decision?.decisionOutcome === "DO_NOT_PROCEED" ? "Do Not Proceed" : "Proceed with Conditions");
-  const explanation = intelligence?.executiveInsight
+  const summary = intelligence?.executiveInsight
     || decision?.userMeaning
     || report.reportSummary?.decision?.whatThisMeans
     || narrative?.sections.find((section) => section.id === "executiveSummary")?.body[0]
     || report.reportSummary?.message
     || "Review the available evidence and resolve material gaps before making a commitment.";
+  const stories = executiveFindingStories(report);
+  const keyFinding = stories.find((item) => item.direction === "weakens_credibility")
+    || stories.find((item) => item.direction === "needs_review")
+    || stories[0];
+  const explanation = keyFinding
+    ? `${summary} The key finding is: ${keyFinding.observation} It is supported by ${keyFinding.evidence}. ${keyFinding.commercialRisk} Required response: ${keyFinding.nextStep}`
+    : summary;
   return { label, explanation };
 }
 
@@ -69,6 +87,46 @@ export function reportFindings(report: ShadowScoreReport) {
     negative: unique(findings.filter((item) => item.direction === "weakens_credibility")),
     warnings: unique(findings.filter((item) => item.direction === "needs_review")),
   };
+}
+
+function findingGuidance(context: string, direction: ExecutiveFindingStory["direction"]) {
+  const value = context.toLowerCase();
+  const supportive = direction === "supports_credibility";
+  if (/identity|ownership/.test(value)) return supportive
+    ? { whyItMatters: "It helps confirm that the business receiving the commitment is the business that was reviewed.", commercialRisk: "The risk of contracting with or paying the wrong legal entity is reduced.", nextStep: "Match the final contract, invoice, and payment account to the verified business name before sending funds." }
+    : { whyItMatters: "The party requesting the commitment may not be the same business shown in independent records.", commercialRisk: "Funds, contractual rights, or recovery options could be tied to the wrong entity.", nextStep: "Obtain a current registry record and ownership document, then match them to the contract and payment account." };
+  if (/payment/.test(value)) return supportive
+    ? { whyItMatters: "The payment details are consistent with the business under review.", commercialRisk: "The chance of sending funds to an unrelated recipient is reduced.", nextStep: "Confirm the account holder again through an independent contact before releasing the payment." }
+    : { whyItMatters: "The payment destination cannot yet be tied reliably to the business under review.", commercialRisk: "A payment could reach an unrelated party and may be difficult to recover.", nextStep: "Pause payment until the bank account holder matches the contracting entity in documentary evidence." };
+  if (/infrastructure|operation/.test(value)) return supportive
+    ? { whyItMatters: "The operating footprint is consistent with the business claims reviewed.", commercialRisk: "The risk of relying on a business without a stable operating presence is reduced.", nextStep: "Record the verified operating details in the contract file and monitor material changes before payment." }
+    : { whyItMatters: "The operating footprint does not fully support the business claims presented.", commercialRisk: "The business may be less able to deliver, support the transaction, or remain reachable after payment.", nextStep: "Request proof of operations and use staged payment terms tied to confirmed delivery milestones." };
+  if (/claim|registration/.test(value)) return supportive
+    ? { whyItMatters: "Independent records support a material claim made by the business.", commercialRisk: "The risk of making the decision from an unsupported business claim is reduced.", nextStep: "Keep the supporting record with the approval file and confirm it remains current before commitment." }
+    : { whyItMatters: "A material business claim is not consistent across the available records.", commercialRisk: "The decision may rely on inaccurate credentials, status, or authority.", nextStep: "Ask the business to resolve the discrepancy with a current primary-source record before commitment." };
+  return supportive
+    ? { whyItMatters: "Independent evidence supports this part of the business profile.", commercialRisk: "This lowers uncertainty in the commercial decision, but it does not replace standard payment controls.", nextStep: "Retain the evidence and complete the standard contract and payment checks before commitment." }
+    : { whyItMatters: "This finding leaves an important part of the business profile unresolved.", commercialRisk: "The customer could commit funds without a reliable basis for assessing the counterparty.", nextStep: "Resolve the finding with current independent evidence before making the commitment." };
+}
+
+export function executiveFindingStories(report: ShadowScoreReport): ExecutiveFindingStory[] {
+  const findings = report.reportSummary?.businessIntelligence?.findings || [];
+  const risks = report.reportSummary?.investigationIntelligence?.risks || [];
+  return findings.map((finding) => {
+    const guidance = findingGuidance(`${finding.category} ${finding.title} ${finding.statement}`, finding.direction);
+    const matchingRisk = risks.find((risk) => risk.id === `risk:${finding.id}` || risk.title === finding.title);
+    const sources = Array.from(new Set(finding.evidence.map((item) => item.source).filter(Boolean)));
+    return {
+      id: finding.id,
+      title: finding.title,
+      direction: finding.direction,
+      observation: finding.statement,
+      whyItMatters: guidance.whyItMatters,
+      commercialRisk: matchingRisk?.businessImpact || guidance.commercialRisk,
+      evidence: sources.length ? sources.join(", ") : "The available investigation record",
+      nextStep: guidance.nextStep,
+    };
+  });
 }
 
 export function recommendedActions(report: ShadowScoreReport) {
