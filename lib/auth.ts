@@ -22,11 +22,11 @@ function makeId(prefix: string) {
 
 async function persistSession(session: ShadowScoreSession) {
   if (typeof window === "undefined") return;
-  window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
   if (session.accessToken) {
     const response = await fetch("/api/auth/session", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ accessToken: session.accessToken }) });
     if (!response.ok) throw new Error("Could not establish the workspace session.");
   }
+  window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
 }
 
 type SupabaseAuthResponse = {
@@ -36,6 +36,9 @@ type SupabaseAuthResponse = {
 };
 
 function toSession(response: SupabaseAuthResponse, fallbackName: string): ShadowScoreSession {
+  if (!response.access_token) {
+    throw new Error("Check your email to confirm your account, then sign in.");
+  }
   const user = response.user;
   return {
     userId: user.id,
@@ -112,7 +115,12 @@ export function getCurrentSession(): ShadowScoreSession | null {
   if (typeof window === "undefined") return null;
   try {
     const parsed = JSON.parse(window.sessionStorage.getItem(SESSION_STORAGE_KEY) || "null");
-    return parsed?.userId && parsed?.email ? parsed : null;
+    if (!parsed?.userId || !parsed?.email) return null;
+    if (isSupabaseConfigured() && !parsed.accessToken) {
+      window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
+      return null;
+    }
+    return parsed;
   } catch {
     return null;
   }
