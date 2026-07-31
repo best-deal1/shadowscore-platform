@@ -3,27 +3,44 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { getCurrentSession } from "../lib/auth";
+import { prepareInvestigationCheckout } from "../lib/investigationCheckout";
 import { createCheckoutIntent, reportIdForPayment } from "../lib/workspace";
 
-type PaymentButtonsProps = { planName: string; price: string; buttonLabel?: string; intakeId?: string };
+type PaymentButtonsProps = {
+  planName: string;
+  price: string;
+  buttonLabel?: string;
+  intakeId?: string;
+  email?: string;
+  onEmailResolved?: (email: string) => void;
+  onPersistIntake?: (email: string) => Promise<string>;
+};
 
-export default function PaymentButtons({ planName, price, buttonLabel = "Unlock Full Report", intakeId }: PaymentButtonsProps) {
+export default function PaymentButtons({ planName, price, buttonLabel = "Unlock Full Report", intakeId, email = "", onEmailResolved, onPersistIntake }: PaymentButtonsProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   async function beginUnlock() {
-    if (!intakeId || loading) return;
+    if (loading) return;
     const session = getCurrentSession();
     if (!session) {
-      const returnTo = `/intake?resume=${encodeURIComponent(intakeId)}`;
+      const returnTo = intakeId ? `/intake?resume=${encodeURIComponent(intakeId)}` : "/intake?resume=checkout";
       router.push(`/login?returnTo=${encodeURIComponent(returnTo)}`);
       return;
     }
     setLoading(true);
     setError("");
     try {
-      const intent = await createCheckoutIntent(session, { planName, price, method: "PayPal", intakeId });
+      const result = await prepareInvestigationCheckout({
+        intakeId,
+        email,
+        authenticatedEmail: session.email,
+        persistIntake: onPersistIntake || (async () => { throw new Error("Save the investigation before starting checkout."); }),
+        createIntent: (resolvedIntakeId) => createCheckoutIntent(session, { planName, price, method: "PayPal", intakeId: resolvedIntakeId }),
+      });
+      onEmailResolved?.(result.email);
+      const intent = result.intent;
       router.push(`/reports/${reportIdForPayment(intent.id)}/unlock`);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Checkout could not be started.");
@@ -32,8 +49,8 @@ export default function PaymentButtons({ planName, price, buttonLabel = "Unlock 
   }
 
   return <div className="w-full">
-    <button type="button" onClick={beginUnlock} disabled={!intakeId || loading} className="w-full rounded-2xl bg-emerald-500 px-6 py-4 text-sm font-black text-black hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-40">
-      {loading ? "Opening secure payment..." : intakeId ? buttonLabel : "Save investigation to continue"}
+    <button type="button" onClick={beginUnlock} disabled={loading} className="w-full rounded-2xl bg-emerald-500 px-6 py-4 text-sm font-black text-black hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-40">
+      {loading ? (intakeId ? "Opening secure payment..." : "Saving investigation...") : intakeId ? buttonLabel : "Save investigation to continue"}
     </button>
     {error && <p className="mt-3 text-sm text-red-200" role="alert">{error}</p>}
   </div>;
