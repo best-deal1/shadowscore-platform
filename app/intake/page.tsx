@@ -526,6 +526,12 @@ export default function IntakePage() {
   const [freeScanRunning, setFreeScanRunning] = useState(false);
   const [previewStatus, setPreviewStatus] = useState<"idle" | "loading" | "ready" | "failed">("idle");
   const [freeScanError, setFreeScanError] = useState("");
+  const [saveError, setSaveError] = useState("");
+
+  useEffect(() => {
+    const session = getCurrentSession();
+    if (session?.email) setEmail((current) => current || session.email);
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -800,12 +806,12 @@ export default function IntakePage() {
     formErrors.length === 0 &&
     (scanMode !== "evidence" || files.length > 0);
 
-  const intakeRecord = () => ({
+  const intakeRecord = (resolvedEmail = email) => ({
       scanMode,
       platform: scanMode === "website" ? "Website / Business" : displayMarketplace,
       caseType: scanMode === "website" ? "Business trust scan" : caseType,
       target: activeTarget,
-      email,
+      email: resolvedEmail,
       fileNames: files.map((file) => file.name),
       visibleSignalCategories: scanMode === "website" ? WEBSITE_SIGNAL_CATEGORIES : (detectedSignals.length ? detectedSignals.map((item) => item.title) : ["Marketplace identity", t.intakeUi.evidenceReadiness, "Payment or policy categories"]),
     });
@@ -856,9 +862,15 @@ export default function IntakePage() {
   };
 
 
-  const saveLead = async () => {
+  const saveLead = async (resolvedEmail = email) => {
+    setSaveError("");
     const session = getCurrentSession();
-    const record = intakeRecord();
+    const cleanEmail = resolvedEmail.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes("@")) {
+      throw new Error("Enter a valid customer email to save this investigation.");
+    }
+    setEmail(cleanEmail);
+    const record = intakeRecord(cleanEmail);
     const lead = {
       createdAt: new Date().toISOString(),
       scanMode,
@@ -866,7 +878,7 @@ export default function IntakePage() {
         scanMode === "website" ? "Website / Business" : displayMarketplace,
       caseType: scanMode === "website" ? "Business trust scan" : caseType,
       store: activeTarget,
-      email,
+      email: cleanEmail,
       files: files.map((file) => ({
         name: file.name,
         size: file.size,
@@ -882,11 +894,20 @@ export default function IntakePage() {
     if (!session) {
       sessionStorage.setItem(CHECKOUT_DRAFT_KEY, JSON.stringify(record));
       router.push(`/signup?returnTo=${encodeURIComponent("/intake?resume=checkout")}`);
-      return;
+      return "";
     }
     const created = await createIntake(session, record);
     setIntake(created);
     setLeadSaved(true);
+    return created.intakeId;
+  };
+
+  const saveForLater = async () => {
+    try {
+      await saveLead();
+    } catch (cause) {
+      setSaveError(cause instanceof Error ? cause.message : "The investigation could not be saved.");
+    }
   };
 
   const handleFileChange = (incoming: File[]) => {
@@ -1260,10 +1281,11 @@ export default function IntakePage() {
                       <p className="mt-2 text-sm text-yellow-100">Use evidence-backed findings to verify identity, detect commercial inconsistencies, assess payment risk, and document your decision.</p>
                       <div className="mt-5 rounded-2xl border border-white/10 bg-black/30 p-5">
                         <dl className="mb-5 grid gap-3 text-sm sm:grid-cols-2"><div><dt className="text-zinc-500">Business</dt><dd className="font-bold text-white">{businessName}</dd></div><div><dt className="text-zinc-500">Investigation scope</dt><dd className="font-bold text-white">{activeMode.label}</dd></div><div><dt className="text-zinc-500">Deliverable</dt><dd className="font-bold text-white">Executive Report</dd></div><div><dt className="text-zinc-500">One-time price</dt><dd className="font-bold text-white">$9.90</dd></div></dl>
-                        <label><div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">Customer email (required)</div><input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white" placeholder="you@example.com" /></label>
+                        <label><div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">Customer email (required)</div><input type="email" required value={email} onChange={(e) => { setEmail(e.target.value); setSaveError(""); }} aria-describedby={saveError ? "checkout-email-error" : undefined} className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white" placeholder="you@example.com" /></label>
+                        {saveError && <p id="checkout-email-error" className="mt-3 text-sm text-red-200" role="alert">{saveError}</p>}
                         <ul className="mt-4 space-y-2 text-sm font-bold leading-6 text-white" aria-label="Purchase confidence"><li>✓ One investigation per report</li><li>✓ One-time payment</li><li>✓ No subscription</li><li>✓ Available immediately after payment</li><li>✓ Evidence preserved for download</li></ul>
-                        <div className="mt-5"><PaymentButtons planName="ShadowScore Executive Report" price="$9.90" buttonLabel="Unlock Executive Report · $9.90" intakeId={intake?.intakeId} /></div>
-                        <button type="button" onClick={saveLead} className="mx-auto mt-4 block text-xs font-bold text-zinc-400 underline underline-offset-4 hover:text-white">Save for later</button>
+                        <div className="mt-5"><PaymentButtons planName="ShadowScore Executive Report" price="$9.90" buttonLabel="Unlock Executive Report · $9.90" intakeId={intake?.intakeId} email={email} onEmailResolved={setEmail} onPersistIntake={saveLead} /></div>
+                        <button type="button" onClick={saveForLater} className="mx-auto mt-4 block text-xs font-bold text-zinc-400 underline underline-offset-4 hover:text-white">Save for later</button>
                       </div>
                       {leadSaved && <div className="mt-4 rounded-2xl border border-emerald-400/25 bg-emerald-500/10 p-4 text-sm text-emerald-100">Investigation saved. The Executive Report is ready to unlock.</div>}
                     </section>

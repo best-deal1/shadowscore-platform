@@ -39,6 +39,7 @@
     "validate:platform-capabilities": "node --experimental-strip-types tests/platform-capabilities.mjs",
     "test:preview-flow": "node tests/free-scan-preview-flow.mjs",
     "test:payment-flow": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types --test tests/payment-report-unlock-flow.test.mjs",
+    "test:intake-checkout": "node --experimental-strip-types --test tests/investigation-checkout-flow.test.mjs",
     "validate:canonical-decision-identity": "node --experimental-strip-types scripts/validate-canonical-decision-identity.mjs",
     "validate:report-contract": "node scripts/validate-report-contract.mjs",
     "validate:public-browser-boundary": "node scripts/validate-public-browser-boundary.mjs",
