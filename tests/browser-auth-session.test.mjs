@@ -60,3 +60,24 @@ test("signup without a Supabase access token does not create an authenticated br
   await assert.rejects(() => signupUser("Person", "person@example.com", "password"), /confirm your account/);
   assert.equal(sessionStorage.getItem("shadowscore.session.v19"), null);
 });
+
+test("signup explicitly redirects confirmation email links to ShadowScore", async () => {
+  process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "anon-key";
+  const sessionStorage = storageWith(null);
+  globalThis.window = { sessionStorage };
+  let signupRequest;
+  globalThis.fetch = async (input, init) => {
+    signupRequest = { input, init };
+    return Response.json({ user: { id: "user-1", email: "person@example.com" } });
+  };
+  const { signupUser } = await import(`../lib/auth.ts?redirect=${Date.now()}`);
+
+  await assert.rejects(() => signupUser("Person", "person@example.com", "password"), /confirm your account/);
+  assert.equal(signupRequest.input, "https://example.supabase.co/auth/v1/signup?redirect_to=https%3A%2F%2Fshadowscore.io");
+  assert.deepEqual(JSON.parse(signupRequest.init.body), {
+    email: "person@example.com",
+    password: "password",
+    data: { name: "Person" },
+  });
+});
