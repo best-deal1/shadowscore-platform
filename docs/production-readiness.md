@@ -24,4 +24,50 @@
 2. Configure all values checked by `npm run validate:release-environment`.
 3. Run `npm run validate:release-environment` in the release environment.
 4. Run `npm run build` for the exact commit being deployed.
-5. Complete one successful production payment using every enabled payment provider, such as PayPal, credit card, Payoneer, or bank transfer. For each payment, confirm that the intake persists, exactly one Executive Report is unlocked, the worker finishes the Investigation, and the report remains available after a new sign-in.
+5. Complete the production acceptance validation below.
+
+## End-to-end production validation
+
+Validate the complete customer journey for every supported payment method.
+
+### Payment methods
+
+- [ ] PayPal
+- [ ] Credit card
+- [ ] Payoneer
+- [ ] Bank transfer
+- [ ] Every additional enabled provider
+
+Only enabled payment methods are release blockers. Keep the full list in the acceptance plan so each method is covered when enabled.
+
+### Journey checks
+
+For each enabled payment method, verify:
+
+1. The Investigation is created successfully.
+2. The checkout session is created.
+3. Payment completes.
+4. The payment callback or webhook is processed.
+5. Payment status is persisted.
+6. The Investigation starts automatically.
+7. The Executive Report is generated.
+8. The Executive Report is accessible.
+9. The Investigation appears in Archive.
+10. The journey recovers after a refresh or browser restart.
+11. Duplicate payments are prevented.
+12. The customer can recover from a failed payment.
+13. The refund flow completes where the provider supports refunds.
+
+### Issue record
+
+For every issue, record:
+
+- Expected behavior
+- Actual behavior
+- Root cause
+- Fix
+- Regression test
+
+### Acceptance goal
+
+A first-time customer can complete the full Investigation and payment journey with any enabled payment method, without manual intervention.
