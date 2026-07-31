@@ -68,7 +68,7 @@ export default function ExecutiveIntelligenceReport({ report }: { report: Shadow
 
   return <>
     <div className="mb-5 flex flex-wrap items-center justify-between gap-4 print:hidden">
-      <p className="max-w-2xl text-sm leading-6 text-zinc-400">Private report. Recipients must sign in to the purchasing account.</p>
+      <p className="max-w-2xl text-sm leading-6 text-zinc-400">Investigation {report.intakeId || report.reportId}. Version 1.0. Private report. Access requires the recipient to sign in to the purchasing account.</p>
       <div className="flex flex-wrap gap-3"><button type="button" onClick={() => window.print()} className="rounded-lg border border-white/15 bg-white px-4 py-2.5 text-sm font-bold text-slate-950">Print report</button><Link href="/intake" className="rounded-lg bg-cyan-400 px-4 py-2.5 text-sm font-bold text-slate-950">Start Investigation</Link></div>
     </div>
 
