@@ -17,62 +17,62 @@ type InvestigationStep = {
 
 const STEPS: InvestigationStep[] = [
   {
-    title: "Investigation Started",
-    explanation: "Scope and target details were accepted for review.",
+    title: "Investigation Scope Confirmed",
+    explanation: "Business target and investigation scope were recorded.",
   },
   {
-    title: "Business Identity Verified",
-    explanation: "Names, addresses, and business identifiers were compared.",
+    title: "Business Identity Cross-Checked",
+    explanation: "Names, addresses, and business identifiers were cross-checked.",
     evidenceCount: 4,
   },
   {
-    title: "Domain Analysis",
+    title: "Digital Presence Reviewed",
     explanation:
-      "Domain ownership, age, infrastructure, and security signals were reviewed.",
+      "Domain ownership, history, and security records were reviewed.",
     evidenceCount: 7,
   },
   {
-    title: "Company Registration Review",
+    title: "Ownership Relationships Checked",
     explanation:
-      "Available registration records were checked for identity matches.",
+      "Available registration records were checked for identity and ownership links.",
     evidenceCount: 3,
   },
   {
-    title: "Website Analysis",
+    title: "Commercial Records Reviewed",
     explanation:
-      "Site content, policies, contact details, and technical signals were assessed.",
+      "Business claims, policies, and contact records were compared.",
     evidenceCount: 12,
   },
   {
-    title: "Payment Risk Assessment",
+    title: "Payment Records Cross-Checked",
     explanation:
-      "Payment methods and transaction risk indicators were evaluated.",
+      "Payment details and commercial risk indicators were cross-checked.",
     evidenceCount: 5,
   },
   {
-    title: "Reputation Analysis",
+    title: "Independent Sources Correlated",
     explanation:
-      "Public reputation signals and reported concerns were reviewed.",
+      "Independent sources were compared for consistent findings and reported concerns.",
     evidenceCount: 8,
   },
   {
-    title: "Compliance Review",
-    explanation: "Relevant disclosures and compliance indicators were checked.",
+    title: "Business Disclosures Checked",
+    explanation: "Relevant business disclosures and compliance records were checked.",
     evidenceCount: 4,
   },
   {
-    title: "Evidence Correlation",
+    title: "Evidence Record Correlated",
     explanation:
-      "Evidence was compared across sources to identify agreement and conflicts.",
+      "Evidence from independent sources was compared for agreement and conflicts.",
     evidenceCount: 18,
   },
   {
-    title: "Executive Summary Generated",
-    explanation: "Findings were prioritized for executive review.",
+    title: "Executive Recommendation Built",
+    explanation: "Material findings were prioritized for a business decision.",
   },
   {
-    title: "Final Recommendation Ready",
-    explanation: "The evidence record and recommendation were finalized.",
+    title: "Investigation Record Finalized",
+    explanation: "The evidence-backed conclusion and professional record were finalized.",
   },
 ];
 
@@ -179,7 +179,7 @@ export default function InvestigationAgent({
                 className={`h-2 w-2 rounded-full ${ready ? "bg-emerald-300" : "agent-live-dot bg-sky-300"}`}
                 aria-hidden="true"
               />
-              {ready ? "Analysis complete" : "AI analyst active"}
+              {ready ? "Investigation complete" : "Investigation team active"}
             </div>
             <h1
               id="agent-title"
@@ -188,7 +188,7 @@ export default function InvestigationAgent({
               Investigating {business}
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
-              Evidence is collected, verified, and correlated before a
+              Independent evidence is verified and correlated before the executive
               recommendation is prepared.
             </p>
           </div>
@@ -236,7 +236,7 @@ export default function InvestigationAgent({
             <p className="text-xs font-bold uppercase tracking-[.18em] text-zinc-500">
               Live investigation timeline
             </p>
-            <h2 className="mt-1 text-lg font-bold">Analyst activity</h2>
+            <h2 className="mt-1 text-lg font-bold">Investigation activity</h2>
           </div>
           <p className="text-xs text-zinc-500" aria-live="polite">
             Step {Math.min(activeIndex + 1, STEPS.length)} of {STEPS.length}
@@ -274,14 +274,14 @@ export default function InvestigationAgent({
                     </h3>
                     {active && (
                       <span className="text-xs font-bold text-sky-300">
-                        Analyzing...
+                        Under review
                       </span>
                     )}
                   </div>
                   {(complete || active) && (
                     <p className="mt-1 text-xs leading-5 text-zinc-400">
                       {active
-                        ? "Reviewing available records and cross-checking evidence."
+                        ? "Cross-checking available records and independent evidence."
                         : step.explanation}
                     </p>
                   )}
@@ -309,7 +309,7 @@ export default function InvestigationAgent({
         <p className="sr-only" aria-live="polite">
           {ready
             ? "Investigation complete. Opening Executive Report."
-            : `${STEPS[activeIndex]?.title ?? "Finalizing"}: Analyzing.`}
+            : `${STEPS[activeIndex]?.title ?? "Final review"}: Investigation in progress.`}
         </p>
       </div>
     </section>

@@ -1242,13 +1242,13 @@ export default function IntakePage() {
                         <div className="mt-7 rounded-2xl border border-amber-300/20 bg-amber-300/[0.08] p-5"><p className="text-xs font-black uppercase tracking-[0.2em] text-amber-200">Trust status</p><p className="mt-2 text-xl font-black text-white">Verification recommended</p></div>
                       </div>
                       <div className="grid gap-px bg-white/10 sm:grid-cols-3">
-                        {[["Providers queried", providersQueried], ["Evidence items collected", evidenceCollected], ["Findings discovered", findingsDiscovered]].map(([label, value]) => <div key={label} className="bg-black/50 p-5"><p className="text-2xl font-black text-white">{value}</p><p className="mt-1 text-xs text-zinc-400">{label}</p></div>)}
+                        {[["Independent sources checked", providersQueried], ["Evidence items collected and documented", evidenceCollected], ["Commercial findings identified", findingsDiscovered]].map(([label, value]) => <div key={label} className="bg-black/50 p-5"><p className="text-2xl font-black text-white">{value}</p><p className="mt-1 text-xs text-zinc-400">{label}</p></div>)}
                       </div>
                     </section>
 
                     <section className="rounded-[28px] border border-white/10 bg-white/[0.035] p-6 sm:p-8">
                       <p className="text-xs font-black uppercase tracking-[0.22em] text-red-300">Executive report ready</p>
-                      <h3 className="mt-3 text-2xl font-black text-white">The investigation is complete. The intelligence is ready to unlock.</h3>
+                      <h3 className="mt-3 text-2xl font-black text-white">The investigation record is complete. Your Executive Report is ready.</h3>
                       <div className="mt-6 grid gap-3 sm:grid-cols-2">
                         {[`${findingsDiscovered} important findings available`, "Executive recommendation ready", "Ownership analysis available", "Commercial risk assessment available", "Relationship analysis available", "Evidence package available"].map((item) => <div key={item} className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/35 p-4"><span className="font-bold text-zinc-200">{item}</span><span className="ml-4 rounded-full border border-red-300/20 bg-red-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-red-200">Locked</span></div>)}
                       </div>
@@ -1256,11 +1256,11 @@ export default function IntakePage() {
 
                     <section className="rounded-[28px] border border-yellow-400/20 bg-yellow-500/10 p-6 text-sm leading-7 text-yellow-100">
                       <div className="text-xs uppercase tracking-[0.22em] text-yellow-200">Unlock the Executive Report</div>
-                      <p className="mt-3 text-lg font-bold text-white">Review the full findings, risks, ownership analysis, contradictions, payment analysis, recommendation, evidence, and reasoning.</p>
+                      <p className="mt-3 text-lg font-bold text-white">Use evidence-backed findings to verify identity, detect commercial inconsistencies, assess payment risk, and document your decision.</p>
                       <div className="mt-5 rounded-2xl border border-white/10 bg-black/30 p-5">
                         <dl className="mb-5 grid gap-3 text-sm sm:grid-cols-2"><div><dt className="text-zinc-500">Business</dt><dd className="font-bold text-white">{businessName}</dd></div><div><dt className="text-zinc-500">Investigation scope</dt><dd className="font-bold text-white">{activeMode.label}</dd></div><div><dt className="text-zinc-500">Deliverable</dt><dd className="font-bold text-white">Executive Report</dd></div><div><dt className="text-zinc-500">One-time price</dt><dd className="font-bold text-white">$9.90</dd></div></dl>
                         <label><div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">Customer email (required)</div><input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white" placeholder="you@example.com" /></label>
-                        <p className="mt-4 text-sm font-bold leading-6 text-white">One executive report.<br />One-time payment.<br />Available immediately after payment.</p>
+                        <ul className="mt-4 space-y-2 text-sm font-bold leading-6 text-white" aria-label="Purchase confidence"><li>✓ One investigation per report</li><li>✓ One-time payment</li><li>✓ No subscription</li><li>✓ Available immediately after payment</li><li>✓ Evidence preserved for download</li></ul>
                         <div className="mt-5"><PaymentButtons planName="ShadowScore Executive Report" price="$9.90" buttonLabel="Unlock Executive Report · $9.90" intakeId={intake?.intakeId} /></div>
                         <button type="button" onClick={saveLead} className="mx-auto mt-4 block text-xs font-bold text-zinc-400 underline underline-offset-4 hover:text-white">Save for later</button>
                       </div>
