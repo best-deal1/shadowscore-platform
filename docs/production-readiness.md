@@ -18,13 +18,40 @@
 
 `npm run validate:release-environment` validates the deployment configuration. It requires an HTTPS Supabase URL, Supabase client and service credentials, the Investigation worker secret, the shared payment callback secret, and the credentials declared for every enabled payment provider. The current PayPal provider requires `PAYMENT_PROVIDER_PAYPAL_PDT_TOKEN`. Secret values remain in the deployment environment and are never committed.
 
+## Production environment variables
+
+Add the following values to the Vercel project under **Settings > Environment Variables**. Select the **Production** environment for every value. Preview and Development values are separate and do not configure Production. Redeploy the production commit after saving a new or changed value.
+
+| Variable | Required | Source | Handling |
+| --- | --- | --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | Yes | The production Supabase project's API URL. Copy the project URL from the Supabase project's API settings. | This value is included in the browser bundle. Use the production project URL and include `https://`. |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | The production Supabase project's client key. Supabase may label it as the anon key or publishable key in the API settings. | This value is included in the browser bundle. Use the client key, not the service role key. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Yes | The production Supabase project's server-side service role key from the API settings. | Secret. Add it only to Vercel. Never expose it in a `NEXT_PUBLIC_` variable or commit it. |
+| `INVESTIGATION_WORKER_SECRET` | Yes | Generate a random value with at least 32 characters, for example with `openssl rand -hex 32`. | Secret. Use the same value in Vercel and in the scheduler's bearer authorization header. This value does not come from Supabase. |
+| `PAYMENT_CALLBACK_SECRET` | Yes | Generate a separate random value with at least 32 characters, for example with `openssl rand -hex 32`. | Secret. Give this value only to the trusted service that calls the payment callback route. This value does not come from PayPal. |
+| `PAYMENT_PROVIDER_PAYPAL_PDT_TOKEN` | Yes while PayPal is enabled | The Payment Data Transfer identity token for the PayPal business account that receives production payments. Enable Payment Data Transfer in that account and copy its identity token. | Secret. This is an identity token, not a PayPal client secret, webhook ID, or transaction ID. |
+
+`NEXT_PUBLIC_ADMIN_EMAILS` is optional. It is a comma-separated admin allowlist and does not configure storage, processing, or payment verification. `INVESTIGATION_WORKER_ID` is also optional. It labels a worker deployment and defaults to `next-worker`.
+
+The PayPal receiver address is currently configured in `lib/config.ts` as `PAYPAL_BUSINESS_EMAIL`. Confirm that this address is verified on the same PayPal business account that issued the PDT token before accepting payments.
+
+The message `Persistent workspace storage is not configured.` means the deployed production function cannot read both `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Adding variables to a different Vercel environment or saving them without redeploying does not update the running production deployment.
+
 ## Deployment checklist
 
-1. Apply every migration in `supabase/migrations` to the production project.
-2. Configure all values checked by `npm run validate:release-environment`.
-3. Run `npm run validate:release-environment` in the release environment.
-4. Run `npm run build` for the exact commit being deployed.
-5. Complete the production acceptance validation below.
+1. Create or select the production Supabase project.
+2. Apply every migration in `supabase/migrations` to that project, in filename order.
+3. Copy the Supabase project URL, client key, and service role key into the matching Vercel Production variables above.
+4. Generate separate values for `INVESTIGATION_WORKER_SECRET` and `PAYMENT_CALLBACK_SECRET`. Store them in Vercel Production and in each trusted caller that needs the corresponding secret.
+5. Enable PayPal Payment Data Transfer. Add its identity token as `PAYMENT_PROVIDER_PAYPAL_PDT_TOKEN`, then verify that `PAYPAL_BUSINESS_EMAIL` belongs to that PayPal account.
+6. Confirm that all six required variables are assigned to Production. `NEXT_PUBLIC_ADMIN_EMAILS` alone is not a valid production configuration.
+7. Configure a scheduler to send `POST /api/internal/investigation-worker` with `Authorization: Bearer <INVESTIGATION_WORKER_SECRET>` at least once per minute.
+8. Redeploy the exact production commit so the deployment receives the saved values.
+9. Run `npm run validate:release-environment` with the production environment loaded. Do not print the secret values in build logs.
+10. Run `npm run build` for the exact commit being deployed.
+11. Complete the production acceptance validation below.
+
+No application code change is required to resolve missing production environment variables. Consider code changes only if the checklist passes on the active deployment and the application still reports a configuration error. In that case, capture the failing route, deployment identifier, and sanitized logs before changing code.
 
 ## End-to-end production validation
 
