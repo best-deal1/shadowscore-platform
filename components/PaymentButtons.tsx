@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { getCurrentSession } from "../lib/auth";
 import { prepareInvestigationCheckout } from "../lib/investigationCheckout";
-import { createCheckoutIntent, reportIdForPayment } from "../lib/workspace";
+import type { PaymentIntent } from "../lib/workspace";
 
 type PaymentButtonsProps = {
   planName: string;
@@ -16,10 +16,27 @@ type PaymentButtonsProps = {
   onPersistIntake?: (email: string) => Promise<string>;
 };
 
-export default function PaymentButtons({ planName, price, buttonLabel = "Unlock Full Report", intakeId, email = "", onEmailResolved, onPersistIntake }: PaymentButtonsProps) {
+export default function PaymentButtons({ buttonLabel = "Unlock Full Report", intakeId, email = "", onEmailResolved, onPersistIntake }: PaymentButtonsProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  async function createIntent(resolvedIntakeId: string, accessToken?: string) {
+    const response = await fetch("/api/checkout/intent", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) },
+      body: JSON.stringify({ intakeId: resolvedIntakeId }),
+    });
+    const text = await response.text();
+    let body: { intent?: PaymentIntent; reportId?: string; error?: string } = {};
+    if (text.trim()) {
+      try { body = JSON.parse(text); }
+      catch { throw new Error(`Checkout returned an invalid response (${response.status}).`); }
+    }
+    if (!response.ok) throw new Error(body.error || `Checkout could not be started (${response.status}).`);
+    if (!body.intent || !body.reportId) throw new Error("Checkout did not create a report.");
+    return body;
+  }
 
   async function beginUnlock() {
     if (loading) return;
@@ -37,11 +54,10 @@ export default function PaymentButtons({ planName, price, buttonLabel = "Unlock 
         email,
         authenticatedEmail: session.email,
         persistIntake: onPersistIntake || (async () => { throw new Error("Save the investigation before starting checkout."); }),
-        createIntent: (resolvedIntakeId) => createCheckoutIntent(session, { planName, price, method: "PayPal", intakeId: resolvedIntakeId }),
+        createIntent: (resolvedIntakeId) => createIntent(resolvedIntakeId, session.accessToken),
       });
       onEmailResolved?.(result.email);
-      const intent = result.intent;
-      router.push(`/reports/${reportIdForPayment(intent.id)}/unlock`);
+      router.push(`/reports/${result.intent.reportId}/unlock`);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Checkout could not be started.");
       setLoading(false);

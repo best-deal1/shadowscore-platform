@@ -1,0 +1,36 @@
+import { NextResponse } from "next/server";
+import { resolveWebsiteSession } from "@/lib/websiteIntelligence/server";
+import { createCheckoutIntent, getWorkspace, REPORT_PRODUCT, reportIdForPayment, type WorkspaceSession } from "@/lib/workspace";
+
+export async function POST(request: Request) {
+  try {
+    const authenticated = await resolveWebsiteSession(request);
+    if (!authenticated) return NextResponse.json({ error: "Authentication is required." }, { status: 401 });
+    const body = await request.json().catch(() => null) as { intakeId?: unknown } | null;
+    if (typeof body?.intakeId !== "string" || !body.intakeId.trim()) {
+      return NextResponse.json({ error: "A saved investigation is required." }, { status: 400 });
+    }
+    const session: WorkspaceSession = {
+      userId: authenticated.userId,
+      accessToken: authenticated.accessToken,
+      name: "",
+      email: "",
+      startedAt: new Date().toISOString(),
+    };
+    const intent = await createCheckoutIntent(session, {
+      planName: REPORT_PRODUCT.name,
+      price: REPORT_PRODUCT.price,
+      method: "PayPal",
+      intakeId: body.intakeId,
+    });
+    const reportId = reportIdForPayment(intent.id);
+    const workspace = await getWorkspace(session);
+    if (!workspace.reports.some((report) => report.reportId === reportId)) {
+      throw new Error("Checkout did not create the locked report.");
+    }
+    return NextResponse.json({ intent, reportId }, { status: 201 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Checkout could not be started.";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}

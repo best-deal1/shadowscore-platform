@@ -2,13 +2,17 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { canViewFullReport, nextReportRoute } from "../lib/reportAccess.ts";
-import { createCheckoutIntent, createIntake, REPORT_PRODUCT, reportIdForPayment } from "../lib/workspace.ts";
+import { createCheckoutIntent, createIntake, getWorkspace, REPORT_PRODUCT, reportIdForPayment } from "../lib/workspace.ts";
 
 const session = { userId: "payment-flow-user", email: "buyer@example.com", name: "Buyer", startedAt: "2026-07-28T00:00:00.000Z" };
 const intakeRecord = { scanMode: "website", target: "example.com", platform: "Website", email: session.email, fileNames: [], visibleSignalCategories: ["Identity", "Infrastructure"] };
 const source = (path) => fs.readFileSync(new URL(path, import.meta.url), "utf8");
 
-test("preview to unlock uses the canonical report route", () => assert.match(source("../components/PaymentButtons.tsx"), /\/reports\/\$\{reportIdForPayment\(intent\.id\)\}\/unlock/));
+test("preview redirects only with the report id returned by checkout", () => {
+  const component = source("../components/PaymentButtons.tsx");
+  assert.match(component, /if \(!body\.intent \|\| !body\.reportId\) throw new Error/);
+  assert.match(component, /\/reports\/\$\{result\.intent\.reportId\}\/unlock/);
+});
 test("unlock summary states the purchase type, total, contents, and payment provider", () => {
   const page = source("../app/reports/[reportId]/ReportFlow.tsx");
   for (const copy of ["One Business Investigation", "Total", "Executive Report includes", "No subscription", "Payment processed by the selected provider"]) assert.ok(page.includes(copy));
@@ -19,7 +23,20 @@ test("unlock summary states the purchase type, total, contents, and payment prov
 test("checkout initiation creates one report-scoped intent", async () => {
   const intake = await createIntake(session, intakeRecord);
   const intent = await createCheckoutIntent(session, { planName: REPORT_PRODUCT.name, price: REPORT_PRODUCT.price, method: "PayPal", intakeId: intake.intakeId });
-  assert.equal(reportIdForPayment(intent.id), `locked-${intent.id}`);
+  const workspace = await getWorkspace(session);
+  assert.ok(workspace.intakes.some((item) => item.intakeId === intake.intakeId), "saved intake resolves");
+  assert.ok(workspace.paymentIntents.some((item) => item.id === intent.id), "payment intent resolves");
+  assert.ok(workspace.acceptances.some((item) => item.reportId === intent.id), "legal acceptance resolves");
+  assert.ok(workspace.reports.some((item) => item.reportId === reportIdForPayment(intent.id)), "locked report route resolves");
+});
+test("checkout endpoint always returns JSON and verifies the report before redirect", () => {
+  const route = source("../app/api/checkout/intent/route.ts");
+  assert.match(route, /NextResponse\.json\(\{ intent, reportId \}, \{ status: 201 \}\)/);
+  assert.match(route, /workspace\.reports\.some/);
+  assert.match(route, /NextResponse\.json\(\{ error: message \}, \{ status: 500 \}\)/);
+  const component = source("../components/PaymentButtons.tsx");
+  assert.match(component, /const text = await response\.text\(\)/);
+  assert.doesNotMatch(component, /response\.json\(\)/);
 });
 test("duplicate checkout initiation reuses the active intent", async () => {
   const intake = await createIntake(session, { ...intakeRecord, target: "duplicate.example" });

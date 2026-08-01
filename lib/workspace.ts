@@ -250,7 +250,53 @@ export async function createIntake(session: WorkspaceSession, record: Omit<Shado
 export async function createCheckoutIntent(session: WorkspaceSession, record: { planName: string; price: string; method: string; intakeId?: string }) {
   if (isSupabaseConfigured() && session.accessToken && record.intakeId) {
     const activeRows = await supabaseFetch<Record<string, any>[]>(`/rest/v1/payment_intents?select=*&metadata->>intakeId=eq.${encodeURIComponent(record.intakeId)}&status=in.(payment_pending,processing,paid,requires_payment,succeeded)&limit=1`, {}, session.accessToken);
-    if (activeRows[0]) return mapPaymentIntentRow(activeRows[0]);
+    const now = new Date().toISOString();
+    let createdIntent = activeRows[0];
+    if (!createdIntent) {
+      [createdIntent] = await supabaseFetch<Record<string, any>[]>("/rest/v1/payment_intents?select=*", {
+        method: "POST",
+        headers: { Prefer: "return=representation" },
+        body: JSON.stringify({ user_id: session.userId, plan_name: record.planName, amount_cents: centsFromPrice(record.price), currency: "USD", method: record.method, status: "requires_payment", metadata: { price: record.price, intakeId: record.intakeId } }),
+      }, session.accessToken);
+    }
+    if (!createdIntent?.id) throw new Error("Checkout did not create a payment intent.");
+
+    const [intakeRows, acceptanceRows, reportRows] = await Promise.all([
+      supabaseFetch<Record<string, any>[]>(`/rest/v1/intakes?intake_id=eq.${encodeURIComponent(record.intakeId)}&select=*`, {}, session.accessToken),
+      supabaseFetch<Record<string, any>[]>(`/rest/v1/legal_acceptances?payment_intent_id=eq.${encodeURIComponent(createdIntent.id)}&select=id&limit=1`, {}, session.accessToken),
+      supabaseFetch<Record<string, any>[]>(`/rest/v1/reports?report_id=eq.${encodeURIComponent(reportIdForPayment(createdIntent.id))}&select=report_id&limit=1`, {}, session.accessToken),
+    ]);
+    const intake = intakeRows[0];
+    if (!intake) throw new Error("The saved investigation could not be found for checkout.");
+
+    if (!acceptanceRows[0]) {
+      await supabaseFetch("/rest/v1/legal_acceptances", {
+        method: "POST",
+        headers: { Prefer: "return=minimal" },
+        body: JSON.stringify({ user_id: session.userId, payment_intent_id: createdIntent.id, legal_version: LEGAL_ACCEPTANCE_VERSION, terms_version: LEGAL_ACCEPTANCE_VERSION, privacy_version: LEGAL_ACCEPTANCE_VERSION, source: "checkout", metadata: record }),
+      }, session.accessToken);
+    }
+    if (!reportRows[0]) {
+      await supabaseFetch("/rest/v1/reports", {
+        method: "POST",
+        headers: { Prefer: "return=minimal" },
+        body: JSON.stringify({
+          user_id: session.userId, report_id: reportIdForPayment(createdIntent.id), intake_id: intake.intake_id,
+          payment_intent_id: createdIntent.id, title: "Locked Trust Intelligence Report", entity: intake.target,
+          platform: intake.platform, risk_score: 0, confidence_score: 0, stage: "Healthy",
+          source: "checkout_locked_placeholder", top_factors: [], risk_engine_version: "locked", provider_versions: {},
+          evidence_snapshot: {}, report_version: "locked", score_explanation: "Report locked until payment is completed.",
+          scan_mode: intake.scan_mode, target: intake.target, payment_status: "payment_pending", report_status: "payment_pending",
+          provider_results: [], metadata: { paymentStatus: "payment_pending", reportStatus: "payment_pending" }, created_at: now,
+        }),
+      }, session.accessToken);
+    }
+    await supabaseFetch(`/rest/v1/intakes?intake_id=eq.${encodeURIComponent(record.intakeId)}`, {
+      method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ report_status: "payment_pending" }),
+    }, session.accessToken);
+    const verifiedReports = await supabaseFetch<Record<string, any>[]>(`/rest/v1/reports?report_id=eq.${encodeURIComponent(reportIdForPayment(createdIntent.id))}&select=report_id&limit=1`, {}, session.accessToken);
+    if (!verifiedReports[0]) throw new Error("Checkout did not create the locked report.");
+    return mapPaymentIntentRow(createdIntent);
   }
   requirePersistentSessionInProduction(session.accessToken);
   const existingWorkspace = requireWorkspace(session.userId);
