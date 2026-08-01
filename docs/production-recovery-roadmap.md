@@ -8,6 +8,8 @@
 
 **Implementation boundary:** This document defines work only. It does not authorize implementation.
 
+**Active delivery slice:** [Production Recovery Sprint 1](./sprint-1-production-recovery.md)
+
 ## Purpose
 
 This roadmap converts the complete production audit and prior product decisions into one recovery program. The audit is the factual baseline. Product requirements such as administrator access, complimentary report access, payment expansion, canonical navigation, page-level polish, and Investigation-wide data consistency are part of the recovery scope rather than optional additions.
