@@ -69,10 +69,11 @@ export default function ExecutiveIntelligenceReport({ report }: { report: Shadow
   return <>
     <div className="mb-5 flex flex-wrap items-center justify-between gap-4 print:hidden">
       <p className="max-w-2xl text-sm leading-6 text-zinc-400">Investigation {report.intakeId || report.reportId}. Version 1.0. Private report. Access requires the recipient to sign in to the purchasing account.</p>
-      <div className="flex flex-wrap gap-3"><button type="button" onClick={() => window.print()} className="rounded-lg border border-white/15 bg-white px-4 py-2.5 text-sm font-bold text-slate-950">Print report</button><Link href="/intake" className="rounded-lg bg-cyan-400 px-4 py-2.5 text-sm font-bold text-slate-950">Start Investigation</Link></div>
+      <div className="flex flex-wrap gap-3"><button type="button" onClick={() => window.location.reload()} className="rounded-lg border border-white/15 px-4 py-2.5 text-sm font-bold text-white">Refresh report</button><button type="button" onClick={() => window.print()} className="rounded-lg border border-white/15 bg-white px-4 py-2.5 text-sm font-bold text-slate-950">Download or print</button><Link href="/intake" className="rounded-lg bg-cyan-400 px-4 py-2.5 text-sm font-bold text-slate-950">Start Investigation</Link></div>
     </div>
 
     <article className="executive-report overflow-hidden rounded-[28px] border border-slate-300 bg-[#f4f3ef] text-slate-700 shadow-[0_28px_90px_rgba(0,0,0,0.32)]">
+      {report.accessType === "administrator" && <div className="border-b border-violet-300 bg-violet-100 px-6 py-4 font-bold text-violet-950 sm:px-10 lg:px-14">{report.administratorNotice || "Administrator test report - no customer payment was processed."}</div>}
       <header className="bg-[#10263d] px-6 py-9 text-white sm:px-10 lg:px-14 lg:py-12">
         <div className="flex items-center justify-between gap-6 border-b border-white/20 pb-6">
           <div><p className="text-xs font-bold uppercase tracking-[0.3em] text-cyan-300">ShadowScore Intelligence</p><p className="mt-2 text-sm text-slate-300">Independent business risk review</p></div>
