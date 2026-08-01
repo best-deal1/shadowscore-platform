@@ -59,6 +59,10 @@ export function groupExecutiveEvidence(report: ShadowScoreReport) {
 }
 
 export function executiveRecommendation(report: ShadowScoreReport) {
+  const targetResolution = report.reportSummary?.targetResolution;
+  if (targetResolution && (targetResolution.redirectDomainMismatch || targetResolution.rejectedEvidenceCount > 0)) {
+    return { label: "Manual Review Required", explanation: "Evidence was isolated from the submitted target. Review the target relationship and collect matching evidence before making a decision." };
+  }
   const narrative = report.reportSummary?.businessNarrative;
   const intelligence = report.reportSummary?.investigationIntelligence;
   const decision = report.reportSummary?.decision?.canonicalDecision || narrative?.decisionMode;

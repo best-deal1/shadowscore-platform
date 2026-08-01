@@ -50,6 +50,7 @@
     "validate:website-intelligence-live": "node --experimental-strip-types scripts/validate-website-intelligence-live.mjs",
     "test:website-intelligence-validation": "node --test tests/website-intelligence-validation.test.mjs",
     "test:canonical-website-report": "node --test tests/canonical-website-report.test.mjs",
+    "test:canonical-target-integrity": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types --test tests/canonical-target-integrity.test.mjs",
     "test:website-intelligence-dashboard": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types --test tests/website-intelligence-dashboard.test.mjs",
     "validate:intake-merge-markers": "node scripts/validate-intake-merge-markers.mjs",
     "validate:i18n": "node --experimental-strip-types scripts/validate-i18n.mjs",

@@ -27,6 +27,7 @@ import type { PaymentIntent, ShadowScoreIntake, ShadowScoreReport } from "./work
 import { resolveBusinessIdentity } from "./businessIdentityResolver";
 import { applyCanonicalIdentityToBusinessProfile, applyCanonicalIdentityToIdentityProfile } from "./canonicalReportIdentity";
 import { buildInvestigationIntelligence } from "./investigationIntelligence";
+import { isolateProviderResults, canonicalWebsiteTarget } from "./targetIntegrity";
 
 export const REPORT_ENGINE_VERSION = "report-pipeline-v22";
 
@@ -52,26 +53,36 @@ export async function buildReadyReport(input: {
     throw new Error("Report generation requires paymentStatus == paid.");
   }
 
+  const canonicalTarget = intake.scanMode === "website" ? canonicalWebsiteTarget(intake.target) : intake.target.trim();
+  const investigationEmail = intake.scanMode === "website" ? undefined : intake.email;
   const providerContext: ProviderExecutionContext = {
     intakeId: intake.intakeId,
     scanMode: intake.scanMode,
-    target: intake.target,
+    target: canonicalTarget,
+    requestedTarget: intake.target,
+    investigationId: intake.intakeId,
+    canonicalTarget,
     platform: intake.platform,
     caseType: intake.caseType,
-    email: intake.email,
+    email: investigationEmail,
     fileNames: intake.fileNames,
     visibleSignalCategories: intake.visibleSignalCategories,
     paymentIntentId: paymentIntent.id,
   };
   const startedAt = Date.now();
   const executionFlow: string[] = [];
-  const classification = classifyTarget(intake.target);
+  const classification = classifyTarget(canonicalTarget);
   executionFlow.push(`✓ Target classified as ${classification.targetType}`);
   const executionPlan = planFromClassification(classification);
   executionFlow.push("✓ Execution plan created");
-  const { providerResults, executionRecords } = await providerManager.runExecutionPlan(providerContext, executionPlan.executionPlan, executionPlan.skippedEngines);
+  const execution = await providerManager.runExecutionPlan(providerContext, executionPlan.executionPlan, executionPlan.skippedEngines);
+  const isolated = intake.scanMode === "website" ? isolateProviderResults({ investigationId: intake.intakeId, submittedTarget: intake.target, providerResults: execution.providerResults }) : undefined;
+  const providerResults = isolated?.providerResults || execution.providerResults;
+  const targetResolution = isolated?.resolution;
+  const executionRecords = execution.executionRecords;
+  console.info("investigation_target_resolution", { investigationId: intake.intakeId, submittedTarget: intake.target, canonicalTarget, providerTargets: providerResults.map((item) => item.metadata.providerTarget), evidenceTargets: providerResults.flatMap((item) => item.evidence.map((evidence) => evidence.canonicalTarget || canonicalTarget)), reportTarget: canonicalTarget, redirectDomainMismatch: targetResolution?.redirectDomainMismatch, rejectedEvidenceCount: targetResolution?.rejectedEvidenceCount });
   const alerting = input.websiteTenantId && input.websiteAlertRepository ? { tenantId: input.websiteTenantId, repository: input.websiteAlertRepository, watchlistRepository: input.websiteWatchlistRepository } : undefined;
-  const websiteMonitoring = intake.scanMode === "website" ? await investigateAndRecordWebsite({ target: intake.target }, input.websiteHistoryRepository, alerting) : undefined;
+  const websiteMonitoring = intake.scanMode === "website" ? await investigateAndRecordWebsite({ target: canonicalTarget }, input.websiteHistoryRepository, alerting) : undefined;
   const websiteIntelligence = websiteMonitoring?.report;
   const canonicalWebsiteReport = websiteIntelligence ? toCanonicalWebsiteReport(websiteIntelligence) : undefined;
   const websiteEvidenceItems = websiteIntelligence ? normalizeWebsiteEvidence(websiteIntelligence) : [];
@@ -95,8 +106,8 @@ export async function buildReadyReport(input: {
   const engineInput = {
     marketplace: intake.platform,
     caseType: intake.caseType,
-    store: intake.target,
-    email: intake.email,
+    store: canonicalTarget,
+    email: investigationEmail,
     fileNames: intake.fileNames,
     evidencePresent: intake.visibleSignalCategories.length,
     evidenceRequired: intake.scanMode === "website" ? 0 : 4,
@@ -105,9 +116,9 @@ export async function buildReadyReport(input: {
   const riskEnginePreview = analyzeRisk(engineInput);
   const now = new Date().toISOString();
   const insightOutput = buildTrustInsights({ providerResults, riskOutput: riskEnginePreview, audience: "paid" });
-  const baseIdentityProfile = buildIdentityProfile({ providerResults, insights: insightOutput.insights, target: intake.target, email: intake.email, generatedAt: now });
-  const businessProfile = buildBusinessProfile({ providerResults, target: intake.target, generatedAt: now });
-  const businessIdentityResolution = resolveBusinessIdentity(intake.target, { providerResults, businessProfile, observedAt: now, generatedAt: now });
+  const baseIdentityProfile = buildIdentityProfile({ providerResults, insights: insightOutput.insights, target: canonicalTarget, email: investigationEmail, generatedAt: now });
+  const businessProfile = buildBusinessProfile({ providerResults, target: canonicalTarget, generatedAt: now });
+  const businessIdentityResolution = resolveBusinessIdentity(canonicalTarget, { providerResults, businessProfile, observedAt: now, generatedAt: now });
   const canonicalIdentity = businessIdentityResolution.canonicalIdentity;
   const providerResultsWithCanonicalIdentity = providerResults.map((result) => result.providerId === "business-profile" && canonicalIdentity?.canonicalDisplayName ? {
     ...result,
@@ -115,15 +126,15 @@ export async function buildReadyReport(input: {
   } : result);
   const canonicalBusinessProfile = applyCanonicalIdentityToBusinessProfile(businessProfile, canonicalIdentity);
   const identityProfile = applyCanonicalIdentityToIdentityProfile(baseIdentityProfile, canonicalIdentity);
-  const businessIdentityIntelligence = buildBusinessIdentityIntelligence({ providerResults: providerResultsWithCanonicalIdentity, target: intake.target, claimedBusinessName: canonicalBusinessProfile.businessName, canonicalIdentity, generatedAt: now });
+  const businessIdentityIntelligence = buildBusinessIdentityIntelligence({ providerResults: providerResultsWithCanonicalIdentity, target: canonicalTarget, claimedBusinessName: canonicalBusinessProfile.businessName, canonicalIdentity, generatedAt: now });
   const businessIntelligence = buildBusinessIntelligence(providerResultsWithCanonicalIdentity, now);
   const knowledgeGraph = new BusinessKnowledgeGraph();
   knowledgeGraph.applyScan(buildBusinessIdentityKnowledgeScan({
     scanId: `report-${intake.intakeId}`,
-    target: intake.target,
+    target: canonicalTarget,
     businessProfile: canonicalBusinessProfile,
     identityIntelligence: businessIdentityIntelligence,
-    email: intake.email,
+    email: investigationEmail,
   }));
   const trustTimeline = buildTrustTimeline({
     providerResults,
@@ -162,9 +173,9 @@ export async function buildReadyReport(input: {
   const businessMemory = rememberBusinessScan({
     scanId: `report-${intake.intakeId}`,
     identity: {
-      name: canonicalBusinessProfile.businessName === "Insufficient Public Evidence" ? intake.target : canonicalBusinessProfile.businessName,
-      domain: canonicalBusinessProfile.primaryDomain || intake.target,
-      emails: intake.email ? [intake.email] : [],
+      name: canonicalBusinessProfile.businessName === "Insufficient Public Evidence" ? canonicalTarget : canonicalBusinessProfile.businessName,
+      domain: canonicalBusinessProfile.primaryDomain || canonicalTarget,
+      emails: investigationEmail ? [investigationEmail] : [],
     },
     entities: knowledgeGraph.snapshot().entities.map((entity) => ({ type: entity.type, value: entity.label, label: entity.label })),
     relationships: knowledgeGraph.snapshot().relationships.map((relationship) => ({ type: relationship.type, from: relationship.from, to: relationship.to, context: relationship.context })),
@@ -190,10 +201,10 @@ export async function buildReadyReport(input: {
     paymentIntentId: paymentIntent.id,
     userId: intake.userId,
     title: `${intake.scanMode === "website" ? "Website" : "Trust"} Intelligence Report`,
-    entity: intake.target,
+    entity: canonicalTarget,
     platform: intake.platform,
     scanMode: intake.scanMode,
-    target: intake.target,
+    target: canonicalTarget,
     createdAt: input.createdAt || paymentIntent.createdAt,
     readyAt: now,
     paymentStatus: paymentIntent.paymentStatus,
@@ -246,6 +257,7 @@ export async function buildReadyReport(input: {
       sourceProvenance: providerResultsWithCanonicalIdentity
         .filter((provider) => provider.status === "completed")
         .map((provider) => ({ label: provider.providerId.replace(/[-_]/g, " "), completedAt: provider.completedAt })),
+      targetResolution,
     },
     riskScore: undefined,
     confidenceScore: undefined,
