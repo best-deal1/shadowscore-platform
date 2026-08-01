@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import ShadowScoreLayout from "../../components/ShadowScoreLayout";
 import type { AdminConsoleData } from "../../lib/adminTypes";
 import { getCurrentUser } from "../../lib/auth";
 import type { PaymentStatus, ReportStatus } from "../../lib/workspace";
@@ -75,7 +74,7 @@ export default function AdminPage() {
 
   if (error) {
     return (
-      <ShadowScoreLayout>
+      <>
         <main className="mx-auto max-w-3xl px-6 py-20">
           <Panel>
             <div className="text-xs font-black uppercase tracking-[0.26em] text-red-300">Admin Console Protected</div>
@@ -84,16 +83,16 @@ export default function AdminPage() {
             <Link href="/workspace" className="mt-6 inline-flex rounded-2xl border border-white/10 px-5 py-3 text-sm font-black text-zinc-200">Return to dashboard</Link>
           </Panel>
         </main>
-      </ShadowScoreLayout>
+      </>
     );
   }
 
   if (!data) {
-    return <ShadowScoreLayout><main className="mx-auto max-w-4xl px-6 py-20 text-zinc-400">Loading read-only admin console...</main></ShadowScoreLayout>;
+    return <><main className="mx-auto max-w-4xl px-6 py-20 text-zinc-400">Loading read-only admin console...</main></>;
   }
 
   return (
-    <ShadowScoreLayout>
+    <>
       <main className="mx-auto max-w-7xl px-6 py-14">
         <div className="flex flex-wrap items-end justify-between gap-6">
           <div>
@@ -126,6 +125,6 @@ export default function AdminPage() {
 
         {selectedJson !== null && <div className="fixed inset-0 z-50 overflow-auto bg-black/80 p-6"><div className="mx-auto max-w-5xl rounded-[28px] border border-white/10 bg-zinc-950 p-6"><div className="flex items-center justify-between gap-4"><h2 className="text-2xl font-black text-white">Read-only JSON</h2><button onClick={() => setSelectedJson(null)} className="rounded-2xl bg-red-600 px-4 py-2 text-sm font-black text-white">Close</button></div><pre className="mt-5 max-h-[70vh] overflow-auto rounded-2xl border border-white/10 bg-black p-4 text-xs leading-5 text-zinc-300">{JSON.stringify(selectedJson, null, 2)}</pre></div></div>}
       </main>
-    </ShadowScoreLayout>
+    </>
   );
 }
