@@ -25,6 +25,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ report, reportId: report.reportId }, { status: 201 });
   } catch (error) {
     if (error instanceof AdminReportAccessError) return NextResponse.json({ error: error.message }, { status: error.status });
+    console.error("Administrator report generation failed.", error);
     return NextResponse.json({ error: "Administrator report generation failed." }, { status: 500 });
   }
 }

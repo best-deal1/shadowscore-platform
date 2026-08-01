@@ -25,6 +25,14 @@ test("administrator generation stores a non-paid report in Archive-compatible st
   assert.match(access, /report\.paymentStatus === "admin_comped"/);
 });
 
+test("administrator report generation does not mutate website monitoring state", async () => {
+  const service = await read("lib/adminReportAccess.ts");
+  assert.match(service, /const report = await buildReadyReport\(\{[\s\S]*?reportId,[\s\S]*?createdAt: now,[\s\S]*?\}\);/);
+  assert.doesNotMatch(service, /SupabaseWebsite(?:ScanHistory|Alert|Watchlist)Repository/);
+  assert.doesNotMatch(service, /website(?:History|Alert|Watchlist)Repository:/);
+  assert.doesNotMatch(service, /websiteTenantId:/);
+});
+
 test("administrator reports carry a complete audit record and customer notice", async () => {
   const [service, migration, report] = await Promise.all([read("lib/adminReportAccess.ts"), read("supabase/migrations/20260801000000_secure_admin_report_access.sql"), read("components/report/ExecutiveIntelligenceReport.tsx")]);
   assert.match(service, /administrator_user_id: session\.userId/);
