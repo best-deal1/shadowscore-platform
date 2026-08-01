@@ -33,9 +33,10 @@ export default function AccountPage() {
     setUser(currentUser);
   }, [router]);
 
-  function signOut() {
-    logoutUser();
-    router.push("/login");
+  async function signOut() {
+    await logoutUser();
+    router.replace("/login");
+    router.refresh();
   }
 
   if (!user) {

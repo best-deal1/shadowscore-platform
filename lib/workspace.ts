@@ -27,6 +27,7 @@ export type WorkspaceSession = {
   name: string;
   accessToken?: string;
   refreshToken?: string;
+  expiresAt?: number;
   startedAt: string;
 };
 
