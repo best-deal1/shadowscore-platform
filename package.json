@@ -42,6 +42,7 @@
     "test:intake-checkout": "node --experimental-strip-types --test tests/investigation-checkout-flow.test.mjs",
     "test:admin-access": "node --test tests/admin-report-access.test.mjs",
     "test:investigation-access-contract": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types --test tests/investigation-access-contract.test.mjs",
+    "test:secure-logout": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types --test tests/secure-logout.test.mjs",
     "validate:canonical-decision-identity": "node --experimental-strip-types scripts/validate-canonical-decision-identity.mjs",
     "validate:report-contract": "node scripts/validate-report-contract.mjs",
     "validate:public-browser-boundary": "node scripts/validate-public-browser-boundary.mjs",

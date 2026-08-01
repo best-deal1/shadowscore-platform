@@ -1,4 +1,4 @@
-import { supabaseFetch, isSupabaseConfigured, requireSupabaseInProduction } from "./supabase";
+import { supabaseFetch, isSupabaseConfigured } from "./supabase";
 import { SITE_URL } from "./config";
 import type { WorkspaceSession } from "./workspace";
 
@@ -14,17 +14,10 @@ export type ShadowScoreSession = WorkspaceSession;
 
 const SESSION_STORAGE_KEY = "shadowscore.session.v19";
 const EMAIL_AUTH_REDIRECT_URL = SITE_URL;
-const devUsers = new Map<string, ShadowScoreUser & { password: string }>();
 
 function emailAuthPath(path: string) {
   const separator = path.includes("?") ? "&" : "?";
   return `${path}${separator}redirect_to=${encodeURIComponent(EMAIL_AUTH_REDIRECT_URL)}`;
-}
-
-function makeId(prefix: string) {
-  const now = Date.now().toString(36).toUpperCase();
-  const rand = Math.random().toString(36).slice(2, 8).toUpperCase();
-  return `${prefix}-${now}-${rand}`;
 }
 
 async function persistSession(session: ShadowScoreSession) {
@@ -39,6 +32,7 @@ async function persistSession(session: ShadowScoreSession) {
 type SupabaseAuthResponse = {
   access_token?: string;
   refresh_token?: string;
+  expires_in?: number;
   user: { id: string; email?: string; user_metadata?: { name?: string }; created_at?: string; last_sign_in_at?: string };
 };
 
@@ -53,6 +47,7 @@ function toSession(response: SupabaseAuthResponse, fallbackName: string): Shadow
     name: user.user_metadata?.name || fallbackName,
     accessToken: response.access_token,
     refreshToken: response.refresh_token,
+    expiresAt: Date.now() + (response.expires_in ?? 3600) * 1000,
     startedAt: new Date().toISOString(),
   };
 }
@@ -76,13 +71,7 @@ export async function signupUser(name: string, email: string, password: string) 
     return getCurrentUserFromSession(session);
   }
 
-  requireSupabaseInProduction();
-  if (devUsers.has(cleanEmail)) throw new Error("An account with this email already exists.");
-  const now = new Date().toISOString();
-  const user = { id: makeId("SSU"), name: cleanName, email: cleanEmail, password: cleanPassword, createdAt: now, lastLoginAt: now };
-  devUsers.set(cleanEmail, user);
-  await persistSession({ userId: user.id, email: user.email, name: user.name, startedAt: now });
-  return user;
+  throw new Error("Authentication is not configured.");
 }
 
 export async function loginUser(email: string, password: string) {
@@ -99,13 +88,7 @@ export async function loginUser(email: string, password: string) {
     return getCurrentUserFromSession(session);
   }
 
-  requireSupabaseInProduction();
-  const user = devUsers.get(cleanEmail);
-  if (!user || user.password !== cleanPassword) throw new Error("Invalid email or password.");
-  const updated = { ...user, lastLoginAt: new Date().toISOString() };
-  devUsers.set(cleanEmail, updated);
-  persistSession({ userId: updated.id, email: updated.email, name: updated.name, startedAt: new Date().toISOString() });
-  return updated;
+  throw new Error("Authentication is not configured.");
 }
 
 function getCurrentUserFromSession(session: ShadowScoreSession): ShadowScoreUser {
@@ -123,7 +106,7 @@ export function getCurrentSession(): ShadowScoreSession | null {
   try {
     const parsed = JSON.parse(window.sessionStorage.getItem(SESSION_STORAGE_KEY) || "null");
     if (!parsed?.userId || !parsed?.email) return null;
-    if (isSupabaseConfigured() && !parsed.accessToken) {
+    if (!parsed.accessToken || (typeof parsed.expiresAt === "number" && parsed.expiresAt <= Date.now())) {
       window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
       return null;
     }
@@ -138,7 +121,13 @@ export function getCurrentUser(): ShadowScoreUser | null {
   return session ? getCurrentUserFromSession(session) : null;
 }
 
-export function logoutUser() {
+export async function logoutUser() {
   if (typeof window === "undefined") return;
-  window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
+  try {
+    await fetch("/api/auth/session", { method: "DELETE", cache: "no-store" });
+  } catch {
+    // Local credentials must still be removed when the network is unavailable.
+  } finally {
+    window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
+  }
 }
