@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { investigationDetailService } from "@/lib/investigation";
+import { InvestigationDetailService } from "@/lib/investigation";
+import { getInvestigationRepository } from "@/lib/investigation/server";
 import ShadowScoreLayout from "@/app/components/ShadowScoreLayout";
 import { InvestigationDetailsWorkspace } from "../_components/InvestigationDetailsWorkspace";
 
@@ -7,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export default async function InvestigationDetailsPage({ params }: PageProps<"/investigations/[investigationId]">) {
   const { investigationId } = await params;
-  const detail = await investigationDetailService.get(investigationId);
+  const detail = await new InvestigationDetailService(await getInvestigationRepository()).get(investigationId);
 
   if (!detail) {
     return <InvestigationNotFound />;
