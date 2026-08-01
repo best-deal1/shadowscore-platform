@@ -3,9 +3,6 @@ import "server-only";
 import { buildReadyReport } from "./reportPipeline";
 import { isSupabaseConfigured, supabaseFetch } from "./supabase";
 import { presentReportForEndUser, type ShadowScoreIntake, type ShadowScoreReport, type WorkspaceSession } from "./workspace";
-import { SupabaseWebsiteAlertRepository } from "./websiteIntelligence/supabaseAlerts";
-import { SupabaseWebsiteScanHistoryRepository } from "./websiteIntelligence/supabaseHistory";
-import { SupabaseWebsiteWatchlistRepository } from "./websiteIntelligence/supabaseWatchlist";
 
 export const ADMIN_REPORT_NOTICE = "Administrator test report - no customer payment was processed.";
 export type AdministratorRole = "user" | "admin";
@@ -64,10 +61,6 @@ export async function generateAdministratorReport(session: WorkspaceSession, int
     paymentIntent: { id: `admin-access-${intake.intakeId}`, intakeId: intake.intakeId, planName: "Administrator access", price: "$0.00", method: "administrator", paymentStatus: "paid", createdAt: now },
     reportId,
     createdAt: now,
-    websiteHistoryRepository: new SupabaseWebsiteScanHistoryRepository(session.userId, session.accessToken),
-    websiteAlertRepository: new SupabaseWebsiteAlertRepository(session.userId, session.accessToken),
-    websiteWatchlistRepository: new SupabaseWebsiteWatchlistRepository(session.userId, session.accessToken),
-    websiteTenantId: session.userId,
   });
   const metadata = { paymentStatus: "admin_comped", reportStatus: "ready", accessType: "administrator", administratorNotice: ADMIN_REPORT_NOTICE, reportSummary: report.reportSummary };
   await supabaseFetch("/rest/v1/reports", { method: "POST", body: JSON.stringify({ user_id: session.userId, report_id: reportId, intake_id: intake.intakeId, title: report.title, entity: report.entity, platform: report.platform, scan_mode: report.scanMode, target: report.target, risk_score: report.riskScore || 0, confidence_score: report.confidenceScore || 0, stage: report.stage, source: report.source, top_factors: report.topFactors, risk_engine_version: report.engineVersion || "current", provider_versions: report.providerVersions || {}, provider_results: report.providerResults || [], evidence_snapshot: report.evidenceSummary || {}, report_version: "admin-v1", score_explanation: report.reportSummary?.message || "Report generated.", payment_status: "admin_comped", access_type: "administrator", report_status: "ready", metadata, created_at: report.createdAt, ready_at: report.readyAt }) }, session.accessToken);
