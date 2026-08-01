@@ -6,3 +6,5 @@ export * from "./summary";
 export * from "./timeline";
 export * from "./detail";
 export * from "./detailService";
+export * from "./workflowRepository";
+export * from "./workflowService";
