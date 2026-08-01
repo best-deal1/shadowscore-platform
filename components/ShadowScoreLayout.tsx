@@ -33,7 +33,6 @@ const routeLabels: Record<string, string> = {
 
 const mobilePublicNav = [
   { href: "/about", label: "About" },
-  { href: "/security", label: "Security" },
   { href: "/privacy", label: "Privacy" },
   { href: "/terms", label: "Terms" },
   { href: "/contact", label: "Contact" },

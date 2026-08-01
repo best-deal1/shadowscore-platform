@@ -60,7 +60,7 @@ export function InvestigationWorkspace({ cases, locale }: { cases: readonly Case
     <div className="investigation-workspace">
       <header className="iw-hero">
         <div><p className="workspace-eyebrow">Intelligence workspace</p><h1>Investigations</h1><p>Review active work, reports, monitored businesses, and alerts from one place.</p></div>
-        <Link className="iw-primary" href="/investigations">New investigation <span aria-hidden="true">+</span></Link>
+        <Link className="iw-primary" href="/intake">New investigation <span aria-hidden="true">+</span></Link>
       </header>
 
       <section className="iw-metrics" aria-label="Workspace summary">
