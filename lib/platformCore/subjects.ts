@@ -6,7 +6,7 @@ export function normalizeDomain(input:string) {
   let value=input.trim();
   if (!value) throw new InvalidSubjectIdentifierError("A domain or URL is required.");
   try { value=new URL(value.includes("://")?value:`https://${value}`).hostname; } catch { throw new InvalidSubjectIdentifierError("The domain or URL is invalid."); }
-  value=value.toLowerCase().replace(/\.$/, "");
+  value=value.toLowerCase().replace(/\.$/, "").replace(/^www\./, "");
   if (!value || value.includes(" ") || !value.includes(".")) throw new InvalidSubjectIdentifierError("The domain or URL is invalid.");
   return value;
 }

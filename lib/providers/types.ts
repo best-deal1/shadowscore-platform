@@ -39,6 +39,10 @@ export type ProviderEvidence = {
   source: string;
   regulatoryClassification?: RegulatoryEvidenceClassification;
   authoritative?: boolean;
+  investigationId?: string;
+  canonicalTarget?: string;
+  providerName?: string;
+  collectedAt?: string;
 };
 
 export type ProviderExecutionContext = {
@@ -54,6 +58,8 @@ export type ProviderExecutionContext = {
   fileNames: string[];
   visibleSignalCategories: string[];
   paymentIntentId?: string;
+  investigationId?: string;
+  canonicalTarget?: string;
   executionProfile?: "free_preview" | "paid_report";
   providerTimeoutMs?: Partial<Record<ProviderCategory | "http", number>>;
   resolvedEntity?: ResolvedEntity;
