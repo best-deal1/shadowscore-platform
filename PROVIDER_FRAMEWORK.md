@@ -64,6 +64,9 @@ The default provider set is:
 - `SecurityHeadersProvider`
 - `SPFProvider`
 - `DMARCProvider`
+- `DKIMProvider`
+- `RobotsTxtProvider`
+- `SecurityTxtProvider`
 - `ReputationProvider`
 - `BusinessProfileProvider`
 - `MarketplaceProvider`

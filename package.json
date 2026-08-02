@@ -67,6 +67,7 @@
     "test:evidence-platform": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types --test tests/evidence-platform-wave-2.test.mjs",
     "test:collector-runtime": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types --test tests/collector-runtime-wave-3.test.mjs",
     "test:provider-orchestration": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types --test tests/provider-orchestration-pr8.test.mjs",
+    "test:provider-expansion": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types --test tests/provider-expansion-pr9.test.mjs",
     "test:knowledge-layer": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types --test tests/knowledge-layer-wave-4.test.mjs",
     "test:entity-intelligence": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types --test tests/entity-intelligence-wave-5.test.mjs",
     "test:continuous-resolution": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types --test tests/continuous-resolution-wave-5-1.test.mjs",
