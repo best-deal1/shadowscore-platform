@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import ShadowScoreLayout from "../../components/ShadowScoreLayout";
 import { loginUser } from "../../lib/auth";
@@ -9,7 +8,6 @@ import { useLocale } from "../../components/LocaleProvider";
 import { getUserPageCopy } from "../../lib/i18n";
 
 export default function LoginPage() {
-  const router = useRouter();
   const { locale } = useLocale();
   const page = getUserPageCopy(locale).login;
   const [email, setEmail] = useState("");
@@ -24,7 +22,7 @@ export default function LoginPage() {
     try {
       await loginUser(email, password);
       const requested = new URLSearchParams(window.location.search).get("returnTo") || "/workspace";
-      router.push(requested.startsWith("/") && !requested.startsWith("//") ? requested : "/workspace");
+      window.location.assign(requested.startsWith("/") && !requested.startsWith("//") ? requested : "/workspace");
     } catch (err) {
       setError(err instanceof Error ? err.message : page.unavailable);
     } finally {
