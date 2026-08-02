@@ -10,6 +10,22 @@ test("authenticated customer routes share the workspace shell", async () => {
   }
 });
 
+test("authenticated customers leave login through the workspace proxy", async () => {
+  const proxy = await read("proxy.ts");
+  assert.match(proxy, /request\.nextUrl\.pathname === "\/login"/);
+  assert.match(proxy, /NextResponse\.redirect\(new URL\("\/workspace", request\.url\)\)/);
+  assert.match(proxy, /"\/login",/);
+});
+
+test("authenticated customers receive an active workspace membership", async () => {
+  const migration = await read("supabase/migrations/20260802000000_provision_workspace_membership.sql");
+  assert.match(migration, /insert into public\.profiles/);
+  assert.match(migration, /insert into public\.organizations/);
+  assert.match(migration, /insert into public\.organization_memberships/);
+  assert.match(migration, /after insert or update of email, raw_user_meta_data on auth\.users/);
+  assert.match(migration, /for existing_user in select \* from auth\.users/);
+});
+
 test("workspace navigation is canonical, current, and actionable", async () => {
   const shell = await read("components/workspace/WorkspaceShell.tsx");
   assert.match(shell, /href: "\/workspace"/);

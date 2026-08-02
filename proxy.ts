@@ -21,11 +21,23 @@ export async function proxy(request: NextRequest) {
   }
 
   if (!authenticated) {
+    if (request.nextUrl.pathname === "/login") {
+      const response = NextResponse.next();
+      response.headers.set("Cache-Control", "no-store");
+      return response;
+    }
+
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("returnTo", `${request.nextUrl.pathname}${request.nextUrl.search}`);
     const response = NextResponse.redirect(loginUrl);
     response.cookies.set(ACCESS_TOKEN_COOKIE, "", { path: "/", maxAge: 0 });
     response.headers.set("Cache-Control", "no-store");
+    return response;
+  }
+
+  if (request.nextUrl.pathname === "/login") {
+    const response = NextResponse.redirect(new URL("/workspace", request.url));
+    response.headers.set("Cache-Control", "private, no-store, max-age=0");
     return response;
   }
 
@@ -36,6 +48,7 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
+    "/login",
     "/account/:path*",
     "/admin/:path*",
     "/admin-lite/:path*",
