@@ -22,10 +22,12 @@ await assert.rejects(
 const queriedPaths = [];
 const queue = await fetchOrganizationQueue({ organizationId: "org-a" }, "token", async (path) => {
   queriedPaths.push(path);
-  return [{ public_id: "case-a", title: "Organization A case", investigation_id: "Target A", status: "active", priority: "high", due_at: null, updated_at: "2026-07-24T00:00:00.000Z", owner: { full_name: "Alex Morgan" } }];
+  return [{ public_id: "case-a", title: "Organization A case", investigation_id: "Target A", status: "active", priority: "high", due_at: null, updated_at: "2026-07-24T00:00:00.000Z" }];
 });
 assert.match(queriedPaths[0], /organization_id=eq\.org-a/);
+assert.doesNotMatch(decodeURIComponent(queriedPaths[0]), /profiles|cases_owner_id_fkey/);
 assert.deepEqual(queue.cases.map((item) => item.id), ["case-a"]);
+assert.equal(queue.cases[0].ownerName, null);
 assert.equal("organization_id" in queue.cases[0], false);
 assert.equal("owner_id" in queue.cases[0], false);
 
