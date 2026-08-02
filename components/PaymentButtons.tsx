@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { getCurrentSession } from "../lib/auth";
 import { prepareInvestigationCheckout } from "../lib/investigationCheckout";
 import type { PaymentIntent } from "../lib/workspace";
@@ -17,7 +16,6 @@ type PaymentButtonsProps = {
 };
 
 export default function PaymentButtons({ buttonLabel = "Unlock Full Report", intakeId, email = "", onEmailResolved, onPersistIntake }: PaymentButtonsProps) {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -42,8 +40,15 @@ export default function PaymentButtons({ buttonLabel = "Unlock Full Report", int
     if (loading) return;
     const session = getCurrentSession();
     if (!session) {
-      const returnTo = intakeId ? `/intake?resume=${encodeURIComponent(intakeId)}` : "/intake?resume=checkout";
-      router.push(`/login?returnTo=${encodeURIComponent(returnTo)}`);
+      setLoading(true);
+      setError("");
+      try {
+        if (!onPersistIntake) throw new Error("Save the investigation before continuing.");
+        await onPersistIntake(email);
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : "The investigation could not be saved.");
+        setLoading(false);
+      }
       return;
     }
     setLoading(true);
@@ -57,7 +62,7 @@ export default function PaymentButtons({ buttonLabel = "Unlock Full Report", int
         createIntent: (resolvedIntakeId) => createIntent(resolvedIntakeId, session.accessToken),
       });
       onEmailResolved?.(result.email);
-      router.push(`/reports/${result.intent.reportId}/unlock`);
+      window.location.assign("/workspace");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Checkout could not be started.");
       setLoading(false);

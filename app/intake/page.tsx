@@ -572,7 +572,7 @@ export default function IntakePage() {
         setLeadSaved(true);
         setIntake(created);
         window.sessionStorage.removeItem(CHECKOUT_DRAFT_KEY);
-        router.replace("/intake");
+        window.location.assign("/workspace");
       } catch {
         window.sessionStorage.removeItem(CHECKOUT_DRAFT_KEY);
         setFreeScanError("The saved investigation could not be restored. Please save it again.");
