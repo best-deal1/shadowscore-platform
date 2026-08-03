@@ -2,9 +2,39 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { supabaseFetch } from "@/lib/supabase";
 
-type SupabaseUser = { id: string };
+type SupabaseUser = {
+  id: string;
+  email?: string;
+  created_at?: string;
+  last_sign_in_at?: string;
+  user_metadata?: { name?: string; full_name?: string };
+};
 const ACCESS_TOKEN_COOKIE = "shadowscore_access_token";
 const NO_STORE_HEADERS = { "Cache-Control": "no-store" };
+
+export async function GET() {
+  const accessToken = (await cookies()).get(ACCESS_TOKEN_COOKIE)?.value;
+  if (!accessToken) {
+    return NextResponse.json({ user: null }, { headers: NO_STORE_HEADERS });
+  }
+
+  try {
+    const user = await supabaseFetch<SupabaseUser>("/auth/v1/user", {}, accessToken);
+    return NextResponse.json({
+      user: {
+        id: user.id,
+        email: user.email || "",
+        name: user.user_metadata?.name || user.user_metadata?.full_name || user.email || "Account",
+        createdAt: user.created_at || "",
+        lastLoginAt: user.last_sign_in_at,
+      },
+    }, { headers: NO_STORE_HEADERS });
+  } catch {
+    const response = NextResponse.json({ user: null }, { status: 401, headers: NO_STORE_HEADERS });
+    response.cookies.set(ACCESS_TOKEN_COOKIE, "", { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 0 });
+    return response;
+  }
+}
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null) as { accessToken?: unknown } | null;

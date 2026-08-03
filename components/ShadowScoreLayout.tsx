@@ -15,7 +15,7 @@ import {
   X_URL,
   YOUTUBE_URL,
 } from "../lib/config";
-import { getCurrentUser, logoutUser, type ShadowScoreUser } from "../lib/auth";
+import { getAuthenticatedUser, getCurrentUser, logoutUser, type ShadowScoreUser } from "../lib/auth";
 
 const primaryNav = [
   { href: "/business-due-diligence", label: "Product" },
@@ -65,12 +65,25 @@ export default function ShadowScoreLayout({
 
   useEffect(() => {
     setUser(getCurrentUser());
-    setAuthResolved(true);
+    let active = true;
+    getAuthenticatedUser()
+      .then((authenticatedUser) => {
+        if (active) setUser(authenticatedUser);
+      })
+      .catch(() => {
+        // Keep the local session visible during a temporary network failure.
+      })
+      .finally(() => {
+        if (active) setAuthResolved(true);
+      });
     const closeAccountMenu = (event: KeyboardEvent) => {
       if (event.key === "Escape") setAccountOpen(false);
     };
     window.addEventListener("keydown", closeAccountMenu);
-    return () => window.removeEventListener("keydown", closeAccountMenu);
+    return () => {
+      active = false;
+      window.removeEventListener("keydown", closeAccountMenu);
+    };
   }, []);
 
   async function signOut() {

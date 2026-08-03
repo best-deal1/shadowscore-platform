@@ -121,6 +121,17 @@ export function getCurrentUser(): ShadowScoreUser | null {
   return session ? getCurrentUserFromSession(session) : null;
 }
 
+export async function getAuthenticatedUser(): Promise<ShadowScoreUser | null> {
+  const response = await fetch("/api/auth/session", { cache: "no-store" });
+  if (response.status === 401) {
+    window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    return null;
+  }
+  if (!response.ok) throw new Error("Could not confirm the account session.");
+  const payload = await response.json() as { user?: ShadowScoreUser | null };
+  return payload.user || null;
+}
+
 export async function logoutUser() {
   if (typeof window === "undefined") return;
   try {
