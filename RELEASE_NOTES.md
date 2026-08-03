@@ -13,6 +13,9 @@ This file records customer-visible improvements in each ShadowScore release.
 
 ### Improved
 
+- Sprint 2.2 introduces one visible investigation progress model from intake through review, payment, processing, and the Executive Report.
+- Executive Reports now include an accessible risk visualization, evidence navigation, secure link sharing, and a focused PDF export action.
+- Review, payment, and processing screens now use consistent breadcrumbs, trust details, recovery actions, and report availability language.
 - Consistent navigation across the customer workspace.
 - Server-side payment verification before report access is granted.
 - Session continuity during the signup and checkout flow.
