@@ -13,6 +13,8 @@ This file records customer-visible improvements in each ShadowScore release.
 
 ### Improved
 
+- Signed-in customers now see a clear account menu across the public website, with direct paths to their workspace and profile on desktop and mobile.
+- Public navigation now confirms account status without a hydration mismatch and provides keyboard-accessible sign-out controls.
 - The workspace now supports confirmed investigation deletion, clear success and error feedback, and a focused first-investigation empty state.
 - Sprint 2.2 introduces one visible investigation progress model from intake through review, payment, processing, and the Executive Report.
 - Executive Reports now include an accessible risk visualization, evidence navigation, secure link sharing, and a focused PDF export action.

@@ -47,3 +47,15 @@ test("Archive and report provide retrieval, print identity, and repeat purchase"
   assert.match(report, /Version 1\.0/);
   assert.match(report, /requires the recipient to sign in/);
 });
+
+test("public navigation preserves authenticated customer continuity", async () => {
+  const layout = await read("components/ShadowScoreLayout.tsx");
+  assert.match(layout, /setUser\(getCurrentUser\(\)\)/);
+  assert.match(layout, /Checking account status/);
+  assert.match(layout, /Open workspace/);
+  assert.match(layout, /Profile and account/);
+  assert.match(layout, /Signed in as \{user\.email\}/);
+  assert.match(layout, /await logoutUser\(\)/);
+  assert.match(layout, /event\.key === "Escape"/);
+  assert.doesNotMatch(layout, /Connected: \{user\.email\}/);
+});

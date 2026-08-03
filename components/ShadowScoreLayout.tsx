@@ -1,9 +1,10 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useLocale } from "./LocaleProvider";
 import { localeNames, locales, type Locale } from "../lib/i18n";
 import {
@@ -14,7 +15,7 @@ import {
   X_URL,
   YOUTUBE_URL,
 } from "../lib/config";
-import { getCurrentUser, type ShadowScoreUser } from "../lib/auth";
+import { getCurrentUser, logoutUser, type ShadowScoreUser } from "../lib/auth";
 
 const primaryNav = [
   { href: "/business-due-diligence", label: "Product" },
@@ -29,6 +30,7 @@ const routeLabels: Record<string, string> = {
   "/methodology": "Methodology", "/pricing": "Pricing", "/security": "Security",
   "/login": "Sign in", "/signup": "Create account", "/intake": "Start investigation",
   "/contact": "Contact", "/about": "About", "/privacy": "Privacy", "/terms": "Terms",
+  "/account": "Profile",
 };
 
 const mobilePublicNav = [
@@ -56,6 +58,26 @@ export default function ShadowScoreLayout({
 }) {
   const pathname = usePathname() || "/";
   const { locale, t } = useLocale();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [user, setUser] = useState<ShadowScoreUser | null>(null);
+  const [authResolved, setAuthResolved] = useState(false);
+
+  useEffect(() => {
+    setUser(getCurrentUser());
+    setAuthResolved(true);
+    const closeAccountMenu = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setAccountOpen(false);
+    };
+    window.addEventListener("keydown", closeAccountMenu);
+    return () => window.removeEventListener("keydown", closeAccountMenu);
+  }, []);
+
+  async function signOut() {
+    await logoutUser();
+    window.location.assign("/");
+  }
+
   const footerGroups = [
     {
       title: t.footer.product,
@@ -76,11 +98,17 @@ export default function ShadowScoreLayout({
     },
     {
       title: t.footer.access,
-      links: [
-        { href: "/contact", label: t.footer.contact },
-        { href: "/login", label: t.footer.login },
-        { href: "/signup", label: t.footer.account },
-      ],
+      links: user
+        ? [
+            { href: "/workspace", label: "Workspace" },
+            { href: "/account", label: "Profile" },
+            { href: "/contact", label: t.footer.contact },
+          ]
+        : [
+            { href: "/contact", label: t.footer.contact },
+            { href: "/login", label: t.footer.login },
+            { href: "/signup", label: t.footer.account },
+          ],
     },
   ];
   const setLocale = async (next: Locale) => {
@@ -92,9 +120,6 @@ export default function ShadowScoreLayout({
     });
     window.location.reload();
   };
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [user] = useState<ShadowScoreUser | null>(() => getCurrentUser());
-
   return (
     <div className="min-h-screen overflow-x-hidden bg-black text-white">
       <a href="#main-content" className="sr-only z-[100] rounded-lg bg-white px-4 py-3 font-bold text-black focus:not-sr-only focus:fixed focus:left-4 focus:top-4">Skip to main content</a>
@@ -150,10 +175,33 @@ export default function ShadowScoreLayout({
                 </option>
               ))}
             </select>
-            {user ? (
-              <span className="max-w-[180px] truncate rounded-full border border-emerald-400/25 bg-emerald-500/10 px-3 py-2 text-xs font-bold text-emerald-100">
-                Connected: {user.email}
-              </span>
+            {!authResolved ? (
+              <span className="h-10 w-28 animate-pulse rounded-full bg-white/[0.06]" aria-label="Checking account status" />
+            ) : user ? (
+              <div className="relative">
+                <button
+                  type="button"
+                  aria-expanded={accountOpen}
+                  aria-controls="public-account-menu"
+                  onClick={() => setAccountOpen((open) => !open)}
+                  className="flex min-h-11 max-w-[220px] items-center gap-2 rounded-full border border-emerald-400/25 bg-emerald-500/10 px-3 py-2 text-xs font-bold text-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                >
+                  <span aria-hidden="true" className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-emerald-300 text-[10px] font-black text-emerald-950">{(user.name || user.email).slice(0, 1).toUpperCase()}</span>
+                  <span className="truncate">{user.name || user.email}</span>
+                  <span aria-hidden="true">⌄</span>
+                </button>
+                {accountOpen ? (
+                  <div id="public-account-menu" className="absolute right-0 top-[calc(100%+0.65rem)] w-72 rounded-2xl border border-white/10 bg-zinc-950 p-2 shadow-2xl shadow-black/60">
+                    <div className="border-b border-white/10 px-3 py-3">
+                      <p className="text-xs font-bold text-white">Signed in</p>
+                      <p className="mt-1 truncate text-xs text-zinc-400">{user.email}</p>
+                    </div>
+                    <Link href="/workspace" className="mt-2 block rounded-xl px-3 py-3 text-sm font-bold text-zinc-200 hover:bg-white/[0.06] focus:outline-none focus:ring-2 focus:ring-sky-300">Open workspace</Link>
+                    <Link href="/account" className="block rounded-xl px-3 py-3 text-sm font-bold text-zinc-200 hover:bg-white/[0.06] focus:outline-none focus:ring-2 focus:ring-sky-300">Profile and account</Link>
+                    <button type="button" onClick={() => void signOut()} className="w-full rounded-xl px-3 py-3 text-left text-sm font-bold text-zinc-400 hover:bg-white/[0.06] hover:text-white focus:outline-none focus:ring-2 focus:ring-sky-300">Sign out</button>
+                  </div>
+                ) : null}
+              </div>
             ) : (
               <Link href="/login" className={linkClass(pathname === "/login")}>
                 {t.nav.signIn}
@@ -210,9 +258,16 @@ export default function ShadowScoreLayout({
               >
                 {t.nav.start}
               </Link>
-              {user ? (
-                <div className="rounded-2xl border border-emerald-400/25 bg-emerald-500/10 px-4 py-3 text-xs font-bold text-emerald-100">
-                  Connected: {user.email}
+              {!authResolved ? (
+                <div className="h-12 animate-pulse rounded-2xl bg-white/[0.06]" aria-label="Checking account status" />
+              ) : user ? (
+                <div className="rounded-2xl border border-emerald-400/25 bg-emerald-500/10 p-3">
+                  <p className="truncate text-xs font-bold text-emerald-100">Signed in as {user.email}</p>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    <Link href="/workspace" className="rounded-xl bg-emerald-300 px-3 py-3 text-center text-sm font-black text-emerald-950 focus:outline-none focus:ring-2 focus:ring-emerald-100">Workspace</Link>
+                    <Link href="/account" className="rounded-xl border border-emerald-300/25 px-3 py-3 text-center text-sm font-bold text-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-100">Profile</Link>
+                  </div>
+                  <button type="button" onClick={() => void signOut()} className="mt-2 min-h-11 w-full rounded-xl text-sm font-bold text-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-100">Sign out</button>
                 </div>
               ) : (
                 <Link
