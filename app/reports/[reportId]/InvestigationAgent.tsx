@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type InvestigationAgentProps = {
   business: string;
@@ -9,309 +9,142 @@ type InvestigationAgentProps = {
   onComplete: () => void;
 };
 
-type InvestigationStep = {
+type InvestigationStage = {
   title: string;
-  explanation: string;
-  evidenceCount?: number;
+  activity: string;
+  reason: string;
+  signal: string;
 };
 
-const STEPS: InvestigationStep[] = [
+const STAGES: InvestigationStage[] = [
   {
-    title: "Investigation Scope Confirmed",
-    explanation: "Business target and investigation scope were recorded.",
+    title: "Scope secured",
+    activity: "The target, jurisdiction, and investigation boundaries are being confirmed.",
+    reason: "A precise scope keeps evidence tied to the business under review.",
+    signal: "Target record created",
   },
   {
-    title: "Business Identity Cross-Checked",
-    explanation: "Names, addresses, and business identifiers were cross-checked.",
-    evidenceCount: 4,
+    title: "Identity resolving",
+    activity: "Names, addresses, domains, and available business identifiers are being compared.",
+    reason: "Identity resolution separates the target from similarly named businesses.",
+    signal: "Identity signals correlating",
   },
   {
-    title: "Digital Presence Reviewed",
-    explanation:
-      "Domain ownership, history, and security records were reviewed.",
-    evidenceCount: 7,
+    title: "Sources discovering",
+    activity: "Relevant public records and first-party business sources are being located.",
+    reason: "Source diversity makes material claims easier to verify independently.",
+    signal: "Source map expanding",
   },
   {
-    title: "Ownership Relationships Checked",
-    explanation:
-      "Available registration records were checked for identity and ownership links.",
-    evidenceCount: 3,
+    title: "Evidence cross-validating",
+    activity: "Claims are being compared across independent records for agreement and conflict.",
+    reason: "Contradictions can change the commercial risk interpretation.",
+    signal: "Evidence graph updating",
   },
   {
-    title: "Commercial Records Reviewed",
-    explanation:
-      "Business claims, policies, and contact records were compared.",
-    evidenceCount: 12,
+    title: "Risk interpreting",
+    activity: "Material findings are being weighed by relevance, recency, and evidence strength.",
+    reason: "This turns isolated signals into decision context.",
+    signal: "Confidence being calibrated",
   },
   {
-    title: "Payment Records Cross-Checked",
-    explanation:
-      "Payment details and commercial risk indicators were cross-checked.",
-    evidenceCount: 5,
-  },
-  {
-    title: "Independent Sources Correlated",
-    explanation:
-      "Independent sources were compared for consistent findings and reported concerns.",
-    evidenceCount: 8,
-  },
-  {
-    title: "Business Disclosures Checked",
-    explanation: "Relevant business disclosures and compliance records were checked.",
-    evidenceCount: 4,
-  },
-  {
-    title: "Evidence Record Correlated",
-    explanation:
-      "Evidence from independent sources was compared for agreement and conflicts.",
-    evidenceCount: 18,
-  },
-  {
-    title: "Executive Recommendation Built",
-    explanation: "Material findings were prioritized for a business decision.",
-  },
-  {
-    title: "Investigation Record Finalized",
-    explanation: "The evidence-backed conclusion and professional record were finalized.",
+    title: "Decision preparing",
+    activity: "The conclusion, evidence trail, and recommended controls are being assembled.",
+    reason: "The Executive Report prioritizes the facts needed for a business decision.",
+    signal: "Executive recommendation forming",
   },
 ];
 
-const STEP_DURATION_MS = 3600;
+const STAGE_DURATION_MS = 6600;
 
-function clockTime(startedAt: string, stepIndex: number) {
-  const start = new Date(startedAt).getTime();
-  const timestamp = Number.isNaN(start)
-    ? Date.now()
-    : start + stepIndex * STEP_DURATION_MS;
-  return new Intl.DateTimeFormat("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  }).format(timestamp);
+function startedTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Recorded";
+  return new Intl.DateTimeFormat("en-US", { hour: "2-digit", minute: "2-digit" }).format(date);
 }
 
-function CheckIcon() {
-  return (
-    <svg
-      viewBox="0 0 20 20"
-      aria-hidden="true"
-      className="h-3.5 w-3.5"
-      fill="none"
-    >
-      <path
-        d="m5 10 3 3 7-7"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
+function Icon({ name }: { name: "scope" | "identity" | "sources" | "evidence" | "risk" | "decision" }) {
+  const paths = {
+    scope: <><circle cx="12" cy="12" r="7" /><path d="M12 2v3m0 14v3M2 12h3m14 0h3" /></>,
+    identity: <><circle cx="12" cy="8" r="3" /><path d="M6.5 19c.6-3.3 2.4-5 5.5-5s4.9 1.7 5.5 5" /></>,
+    sources: <><circle cx="6" cy="7" r="2.5" /><circle cx="18" cy="7" r="2.5" /><circle cx="12" cy="18" r="2.5" /><path d="m8.2 8.3 2.7 7.3m5-7.3-2.8 7.3M8.5 7h7" /></>,
+    evidence: <><path d="M5 4h11l3 3v13H5z" /><path d="M15 4v4h4M8 12h8m-8 4h5" /></>,
+    risk: <><path d="M12 3 3.5 19h17z" /><path d="M12 9v4m0 3h.01" /></>,
+    decision: <><path d="m5 12 4 4L19 6" /><path d="M19 12v7H5V5h9" /></>,
+  };
+  return <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">{paths[name]}</svg>;
 }
 
-export default function InvestigationAgent({
-  business,
-  startedAt,
-  ready,
-  onComplete,
-}: InvestigationAgentProps) {
+export default function InvestigationAgent({ business, startedAt, ready, onComplete }: InvestigationAgentProps) {
   const [elapsed, setElapsed] = useState(0);
   const completionSent = useRef(false);
 
   useEffect(() => {
-    const timer = window.setInterval(
-      () => setElapsed((value) => value + 250),
-      250,
-    );
+    if (ready) return;
+    const timer = window.setInterval(() => setElapsed((value) => value + 250), 250);
     return () => window.clearInterval(timer);
-  }, []);
+  }, [ready]);
 
-  const naturalIndex = Math.min(
-    Math.floor(elapsed / STEP_DURATION_MS),
-    STEPS.length - 1,
-  );
-  const activeIndex = ready ? STEPS.length : naturalIndex;
-  const partialProgress = ready
-    ? 1
-    : (elapsed % STEP_DURATION_MS) / STEP_DURATION_MS;
-  const percentage = ready
-    ? 100
-    : Math.min(
-        99,
-        Math.round(((naturalIndex + partialProgress) / STEPS.length) * 100),
-      );
-  const secondsRemaining = ready
-    ? 0
-    : Math.max(
-        1,
-        Math.ceil(
-          ((STEPS.length - naturalIndex - partialProgress) * STEP_DURATION_MS) /
-            1000,
-        ),
-      );
-  const evidenceReviewed = useMemo(
-    () =>
-      STEPS.slice(0, activeIndex).reduce(
-        (total, step) => total + (step.evidenceCount ?? 0),
-        0,
-      ),
-    [activeIndex],
-  );
+  const naturalIndex = Math.min(Math.floor(elapsed / STAGE_DURATION_MS), STAGES.length - 1);
+  const activeIndex = ready ? STAGES.length : naturalIndex;
+  const partialProgress = ready ? 1 : (elapsed % STAGE_DURATION_MS) / STAGE_DURATION_MS;
+  const percentage = ready ? 100 : Math.min(99, Math.round(((naturalIndex + partialProgress) / STAGES.length) * 100));
+  const currentStage = STAGES[Math.min(naturalIndex, STAGES.length - 1)];
+  const icons = ["scope", "identity", "sources", "evidence", "risk", "decision"] as const;
 
   useEffect(() => {
     if (!ready || completionSent.current) return;
     completionSent.current = true;
-    const timer = window.setTimeout(onComplete, 900);
+    const timer = window.setTimeout(onComplete, 1100);
     return () => window.clearTimeout(timer);
   }, [onComplete, ready]);
 
   return (
-    <section
-      className="investigation-agent overflow-hidden rounded-[32px] border border-white/10 bg-[#0b1018] shadow-2xl shadow-sky-950/20"
-      aria-labelledby="agent-title"
-      aria-busy={!ready}
-    >
-      <div className="border-b border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(14,165,233,.16),transparent_46%)] p-6 sm:p-9">
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[.2em] text-sky-300">
-              <span
-                className={`h-2 w-2 rounded-full ${ready ? "bg-emerald-300" : "agent-live-dot bg-sky-300"}`}
-                aria-hidden="true"
-              />
-              {ready ? "Investigation complete" : "Investigation team active"}
-            </div>
-            <h1
-              id="agent-title"
-              className="mt-3 text-3xl font-black tracking-tight sm:text-4xl"
-            >
-              Investigating {business}
-            </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
-              Independent evidence is verified and correlated before the executive
-              recommendation is prepared.
-            </p>
-          </div>
-          <div className="min-w-36 rounded-2xl border border-white/10 bg-black/25 px-5 py-4 sm:text-right">
-            <p className="text-xs font-bold uppercase tracking-[.16em] text-zinc-500">
-              Estimated time
-            </p>
-            <p className="mt-1 text-xl font-black text-white">
-              {ready ? "Complete" : `About ${secondsRemaining} sec`}
-            </p>
-          </div>
+    <section className="intelligence-run" aria-labelledby="agent-title" aria-busy={!ready}>
+      <header className="intelligence-run-header">
+        <div>
+          <p className="intelligence-kicker"><span className={ready ? "is-ready" : "agent-live-dot"} aria-hidden="true" />{ready ? "Decision ready" : "Live intelligence operation"}</p>
+          <h1 id="agent-title">{ready ? "Investigation complete" : <>Resolving <span>{business}</span></>}</h1>
+          <p className="intelligence-intro">ShadowScore is connecting identity, source, and commercial evidence into one decision record.</p>
         </div>
+        <dl className="intelligence-run-meta">
+          <div><dt>Operation</dt><dd>Business investigation</dd></div>
+          <div><dt>Started</dt><dd><time dateTime={startedAt}>{startedTime(startedAt)}</time></dd></div>
+          <div><dt>Confidence</dt><dd>{ready ? "Established" : activeIndex > 3 ? "Calibrating" : "Building"}</dd></div>
+        </dl>
+      </header>
 
-        <div className="mt-8" aria-label={`${percentage}% complete`}>
-          <div className="mb-3 flex items-end justify-between gap-4">
-            <div>
-              <span className="text-3xl font-black tabular-nums">
-                {percentage}%
-              </span>
-              <span className="ml-2 text-sm text-zinc-500">complete</span>
-            </div>
-            <p className="text-sm text-zinc-400">
-              <span className="font-bold text-white">{evidenceReviewed}</span>{" "}
-              evidence signals reviewed
-            </p>
-          </div>
-          <div
-            className="h-1.5 overflow-hidden rounded-full bg-white/10"
-            role="progressbar"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={percentage}
-          >
-            <div
-              className="agent-progress h-full rounded-full bg-gradient-to-r from-sky-500 to-cyan-300"
-              style={{ width: `${percentage}%` }}
-            />
-          </div>
+      <div className="intelligence-stage">
+        <div className="intelligence-radar" aria-hidden="true">
+          <span className="intelligence-radar-sweep" />
+          <span className="intelligence-radar-core"><Icon name={icons[Math.min(naturalIndex, icons.length - 1)]} /></span>
+          <i className="radar-signal radar-signal-a" /><i className="radar-signal radar-signal-b" /><i className="radar-signal radar-signal-c" />
+        </div>
+        <div className="intelligence-now" aria-live="polite">
+          <p>Current operation</p>
+          <h2>{ready ? "Executive decision ready" : currentStage.title}</h2>
+          <p className="intelligence-activity">{ready ? "The evidence record and executive recommendation are ready for review." : currentStage.activity}</p>
+          <div className="intelligence-why"><span>Why it matters</span><p>{ready ? "The conclusion remains connected to its supporting evidence." : currentStage.reason}</p></div>
+          <div className="intelligence-signal"><span aria-hidden="true" />{ready ? "Report sealed" : currentStage.signal}</div>
         </div>
       </div>
 
-      <div className="p-5 sm:p-8">
-        <div className="mb-5 flex items-center justify-between gap-4">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[.18em] text-zinc-500">
-              Live investigation timeline
-            </p>
-            <h2 className="mt-1 text-lg font-bold">Investigation activity</h2>
-          </div>
-          <p className="text-xs text-zinc-500" aria-live="polite">
-            Step {Math.min(activeIndex + 1, STEPS.length)} of {STEPS.length}
-          </p>
-        </div>
-        <ol className="relative space-y-2" aria-label="Investigation progress">
-          {STEPS.map((step, index) => {
-            const complete = index < activeIndex;
-            const active = index === activeIndex;
-            return (
-              <li
-                key={step.title}
-                className={`agent-step relative grid grid-cols-[2rem_1fr] gap-3 rounded-2xl border p-3.5 sm:grid-cols-[2.25rem_1fr_auto] sm:items-center sm:p-4 ${active ? "agent-step-active border-sky-400/30 bg-sky-400/[.07]" : complete ? "border-white/10 bg-white/[.025]" : "border-transparent opacity-45"}`}
-              >
-                <span
-                  className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full border ${complete ? "agent-step-check border-emerald-300/30 bg-emerald-300 text-slate-950" : active ? "border-sky-300 bg-sky-300/10 text-sky-200" : "border-white/20 text-xs text-zinc-500"}`}
-                >
-                  {complete ? (
-                    <CheckIcon />
-                  ) : active ? (
-                    <span
-                      className="agent-spinner h-3.5 w-3.5 rounded-full border-2 border-sky-200/25 border-t-sky-200"
-                      aria-hidden="true"
-                    />
-                  ) : (
-                    index + 1
-                  )}
-                </span>
-                <div>
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                    <h3
-                      className={`text-sm font-bold ${complete || active ? "text-white" : "text-zinc-400"}`}
-                    >
-                      {step.title}
-                    </h3>
-                    {active && (
-                      <span className="text-xs font-bold text-sky-300">
-                        Under review
-                      </span>
-                    )}
-                  </div>
-                  {(complete || active) && (
-                    <p className="mt-1 text-xs leading-5 text-zinc-400">
-                      {active
-                        ? "Cross-checking available records and independent evidence."
-                        : step.explanation}
-                    </p>
-                  )}
-                </div>
-                <div className="col-start-2 flex flex-wrap items-center gap-2 text-[11px] text-zinc-500 sm:col-start-3 sm:justify-end">
-                  {complete && (
-                    <>
-                      <span className="font-medium text-emerald-300">
-                        Completed
-                      </span>
-                      <time dateTime={startedAt}>
-                        {clockTime(startedAt, index)}
-                      </time>
-                      {step.evidenceCount !== undefined && (
-                        <span>{step.evidenceCount} evidence</span>
-                      )}
-                    </>
-                  )}
-                  {!complete && !active && <span>Queued</span>}
-                </div>
-              </li>
-            );
-          })}
-        </ol>
-        <p className="sr-only" aria-live="polite">
-          {ready
-            ? "Investigation complete. Opening Executive Report."
-            : `${STEPS[activeIndex]?.title ?? "Final review"}: Investigation in progress.`}
-        </p>
+      <div className="intelligence-progress-wrap">
+        <div className="intelligence-progress-label"><span>{ready ? "Analysis complete" : `Stage ${activeIndex + 1} of ${STAGES.length}`}</span><strong>{percentage}%</strong></div>
+        <div className="intelligence-progress" role="progressbar" aria-label="Investigation progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percentage}><span style={{ width: `${percentage}%` }} /></div>
       </div>
+
+      <ol className="intelligence-timeline" aria-label="Investigation story">
+        {STAGES.map((stage, index) => {
+          const complete = index < activeIndex;
+          const active = index === activeIndex;
+          return <li key={stage.title} className={complete ? "is-complete" : active ? "is-active" : ""}>
+            <span className="intelligence-stage-icon"><Icon name={icons[index]} /></span>
+            <div><span>{String(index + 1).padStart(2, "0")}</span><h3>{stage.title}</h3><p>{complete ? stage.signal : active ? "In progress" : "Queued"}</p></div>
+          </li>;
+        })}
+      </ol>
+      <p className="sr-only" aria-live="polite">{ready ? "Investigation complete. Opening Executive Report." : `${currentStage.title}. ${currentStage.activity}`}</p>
     </section>
   );
 }

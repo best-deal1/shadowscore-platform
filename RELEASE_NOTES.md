@@ -13,6 +13,8 @@ This file records customer-visible improvements in each ShadowScore release.
 
 ### Improved
 
+- The processing experience now tells the investigation story in real time. It shows the active intelligence operation, why each stage matters, how confidence develops, and when the executive decision is ready.
+
 - The authenticated workspace now uses the ShadowScore brand, polished navigation icons, clearer active states, shared component sizing, and visible security, support, and system-status cues across desktop and mobile.
 
 - Unified public and authenticated navigation around the ShadowScore platform, workspace, investigation, and report model. The shared shell now uses one visual system, clearer location cues, and consistent primary actions across desktop and mobile.
