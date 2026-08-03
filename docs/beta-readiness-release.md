@@ -42,6 +42,18 @@ Production validation covers route contracts, report boundaries, accessibility, 
 10. Open Archive, locate the completed Investigation, and reopen its Executive Report.
 11. Select Start Investigation and confirm the Business fields are blank.
 
+## Beta Candidate gate
+
+Run one acceptance account through the complete journey before every release candidate. Create the account, purchase an Investigation, wait for the Executive Report, sign out, sign in again, and confirm that the same report remains in the Workspace. Then update the profile name, archive the Investigation, restore it, archive it again, and delete it with the destructive-action confirmation.
+
+| Priority | Release requirement | Status |
+| --- | --- | --- |
+| P0 | Purchase, verified payment, processing, report entitlement, sign-out, and return access complete without data loss. | Requires configured staging payment credentials. |
+| P0 | Archive, restore, and confirmed deletion preserve tenant authorization and return clear success or recovery feedback. | Automated contract covered. Manual staging run required. |
+| P1 | Profile name changes remain visible across the public header and Workspace shell. | Manual staging run required. |
+| P1 | The journey passes keyboard use, mobile reflow, and 200 percent zoom. | Manual device review required. |
+| P2 | Add email-ready notifications and richer report sharing after beta evidence confirms demand. | Deferred until after beta. |
+
 ## Rollback considerations
 
 Revert the release commit to restore legacy navigation. Data migrations are not included. Existing intake, payment intent, Investigation, and report records remain compatible.

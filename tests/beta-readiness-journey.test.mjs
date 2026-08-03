@@ -39,9 +39,9 @@ test("payment and Investigation statuses remain separate", async () => {
 });
 
 test("Archive and report provide retrieval, print identity, and repeat purchase", async () => {
-  const [archive, report] = await Promise.all([read("app/archive/page.tsx"), read("components/report/ExecutiveIntelligenceReport.tsx")]);
+  const [archive, report] = await Promise.all([read("app/archive/ArchiveWorkspace.tsx"), read("components/report/ExecutiveIntelligenceReport.tsx")]);
   assert.match(archive, /Open investigation/);
-  assert.match(archive, /View reports/);
+  assert.match(archive, /View investigations/);
   assert.match(report, /window\.print/);
   assert.match(report, /Investigation \{report\.intakeId \|\| report\.reportId\}/);
   assert.match(report, /Version 1\.0/);

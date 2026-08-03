@@ -89,6 +89,19 @@ export function InvestigationWorkspace({ cases, locale, canDelete }: { cases: re
     }
   }
 
+  async function archiveInvestigation(item: CaseQueueItemDto) {
+    setNotice(null);
+    try {
+      const response = await fetch(`/api/workspace/investigations/${encodeURIComponent(item.id)}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "archived", version: item.version }) });
+      const result = await response.json().catch(() => null) as { error?: string; investigation?: { version: number; updatedAt: string } } | null;
+      if (!response.ok || !result?.investigation) throw new Error(result?.error || "The investigation could not be archived. Try again.");
+      setInvestigations((current) => current.map((candidate) => candidate.id === item.id ? { ...candidate, status: "archived", version: result.investigation!.version, updatedAt: result.investigation!.updatedAt } : candidate));
+      setNotice(`${item.title} was moved to Archive.`);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "The investigation could not be archived. Try again.");
+    }
+  }
+
   return (
     <div className="investigation-workspace">
       <header className="iw-hero">
@@ -117,7 +130,7 @@ export function InvestigationWorkspace({ cases, locale, canDelete }: { cases: re
             <div className="iw-badges"><span className={`iw-status iw-status-${item.status}`}>{statusLabels[item.status]}</span><span className={`iw-risk iw-risk-${item.priority}`}>{item.priority} risk</span></div>
             <dl><div><dt>Last updated</dt><dd>{formatUpdated(item.updatedAt, locale)}</dd></div><div><dt>Report</dt><dd>{reportReady ? "Available" : "Pending"}</dd></div></dl>
             <div className="iw-progress" aria-label={reportReady ? "Investigation complete" : "Investigation in progress"}><span style={{ width: reportReady ? "100%" : item.status === "under_review" ? "78%" : "46%" }} /></div>
-            <div className="iw-card-actions"><Link href={reportReady ? `/reports/${item.id}` : `/cases/${item.id}`}>{reportReady ? "View report" : "Resume investigation"}</Link><div>{!reportReady && item.status !== "monitoring" ? <Link className="iw-text-action" href="/workspace/monitoring">Start monitoring</Link> : null}{canDelete ? <button className="iw-delete-action" type="button" onClick={() => requestDelete(item)}>Delete</button> : null}</div></div>
+            <div className="iw-card-actions"><Link href={reportReady ? `/reports/${item.id}` : `/cases/${item.id}`}>{reportReady ? "View report" : "Resume investigation"}</Link><div>{item.status === "closed" && canDelete ? <button className="iw-text-action" type="button" onClick={() => void archiveInvestigation(item)}>Archive</button> : null}{!reportReady && item.status !== "monitoring" ? <Link className="iw-text-action" href="/workspace/monitoring">Start monitoring</Link> : null}{canDelete ? <button className="iw-delete-action" type="button" onClick={() => requestDelete(item)}>Delete</button> : null}</div></div>
           </article>;
         })}</div> : investigations.length ? <div className="iw-empty"><strong>No matching investigations</strong><p>Clear the search or select a different filter.</p><button type="button" onClick={() => { setQuery(""); setFilter("all"); }}>Clear filters</button></div> : <div className="iw-empty iw-empty-first"><span aria-hidden="true">⌕</span><strong>Start your first investigation</strong><p>Review a business, supplier, or website. Your work and reports will appear here.</p><Link className="iw-primary" href="/intake">New investigation</Link></div>}
       </section>

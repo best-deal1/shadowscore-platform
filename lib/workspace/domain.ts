@@ -160,6 +160,7 @@ export interface CaseQueueItemDto {
   priority: CasePriority;
   ownerName: string | null;
   dueAt: IsoTimestamp | null;
+  version: number;
   updatedAt: IsoTimestamp;
   openAlertCount: number;
 }

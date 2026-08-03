@@ -63,6 +63,7 @@
     "validate:purchase-flow-schema": "node scripts/validate-purchase-flow-schema.mjs",
     "test:investigation-details-flow": "node tests/investigation-details-flow.mjs",
     "test:beta-readiness": "node --test tests/beta-readiness-journey.test.mjs",
+    "test:beta-candidate": "node --test tests/beta-candidate-uat.test.mjs",
     "test": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types --test tests/platform-core.test.mjs tests/platform-core-wave-1.test.mjs && NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types tests/product-architecture.test.mjs && NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types tests/case-data-layer.test.mjs && NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types tests/activity-timeline.test.mjs && NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types tests/findings-workspace.test.mjs && NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types tests/decision-workspace.test.mjs && NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types tests/trust-graph-api.test.mjs && node tests/case-details-ui.test.mjs",
     "test:activity-timeline": "node --experimental-strip-types tests/activity-timeline.test.mjs",
     "test:evidence-platform": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types --test tests/evidence-platform-wave-2.test.mjs",
