@@ -19,4 +19,4 @@ Before writing code for a screen, audit that screen's user experience. Review it
 
 When the audit finds an inconsistency, dated pattern, or unprofessional interaction that belongs to the same screen and task scope, fix it in the same pull request. Do not stop at functional acceptance criteria. Keep unrelated changes in separate work.
 
-Use [`BR_03_PRODUCT_EXCELLENCE.md`](BR_03_PRODUCT_EXCELLENCE.md) as the product quality checklist and definition of done.
+Use [`BR_03_PRODUCT_EXCELLENCE.md`](BR_03_PRODUCT_EXCELLENCE.md) as the screen-level product quality checklist and [`BR_04_COMMERCIAL_SAAS_EXCELLENCE.md`](BR_04_COMMERCIAL_SAAS_EXCELLENCE.md) as the product-wide consistency standard. Every product pull request must satisfy both standards before merge.
