@@ -13,6 +13,8 @@ This file records customer-visible improvements in each ShadowScore release.
 
 ### Improved
 
+- The authenticated workspace now uses the ShadowScore brand, polished navigation icons, clearer active states, shared component sizing, and visible security, support, and system-status cues across desktop and mobile.
+
 - Unified public and authenticated navigation around the ShadowScore platform, workspace, investigation, and report model. The shared shell now uses one visual system, clearer location cues, and consistent primary actions across desktop and mobile.
 
 - The sample report now presents one Business Investigation narrative, complete report identity and service boundaries, and a clear enterprise evaluation path without positioning the self-service price as the platform ceiling.
