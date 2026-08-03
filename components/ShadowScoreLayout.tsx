@@ -18,19 +18,28 @@ import {
 import { getAuthenticatedUser, getCurrentUser, logoutUser, type ShadowScoreUser } from "../lib/auth";
 
 const primaryNav = [
-  { href: "/business-due-diligence", label: "Product" },
+  { href: "/business-due-diligence", label: "Platform" },
   { href: "/sample-report", label: "Sample report" },
   { href: "/methodology", label: "Methodology" },
   { href: "/pricing", label: "Pricing" },
   { href: "/security", label: "Security" },
 ];
 
+const workspaceNav = [
+  { href: "/workspace", label: "Workspace" },
+  { href: "/investigations", label: "Investigations" },
+  { href: "/reports", label: "Reports" },
+  { href: "/monitoring", label: "Monitoring" },
+];
+
 const routeLabels: Record<string, string> = {
-  "/business-due-diligence": "Product", "/sample-report": "Sample report",
+  "/business-due-diligence": "Platform", "/sample-report": "Sample report",
   "/methodology": "Methodology", "/pricing": "Pricing", "/security": "Security",
   "/login": "Sign in", "/signup": "Create account", "/intake": "Start investigation",
   "/contact": "Contact", "/about": "About", "/privacy": "Privacy", "/terms": "Terms",
   "/account": "Profile",
+  "/workspace": "Workspace", "/investigations": "Investigations",
+  "/reports": "Reports", "/monitoring": "Monitoring",
 };
 
 const mobilePublicNav = [
@@ -48,7 +57,11 @@ const socialLinks = [
 ];
 
 function linkClass(active: boolean) {
-  return `min-h-11 rounded-full px-3 py-2 transition focus:outline-none focus:ring-2 focus:ring-red-300 ${active ? "bg-white/10 text-white" : "text-zinc-400 hover:text-white"}`;
+  return `ss-nav-link ${active ? "ss-nav-link-active" : ""}`;
+}
+
+function isActiveRoute(pathname: string, href: string) {
+  return pathname === href || (href !== "/" && pathname.startsWith(`${href}/`));
 }
 
 export default function ShadowScoreLayout({
@@ -134,10 +147,19 @@ export default function ShadowScoreLayout({
     window.location.reload();
   };
   return (
-    <div className="min-h-screen overflow-x-hidden bg-black text-white">
+    <div className="ss-public-shell min-h-screen overflow-x-hidden text-white">
       <a href="#main-content" className="sr-only z-[100] rounded-lg bg-white px-4 py-3 font-bold text-black focus:not-sr-only focus:fixed focus:left-4 focus:top-4">Skip to main content</a>
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-black/90 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
+      <header className="ss-site-header sticky top-0 z-50">
+        <div className="ss-platform-bar">
+          <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-2 sm:px-6">
+            <p className="flex items-center gap-2 text-[0.6875rem] font-bold uppercase tracking-[0.16em] text-slate-400">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" aria-hidden="true" />
+              Business investigation platform
+            </p>
+            <p className="hidden text-xs text-slate-500 sm:block">Workspace · Investigation · Report</p>
+          </div>
+        </div>
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
           <Link
             href="/"
             aria-label="ShadowScore home"
@@ -150,8 +172,9 @@ export default function ShadowScoreLayout({
               height={80}
               className="h-9 w-14 object-contain"
             />
-            <div className="text-xl font-black tracking-tight text-white">
-              ShadowScore
+            <div>
+              <div className="text-lg font-black tracking-tight text-white">ShadowScore</div>
+              <div className="text-[0.625rem] font-bold uppercase tracking-[0.16em] text-slate-500">Trust intelligence</div>
             </div>
           </Link>
 
@@ -159,12 +182,12 @@ export default function ShadowScoreLayout({
             aria-label="Primary navigation"
             className="hidden items-center gap-1 text-sm font-bold lg:flex"
           >
-            {primaryNav.map((item) => (
+            {(user ? workspaceNav : primaryNav).map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className={linkClass(pathname === item.href)}
-                aria-current={pathname === item.href ? "page" : undefined}
+                className={linkClass(isActiveRoute(pathname, item.href))}
+                aria-current={isActiveRoute(pathname, item.href) ? "page" : undefined}
               >
                 {item.label}
               </Link>
@@ -222,7 +245,7 @@ export default function ShadowScoreLayout({
             )}
             <Link
               href="/intake"
-              className="rounded-full bg-violet-600 px-5 py-2 text-sm font-black text-white shadow-lg shadow-violet-950/40 transition hover:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-300"
+              className="ss-button ss-button-primary"
             >
               {t.nav.start}
             </Link>
@@ -267,7 +290,7 @@ export default function ShadowScoreLayout({
               </select>
               <Link
                 href="/intake"
-                className="min-h-12 rounded-2xl bg-red-600 px-4 py-3 text-center text-sm font-black text-white focus:outline-none focus:ring-2 focus:ring-red-300"
+                className="ss-button ss-button-primary min-h-12 justify-center"
               >
                 {t.nav.start}
               </Link>
@@ -290,12 +313,12 @@ export default function ShadowScoreLayout({
                   {t.nav.signIn}
                 </Link>
               )}
-              {[...primaryNav, ...mobilePublicNav].map((item) => (
+              {[...(user ? workspaceNav : primaryNav), ...mobilePublicNav].map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={linkClass(pathname === item.href)}
-                  aria-current={pathname === item.href ? "page" : undefined}
+                  className={linkClass(isActiveRoute(pathname, item.href))}
+                  aria-current={isActiveRoute(pathname, item.href) ? "page" : undefined}
                 >
                   {item.label}
                 </Link>
@@ -316,7 +339,14 @@ export default function ShadowScoreLayout({
       ) : null}
       <div id="main-content">{children}</div>
 
-      <footer className="border-t border-white/10 bg-black px-5 py-12 sm:px-6">
+      <footer className="border-t border-white/10 bg-[#070b12] px-5 py-12 sm:px-6">
+        <div className="mx-auto mb-10 grid max-w-7xl gap-5 border-b border-white/10 pb-10 md:grid-cols-[1.25fr_1fr] md:items-end">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-sky-300">ShadowScore platform</p>
+            <h2 className="mt-3 max-w-2xl text-2xl font-bold tracking-tight text-white">Investigate businesses, preserve evidence, and deliver decisions from one workspace.</h2>
+          </div>
+          <p className="max-w-xl text-sm leading-6 text-slate-400 md:justify-self-end">The workspace is the product. An investigation is the workflow. A report is the decision-ready output.</p>
+        </div>
         <div className="mx-auto grid max-w-7xl gap-8 md:grid-cols-4">
           {footerGroups.map((group) => (
             <nav

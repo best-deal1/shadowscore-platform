@@ -13,6 +13,8 @@ This file records customer-visible improvements in each ShadowScore release.
 
 ### Improved
 
+- Unified public and authenticated navigation around the ShadowScore platform, workspace, investigation, and report model. The shared shell now uses one visual system, clearer location cues, and consistent primary actions across desktop and mobile.
+
 - The sample report now presents one Business Investigation narrative, complete report identity and service boundaries, and a clear enterprise evaluation path without positioning the self-service price as the platform ceiling.
 - The sample report now opens with an executive decision brief, traces evidence into a recommended control, and explains the exact $9.90 deliverable before purchase.
 - The homepage now explains the decision outcome, input, analysis, and Executive Report at a glance, with an illustrative decision preview that shows how evidence becomes a practical control.
