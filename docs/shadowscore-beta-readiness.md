@@ -658,6 +658,9 @@ Effort is a relative product estimate: **S** up to 2 focused days, **M** 3 to 5 
 | BR-23 | Split internal Admin into clear operational modules | L | Support, payments, providers, and audits have role-specific views and immutable histories. |
 | BR-24 | Create security assurance and disclosure pages | M | Verified controls, security contact, status, and subprocessors are discoverable. |
 | BR-25 | Add product analytics for the canonical funnel | M | Consent-aware events measure visit, start, scope, order, payment, ready, open, and repeat. |
+| BR-33 | Add the Investigation lifecycle | L | Authorized users can archive, restore, and soft-delete an Investigation without a page reload. Destructive actions require clear confirmation, enforce tenant permissions, and leave an accurate empty state. Permanent deletion is restricted to administrators or a separate explicit confirmation policy. |
+| BR-34 | Reflect authentication across the public site | M | Every public header and landing route resolves the server session. Signed-in users see their connected account and authenticated actions instead of Sign In, including after returning from the Workspace. |
+| BR-35 | Add a global user menu | M | Every signed-in page provides an accessible user menu with avatar, identity, Workspace, My Investigations, Account Settings, Billing, and Sign Out. |
 
 ### Nice to have, validate with beta evidence
 
@@ -689,6 +692,9 @@ Effort is a relative product estimate: **S** up to 2 focused days, **M** 3 to 5 
 - BR-12 define the canonical Sample Executive Report.
 - BR-13 approve the workspace IA.
 - BR-15 approve design tokens and CTA hierarchy.
+- BR-33 approve Investigation lifecycle UX, API contract, retention policy, and permission matrix.
+- BR-34 unify authenticated state across the landing page, public navigation, and header.
+- BR-35 approve the global user menu information architecture and responsive behavior.
 
 **Exit criteria**
 
@@ -714,6 +720,9 @@ Effort is a relative product estimate: **S** up to 2 focused days, **M** 3 to 5 
 - BR-18 move Account into the workspace shell.
 - BR-19 standardize async and locked states.
 - BR-25 instrument the canonical funnel.
+- BR-33 implement archive, restore, soft deletion, confirmation, immediate list updates, and lifecycle empty states.
+- BR-34 complete cross-surface authenticated-session acceptance coverage.
+- BR-35 deliver the global user menu on public and private pages.
 
 **Exit criteria**
 
