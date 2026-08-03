@@ -13,6 +13,8 @@ This file records customer-visible improvements in each ShadowScore release.
 
 ### Improved
 
+- Customers can now archive completed investigations, restore them to the Workspace, and permanently delete archived records with confirmation and clear status feedback.
+- The Beta Candidate release gate now covers one connected purchase, report, return, profile, archive, restore, and deletion journey.
 - Signed-in customers now see a clear account menu across the public website, with direct paths to their workspace and profile on desktop and mobile.
 - Public navigation now confirms account status without a hydration mismatch and provides keyboard-accessible sign-out controls.
 - The workspace now supports confirmed investigation deletion, clear success and error feedback, and a focused first-investigation empty state.

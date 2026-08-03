@@ -38,7 +38,7 @@ const workflowTransitions: Readonly<Record<CaseStatus, readonly CaseStatus[]>> =
   under_review: ["monitoring", "closed"],
   monitoring: ["closed", "archived"],
   closed: ["archived"],
-  archived: [],
+  archived: ["closed"],
 };
 
 function validDueAt(dueAt: string | null | undefined) {
