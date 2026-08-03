@@ -1,19 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { Locale } from "@/lib/i18n";
 import type { CaseQueueItemDto } from "@/lib/workspace/domain";
 
 type Filter = "all" | "active" | "completed" | "monitoring" | "high" | "favorites";
-
-const demoCases: readonly CaseQueueItemDto[] = [
-  { id: "INV-1048", title: "Northstar Components", target: "northstar-components.com", status: "active", priority: "critical", ownerName: "Maya Chen", dueAt: null, updatedAt: "2026-07-30T09:42:00Z", openAlertCount: 3 },
-  { id: "INV-1045", title: "Meridian Freight Group", target: "meridianfreight.com", status: "under_review", priority: "high", ownerName: "Daniel Ortiz", dueAt: null, updatedAt: "2026-07-30T08:15:00Z", openAlertCount: 1 },
-  { id: "INV-1042", title: "Aperture Medical Supply", target: "aperturemedical.co", status: "monitoring", priority: "normal", ownerName: "Maya Chen", dueAt: null, updatedAt: "2026-07-29T16:30:00Z", openAlertCount: 2 },
-  { id: "INV-1039", title: "Cedar & Stone Retail", target: "cedarstone.com", status: "closed", priority: "low", ownerName: "Jon Bell", dueAt: null, updatedAt: "2026-07-28T13:05:00Z", openAlertCount: 0 },
-  { id: "INV-1034", title: "Vectorline Technologies", target: "vectorline.io", status: "closed", priority: "high", ownerName: "Daniel Ortiz", dueAt: null, updatedAt: "2026-07-26T10:20:00Z", openAlertCount: 0 },
-];
 
 const filterLabels: Record<Filter, string> = { all: "All", active: "Active", completed: "Completed", monitoring: "Monitoring", high: "High risk", favorites: "Favorites" };
 const statusLabels = { draft: "Draft", active: "Investigating", awaiting_input: "Awaiting input", under_review: "Under review", monitoring: "Monitoring", closed: "Completed", archived: "Archived" } as const;
@@ -26,11 +18,16 @@ function investigationType(index: number) {
   return ["Business due diligence", "Supplier review", "Partner screening"][index % 3];
 }
 
-export function InvestigationWorkspace({ cases, locale }: { cases: readonly CaseQueueItemDto[]; locale: Locale }) {
-  const investigations = cases.length ? cases : demoCases;
+export function InvestigationWorkspace({ cases, locale, canDelete }: { cases: readonly CaseQueueItemDto[]; locale: Locale; canDelete: boolean }) {
+  const [investigations, setInvestigations] = useState(() => [...cases]);
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
   const [favorites, setFavorites] = useState(() => new Set([investigations[0]?.id]));
+  const [deleteTarget, setDeleteTarget] = useState<CaseQueueItemDto | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
 
   const visible = useMemo(() => investigations.filter((item) => {
     const matchesSearch = `${item.title} ${item.target} ${item.id}`.toLowerCase().includes(query.trim().toLowerCase());
@@ -54,6 +51,42 @@ export function InvestigationWorkspace({ cases, locale }: { cases: readonly Case
       if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
+  }
+
+  function requestDelete(item: CaseQueueItemDto) {
+    setDeleteTarget(item);
+    setDeleteError(null);
+    dialogRef.current?.showModal();
+  }
+
+  function closeDeleteDialog() {
+    if (deleting) return;
+    dialogRef.current?.close();
+    setDeleteTarget(null);
+    setDeleteError(null);
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      const response = await fetch(`/api/workspace/investigations/${encodeURIComponent(deleteTarget.id)}`, { method: "DELETE" });
+      if (!response.ok) {
+        const result = await response.json().catch(() => null) as { error?: string } | null;
+        throw new Error(result?.error || "The investigation could not be deleted. Try again.");
+      }
+      const deletedTitle = deleteTarget.title;
+      setInvestigations((current) => current.filter((item) => item.id !== deleteTarget.id));
+      setFavorites((current) => { const next = new Set(current); next.delete(deleteTarget.id); return next; });
+      dialogRef.current?.close();
+      setDeleteTarget(null);
+      setNotice(`${deletedTitle} was deleted from the workspace.`);
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : "The investigation could not be deleted. Try again.");
+    } finally {
+      setDeleting(false);
+    }
   }
 
   return (
@@ -84,9 +117,9 @@ export function InvestigationWorkspace({ cases, locale }: { cases: readonly Case
             <div className="iw-badges"><span className={`iw-status iw-status-${item.status}`}>{statusLabels[item.status]}</span><span className={`iw-risk iw-risk-${item.priority}`}>{item.priority} risk</span></div>
             <dl><div><dt>Last updated</dt><dd>{formatUpdated(item.updatedAt, locale)}</dd></div><div><dt>Report</dt><dd>{reportReady ? "Available" : "Pending"}</dd></div></dl>
             <div className="iw-progress" aria-label={reportReady ? "Investigation complete" : "Investigation in progress"}><span style={{ width: reportReady ? "100%" : item.status === "under_review" ? "78%" : "46%" }} /></div>
-            <div className="iw-card-actions"><Link href={reportReady ? `/reports/${item.id}` : `/cases/${item.id}`}>{reportReady ? "View report" : "Resume investigation"}</Link>{!reportReady && item.status !== "monitoring" ? <Link className="iw-text-action" href="/workspace/monitoring">Start monitoring</Link> : null}</div>
+            <div className="iw-card-actions"><Link href={reportReady ? `/reports/${item.id}` : `/cases/${item.id}`}>{reportReady ? "View report" : "Resume investigation"}</Link><div>{!reportReady && item.status !== "monitoring" ? <Link className="iw-text-action" href="/workspace/monitoring">Start monitoring</Link> : null}{canDelete ? <button className="iw-delete-action" type="button" onClick={() => requestDelete(item)}>Delete</button> : null}</div></div>
           </article>;
-        })}</div> : <div className="iw-empty"><strong>No investigations found</strong><p>Try a different search or filter.</p></div>}
+        })}</div> : investigations.length ? <div className="iw-empty"><strong>No matching investigations</strong><p>Clear the search or select a different filter.</p><button type="button" onClick={() => { setQuery(""); setFilter("all"); }}>Clear filters</button></div> : <div className="iw-empty iw-empty-first"><span aria-hidden="true">⌕</span><strong>Start your first investigation</strong><p>Review a business, supplier, or website. Your work and reports will appear here.</p><Link className="iw-primary" href="/intake">New investigation</Link></div>}
       </section>
 
       <div className="iw-lower-grid">
@@ -98,6 +131,16 @@ export function InvestigationWorkspace({ cases, locale }: { cases: readonly Case
         <section className="iw-compact-panel" aria-labelledby="saved-title"><div><p className="workspace-eyebrow">Saved businesses</p><h2 id="saved-title">Your priority list</h2><p>{favorites.size} saved {favorites.size === 1 ? "business" : "businesses"} for quick access.</p></div><button type="button" onClick={() => setFilter("favorites")}>Open favorites</button></section>
         <section className="iw-compact-panel" aria-labelledby="history-title"><div><p className="workspace-eyebrow">Investigation history</p><h2 id="history-title">Recent activity</h2><p>{investigations.length} investigations recorded in this workspace.</p></div><Link href="/archive">View history</Link></section>
       </div>
+      <p className="iw-notice" role="status" aria-live="polite">{notice}</p>
+      <dialog className="iw-delete-dialog" ref={dialogRef} onCancel={(event) => { event.preventDefault(); closeDeleteDialog(); }}>
+        <form method="dialog" onSubmit={(event) => event.preventDefault()}>
+          <span className="iw-delete-icon" aria-hidden="true">!</span>
+          <h2>Delete investigation?</h2>
+          <p><strong>{deleteTarget?.title}</strong> will be removed from this workspace. This action cannot be undone.</p>
+          {deleteError ? <p className="iw-delete-error" role="alert">{deleteError}</p> : null}
+          <div><button type="button" onClick={closeDeleteDialog} disabled={deleting}>Cancel</button><button className="iw-confirm-delete" type="button" onClick={confirmDelete} disabled={deleting}>{deleting ? "Deleting…" : "Delete investigation"}</button></div>
+        </form>
+      </dialog>
     </div>
   );
 }

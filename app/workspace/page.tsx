@@ -7,5 +7,5 @@ export default async function WorkspacePage() {
   const [actor, locale] = await Promise.all([requireWorkspaceActor(), getWorkspaceLocale()]);
   const queue = await listWorkspaceQueue(actor);
 
-  return <InvestigationWorkspace cases={queue.cases} locale={locale} />;
+  return <InvestigationWorkspace cases={queue.cases} locale={locale} canDelete={actor.role !== "viewer"} />;
 }

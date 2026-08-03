@@ -26,6 +26,7 @@ export interface CaseStore {
   findById(actor: WorkspaceActor, publicId: string): Promise<Case | null>;
   create(actor: WorkspaceActor, input: CreateCaseInput): Promise<Case>;
   update(actor: WorkspaceActor, publicId: string, input: UpdateCaseInput, expectedVersion: number): Promise<Case | null>;
+  delete(actor: WorkspaceActor, publicId: string): Promise<boolean>;
 }
 
 const priorities = new Set<CasePriority>(["low", "normal", "high", "critical"]);
@@ -88,5 +89,11 @@ export class CaseService {
     const caseRecord = await this.store.update(actor, publicId, input, input.version);
     if (!caseRecord) throw new CaseConflictError("Case was changed by another request.");
     return toCaseDto(caseRecord);
+  }
+
+  async delete(actor: WorkspaceActor, publicId: string): Promise<void> {
+    if (!writableRoles.has(actor.role)) throw new CaseAccessError("This role cannot delete investigations.");
+    if (!publicId.trim()) throw new CaseValidationError("An investigation ID is required.");
+    if (!await this.store.delete(actor, publicId)) throw new CaseNotFoundError("Investigation not found.");
   }
 }
