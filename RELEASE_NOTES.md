@@ -13,6 +13,7 @@ This file records customer-visible improvements in each ShadowScore release.
 
 ### Improved
 
+- The homepage now explains the decision outcome, input, analysis, and Executive Report at a glance, with an illustrative decision preview that shows how evidence becomes a practical control.
 - Terms and Privacy now include responsive section navigation, semantic lists, direct contact routes, and links between both policies.
 - Public pages now restore account navigation from the secure server session, including after a new tab or browser refresh.
 - Customers can now archive completed investigations, restore them to the Workspace, and permanently delete archived records with confirmation and clear status feedback.
