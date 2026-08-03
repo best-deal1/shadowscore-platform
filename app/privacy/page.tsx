@@ -9,10 +9,16 @@ export default function PrivacyPage() {
   const privacy = t.legal.privacy;
   const interpolateEmail = (value: string) => value.replace("{email}", PRIVACY_EMAIL);
 
-  return <ShadowScoreLayout><section className="mx-auto max-w-5xl px-6 py-20">
+  return <ShadowScoreLayout><main className="mx-auto max-w-6xl px-6 py-12 sm:py-20">
     <div className="text-sm uppercase tracking-[0.28em] text-red-300">{privacy.label}</div>
-    <h1 className="mt-4 text-5xl font-black">{privacy.title}</h1>
+    <h1 className="mt-4 max-w-4xl text-4xl font-black sm:text-5xl">{privacy.title}</h1>
     <p className="mt-6 max-w-4xl text-lg leading-8 text-zinc-400">{privacy.introduction}</p>
-    <div className="mt-10 grid gap-6">{privacy.sections.map((section) => <section key={section.title} className="rounded-3xl border border-white/10 bg-white/[0.03] p-7"><h2 className="text-2xl font-black">{section.title}</h2>{section.body.map((paragraph) => <p key={paragraph} className="mt-4 leading-8 text-zinc-400">{section.title === privacy.sections.at(-1)?.title ? <>{interpolateEmail(paragraph).split(PRIVACY_EMAIL)[0]}<a href={`mailto:${PRIVACY_EMAIL}`} className="text-red-300 hover:text-red-200">{PRIVACY_EMAIL}</a>{interpolateEmail(paragraph).split(PRIVACY_EMAIL)[1]}</> : paragraph}</p>)}{section.items && <div className="mt-5 grid gap-3 md:grid-cols-2">{section.items.map((item) => <div key={item} className="rounded-2xl border border-white/10 bg-black/40 p-4 text-zinc-300">{item}</div>)}</div>}</section>)}</div>
-  </section></ShadowScoreLayout>;
+    <div className="mt-10 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
+      <div className="grid gap-6">{privacy.sections.map((section, index) => <section id={`section-${index + 1}`} key={section.title} className="scroll-mt-28 rounded-3xl border border-white/10 bg-white/[0.03] p-6 sm:p-7"><h2 className="text-2xl font-black">{section.title}</h2>{section.body.map((paragraph) => <p key={paragraph} className="mt-4 max-w-3xl leading-8 text-zinc-400">{section.title === privacy.sections.at(-1)?.title ? <>{interpolateEmail(paragraph).split(PRIVACY_EMAIL)[0]}<a href={`mailto:${PRIVACY_EMAIL}`} className="text-red-300 underline underline-offset-4 hover:text-red-200">{PRIVACY_EMAIL}</a>{interpolateEmail(paragraph).split(PRIVACY_EMAIL)[1]}</> : paragraph}</p>)}{section.items && <ul className="mt-5 grid gap-3 sm:grid-cols-2">{section.items.map((item) => <li key={item} className="rounded-2xl border border-white/10 bg-black/40 p-4 text-zinc-300">{item}</li>)}</ul>}</section>)}</div>
+      <aside className="order-first rounded-3xl border border-white/10 bg-zinc-950/80 p-6 lg:order-none lg:sticky lg:top-24">
+        <nav aria-label={privacy.label}><ol className="space-y-3 text-sm">{privacy.sections.map((section, index) => <li key={section.title}><a href={`#section-${index + 1}`} className="block text-zinc-400 underline-offset-4 hover:text-white hover:underline focus-visible:text-white">{section.title}</a></li>)}</ol></nav>
+        <div className="mt-6 border-t border-white/10 pt-5 text-sm leading-6 text-zinc-400"><a href="/terms" className="font-bold text-red-300 underline-offset-4 hover:text-red-200 hover:underline">{t.legal.terms.label}</a><br /><a href={`mailto:${PRIVACY_EMAIL}`} className="mt-2 inline-block break-all underline underline-offset-4 hover:text-white">{PRIVACY_EMAIL}</a></div>
+      </aside>
+    </div>
+  </main></ShadowScoreLayout>;
 }
