@@ -4,13 +4,23 @@ import { readFile } from "node:fs/promises";
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
-test("beta purchase journey has one canonical start and safe legacy redirects", async () => {
-  const [layout, config, login, home] = await Promise.all([read("components/ShadowScoreLayout.tsx"), read("next.config.ts"), read("app/login/page.tsx"), read("app/HomeClient.tsx")]);
+test("beta purchase journey uses workspace as its canonical authenticated page", async () => {
+  const [layout, config, login, investigations, proxy, home] = await Promise.all([
+    read("components/ShadowScoreLayout.tsx"),
+    read("next.config.ts"),
+    read("app/login/page.tsx"),
+    read("app/investigations/page.tsx"),
+    read("proxy.ts"),
+    read("app/HomeClient.tsx"),
+  ]);
   assert.match(layout, /href="\/intake"/);
-  assert.match(config, /source: "\/dashboard", destination: "\/investigations"/);
-  assert.match(config, /source: "\/workspace", destination: "\/investigations"/);
+  assert.match(config, /source: "\/dashboard", destination: "\/workspace"/);
+  assert.doesNotMatch(config, /source: "\/workspace"/);
   assert.match(config, /source: "\/reports", destination: "\/archive"/);
-  assert.match(login, /\|\| "\/investigations"/);
+  assert.match(login, /\|\| "\/workspace"/);
+  assert.match(investigations, /redirect\("\/workspace"\)/);
+  assert.match(proxy, /request\.nextUrl\.pathname === "\/investigations"/);
+  assert.match(proxy, /NextResponse\.redirect\(new URL\("\/workspace", request\.url\)\)/);
   assert.match(home, /One Business Investigation produces one Executive Report for a one-time price of \$9\.90/);
 });
 
@@ -29,9 +39,9 @@ test("payment and Investigation statuses remain separate", async () => {
 });
 
 test("Archive and report provide retrieval, print identity, and repeat purchase", async () => {
-  const [archive, report] = await Promise.all([read("app/archive/ArchiveClient.tsx"), read("components/report/ExecutiveIntelligenceReport.tsx")]);
-  assert.match(archive, /View Executive Report/);
-  assert.match(archive, /Start Investigation/);
+  const [archive, report] = await Promise.all([read("app/archive/page.tsx"), read("components/report/ExecutiveIntelligenceReport.tsx")]);
+  assert.match(archive, /Open investigation/);
+  assert.match(archive, /View reports/);
   assert.match(report, /window\.print/);
   assert.match(report, /Investigation \{report\.intakeId \|\| report\.reportId\}/);
   assert.match(report, /Version 1\.0/);
