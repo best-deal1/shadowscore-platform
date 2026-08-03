@@ -41,6 +41,14 @@ export async function proxy(request: NextRequest) {
     return response;
   }
 
+  // Resolve the legacy index before React renders its async authenticated layout.
+  // A render-time redirect can otherwise be delivered as an RSC redirect and retried by the client.
+  if (request.nextUrl.pathname === "/investigations") {
+    const response = NextResponse.redirect(new URL("/workspace", request.url));
+    response.headers.set("Cache-Control", "private, no-store, max-age=0");
+    return response;
+  }
+
   const response = NextResponse.next();
   response.headers.set("Cache-Control", "private, no-store, max-age=0");
   return response;

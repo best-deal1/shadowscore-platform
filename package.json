@@ -44,6 +44,7 @@
     "test:investigation-access-contract": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types --test tests/investigation-access-contract.test.mjs",
     "test:canonical-investigations": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types --test tests/canonical-investigation-persistence.test.mjs tests/investigation-checkout-flow.test.mjs",
     "test:secure-logout": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types --test tests/secure-logout.test.mjs",
+    "test:investigations-navigation": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types --test tests/investigations-navigation.test.mjs",
     "validate:canonical-decision-identity": "node --experimental-strip-types scripts/validate-canonical-decision-identity.mjs",
     "validate:report-contract": "node scripts/validate-report-contract.mjs",
     "validate:public-browser-boundary": "node scripts/validate-public-browser-boundary.mjs",
