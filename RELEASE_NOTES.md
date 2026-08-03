@@ -13,6 +13,7 @@ This file records customer-visible improvements in each ShadowScore release.
 
 ### Improved
 
+- Public pages now restore account navigation from the secure server session, including after a new tab or browser refresh.
 - Customers can now archive completed investigations, restore them to the Workspace, and permanently delete archived records with confirmation and clear status feedback.
 - The Beta Candidate release gate now covers one connected purchase, report, return, profile, archive, restore, and deletion journey.
 - Signed-in customers now see a clear account menu across the public website, with direct paths to their workspace and profile on desktop and mobile.

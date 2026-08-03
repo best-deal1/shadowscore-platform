@@ -81,3 +81,31 @@ test("signup explicitly redirects confirmation email links to ShadowScore", asyn
     data: { name: "Person" },
   });
 });
+
+test("the public site restores a user from the server session after browser storage is cleared", async () => {
+  const sessionStorage = storageWith(null);
+  globalThis.window = { sessionStorage };
+  globalThis.fetch = async (input, init) => {
+    assert.equal(input, "/api/auth/session");
+    assert.deepEqual(init, { cache: "no-store" });
+    return Response.json({ user: { id: "user-1", email: "person@example.com", name: "Person", createdAt: "2026-08-03T00:00:00.000Z" } });
+  };
+  const { getAuthenticatedUser } = await import(`../lib/auth.ts?continuity=${Date.now()}`);
+
+  assert.deepEqual(await getAuthenticatedUser(), {
+    id: "user-1",
+    email: "person@example.com",
+    name: "Person",
+    createdAt: "2026-08-03T00:00:00.000Z",
+  });
+});
+
+test("an expired server session clears stale browser credentials", async () => {
+  const sessionStorage = storageWith({ userId: "user-1", email: "person@example.com", accessToken: "expired" });
+  globalThis.window = { sessionStorage };
+  globalThis.fetch = async () => Response.json({ user: null }, { status: 401 });
+  const { getAuthenticatedUser } = await import(`../lib/auth.ts?expired=${Date.now()}`);
+
+  assert.equal(await getAuthenticatedUser(), null);
+  assert.equal(sessionStorage.getItem("shadowscore.session.v19"), null);
+});
