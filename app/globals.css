@@ -14,6 +14,15 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  /* Canonical product color roles. Components use tints of these roles for state surfaces. */
+  --color-brand: #dc2626;
+  --color-action-primary: #dc2626;
+  --color-action-secondary: #475569;
+  --color-success: #047857;
+  --color-warning: #b45309;
+  --color-risk: #b91c1c;
+  --color-neutral: #64748b;
+  --color-administrator: #6d28d9;
 }
 
 @theme inline {
@@ -444,6 +453,11 @@ select {
   header, footer, nav, button, .print\:hidden { display: none !important; }
   .executive-report { margin: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
   .executive-report nav { display: none !important; }
+  .sample-report { background: #fff !important; color: #0f172a !important; }
+  .sample-report > header { display: block !important; background: #fff !important; color: #0f172a !important; padding-block: 1.5rem !important; }
+  .sample-report > header p, .sample-report section p { color: #334155 !important; }
+  .sample-report > nav, .sample-report-cta, .sample-report-commercial { display: none !important; }
+  .sample-report section, .sample-report article { break-inside: avoid; box-shadow: none !important; }
 }
 
 /* Live investigation agent */
