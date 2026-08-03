@@ -2,7 +2,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import ExecutiveIntelligenceReport from "../../../components/report/ExecutiveIntelligenceReport";
@@ -106,7 +105,12 @@ export default function ReportFlow({ reportId, mode }: { reportId: string; mode:
   const failedGeneration = paid && report?.reportStatus === "failed";
   const sourceCount = report?.reportSummary?.sourceProvenance?.length;
 
-  return <div className="min-h-screen bg-black text-white"><header className="border-b border-white/10"><div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-5"><Link href="/" aria-label="ShadowScore home" className="flex items-center gap-3"><Image src="/brand/shadowscore-infinity.svg" alt="" width={56} height={36} className="h-9 w-14 object-contain" /><span className="text-xl font-black">ShadowScore</span></Link><nav aria-label="Report navigation" className="flex flex-wrap items-center gap-4 text-sm font-bold text-zinc-300"><Link href="/investigations" className="hover:text-white">Investigations</Link><Link href="/archive" className="hover:text-white">Archive</Link><Link href="/intake" className="hover:text-white">New Investigation</Link></nav></div><nav aria-label="Breadcrumb" className="border-t border-white/[.06]"><ol className="mx-auto flex max-w-6xl gap-2 px-6 py-3 text-xs font-bold text-zinc-500"><li><Link href="/investigations" className="text-zinc-300 hover:text-white">Investigations</Link></li><li aria-hidden="true">/</li><li><Link href="/archive" className="text-zinc-300 hover:text-white">Archive</Link></li><li aria-hidden="true">/</li><li aria-current="page">{mode === "unlock" ? "Review and payment" : mode === "processing" ? "Investigation status" : "Executive Report"}</li></ol></nav></header><JourneyProgress current={mode === "unlock" ? 2 : mode === "processing" ? 3 : 4} /><main className="mx-auto max-w-6xl px-6 py-10">
+  const pageTitle = mode === "unlock" ? "Review and payment" : mode === "processing" ? "Investigation status" : "Executive Report";
+
+  return <section className="mx-auto w-full max-w-[90rem] text-slate-900">
+    <nav aria-label="Breadcrumb" className="mb-5 text-sm font-semibold text-slate-500"><ol className="flex flex-wrap items-center gap-2"><li><Link href="/workspace" className="hover:text-blue-700">Workspace</Link></li><li aria-hidden="true">/</li><li><Link href="/reports" className="hover:text-blue-700">Reports</Link></li><li aria-hidden="true">/</li><li aria-current="page" className="text-slate-900">{pageTitle}</li></ol></nav>
+    <JourneyProgress current={mode === "unlock" ? 2 : mode === "processing" ? 3 : 4} appearance="workspace" />
+    <main className="mt-6 rounded-[28px] bg-slate-950 px-4 py-6 text-white shadow-[0_20px_60px_rgba(15,23,42,.14)] sm:px-6 lg:px-8 lg:py-8">
     {(loading || confirmingPayment) && <p className="mt-10 text-zinc-300">{confirmingPayment ? "Verifying payment record..." : "Retrieving investigation record..."}</p>}
     {error && <section className="mt-8 rounded-3xl border border-red-400/30 bg-red-500/10 p-6"><h1 className="text-2xl font-black">Report unavailable</h1><p className="mt-3 text-zinc-300">{error}</p><button onClick={() => void load()} className="mt-5 rounded-xl bg-white px-4 py-3 font-bold text-black">Try again</button></section>}
 
@@ -124,5 +128,5 @@ export default function ReportFlow({ reportId, mode }: { reportId: string; mode:
     </div>}
 
     {!loading && report && mode === "report" && (ready ? <>{administratorReport && <section className="mb-5 rounded-2xl border border-violet-400/35 bg-violet-500/10 p-5"><span className="rounded-full border border-violet-300/40 px-3 py-1 text-xs font-bold uppercase tracking-wider text-violet-200">Admin access</span><p className="mt-3 font-bold text-violet-100">{report.administratorNotice || "Administrator test report - no customer payment was processed."}</p></section>}<ExecutiveIntelligenceReport report={report} /></> : <section className="mt-8 rounded-3xl border border-amber-400/25 bg-amber-500/10 p-7"><h1 className="text-3xl font-black">Executive Report unavailable</h1><p className="mt-3 text-zinc-300">{paid ? "The Investigation is still in progress. Check its current status." : "Payment is required to commission the investigation and access its Executive Report."}</p><Link href={paid ? `/reports/${reportId}/processing` : `/reports/${reportId}/unlock`} className="mt-6 inline-block rounded-xl bg-white px-5 py-3 font-black text-black">{paid ? "View Investigation status" : "Review and pay"}</Link></section>)}
-  </main><footer className="mx-auto flex max-w-6xl flex-wrap justify-center gap-4 border-t border-white/10 px-6 py-6 text-xs text-zinc-500"><Link href="/terms" className="hover:text-white">Terms</Link><Link href="/contact" className="hover:text-white">Support</Link></footer></div>;
+  </main></section>;
 }
