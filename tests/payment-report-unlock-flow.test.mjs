@@ -8,17 +8,17 @@ const session = { userId: "payment-flow-user", email: "buyer@example.com", name:
 const intakeRecord = { scanMode: "website", target: "example.com", platform: "Website", email: session.email, fileNames: [], visibleSignalCategories: ["Identity", "Infrastructure"] };
 const source = (path) => fs.readFileSync(new URL(path, import.meta.url), "utf8");
 
-test("preview redirects only with the report id returned by checkout", () => {
+test("checkout sends the customer to the canonical workspace", () => {
   const component = source("../components/PaymentButtons.tsx");
   assert.match(component, /if \(!body\.intent \|\| !body\.reportId\) throw new Error/);
-  assert.match(component, /\/reports\/\$\{result\.intent\.reportId\}\/unlock/);
+  assert.match(component, /window\.location\.assign\("\/workspace"\)/);
 });
 test("unlock summary states the purchase type, total, contents, and payment provider", () => {
   const page = source("../app/reports/[reportId]/ReportFlow.tsx");
   for (const copy of ["One Business Investigation", "Total", "Executive Report includes", "No subscription", "Payment processed by the selected provider"]) assert.ok(page.includes(copy));
   assert.equal(REPORT_PRODUCT.price, "$9.90");
   assert.equal(REPORT_PRODUCT.amount, "9.90");
-  assert.equal(REPORT_PRODUCT.name, "Quick Investigation");
+  assert.equal(REPORT_PRODUCT.name, "Business Investigation");
 });
 test("checkout initiation creates one report-scoped intent", async () => {
   const intake = await createIntake(session, intakeRecord);

@@ -43,7 +43,7 @@ export default function MarketingHome() {
             </div>
             <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-300" aria-label="Purchase information">
               <li>Free preview before payment</li>
-              <li>Full report: $9.90</li>
+              <li>Executive Report: $9.90</li>
               <li>Reports saved to your workspace</li>
             </ul>
           </div>

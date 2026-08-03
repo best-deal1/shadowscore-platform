@@ -19,7 +19,7 @@ import type { InvestigationIntelligence } from "./investigationIntelligence";
 import type { TargetResolution } from "./targetIntegrity";
 import { supabaseFetch, isSupabaseConfigured, requirePersistentSessionInProduction } from "./supabase";
 import { cloneWorkspace, getMutableMemoryWorkspace } from "./workspaceStore";
-import { QUICK_INVESTIGATION } from "./pricing";
+import { BETA_PRODUCT } from "./pricing";
 
 export type WorkspaceSession = {
   userId: string;
@@ -109,11 +109,11 @@ export type PaymentIntent = {
 };
 
 export const REPORT_PRODUCT = {
-  name: QUICK_INVESTIGATION.name,
-  price: QUICK_INVESTIGATION.price,
-  amount: QUICK_INVESTIGATION.amount,
+  name: BETA_PRODUCT.name,
+  price: BETA_PRODUCT.price,
+  amount: BETA_PRODUCT.amount,
   estimatedGenerationTime: "Usually ready within 2 minutes",
-  includes: ["Executive recommendation", "Verified findings and evidence gaps", "Source trail", "Prioritized action plan"],
+  includes: BETA_PRODUCT.includes,
 } as const;
 
 export function reportIdForPayment(paymentIntentId: string) {
