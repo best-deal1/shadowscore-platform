@@ -13,6 +13,7 @@ This file records customer-visible improvements in each ShadowScore release.
 
 ### Improved
 
+- The workspace now supports confirmed investigation deletion, clear success and error feedback, and a focused first-investigation empty state.
 - Sprint 2.2 introduces one visible investigation progress model from intake through review, payment, processing, and the Executive Report.
 - Executive Reports now include an accessible risk visualization, evidence navigation, secure link sharing, and a focused PDF export action.
 - Review, payment, and processing screens now use consistent breadcrumbs, trust details, recovery actions, and report availability language.
