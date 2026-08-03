@@ -15,7 +15,7 @@ type PaymentButtonsProps = {
   onPersistIntake?: (email: string) => Promise<string>;
 };
 
-export default function PaymentButtons({ buttonLabel = "Unlock Full Report", intakeId, email = "", onEmailResolved, onPersistIntake }: PaymentButtonsProps) {
+export default function PaymentButtons({ buttonLabel = "Unlock Executive Report", intakeId, email = "", onEmailResolved, onPersistIntake }: PaymentButtonsProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
