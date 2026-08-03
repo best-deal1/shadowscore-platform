@@ -30,3 +30,19 @@ BR-01 through BR-04 are the permanent engineering and product standards. Plannin
 - Include before and after screenshots, mobile screenshots, an accessibility review, and a UX explanation with every UI pull request.
 - Include tests, error handling, and appropriate logging with every backend pull request.
 - Make every feature production-ready before merge.
+
+## Customer-Visible Delivery
+
+Every implementation pull request must improve the perceived quality of the product.
+
+Before opening a pull request, ask: "If this were the only change released today, would users immediately notice that the product became better?"
+
+If the answer is no, the work is probably too small or lacks visible customer value. Group related improvements so every release produces a visible improvement. Do not ship technical work with no visible customer value unless it blocks future product work.
+
+Every sprint must end with a customer-visible improvement. After each sprint, answer:
+
+1. If ShadowScore were presented to an investor tomorrow, what would still fall below a commercial standard?
+2. What three issues most reduce a new user's trust?
+3. Which single improvement would create the largest increase in perceived quality?
+
+Record shipped customer-facing changes in [`RELEASE_NOTES.md`](RELEASE_NOTES.md).
