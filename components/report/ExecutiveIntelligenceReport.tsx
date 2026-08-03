@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import type { ShadowScoreReport } from "../../lib/workspace";
 import { executiveBusinessImpacts, executiveDecisionReasons, executiveFindingStories, executiveRecommendation, groupExecutiveEvidence, materialEvidenceGaps, recommendedActions } from "../../lib/executiveReport";
 
@@ -40,6 +41,7 @@ const investigationScope = [
 ] as const;
 
 export default function ExecutiveIntelligenceReport({ report }: { report: ShadowScoreReport }) {
+  const [actionStatus, setActionStatus] = useState("");
   const recommendation = executiveRecommendation(report);
   const findingStories = executiveFindingStories(report);
   const evidenceGroups = groupExecutiveEvidence(report);
@@ -66,10 +68,33 @@ export default function ExecutiveIntelligenceReport({ report }: { report: Shadow
   const investigationType = levelLabel(report.scanMode || report.platform);
   const sourceCount = new Set([...sources.map((source) => source.label), ...evidence.map((item) => item.source)].filter(Boolean)).size;
 
+  async function copyReportLink() {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setActionStatus("Secure report link copied.");
+    } catch {
+      setActionStatus("The link could not be copied. Copy it from the address bar.");
+    }
+  }
+
+  async function shareReport() {
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: `ShadowScore report: ${report.entity}`, url: window.location.href });
+        setActionStatus("Report shared.");
+        return;
+      }
+      await copyReportLink();
+    } catch (cause) {
+      if (cause instanceof DOMException && cause.name === "AbortError") return;
+      setActionStatus("Sharing is unavailable. Copy the secure link instead.");
+    }
+  }
+
   return <>
     <div className="mb-5 flex flex-wrap items-center justify-between gap-4 print:hidden">
       <p className="max-w-2xl text-sm leading-6 text-zinc-400">Investigation {report.intakeId || report.reportId}. Version 1.0. Private report. Access requires the recipient to sign in to the purchasing account.</p>
-      <div className="flex flex-wrap gap-3"><button type="button" onClick={() => window.location.reload()} className="rounded-lg border border-white/15 px-4 py-2.5 text-sm font-bold text-white">Refresh report</button><button type="button" onClick={() => window.print()} className="rounded-lg border border-white/15 bg-white px-4 py-2.5 text-sm font-bold text-slate-950">Download or print</button><Link href="/intake" className="rounded-lg bg-cyan-400 px-4 py-2.5 text-sm font-bold text-slate-950">Start Investigation</Link></div>
+      <div className="flex flex-wrap justify-end gap-3"><button type="button" onClick={() => void copyReportLink()} className="rounded-lg border border-white/15 px-4 py-2.5 text-sm font-bold text-white">Copy secure link</button><button type="button" onClick={() => void shareReport()} className="rounded-lg border border-white/15 px-4 py-2.5 text-sm font-bold text-white">Share report</button><button type="button" onClick={() => window.print()} className="rounded-lg border border-white/15 bg-white px-4 py-2.5 text-sm font-bold text-slate-950">Export PDF</button><Link href="/intake" className="rounded-lg bg-cyan-400 px-4 py-2.5 text-sm font-bold text-slate-950">New investigation</Link>{actionStatus && <p role="status" className="w-full text-right text-xs font-semibold text-emerald-200">{actionStatus}</p>}</div>
     </div>
 
     <article className="executive-report overflow-hidden rounded-[28px] border border-slate-300 bg-[#f4f3ef] text-slate-700 shadow-[0_28px_90px_rgba(0,0,0,0.32)]">
@@ -120,6 +145,8 @@ export default function ExecutiveIntelligenceReport({ report }: { report: Shadow
         <section id="decision-brief" aria-labelledby="summary-title" className="mt-12 border-t border-slate-300 pt-10">
           <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-800">01 / Decision brief</p><h2 id="summary-title" className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">Executive Decision Brief</h2>
           <div className={`mt-6 rounded-2xl border p-6 sm:flex sm:items-end sm:justify-between sm:gap-6 ${tone}`}><div><p className="text-xs font-bold uppercase tracking-[0.18em] opacity-70">Decision</p><p className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">{recommendation.label}</p></div><div className="mt-4 sm:mt-0 sm:text-right"><p className="text-xs font-bold uppercase tracking-[0.18em] opacity-70">Confidence</p><p className="mt-1 text-xl font-semibold">{confidence}</p></div></div>
+
+          {riskScore !== undefined && <div className="mt-6 border border-slate-300 bg-white p-5 sm:p-6" role="img" aria-label={`Overall risk score ${riskScore} out of 100`}><div className="flex items-end justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Overall risk</p><p className="mt-1 text-3xl font-semibold tabular-nums text-slate-950">{riskScore}<span className="text-base font-medium text-slate-500"> / 100</span></p></div><p className="text-sm font-semibold text-slate-600">Higher scores require more review</p></div><div className="mt-4 h-3 overflow-hidden rounded-full bg-slate-200"><div className={`h-full rounded-full ${riskScore >= 70 ? "bg-red-700" : riskScore >= 40 ? "bg-amber-600" : "bg-emerald-700"}`} style={{ width: `${Math.max(0, Math.min(100, riskScore))}%` }} /></div><div className="mt-2 flex justify-between text-xs font-medium text-slate-500"><span>Lower exposure</span><span>Higher exposure</span></div></div>}
 
           <div className="mt-6 grid gap-6 lg:grid-cols-2">
             <BriefPanel title="Why"><ul className="space-y-4">{decisionReasons.length ? decisionReasons.map((reason) => <li key={reason.id} className="border-b border-slate-200 pb-3 last:border-0 last:pb-0"><p className="font-medium text-slate-950">{reason.statement}</p><p className="mt-1 text-xs font-semibold uppercase tracking-wider text-cyan-800">Evidence: {reason.evidence}</p></li>) : <li>{recommendation.explanation}</li>}</ul></BriefPanel>

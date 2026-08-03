@@ -3,10 +3,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import PaymentButtons from "../../components/PaymentButtons";
 import { getCurrentSession } from "../../lib/auth";
 import { isPreviewReadyResponse, nextPreviewStatus, readPreviewJson } from "../../lib/freeScanPreviewFlow";
+import JourneyProgress from "../../components/investigation/JourneyProgress";
 import { createIntake, ShadowScoreIntake } from "../../lib/workspace";
 import { useLocale } from "../../components/LocaleProvider";
 
@@ -927,9 +929,11 @@ export default function IntakePage() {
             href="/"
             className="flex items-center gap-3 text-sm text-zinc-500 hover:text-white"
           >
-            <img
+            <Image
               src="/shadowscore-shield-v8.png"
               alt="ShadowScore"
+              width={32}
+              height={32}
               className="h-8 w-8 object-contain"
             />
             {t.intakeUi.back}
@@ -939,6 +943,8 @@ export default function IntakePage() {
           </div>
         </div>
       </header>
+
+      <JourneyProgress current={1} />
 
       <section className="relative z-10 mx-auto max-w-7xl px-6 py-14">
         <div className="grid gap-10 lg:grid-cols-[.82fr_1.18fr]">
