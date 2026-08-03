@@ -30,6 +30,12 @@
   --ss-text: #f8fafc;
   --ss-text-muted: #94a3b8;
   --ss-focus: #7dd3fc;
+  --product-radius-sm: .625rem;
+  --product-radius-md: .875rem;
+  --product-radius-lg: 1.125rem;
+  --product-shadow-sm: 0 1px 2px rgb(16 24 40 / .04), 0 1px 3px rgb(16 24 40 / .06);
+  --product-shadow-md: 0 12px 28px rgb(16 24 40 / .08), 0 2px 6px rgb(16 24 40 / .04);
+  --product-transition: 160ms cubic-bezier(.2, .8, .2, 1);
 }
 
 @theme inline {
@@ -493,4 +499,40 @@ select {
 @media (prefers-reduced-motion: reduce) {
   .agent-live-dot, .agent-spinner, .agent-step-active, .agent-step-check { animation: none; }
   .agent-progress { transition: none; }
+}
+
+
+/* Enterprise workspace polish. Shared tokens align navigation, surfaces, and actions. */
+.workspace-shell { background: #f6f7f9; }
+.workspace-header { min-height: 4.75rem; background: rgb(255 255 255 / .94); box-shadow: 0 1px 0 rgb(16 24 40 / .02); backdrop-filter: blur(18px); }
+.workspace-brand:focus-visible, .workspace-sidebar-footer a:focus-visible, .workspace-sign-out:focus-visible, .workspace-menu-button:focus-visible { outline: 3px solid #2563eb; outline-offset: 3px; }
+.workspace-mark { height: 2rem; width: 2.75rem; border-radius: 0; background: transparent; object-fit: contain; }
+.workspace-brand-name { display: grid; line-height: 1.05; }
+.workspace-brand-name small { margin-top: .25rem; color: #98a2b3; font-size: .55rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.workspace-sign-out, .workspace-menu-button { min-height: 2.75rem; border-radius: var(--product-radius-sm); padding: .5rem .8rem; transition: background-color var(--product-transition), border-color var(--product-transition), color var(--product-transition); }
+.workspace-sign-out:hover, .workspace-menu-button:hover { border-color: #c5ccd6; }
+.workspace-frame { min-height: calc(100vh - 4.75rem); grid-template-columns: 16rem minmax(0, 1fr); }
+.workspace-sidebar { display: flex; flex-direction: column; padding: 1.5rem .875rem 1rem; }
+.workspace-nav-link { position: relative; min-height: 2.875rem; border-radius: var(--product-radius-sm); transition: background-color var(--product-transition), color var(--product-transition), transform var(--product-transition); }
+.workspace-nav-link:hover { transform: translateX(2px); }
+.workspace-nav-link.is-current { box-shadow: inset 3px 0 #2563eb; }
+.workspace-nav-icon { width: 1.125rem; }
+.workspace-nav-icon svg { width: 1.125rem; height: 1.125rem; }
+.workspace-sidebar-footer { display: grid; gap: .65rem; margin-top: auto; border-top: 1px solid #eef0f3; padding: 1.25rem .75rem .25rem; }
+.workspace-sidebar-footer a { color: #667085; font-size: .75rem; font-weight: 650; text-decoration: none; }
+.workspace-sidebar-footer a:hover { color: #1d4ed8; }
+.workspace-system-status { display: flex; align-items: center; gap: .45rem; margin-bottom: .2rem; color: #475467; font-size: .6875rem; font-weight: 750; }
+.workspace-system-status > span { width: .45rem; height: .45rem; border-radius: 999px; background: #12b76a; box-shadow: 0 0 0 3px #e7f8f0; }
+.workspace-record-list article { border-radius: var(--product-radius-md); box-shadow: var(--product-shadow-sm); transition: border-color var(--product-transition), box-shadow var(--product-transition), transform var(--product-transition); }
+.workspace-record-list article:hover { border-color: #cbd2dc; box-shadow: var(--product-shadow-md); transform: translateY(-1px); }
+.workspace-primary-button { border-radius: var(--product-radius-sm); box-shadow: 0 1px 2px rgb(16 24 40 / .12), 0 4px 10px rgb(29 78 216 / .18); transition: background-color var(--product-transition), box-shadow var(--product-transition), transform var(--product-transition); }
+.workspace-primary-button:hover { background: #1e40af; box-shadow: 0 6px 16px rgb(29 78 216 / .22); transform: translateY(-1px); }
+@media (max-width: 700px) {
+  .workspace-header { min-height: 4.25rem; }
+  .workspace-brand-name small { display: none; }
+  .workspace-frame { min-height: calc(100vh - 4.25rem); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .workspace-nav-link, .workspace-record-list article, .workspace-primary-button { transition: none; }
+  .workspace-nav-link:hover, .workspace-record-list article:hover, .workspace-primary-button:hover { transform: none; }
 }
