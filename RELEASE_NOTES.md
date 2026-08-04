@@ -13,6 +13,8 @@ This file records customer-visible improvements in each ShadowScore release.
 
 ### Improved
 
+- Enterprise readiness review mode now adds a consistent trust checkpoint strip across the product shell and includes Account in authenticated navigation for easier procurement-style demos.
+
 - The Platform and About pages now share the current ShadowScore visual system, factual product language, clear return navigation, and a consistent path from company context to sample report and investigation.
 
 - Product transitions, loading placeholders, empty states, error states, hover feedback, focus visibility, and action notifications now share one responsive and reduced-motion-aware interaction system.
