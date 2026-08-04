@@ -23,6 +23,7 @@ const primaryNav = [
   { href: "/methodology", label: "Methodology" },
   { href: "/pricing", label: "Pricing" },
   { href: "/security", label: "Security" },
+  { href: "/faq", label: "FAQ" },
 ];
 
 const workspaceNav = [
@@ -34,9 +35,13 @@ const workspaceNav = [
 
 const routeLabels: Record<string, string> = {
   "/business-due-diligence": "Platform", "/sample-report": "Sample report",
+  "/business-background-check": "Business background check", "/company-check": "Company check",
+  "/company-extract": "Company extract", "/company-registry-search": "Company registry search",
+  "/marketplace-seller-verification": "Seller verification", "/supplier-verification": "Supplier verification",
   "/methodology": "Methodology", "/pricing": "Pricing", "/security": "Security",
   "/login": "Sign in", "/signup": "Create account", "/intake": "Start investigation",
   "/contact": "Contact", "/about": "About", "/privacy": "Privacy", "/terms": "Terms",
+  "/faq": "FAQ", "/forgot-password": "Password recovery",
   "/account": "Profile",
   "/workspace": "Workspace", "/investigations": "Investigations",
   "/reports": "Reports", "/monitoring": "Monitoring",
@@ -112,12 +117,14 @@ export default function ShadowScoreLayout({
         { href: "/sample-report", label: t.footer.example },
         { href: "/pricing", label: t.nav.plans },
         { href: "/methodology", label: t.footer.methodology },
+        { href: "/faq", label: "FAQ" },
       ],
     },
     {
       title: t.footer.trust,
       links: [
         { href: "/security", label: t.footer.security },
+        { href: "/about", label: "About" },
         { href: "/privacy", label: t.footer.privacy },
         { href: "/terms", label: t.footer.terms },
       ],
