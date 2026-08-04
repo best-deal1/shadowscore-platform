@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
 import type { Locale } from "@/lib/i18n";
 import type { CaseQueueItemDto } from "@/lib/workspace/domain";
@@ -19,6 +20,7 @@ function investigationType(index: number) {
 }
 
 export function InvestigationWorkspace({ cases, locale, canDelete }: { cases: readonly CaseQueueItemDto[]; locale: Locale; canDelete: boolean }) {
+  const router = useRouter();
   const [investigations, setInvestigations] = useState(() => [...cases]);
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
@@ -84,6 +86,7 @@ export function InvestigationWorkspace({ cases, locale, canDelete }: { cases: re
       setNotice(`${deletedTitle} was deleted from the workspace.`);
     } catch (error) {
       setDeleteError(error instanceof Error ? error.message : "The investigation could not be deleted. Try again.");
+      router.refresh();
     } finally {
       setDeleting(false);
     }
@@ -150,8 +153,8 @@ export function InvestigationWorkspace({ cases, locale, canDelete }: { cases: re
           <span className="iw-delete-icon" aria-hidden="true">!</span>
           <h2>Delete investigation?</h2>
           <p><strong>{deleteTarget?.title}</strong> will be removed from this workspace. This action cannot be undone.</p>
-          {deleteError ? <p className="iw-delete-error" role="alert">{deleteError}</p> : null}
-          <div><button type="button" onClick={closeDeleteDialog} disabled={deleting}>Cancel</button><button className="iw-confirm-delete" type="button" onClick={confirmDelete} disabled={deleting}>{deleting ? "Deleting…" : "Delete investigation"}</button></div>
+          {deleteError ? <p className="iw-delete-error" role="alert">{deleteError} The workspace has been synchronized. You can retry the deletion.</p> : null}
+          <div><button type="button" onClick={closeDeleteDialog} disabled={deleting}>Cancel</button><button className="iw-confirm-delete" type="button" onClick={confirmDelete} disabled={deleting}>{deleting ? "Deleting…" : deleteError ? "Retry deletion" : "Delete investigation"}</button></div>
         </form>
       </dialog>
     </div>

@@ -3,6 +3,7 @@ import { resolveWorkspaceActor, WorkspaceAccessError } from "@/lib/workspace/act
 import { CaseRepository } from "@/lib/workspace/caseRepository";
 import { CaseAccessError, CaseConflictError, CaseNotFoundError, CaseService, CaseValidationError } from "@/lib/workspace/cases";
 import { supabaseFetch } from "@/lib/supabase";
+import { revalidatePath } from "next/cache";
 
 export async function PATCH(request: Request, context: RouteContext<"/api/workspace/investigations/[caseId]">) {
   const { caseId } = await context.params;
@@ -13,6 +14,8 @@ export async function PATCH(request: Request, context: RouteContext<"/api/worksp
     if (!accessToken) return Response.json({ error: "Authentication is required." }, { status: 401 });
     const actor = await resolveWorkspaceActor(accessToken, supabaseFetch);
     const investigation = await new CaseService(new CaseRepository(supabaseFetch, accessToken)).update(actor, caseId, { status: body.status, version: body.version as number });
+    revalidatePath("/workspace");
+    revalidatePath("/archive");
     return Response.json({ investigation });
   } catch (error) {
     if (error instanceof WorkspaceAccessError) return Response.json({ error: "Authentication is required." }, { status: 401 });
@@ -33,6 +36,8 @@ export async function DELETE(_request: Request, context: RouteContext<"/api/work
     if (!accessToken) return Response.json({ error: "Authentication is required." }, { status: 401 });
     const actor = await resolveWorkspaceActor(accessToken, supabaseFetch);
     await new CaseService(new CaseRepository(supabaseFetch, accessToken)).delete(actor, caseId);
+    revalidatePath("/workspace");
+    revalidatePath("/archive");
     return new Response(null, { status: 204 });
   } catch (error) {
     if (error instanceof WorkspaceAccessError) return Response.json({ error: "Authentication is required." }, { status: 401 });

@@ -41,6 +41,7 @@ This file records customer-visible improvements in each ShadowScore release.
 
 ### Fixed
 
+- Investigation deletion now validates workspace ownership before removal, clears server caches after lifecycle changes, and synchronizes the Workspace automatically when a request fails.
 - Guest investigations now resume after account creation.
 - Payment completion is tied to the purchased report.
 - Verified payments now start report generation without relying on browser polling.
