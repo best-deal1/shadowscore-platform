@@ -96,6 +96,10 @@ body {
 .ss-public-shell { background: var(--ss-canvas); }
 .ss-site-header { border-bottom: 1px solid var(--ss-border); background: rgb(7 11 18 / .92); box-shadow: 0 10px 35px rgb(0 0 0 / .24); backdrop-filter: blur(18px); }
 .ss-platform-bar { border-bottom: 1px solid rgb(148 163 184 / .1); background: rgb(15 23 42 / .72); }
+.ss-enterprise-readiness { border-bottom: 1px solid rgb(56 189 248 / .12); background: linear-gradient(90deg, rgb(14 116 144 / .11), rgb(15 23 42 / .44)); }
+.ss-enterprise-readiness ul { list-style: none; margin: 0; padding: 0; }
+.ss-enterprise-readiness li { display: flex; min-height: 2.25rem; align-items: center; gap: .5rem; border: 1px solid rgb(255 255 255 / .08); border-radius: .8rem; background: rgb(255 255 255 / .035); padding: .55rem .7rem; }
+.ss-enterprise-readiness li span { display: grid; height: 1.1rem; width: 1.1rem; place-items: center; border-radius: 999px; background: rgb(16 185 129 / .18); color: #86efac; font-size: .7rem; }
 .ss-nav-link { display: inline-flex; min-height: 2.75rem; align-items: center; border-radius: .65rem; border: 1px solid transparent; padding: .625rem .75rem; color: #94a3b8; transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease; }
 .ss-nav-link:hover { background: rgb(255 255 255 / .045); color: #f8fafc; }
 .ss-nav-link-active { border-color: rgb(125 211 252 / .18); background: rgb(56 189 248 / .09); color: #e0f2fe; }

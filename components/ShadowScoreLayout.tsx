@@ -30,6 +30,7 @@ const workspaceNav = [
   { href: "/investigations", label: "Investigations" },
   { href: "/reports", label: "Reports" },
   { href: "/monitoring", label: "Monitoring" },
+  { href: "/account", label: "Account" },
 ];
 
 const routeLabels: Record<string, string> = {
@@ -37,9 +38,9 @@ const routeLabels: Record<string, string> = {
   "/methodology": "Methodology", "/pricing": "Pricing", "/security": "Security",
   "/login": "Sign in", "/signup": "Create account", "/intake": "Start investigation",
   "/contact": "Contact", "/about": "About", "/privacy": "Privacy", "/terms": "Terms",
-  "/account": "Profile",
+  "/account": "Account",
   "/workspace": "Workspace", "/investigations": "Investigations",
-  "/reports": "Reports", "/monitoring": "Monitoring",
+  "/reports": "Reports", "/archive": "Archive", "/monitoring": "Monitoring",
 };
 
 const mobilePublicNav = [
@@ -154,9 +155,9 @@ export default function ShadowScoreLayout({
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-2 sm:px-6">
             <p className="flex items-center gap-2 text-[0.6875rem] font-bold uppercase tracking-[0.16em] text-slate-400">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" aria-hidden="true" />
-              Business investigation platform
+              Enterprise readiness review
             </p>
-            <p className="hidden text-xs text-slate-500 sm:block">Workspace · Investigation · Report</p>
+            <p className="hidden text-xs text-slate-500 sm:block">Identity · Evidence · Access controls · Support</p>
           </div>
         </div>
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
@@ -337,6 +338,21 @@ export default function ShadowScoreLayout({
           </ol>
         </nav>
       ) : null}
+
+      <section className="ss-enterprise-readiness" aria-label="Enterprise readiness signals">
+        <div className="mx-auto grid max-w-7xl gap-3 px-5 py-4 sm:px-6 lg:grid-cols-[1.3fr_2fr] lg:items-center">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-sky-300">Enterprise review mode</p>
+            <p className="mt-1 text-sm font-semibold text-slate-200">ShadowScore is being evaluated as one connected SaaS experience across public pages, purchase, workspace, reporting, and account controls.</p>
+          </div>
+          <ul className="grid gap-2 text-xs font-bold text-slate-300 sm:grid-cols-2 lg:grid-cols-4" aria-label="Readiness checkpoints">
+            <li><span aria-hidden="true">✓</span> Customer journeys</li>
+            <li><span aria-hidden="true">✓</span> Trust indicators</li>
+            <li><span aria-hidden="true">✓</span> Recovery states</li>
+            <li><span aria-hidden="true">✓</span> Mobile access</li>
+          </ul>
+        </div>
+      </section>
       <div id="main-content">{children}</div>
 
       <footer className="border-t border-white/10 bg-[#070b12] px-5 py-12 sm:px-6">
