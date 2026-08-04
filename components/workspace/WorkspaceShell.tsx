@@ -83,6 +83,7 @@ export function WorkspaceShell({ children, locale, actor }: { children: React.Re
           {canOpenAdmin ? <div className="workspace-admin-nav"><p className="workspace-nav-label">Administration</p><Link onClick={() => setMenuOpen(false)} className={`workspace-nav-link${matchesPath(pathname, ["/admin"]) ? " is-current" : ""}`} href="/admin" aria-current={matchesPath(pathname, ["/admin"]) ? "page" : undefined}><span className="workspace-nav-icon"><NavigationIcon name="admin" /></span>Admin</Link></div> : null}
           <div className="workspace-sidebar-footer">
             <span className="workspace-system-status"><span aria-hidden="true" /> Systems operational</span>
+            <Link href="/" onClick={() => setMenuOpen(false)}>ShadowScore website</Link>
             <Link href="/security" onClick={() => setMenuOpen(false)}>Security and trust</Link>
             <Link href="/contact" onClick={() => setMenuOpen(false)}>Help and support</Link>
           </div>

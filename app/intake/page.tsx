@@ -11,6 +11,7 @@ import { isPreviewReadyResponse, nextPreviewStatus, readPreviewJson } from "../.
 import JourneyProgress from "../../components/investigation/JourneyProgress";
 import { createIntake, ShadowScoreIntake } from "../../lib/workspace";
 import { useLocale } from "../../components/LocaleProvider";
+import { BETA_PRODUCT } from "../../lib/pricing";
 
 type Severity = "Low" | "Medium" | "High" | "Critical";
 type Finding = {
@@ -1286,11 +1287,11 @@ export default function IntakePage() {
                       <p className="mt-3 text-lg font-bold text-white">Confirm the Business and scope before payment.</p>
                       <p className="mt-2 text-sm text-yellow-100">Use evidence-backed findings to verify identity, detect commercial inconsistencies, assess payment risk, and document your decision.</p>
                       <div className="mt-5 rounded-2xl border border-white/10 bg-black/30 p-5">
-                        <dl className="mb-5 grid gap-3 text-sm sm:grid-cols-2"><div><dt className="text-zinc-500">Business</dt><dd className="font-bold text-white">{businessName}</dd></div><div><dt className="text-zinc-500">Investigation scope</dt><dd className="font-bold text-white">{activeMode.label}</dd></div><div><dt className="text-zinc-500">Deliverable</dt><dd className="font-bold text-white">Executive Report</dd></div><div><dt className="text-zinc-500">One-time price</dt><dd className="font-bold text-white">$9.90</dd></div></dl>
+                        <dl className="mb-5 grid gap-3 text-sm sm:grid-cols-2"><div><dt className="text-zinc-500">Business</dt><dd className="font-bold text-white">{businessName}</dd></div><div><dt className="text-zinc-500">Investigation scope</dt><dd className="font-bold text-white">{activeMode.label}</dd></div><div><dt className="text-zinc-500">Deliverable</dt><dd className="font-bold text-white">Executive Report</dd></div><div><dt className="text-zinc-500">One-time price</dt><dd className="font-bold text-white">{BETA_PRODUCT.price}</dd></div></dl>
                         <label><div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">Customer email (required)</div><input type="email" required value={email} onChange={(e) => { setEmail(e.target.value); setSaveError(""); }} aria-describedby={saveError ? "checkout-email-error" : undefined} className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white" placeholder="you@example.com" /></label>
                         {saveError && <p id="checkout-email-error" className="mt-3 text-sm text-red-200" role="alert">{saveError}</p>}
                         <ul className="mt-4 space-y-2 text-sm font-bold leading-6 text-white" aria-label="Purchase confidence"><li>✓ One investigation per report</li><li>✓ One-time payment</li><li>✓ No subscription</li><li>✓ Available immediately after payment</li><li>✓ Evidence preserved for download</li></ul>
-                        <div className="mt-5"><PaymentButtons planName="Business Investigation" price="$9.90" buttonLabel="Unlock Executive Report · $9.90" intakeId={intake?.intakeId} email={email} onEmailResolved={setEmail} onPersistIntake={saveLead} /></div>
+                        <div className="mt-5"><PaymentButtons planName={BETA_PRODUCT.name} price={BETA_PRODUCT.price} buttonLabel={`Unlock ${BETA_PRODUCT.deliverable} · ${BETA_PRODUCT.price}`} intakeId={intake?.intakeId} email={email} onEmailResolved={setEmail} onPersistIntake={saveLead} /></div>
                         <button type="button" onClick={saveForLater} className="mx-auto mt-4 block text-xs font-bold text-zinc-400 underline underline-offset-4 hover:text-white">Save for later</button>
                       </div>
                       {leadSaved && <div className="mt-4 rounded-2xl border border-emerald-400/25 bg-emerald-500/10 p-4 text-sm text-emerald-100">Investigation saved. The Executive Report is ready to unlock.</div>}

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import ShadowScoreLayout from "@/components/ShadowScoreLayout";
 import { MarketingCta } from "./MarketingAnalytics";
+import { BETA_PRODUCT, COMMERCIAL_PATHS } from "@/lib/pricing";
 
 export default function MarketingHome() {
   return (
@@ -41,9 +42,10 @@ export default function MarketingHome() {
               </div>
               <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-300" aria-label="Purchase information">
                 <li>Free preview before payment</li>
-                <li>One Executive Report: $9.90</li>
+                <li>One Executive Report: {BETA_PRODUCT.price}</li>
                 <li>Saved to your private workspace</li>
               </ul>
+              <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-400">{COMMERCIAL_PATHS.teamPlans} <Link className="font-bold text-sky-200 hover:text-white" href="/pricing">Compare every path</Link>.</p>
             </div>
 
             <aside className="relative" aria-labelledby="decision-preview-title">

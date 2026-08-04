@@ -6,6 +6,7 @@ import { JsonLd } from "../components/MarketingPage";
 import { pageMetadata } from "../lib/seo";
 import { sampleWebsiteIntelligenceReport } from "../../lib/websiteIntelligence/sampleReport";
 import ShadowScoreLayout from "@/components/ShadowScoreLayout";
+import { BETA_PRODUCT } from "@/lib/pricing";
 
 export const metadata: Metadata = pageMetadata({
   title: "Sample Business Investigation Report | ShadowScore",
@@ -106,7 +107,7 @@ export default function SampleReport() {
             <div className="max-w-3xl">
               <p className="text-xs font-bold uppercase tracking-[.2em] text-red-300">Current self-service entry offer</p>
               <h2 id="report-value-heading" className="mt-4 text-3xl font-black">One Business Investigation, documented for review.</h2>
-              <p className="mt-5 leading-7 text-slate-300">The $9.90 one-time offer is the current self-service path for one Business Investigation. It produces the same report structure shown on this page and saves the completed record in your private workspace.</p>
+              <p className="mt-5 leading-7 text-slate-300">The {BETA_PRODUCT.price} one-time offer is the current self-service path for one Business Investigation. It produces the same report structure shown on this page and saves the completed record in your private workspace.</p>
             </div>
             <div className="mt-9 grid gap-5 lg:grid-cols-2">
               <article className="rounded-3xl border border-white/10 bg-[#0b1727] p-6 sm:p-8">
