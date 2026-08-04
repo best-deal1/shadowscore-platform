@@ -5,10 +5,10 @@ import { readFile } from "node:fs/promises";
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
 test("Beta Candidate UAT keeps the complete customer journey connected", async () => {
-  const [home, intake, payment, report, workspace, archive, account, login] = await Promise.all([
+  const [home, intake, payment, report, workspace, archive, account, accountSignOut, login] = await Promise.all([
     read("app/HomeClient.tsx"), read("app/intake/page.tsx"), read("app/reports/[reportId]/ReportFlow.tsx"),
     read("components/report/ExecutiveIntelligenceReport.tsx"), read("components/workspace/InvestigationWorkspace.tsx"),
-    read("app/archive/ArchiveWorkspace.tsx"), read("app/account/page.tsx"), read("app/login/page.tsx"),
+    read("app/archive/ArchiveWorkspace.tsx"), read("app/account/page.tsx"), read("app/account/AccountSignOut.tsx"), read("app/login/page.tsx"),
   ]);
   assert.match(home, /router\.push\("\/intake"\)/);
   assert.match(intake, /Confirm the Business and scope before payment/);
@@ -17,7 +17,8 @@ test("Beta Candidate UAT keeps the complete customer journey connected", async (
   assert.match(workspace, /Archive/);
   assert.match(archive, /Restore/);
   assert.match(archive, /Delete/);
-  assert.match(account, /signOut/);
+  assert.match(account, /AccountSignOut/);
+  assert.match(accountSignOut, /signOut/);
   assert.match(login, /returnTo/);
 });
 

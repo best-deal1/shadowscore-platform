@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireWorkspaceActor } from "@/lib/workspace/actor.server";
 import { listWorkspaceQueue } from "@/lib/workspace/queue.server";
+import { AccountSignOut } from "./AccountSignOut";
 
 function AccountIcon({ name }: { name: "profile" | "organization" | "billing" | "security" | "support" | "access" }) {
   const paths = {
@@ -26,7 +27,10 @@ export default async function AccountPage() {
         <h1 id="account-title">Your ShadowScore account</h1>
         <p>Review your profile, organization access, purchases, and support options.</p>
       </div>
-      <span className="account-session-status"><span aria-hidden="true" /> Secure session</span>
+      <div className="account-session-actions">
+        <span className="account-session-status"><span aria-hidden="true" /> Secure session</span>
+        <AccountSignOut />
+      </div>
     </header>
 
     <section className="account-identity" aria-labelledby="profile-heading">

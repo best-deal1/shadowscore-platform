@@ -50,6 +50,8 @@ This file records customer-visible improvements in each ShadowScore release.
 
 ### Fixed
 
+- The account center now provides a direct sign-out action, and release checks cover current price and secure report-sharing copy.
+- The application root renders each page once inside the locale and product feedback providers.
 - Investigation deletion now validates workspace ownership before removal, clears server caches after lifecycle changes, and synchronizes the Workspace automatically when a request fails.
 - Guest investigations now resume after account creation.
 - Payment completion is tied to the purchased report.
