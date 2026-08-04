@@ -13,6 +13,8 @@ This file records customer-visible improvements in each ShadowScore release.
 
 ### Improved
 
+- Public product journeys now share one header, breadcrumb, account state, and footer, including the Platform and specialist business-check pages. About now describes the current investigation platform, and a new FAQ and password recovery path resolve common evaluation and account dead ends.
+
 - The new Account Center brings profile identity, organization access, commercial entitlements, purchased report paths, security information, and support into the authenticated workspace.
 
 - Pricing now explains the complete one-time investigation purchase, processing expectations, and report deliverable. It also presents clearly labeled Professional, Business, and Enterprise plan directions without implying that subscriptions are available.

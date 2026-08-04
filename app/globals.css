@@ -69,6 +69,8 @@ body {
 .ss-button { display: inline-flex; min-height: 2.75rem; align-items: center; border-radius: .65rem; padding: .625rem 1rem; font-size: .875rem; font-weight: 800; transition: background-color 160ms ease, box-shadow 160ms ease, transform 160ms ease; }
 .ss-button-primary { background: #f8fafc; color: #0f172a; box-shadow: 0 8px 24px rgb(0 0 0 / .24); }
 .ss-button-primary:hover { background: #e0f2fe; transform: translateY(-1px); }
+.ss-button-secondary { border: 1px solid rgb(255 255 255 / .18); background: rgb(255 255 255 / .04); color: #f8fafc; }
+.ss-button-secondary:hover { border-color: rgb(255 255 255 / .3); background: rgb(255 255 255 / .09); transform: translateY(-1px); }
 .ss-nav-link:focus-visible, .ss-button:focus-visible { outline: 3px solid var(--ss-focus); outline-offset: 3px; }
 
 *,

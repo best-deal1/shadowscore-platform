@@ -91,6 +91,17 @@ export async function loginUser(email: string, password: string) {
   throw new Error("Authentication is not configured.");
 }
 
+export async function requestPasswordReset(email: string) {
+  const cleanEmail = email.trim().toLowerCase();
+  if (!cleanEmail || !cleanEmail.includes("@")) throw new Error("Enter a valid email address.");
+  if (!isSupabaseConfigured()) throw new Error("Password recovery is not configured.");
+
+  await supabaseFetch(emailAuthPath("/auth/v1/recover"), {
+    method: "POST",
+    body: JSON.stringify({ email: cleanEmail }),
+  });
+}
+
 function getCurrentUserFromSession(session: ShadowScoreSession): ShadowScoreUser {
   return {
     id: session.userId,

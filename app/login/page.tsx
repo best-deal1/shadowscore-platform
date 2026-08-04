@@ -49,12 +49,13 @@ export default function LoginPage() {
           <form onSubmit={handleLogin} className="mt-8 grid gap-4">
             <label className="grid gap-2 text-sm font-bold text-zinc-300">
               {page.email}
-              <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="rounded-2xl border border-white/10 bg-black/60 px-4 py-3 text-white outline-none focus:border-red-400/50" />
+              <input required autoComplete="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="rounded-2xl border border-white/10 bg-black/60 px-4 py-3 text-white outline-none focus:border-red-400/50" />
             </label>
             <label className="grid gap-2 text-sm font-bold text-zinc-300">
               {page.password}
-              <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} className="rounded-2xl border border-white/10 bg-black/60 px-4 py-3 text-white outline-none focus:border-red-400/50" />
+              <input required autoComplete="current-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} className="rounded-2xl border border-white/10 bg-black/60 px-4 py-3 text-white outline-none focus:border-red-400/50" />
             </label>
+            <Link href="/forgot-password" className="justify-self-end text-sm font-bold text-zinc-300 hover:text-white">Forgot password?</Link>
             {error && <div className="rounded-2xl border border-red-400/30 bg-red-600/10 px-4 py-3 text-sm text-red-100">{error}</div>}
             <button type="submit" disabled={loading} className="rounded-2xl bg-red-600 px-5 py-4 text-sm font-black text-white hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50">
               {loading ? page.signingIn : page.signIn}

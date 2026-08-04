@@ -52,19 +52,19 @@ export default function SignupPage() {
           <form onSubmit={handleSignup} className="mt-8 grid gap-4">
             <label className="grid gap-2 text-sm font-bold text-zinc-300">
               {page.name}
-              <input value={name} onChange={(event) => setName(event.target.value)} className="rounded-2xl border border-white/10 bg-black/60 px-4 py-3 text-white outline-none focus:border-red-400/50" />
+              <input required autoComplete="name" value={name} onChange={(event) => setName(event.target.value)} className="rounded-2xl border border-white/10 bg-black/60 px-4 py-3 text-white outline-none focus:border-red-400/50" />
             </label>
             <label className="grid gap-2 text-sm font-bold text-zinc-300">
               {page.email}
-              <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="rounded-2xl border border-white/10 bg-black/60 px-4 py-3 text-white outline-none focus:border-red-400/50" />
+              <input required autoComplete="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="rounded-2xl border border-white/10 bg-black/60 px-4 py-3 text-white outline-none focus:border-red-400/50" />
             </label>
             <label className="grid gap-2 text-sm font-bold text-zinc-300">
               {page.password}
-              <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} className="rounded-2xl border border-white/10 bg-black/60 px-4 py-3 text-white outline-none focus:border-red-400/50" />
+              <input required minLength={8} autoComplete="new-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} className="rounded-2xl border border-white/10 bg-black/60 px-4 py-3 text-white outline-none focus:border-red-400/50" />
             </label>
             <label className="grid gap-2 text-sm font-bold text-zinc-300">
               {page.confirmPassword}
-              <input type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} className="rounded-2xl border border-white/10 bg-black/60 px-4 py-3 text-white outline-none focus:border-red-400/50" />
+              <input required minLength={8} autoComplete="new-password" type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} className="rounded-2xl border border-white/10 bg-black/60 px-4 py-3 text-white outline-none focus:border-red-400/50" />
             </label>
 
             <label className="flex gap-3 rounded-2xl border border-white/10 bg-black/50 p-4 text-sm leading-6 text-zinc-400">
