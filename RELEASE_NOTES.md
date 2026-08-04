@@ -13,6 +13,8 @@ This file records customer-visible improvements in each ShadowScore release.
 
 ### Improved
 
+- The Platform and About pages now share the current ShadowScore visual system, factual product language, clear return navigation, and a consistent path from company context to sample report and investigation.
+
 - Product transitions, loading placeholders, empty states, error states, hover feedback, focus visibility, and action notifications now share one responsive and reduced-motion-aware interaction system.
 
 - Pricing, checkout, sample-report, homepage, and workspace references now use one commercial catalog for the individual investigation, Professional, Business, and Enterprise paths.
