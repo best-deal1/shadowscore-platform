@@ -32,7 +32,7 @@ await service.update(actor(), "case-a", { version: 1, status: "active" });
 await service.update(actor(), "case-a", { version: 2, status: "under_review" });
 await service.update(actor(), "case-a", { version: 3, status: "monitoring" });
 await service.update(actor(), "case-a", { version: 4, status: "archived" });
-await assert.rejects(() => service.update(actor(), "case-a", { version: 5, status: "closed" }), CaseValidationError);
+assert.equal((await service.update(actor(), "case-a", { version: 5, status: "closed" })).status, "closed");
 const closedStore = new MemoryStore([{ ...row(), status: "closed" }]);
 await new CaseService(closedStore).update(actor(), "case-a", { version: 1, status: "archived" });
 

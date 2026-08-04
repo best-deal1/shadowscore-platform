@@ -7,7 +7,6 @@ import ShadowScoreLayout from "./components/ShadowScoreLayout";
 import InvestigationTimeline from "./components/InvestigationTimeline";
 import AuditMetadata from "./components/AuditMetadata";
 import { useLocale } from "../components/LocaleProvider";
-import { BETA_PRODUCT } from "../lib/pricing";
 
 const evidenceEvents = [
   {
@@ -151,7 +150,7 @@ export default function HomeClient() {
               {t.positioning.description}
             </p>
             <p className="mt-4 max-w-3xl rounded-2xl border border-sky-300/20 bg-sky-500/10 px-5 py-4 text-sm font-bold leading-6 text-sky-50">
-              {BETA_PRODUCT.promise} Starting is free.
+              One Business Investigation produces one Executive Report for a one-time price of $9.90. Starting is free.
             </p>
             <div className="mt-8 rounded-[32px] border border-white/10 bg-white/[0.04] p-5">
               <div className="text-xs font-black uppercase tracking-[0.24em] text-zinc-500">
