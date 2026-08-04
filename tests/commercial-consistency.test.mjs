@@ -37,3 +37,18 @@ test("authenticated navigation provides a route back to the public product", asy
   const shell = await read("components/workspace/WorkspaceShell.tsx");
   assert.match(shell, /href="\/"[\s\S]*ShadowScore website/);
 });
+
+test("platform marketing pages use the complete public product shell", async () => {
+  const marketingPage = await read("app/components/MarketingPage.tsx");
+  assert.match(marketingPage, /<ShadowScoreLayout>/);
+  assert.doesNotMatch(marketingPage, /<nav aria-label="Breadcrumb"/);
+});
+
+test("about presents a complete commercial company story", async () => {
+  const about = await read("app/about/page.tsx");
+  for (const destination of ["/intake", "/sample-report", "/contact"]) {
+    assert.match(about, new RegExp(`href="${destination}"`));
+  }
+  assert.match(about, /ShadowScore at a glance/);
+  assert.match(about, /Evidence before conclusions/);
+});
