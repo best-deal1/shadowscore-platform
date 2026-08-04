@@ -13,6 +13,8 @@ This file records customer-visible improvements in each ShadowScore release.
 
 ### Improved
 
+- Pricing now explains the complete one-time investigation purchase, processing expectations, and report deliverable. It also presents clearly labeled Professional, Business, and Enterprise plan directions without implying that subscriptions are available.
+
 - Executive Reports now open inside the authenticated workspace with one navigation system, clear access status, and a decision-focused export toolbar.
 
 - The processing experience now tells the investigation story in real time. It shows the active intelligence operation, why each stage matters, how confidence develops, and when the executive decision is ready.
