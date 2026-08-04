@@ -13,6 +13,9 @@ This file records customer-visible improvements in each ShadowScore release.
 
 ### Improved
 
+- Platform overview pages now use the complete public navigation and footer, with one clear breadcrumb instead of a disconnected or duplicate route trail.
+- About now matches the current product design and explains ShadowScore through its evidence principles, product facts, deliverable, access model, and direct next steps.
+
 - Product transitions, loading placeholders, empty states, error states, hover feedback, focus visibility, and action notifications now share one responsive and reduced-motion-aware interaction system.
 
 - Pricing, checkout, sample-report, homepage, and workspace references now use one commercial catalog for the individual investigation, Professional, Business, and Enterprise paths.
