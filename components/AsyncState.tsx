@@ -9,24 +9,30 @@ type AsyncStateProps = {
 
 export function LoadingState({ label = "Loading" }: { label?: string }) {
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/[0.035] p-6 text-sm text-zinc-400" role="status" aria-live="polite">
-      {label}
+    <div className="product-async-state product-loading-state" role="status" aria-live="polite" aria-busy="true">
+      <span className="product-state-icon product-spinner" aria-hidden="true" />
+      <div className="min-w-0 flex-1"><p className="font-bold text-zinc-200">{label}</p><div className="product-skeleton-lines" aria-hidden="true"><span /><span /></div></div>
     </div>
   );
 }
 
 export function EmptyState({ title, description }: Omit<AsyncStateProps, "onRetry" | "retryLabel">) {
   return (
-    <section className="rounded-3xl border border-white/10 bg-white/[0.035] p-6">
+    <section className="product-async-state product-empty-state">
+      <span className="product-state-icon" aria-hidden="true">◇</span>
+      <div>
       <h2 className="text-xl font-black text-white">{title}</h2>
       <p className="mt-2 leading-6 text-zinc-400">{description}</p>
+      </div>
     </section>
   );
 }
 
 export function ErrorState({ title, description, onRetry, retryLabel = "Try again" }: AsyncStateProps) {
   return (
-    <section className="rounded-3xl border border-red-400/25 bg-red-500/[0.06] p-6" role="alert">
+    <section className="product-async-state product-error-state" role="alert">
+      <span className="product-state-icon" aria-hidden="true">!</span>
+      <div>
       <h2 className="text-xl font-black text-red-100">{title}</h2>
       <p className="mt-2 leading-6 text-zinc-300">{description}</p>
       {onRetry ? (
@@ -34,6 +40,7 @@ export function ErrorState({ title, description, onRetry, retryLabel = "Try agai
           {retryLabel}
         </button>
       ) : null}
+      </div>
     </section>
   );
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { LocaleProvider } from "../components/LocaleProvider";
+import { ProductFeedbackProvider } from "../components/ProductFeedback";
 import { defaultLocale, directionForLocale, isLocale } from "../lib/i18n";
 import "./globals.css";
 
@@ -60,7 +61,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   return (
     <html lang={locale} dir={directionForLocale(locale)}>
       <body>
-        <LocaleProvider locale={locale}>{children}</LocaleProvider>
+        <LocaleProvider locale={locale}><ProductFeedbackProvider>{children}</ProductFeedbackProvider></LocaleProvider>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
