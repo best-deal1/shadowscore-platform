@@ -8,6 +8,7 @@ const errors = [];
 
 function routeExists(route) {
   if (route === '/') return fs.existsSync(path.join(appDir, 'page.tsx'));
+  if (fs.existsSync(path.join(process.cwd(), 'public', route.slice(1)))) return true;
   return ['page.tsx', 'route.ts'].some((file) => fs.existsSync(path.join(appDir, route.slice(1), file)));
 }
 

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { demoDecisions, demoEntities, demoMetrics, demoObservations } from "@/lib/entityIntelligence";
 import styles from "./entity-intelligence.module.css";
 
@@ -11,7 +12,7 @@ export default function EntityIntelligencePage(){return <main className={styles.
   <section className={styles.metrics} aria-label="Resolver performance">
     {[['Precision',demoMetrics.precision],['Recall',demoMetrics.recall],['F1',demoMetrics.f1],['False merges',demoMetrics.falseMergeRate],['Abstention',demoMetrics.abstentionRate],['Review rate',demoMetrics.reviewRate]].map(([label,value])=><article key={String(label)}><span>{label}</span><strong>{percent(Number(value))}</strong></article>)}
   </section>
-  <div className={styles.toolbar}><label><span>Entity search</span><input placeholder="Name, domain, registration ID" defaultValue="Atlas" /></label><button type="button">Search entities</button><span>{demoEntities.length} entities indexed</span></div>
+  <form className={styles.toolbar} action="/entity-intelligence"><label><span>Entity search</span><input placeholder="Name, domain, registration ID" defaultValue="Atlas" /></label><button type="submit">Search entities</button><span>{demoEntities.length} entities indexed</span></form>
   <div className={styles.grid}>
     <aside className={styles.queue}><div className={styles.sectionTitle}><div><span>REVIEW QUEUE</span><h2>Candidate matches</h2></div><b>2</b></div>{demoDecisions.map((decision,index)=><article className={index===0?styles.selected:""} key={decision.decisionId}><div><span className={styles.outcome}>{decision.outcome.replace('_',' ')}</span><time>{decision.decidedAt.slice(11,16)}</time></div><h3>{demoEntities.find(e=>e.entityId===decision.leftEntityId)?.canonicalName}</h3><p>vs. {demoEntities.find(e=>e.entityId===decision.rightEntityId)?.canonicalName}</p><footer><span>{percent(decision.confidence)} confidence</span><span>{decision.matchedAttributes.length} matches</span></footer></article>)}</aside>
     <section className={styles.workspace}>
@@ -19,7 +20,7 @@ export default function EntityIntelligencePage(){return <main className={styles.
       <div className={styles.compare}>{[left,right].map((entity,index)=><article key={entity.entityId}><span className={styles.side}>{index===0?'CANONICAL ENTITY':'CANDIDATE'}</span><h3>{entity.canonicalName}</h3><p>{entity.aliases.join(' · ')}</p><dl><div><dt>Registration</dt><dd>{entity.registrationIdentifiers[0]}</dd></div><div><dt>Domain</dt><dd>{entity.domains[0]}</dd></div><div><dt>Address</dt><dd>{entity.addresses[0]}</dd></div><div><dt>Director</dt><dd>{entity.peopleAndDirectors[0]}</dd></div></dl></article>)}</div>
       <div className={styles.reason}><span>DECISION REASON</span><p>{primary.reason}</p><small>{primary.method.replaceAll('_',' ')} · {primary.policyVersion}</small></div>
       <div className={styles.featureTable}><div className={styles.sectionTitle}><div><span>EXPLAINABILITY</span><h2>Feature comparison</h2></div></div>{primary.matchedAttributes.map(feature=><div className={styles.feature} key={feature.attribute}><span className={styles.check}>✓</span><div><strong>{feature.attribute.replace('_',' ')}</strong><small>{feature.left} = {feature.right}</small></div><b>{percent(feature.similarity)}</b></div>)}</div>
-      <div className={styles.actions}><button>Approve merge</button><button>Reject merge</button><button>Split entity</button><button>Override with reason</button></div>
+      <div className={styles.actions}><Link href="/investigations">Approve merge</Link><Link href="/investigations">Reject merge</Link><Link href="/investigations">Split entity</Link><Link href="/investigations">Override with reason</Link></div>
     </section>
     <aside className={styles.context}>
       <section><div className={styles.sectionTitle}><div><span>IDENTITY GRAPH</span><h2>Relationships</h2></div></div><div className={styles.graph}><div className={styles.nodeMain}>Atlas<br/><small>Commerce</small></div><div className={`${styles.node} ${styles.nodeA}`}>Marketplace</div><div className={`${styles.node} ${styles.nodeB}`}>atlas.co.il</div><div className={`${styles.node} ${styles.nodeC}`}>Noa Levi</div><i className={styles.lineA}/><i className={styles.lineB}/><i className={styles.lineC}/></div></section>
