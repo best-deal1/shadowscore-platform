@@ -1,27 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import ShadowScoreLayout from "@/components/ShadowScoreLayout";
-import { BETA_PRODUCT } from "@/lib/pricing";
+import { BETA_PRODUCT, PLAN_COMPARISON, PLANNED_PLANS } from "@/lib/pricing";
 
 export const metadata: Metadata = {
   title: "Pricing and plans | ShadowScore",
   description: `Compare ShadowScore investigation options. Start with one ${BETA_PRODUCT.deliverable} for ${BETA_PRODUCT.price}.`,
   alternates: { canonical: "/pricing" },
 };
-
-const futurePlans = [
-  { name: "Professional", audience: "For analysts with a regular investigation queue", features: ["Multiple active investigations", "Reusable review workflow", "Central report library", "Priority support path"] },
-  { name: "Business", audience: "For teams managing shared decisions", features: ["Shared team workspace", "Role-based access", "Monitoring workflows", "Central billing administration"] },
-  { name: "Enterprise", audience: "For organizations with governance requirements", features: ["Organization access controls", "Procurement and security review", "Workflow configuration", "Dedicated account support"] },
-] as const;
-
-const comparisonRows = [
-  ["Business identity and submitted scope", "Included", "Included", "Included", "Included"],
-  ["Executive Report", "One", "Multiple", "Multiple", "Configured"],
-  ["Evidence trail and action plan", "Included", "Included", "Included", "Included"],
-  ["Shared workspace", "Personal", "Personal", "Team", "Organization"],
-  ["Monitoring workflows", "Not included", "Planned", "Planned", "Configured"],
-] as const;
 
 export default function PricingPage() {
   return (
@@ -57,12 +43,12 @@ export default function PricingPage() {
 
         <section className="pricing-section" aria-labelledby="plans-title">
           <div className="pricing-heading"><p className="pricing-eyebrow">Plans for growing teams</p><h2 id="plans-title">Choose a path that fits your review volume</h2><p>Professional, Business, and Enterprise plans are being prepared. Subscriptions are not available yet. Talk with us to help shape the right commercial path for your team.</p></div>
-          <div className="pricing-plan-grid">{futurePlans.map((plan) => <article className="pricing-future-plan" key={plan.name}><span className="pricing-status">In development</span><h3>{plan.name}</h3><p>{plan.audience}</p><ul>{plan.features.map((feature) => <li key={feature}><span aria-hidden="true">✓</span>{feature}</li>)}</ul><Link href={`/contact?subject=${plan.name}`} className="pricing-secondary">Discuss {plan.name}</Link></article>)}</div>
+          <div className="pricing-plan-grid">{PLANNED_PLANS.map((plan) => <article className="pricing-future-plan" key={plan.name}><span className="pricing-status">{plan.availability}</span><h3>{plan.name}</h3><p>{plan.audience}</p><ul>{plan.features.map((feature) => <li key={feature}><span aria-hidden="true">✓</span>{feature}</li>)}</ul><Link href={`/contact?subject=${plan.name}`} className="pricing-secondary">Discuss {plan.name}</Link></article>)}</div>
         </section>
 
         <section className="pricing-section" aria-labelledby="compare-title">
           <div className="pricing-heading"><p className="pricing-eyebrow">Plan comparison</p><h2 id="compare-title">One investigation today, a path for tomorrow</h2></div>
-          <div className="pricing-table-wrap" tabIndex={0} aria-label="Scrollable plan comparison"><table className="pricing-table"><caption className="sr-only">Compare the available investigation with planned ShadowScore plans</caption><thead><tr><th scope="col">Capability</th><th scope="col">Investigation</th><th scope="col">Professional</th><th scope="col">Business</th><th scope="col">Enterprise</th></tr></thead><tbody>{comparisonRows.map(([feature, ...values]) => <tr key={feature}><th scope="row">{feature}</th>{values.map((value, index) => <td key={`${feature}-${index}`}>{value}</td>)}</tr>)}</tbody></table></div>
+          <div className="pricing-table-wrap" tabIndex={0} aria-label="Scrollable plan comparison"><table className="pricing-table"><caption className="sr-only">Compare the available investigation with planned ShadowScore plans</caption><thead><tr><th scope="col">Capability</th><th scope="col">Investigation</th><th scope="col">Professional</th><th scope="col">Business</th><th scope="col">Enterprise</th></tr></thead><tbody>{PLAN_COMPARISON.map(([feature, ...values]) => <tr key={feature}><th scope="row">{feature}</th>{values.map((value, index) => <td key={`${feature}-${index}`}>{value}</td>)}</tr>)}</tbody></table></div>
           <p className="pricing-table-note">Planned capabilities describe product direction and may change before launch. Contact us for current availability.</p>
         </section>
 
