@@ -13,6 +13,8 @@ This file records customer-visible improvements in each ShadowScore release.
 
 ### Improved
 
+- The ShadowScore brand mark now returns to a connected evidence-node direction, so the public site and workspace communicate investigation, correlation, and source-backed trust more clearly.
+
 - Enterprise readiness review mode now adds a consistent trust checkpoint strip across the product shell and includes Account in authenticated navigation for easier procurement-style demos.
 
 - The Platform and About pages now share the current ShadowScore visual system, factual product language, clear return navigation, and a consistent path from company context to sample report and investigation.
