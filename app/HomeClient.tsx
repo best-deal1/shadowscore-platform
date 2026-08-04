@@ -174,6 +174,7 @@ export default function HomeClient() {
             </div>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <button
+                  type="button"
                 onClick={startInvestigation}
                 className="min-h-12 rounded-full bg-sky-600 px-7 py-4 text-sm font-black uppercase tracking-[0.14em] text-white shadow-[0_0_34px_rgba(14,165,233,0.32)] transition hover:bg-sky-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
               >
@@ -325,7 +326,7 @@ export default function HomeClient() {
                         </div>
                       </button>
                     ))}
-                    <button type="button" aria-label={`Confidence: ${confidence}% supported. Confidence reflects corroborated links, unresolved ownership, and contradictory address evidence.`} className="confidence-ring absolute left-1/2 top-1/2 flex h-32 w-32 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-red-300/25 bg-red-500/10 text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-200">
+                    <div role="img" aria-label={`Confidence: ${confidence}% supported. Confidence reflects corroborated links, unresolved ownership, and contradictory address evidence.`} className="confidence-ring absolute left-1/2 top-1/2 flex h-32 w-32 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-red-300/25 bg-red-500/10 text-center">
                       <div>
                         <div className="text-[10px] font-black uppercase tracking-[0.18em] text-red-100">
                           {t.home.confidence}
@@ -334,7 +335,7 @@ export default function HomeClient() {
                           {confidence}% supported
                         </div>
                       </div>
-                    </button>
+                    </div>
                   </div>
                   <aside className="mt-3 rounded-2xl border border-sky-300/20 bg-sky-500/[0.07] p-4" aria-live="polite">
                     <div className="flex items-center justify-between gap-3">
@@ -744,7 +745,7 @@ export default function HomeClient() {
 
       <section className="px-5 py-16 sm:px-6" aria-labelledby="resources-title"><div className="mx-auto max-w-7xl border-y border-white/10 py-10"><div className="ui-label text-sky-200">Research and resources</div><h2 id="resources-title" className="mt-4 text-3xl font-black tracking-tight text-white">Practical context for marketplace risk teams.</h2><div className="mt-8 grid gap-4 md:grid-cols-3">{[["Marketplace intelligence", "How relationship signals support supplier review."], ["Risk reports", "A decision record teams can revisit and share."], ["Research", "Patterns, enforcement changes, and operating guidance."]].map(([title, copy]) => <article key={title} className="border-t border-white/15 pt-5"><h3 className="text-base font-black text-white">{title}</h3><p className="mt-2 text-sm leading-6 text-zinc-400">{copy}</p><span className="mt-5 inline-block text-sm font-black text-sky-200">Coming soon</span></article>)}</div></div></section>
 
-      <section className="px-5 pb-16 pt-8 sm:px-6"><div className="mx-auto max-w-7xl overflow-hidden rounded-[38px] border border-sky-300/20 bg-[radial-gradient(circle_at_80%_20%,rgba(14,165,233,0.22),transparent_28%),linear-gradient(135deg,#082f49,#09090b_62%)] p-6 sm:p-12"><div className="max-w-3xl"><div className="ui-label text-sky-100">Start with the evidence</div><h2 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-5xl">Make the next marketplace decision with a clearer record.</h2><p className="mt-5 text-base leading-7 text-sky-50/75">Open an investigation, review an example report, or talk through your team&apos;s workflow.</p><div className="mt-8 flex flex-col gap-3 sm:flex-row"><button onClick={startInvestigation} className="min-h-12 rounded-full bg-sky-300 px-6 py-3 text-xs font-black uppercase tracking-[0.14em] text-slate-950 transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">Start investigation</button><Link href="/contact" className="min-h-12 rounded-full border border-white/20 px-6 py-3 text-center text-xs font-black uppercase tracking-[0.14em] text-white transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">Book demo</Link><Link href="/example-report" className="min-h-12 rounded-full border border-white/20 px-6 py-3 text-center text-xs font-black uppercase tracking-[0.14em] text-white transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">View report</Link></div></div></div></section>
+      <section className="px-5 pb-16 pt-8 sm:px-6"><div className="mx-auto max-w-7xl overflow-hidden rounded-[38px] border border-sky-300/20 bg-[radial-gradient(circle_at_80%_20%,rgba(14,165,233,0.22),transparent_28%),linear-gradient(135deg,#082f49,#09090b_62%)] p-6 sm:p-12"><div className="max-w-3xl"><div className="ui-label text-sky-100">Start with the evidence</div><h2 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-5xl">Make the next marketplace decision with a clearer record.</h2><p className="mt-5 text-base leading-7 text-sky-50/75">Open an investigation, review an example report, or talk through your team&apos;s workflow.</p><div className="mt-8 flex flex-col gap-3 sm:flex-row"><button type="button" onClick={startInvestigation} className="min-h-12 rounded-full bg-sky-300 px-6 py-3 text-xs font-black uppercase tracking-[0.14em] text-slate-950 transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">Start investigation</button><Link href="/contact" className="min-h-12 rounded-full border border-white/20 px-6 py-3 text-center text-xs font-black uppercase tracking-[0.14em] text-white transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">Book demo</Link><Link href="/example-report" className="min-h-12 rounded-full border border-white/20 px-6 py-3 text-center text-xs font-black uppercase tracking-[0.14em] text-white transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">View report</Link></div></div></div></section>
 
       <p className="mx-auto max-w-7xl px-5 pb-12 text-xs leading-6 text-zinc-500 sm:px-6">
         {t.positioning.disclaimer}
