@@ -1,83 +1,78 @@
-/* eslint-disable react-hooks/set-state-in-effect */
-"use client";
-
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import ShadowScoreLayout from "../../components/ShadowScoreLayout";
-import { ShadowScoreUser, getCurrentUser, logoutUser } from "../../lib/auth";
-import { getApplicationCopy } from "../../lib/i18n";
-import { useLocale } from "../../components/LocaleProvider";
+import { requireWorkspaceActor } from "@/lib/workspace/actor.server";
+import { listWorkspaceQueue } from "@/lib/workspace/queue.server";
 
-function formatDate(value: string | undefined, locale: string, unavailable: string) {
-  if (!value) return unavailable;
-  try {
-    return new Intl.DateTimeFormat(locale, { month: "short", day: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(value));
-  } catch {
-    return value;
-  }
+function AccountIcon({ name }: { name: "profile" | "organization" | "billing" | "security" | "support" | "access" }) {
+  const paths = {
+    profile: <><circle cx="12" cy="8" r="3" /><path d="M5 20c.7-4 3-6 7-6s6.3 2 7 6" /></>,
+    organization: <><path d="M4 20V7l8-4 8 4v13M8 10h2m4 0h2M8 14h2m4 0h2M9 20v-3h6v3" /></>,
+    billing: <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 10h18M7 15h3" /></>,
+    security: <><path d="M12 3 5 6v5c0 4.5 2.8 8 7 10 4.2-2 7-5.5 7-10V6l-7-3Z" /><path d="m9 12 2 2 4-4" /></>,
+    support: <><circle cx="12" cy="12" r="9" /><path d="M9.5 9a2.7 2.7 0 0 1 5.2 1c0 2-2.7 2.2-2.7 4M12 17h.01" /></>,
+    access: <><path d="M12 3 4 7v5c0 4 3 7.5 8 9 5-1.5 8-5 8-9V7l-8-4Z" /><path d="M9 12h6M12 9v6" /></>,
+  };
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
 }
 
-export default function AccountPage() {
-  const router = useRouter();
-  const { locale } = useLocale();
-  const copy = getApplicationCopy(locale).account;
-  const [user, setUser] = useState<ShadowScoreUser | null>(null);
+export default async function AccountPage() {
+  const actor = await requireWorkspaceActor();
+  const queue = await listWorkspaceQueue(actor);
+  const displayRole = actor.role.charAt(0).toUpperCase() + actor.role.slice(1);
 
-  useEffect(() => {
-    const currentUser = getCurrentUser();
-    if (!currentUser) {
-      router.push("/login");
-      return;
-    }
-    setUser(currentUser);
-  }, [router]);
+  return <section className="account-center" aria-labelledby="account-title">
+    <header className="account-hero">
+      <div>
+        <p className="workspace-eyebrow">Account center</p>
+        <h1 id="account-title">Your ShadowScore account</h1>
+        <p>Review your profile, organization access, purchases, and support options.</p>
+      </div>
+      <span className="account-session-status"><span aria-hidden="true" /> Secure session</span>
+    </header>
 
-  async function signOut() {
-    await logoutUser();
-    router.replace("/login");
-    router.refresh();
-  }
+    <section className="account-identity" aria-labelledby="profile-heading">
+      <div className="account-avatar-large" aria-hidden="true">{actor.name.slice(0, 1).toUpperCase()}</div>
+      <div><p>Personal information</p><h2 id="profile-heading">{actor.name}</h2><a href={`mailto:${actor.email}`}>{actor.email}</a></div>
+      <dl><div><dt>Account role</dt><dd>{displayRole}</dd></div><div><dt>Account status</dt><dd><span className="account-good">Active</span></dd></div></dl>
+    </section>
 
-  if (!user) {
-    return (
-      <ShadowScoreLayout>
-        <section className="mx-auto max-w-3xl px-6 py-20 text-zinc-400">{copy.loading}</section>
-      </ShadowScoreLayout>
-    );
-  }
+    <div className="account-grid">
+      <article className="account-card account-card-wide">
+        <div className="account-card-icon"><AccountIcon name="organization" /></div>
+        <div className="account-card-heading"><div><p>Organization</p><h2>Workspace access</h2></div><span className="account-badge">{displayRole}</span></div>
+        <p>Your account belongs to one active organization. Organization management is available to authorized account roles.</p>
+        <dl className="account-details"><div><dt>Organization ID</dt><dd title={actor.organizationId}>{actor.organizationId}</dd></div><div><dt>Investigations</dt><dd>{queue.cases.length}</dd></div></dl>
+        <Link href="/workspace">Open organization workspace <span aria-hidden="true">→</span></Link>
+      </article>
 
-  return (
-    <ShadowScoreLayout>
-      <section className="mx-auto max-w-5xl px-6 py-20">
-        <div className="rounded-[34px] border border-white/10 bg-white/[0.035] p-8">
-          <div className="text-xs font-black uppercase tracking-[0.3em] text-red-300">{copy.eyebrow}</div>
-          <h1 className="mt-4 text-5xl font-black tracking-tight">{user.name}</h1>
-          <p className="mt-3 text-zinc-400">{user.email}</p>
+      <article className="account-card">
+        <div className="account-card-icon"><AccountIcon name="billing" /></div>
+        <div className="account-card-heading"><div><p>Billing</p><h2>Purchases and reports</h2></div></div>
+        <p>ShadowScore investigations are one-time purchases. Purchased reports remain in your report library.</p>
+        <div className="account-link-stack"><Link href="/reports">View purchased reports <span aria-hidden="true">→</span></Link><Link href="/workspace">Review investigation status <span aria-hidden="true">→</span></Link></div>
+      </article>
 
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            <div className="rounded-3xl border border-white/10 bg-black/50 p-5">
-              <div className="text-xs uppercase tracking-[0.22em] text-zinc-600">{copy.userId}</div>
-              <div className="mt-2 break-all text-sm font-bold text-white">{user.id}</div>
-            </div>
-            <div className="rounded-3xl border border-white/10 bg-black/50 p-5">
-              <div className="text-xs uppercase tracking-[0.22em] text-zinc-600">{copy.created}</div>
-              <div className="mt-2 text-sm font-bold text-white">{formatDate(user.createdAt, locale, copy.unavailable)}</div>
-            </div>
-            <div className="rounded-3xl border border-white/10 bg-black/50 p-5">
-              <div className="text-xs uppercase tracking-[0.22em] text-zinc-600">{copy.lastLogin}</div>
-              <div className="mt-2 text-sm font-bold text-white">{formatDate(user.lastLoginAt, locale, copy.unavailable)}</div>
-            </div>
-          </div>
+      <article className="account-card">
+        <div className="account-card-icon"><AccountIcon name="security" /></div>
+        <div className="account-card-heading"><div><p>Security</p><h2>Account protection</h2></div></div>
+        <p>Your workspace uses an authenticated session and organization-based access. Review current data and security practices.</p>
+        <Link href="/security">Review security and trust <span aria-hidden="true">→</span></Link>
+      </article>
 
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/workspace" className="rounded-full bg-red-600 px-5 py-3 text-sm font-black text-white hover:bg-red-500">{copy.openDashboard}</Link>
-            <button onClick={signOut} className="rounded-full border border-white/10 px-5 py-3 text-sm font-black text-zinc-300 hover:border-red-400/30 hover:text-white">{copy.signOut}</button>
-          </div>
+      <article className="account-card">
+        <div className="account-card-icon"><AccountIcon name="access" /></div>
+        <div className="account-card-heading"><div><p>Commercial access</p><h2>Current entitlements</h2></div></div>
+        <ul className="account-check-list"><li><span aria-hidden="true">✓</span> Organization workspace</li><li><span aria-hidden="true">✓</span> Purchased report access</li><li><span aria-hidden="true">✓</span> Investigation archive</li></ul>
+        <p className="account-card-note">Access to individual reports depends on completed payment and report readiness.</p>
+      </article>
 
-          <p className="mt-8 text-xs leading-6 text-zinc-600">{copy.notice}</p>
-        </div>
-      </section>
-    </ShadowScoreLayout>
-  );
+      <article className="account-card">
+        <div className="account-card-icon"><AccountIcon name="support" /></div>
+        <div className="account-card-heading"><div><p>Support</p><h2>Get account help</h2></div></div>
+        <p>Contact the ShadowScore team for account, purchase, report, privacy, or security questions.</p>
+        <Link href="/contact">Contact support <span aria-hidden="true">→</span></Link>
+      </article>
+    </div>
+
+    <aside className="account-trust" aria-label="Account trust information"><strong>Account data and access</strong><p>Workspace records are scoped to your organization. Report access is checked against investigation payment and readiness status.</p><div><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><Link href="/security">Security</Link></div></aside>
+  </section>;
 }

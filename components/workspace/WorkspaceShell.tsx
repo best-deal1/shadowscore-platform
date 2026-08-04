@@ -16,6 +16,7 @@ const navItems = [
   { label: "Monitoring", href: "/workspace/monitoring", paths: ["/workspace/monitoring", "/monitoring", "/watchlist"], icon: "monitoring" },
   { label: "Alerts", href: "/alerts", paths: ["/alerts"], icon: "alerts" },
   { label: "Archive", href: "/archive", paths: ["/archive"], icon: "archive" },
+  { label: "Account", href: "/account", paths: ["/account"], icon: "account" },
 ] as const;
 
 function NavigationIcon({ name }: { name: (typeof navItems)[number]["icon"] | "admin" }) {
@@ -25,6 +26,7 @@ function NavigationIcon({ name }: { name: (typeof navItems)[number]["icon"] | "a
     monitoring: <><path d="M4 12a8 8 0 1 0 16 0 8 8 0 1 0-16 0" /><path d="M12 8v4l3 2" /></>,
     alerts: <><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 7h18s-3 0-3-7" /><path d="M10 20h4" /></>,
     archive: <><path d="M4 7h16v13H4zM3 4h18v3H3z" /><path d="M9 11h6" /></>,
+    account: <><circle cx="12" cy="8" r="3" /><path d="M5 20c.7-4 3-6 7-6s6.3 2 7 6" /></>,
     admin: <><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7" /><path d="M19 15a2 2 0 0 0 .4 2.1l.1.1-2.3 2.3-.1-.1A2 2 0 0 0 15 19a2 2 0 0 0-1 1.7v.2h-4v-.2A2 2 0 0 0 9 19a2 2 0 0 0-2.1.4l-.1.1-2.3-2.3.1-.1A2 2 0 0 0 5 15a2 2 0 0 0-1.7-1h-.2v-4h.2A2 2 0 0 0 5 9a2 2 0 0 0-.4-2.1l-.1-.1 2.3-2.3.1.1A2 2 0 0 0 9 5a2 2 0 0 0 1-1.7v-.2h4v.2A2 2 0 0 0 15 5a2 2 0 0 0 2.1-.4l.1-.1 2.3 2.3-.1.1A2 2 0 0 0 19 9a2 2 0 0 0 1.7 1h.2v4h-.2A2 2 0 0 0 19 15Z" /></>,
   };
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
