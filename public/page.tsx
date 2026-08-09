@@ -153,7 +153,7 @@ I would like to begin a private ShadowScore review.`;
       <header className="sticky top-0 z-50 border-b border-white/10 bg-black/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 md:px-6">
           <div className="flex items-center gap-3">
-            <img src="/brand/shadowscore-logo.svg" alt="ShadowScore" className="h-11 w-11 rounded-xl object-contain bg-black p-1" />
+            <img src="/brand/shadowscore-infinity.svg" alt="ShadowScore" className="h-11 w-11 rounded-xl object-contain bg-black p-1" />
             <div className="leading-none">
               <div className="text-2xl font-extrabold tracking-tight">Shadow<span className="text-red-400">Score</span></div>
               <div className="mt-1.5 text-[10px] uppercase tracking-[0.34em] text-zinc-500">Marketplace Risk Intelligence</div>

@@ -13,7 +13,7 @@ This file records customer-visible improvements in each ShadowScore release.
 
 ### Improved
 
-- The current beta uses one approved ShadowScore production logo across the public site, workspace, and browser icon. The brand system retains a monochrome logo and documented usage rules.
+- The current beta restores the exact approved ShadowScore infinity mark across the public site, workspace, and browser icon. The original SVG geometry, gradients, metadata, accessibility text, and asset names remain unchanged.
 
 - Enterprise readiness review mode now adds a consistent trust checkpoint strip across the product shell and includes Account in authenticated navigation for easier procurement-style demos.
 
