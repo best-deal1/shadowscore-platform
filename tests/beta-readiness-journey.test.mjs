@@ -59,3 +59,23 @@ test("public navigation preserves authenticated customer continuity", async () =
   assert.match(layout, /event\.key === "Escape"/);
   assert.doesNotMatch(layout, /Connected: \{user\.email\}/);
 });
+
+test("current beta keeps the approved infinity brand assets consistent", async () => {
+  const [primaryMark, monoMark, browserIcon] = await Promise.all([
+    read("public/brand/shadowscore-infinity.svg"),
+    read("public/brand/shadowscore-infinity-mono.svg"),
+    read("app/icon.svg"),
+  ]);
+
+  for (const asset of [primaryMark, monoMark, browserIcon]) {
+    assert.match(asset, /ShadowScore infinity mark/);
+    assert.doesNotMatch(asset, /evidence network mark/);
+  }
+
+  assert.match(primaryMark, /shadowScoreInfinity/);
+  assert.match(primaryMark, /M86 112c-33/);
+  assert.match(monoMark, /currentColor/);
+  assert.match(monoMark, /M80 40C62 14/);
+  assert.match(browserIcon, /radialGradient id="core"/);
+  assert.match(browserIcon, /M80 40C62 14/);
+});
