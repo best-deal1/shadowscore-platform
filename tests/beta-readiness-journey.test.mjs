@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
@@ -60,22 +60,35 @@ test("public navigation preserves authenticated customer continuity", async () =
   assert.doesNotMatch(layout, /Connected: \{user\.email\}/);
 });
 
-test("current beta keeps the approved infinity brand assets consistent", async () => {
-  const [primaryMark, monoMark, browserIcon] = await Promise.all([
-    read("public/brand/shadowscore-infinity.svg"),
-    read("public/brand/shadowscore-infinity-mono.svg"),
+test("current beta keeps the approved production brand assets consistent", async () => {
+  const [primaryMark, monoMark, browserIcon, brandSystem] = await Promise.all([
+    read("public/brand/shadowscore-logo.svg"),
+    read("public/brand/shadowscore-logo-mono.svg"),
     read("app/icon.svg"),
+    read("docs/SHADOWSCORE_BRAND_SYSTEM.md"),
   ]);
 
   for (const asset of [primaryMark, monoMark, browserIcon]) {
-    assert.match(asset, /ShadowScore infinity mark/);
-    assert.doesNotMatch(asset, /evidence network mark/);
+    assert.match(asset, /ShadowScore production logo/);
+    assert.doesNotMatch(asset, /infinity mark|evidence network mark/i);
   }
 
-  assert.match(primaryMark, /shadowScoreInfinity/);
+  assert.match(primaryMark, /shadowScoreLogo/);
   assert.match(primaryMark, /M86 112c-33/);
   assert.match(monoMark, /currentColor/);
-  assert.match(monoMark, /M80 40C62 14/);
+  assert.match(monoMark, /M86 112c-33/);
   assert.match(browserIcon, /radialGradient id="core"/);
   assert.match(browserIcon, /M80 40C62 14/);
+  assert.match(brandSystem, /shadowscore-logo-mono\.svg/);
+  assert.match(brandSystem, /Clear space/);
+  assert.match(brandSystem, /Typography/);
+  assert.match(brandSystem, /WCAG contrast requirements/);
+
+  for (const retiredAsset of [
+    "public/brand/shadowscore-infinity.svg",
+    "public/shadowscore-shield.png",
+    "public/shadowscore-main-logo.jpg",
+  ]) {
+    await assert.rejects(access(new URL(`../${retiredAsset}`, import.meta.url)));
+  }
 });

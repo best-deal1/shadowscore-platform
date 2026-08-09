@@ -4,7 +4,7 @@ Version 1.0, July 2026
 
 ## Brand idea
 
-ShadowScore is the brand. The infinity mark represents its continuous intelligence loop. Connected observations form both loops. The illuminated crossing point is Resolution, where evidence becomes knowledge and knowledge changes trust.
+ShadowScore is the brand. The production logo is the single approved brand mark. Its form, proportions, and color treatment remain fixed across product and marketing surfaces.
 
 The core line is: **Evidence. Knowledge. Trust.**
 
@@ -12,10 +12,10 @@ The core line is: **Evidence. Knowledge. Trust.**
 
 | Asset | Use |
 | --- | --- |
-| `public/brand/shadowscore-infinity.svg` | Primary digital mark on dark and light surfaces |
-| `public/brand/shadowscore-infinity-mono.svg` | Single-color print, engraving, and constrained UI |
+| `public/brand/shadowscore-logo.svg` | Primary digital mark on dark and light surfaces |
+| `public/brand/shadowscore-logo-mono.svg` | Single-color print, engraving, and constrained UI |
 
-Clear space is the height of the Resolution core on every side. The minimum digital width is 24 px for the symbol and 104 px for the symbol with the ShadowScore wordmark. Do not rotate, stretch, add a container, recolor individual observations, or remove the Resolution core.
+Clear space is one quarter of the mark height on every side. The minimum digital width is 24 px for the symbol and 104 px for the symbol with the ShadowScore wordmark. Do not rotate, stretch, add a container, alter its proportions, or recolor individual elements.
 
 ## Design tokens
 

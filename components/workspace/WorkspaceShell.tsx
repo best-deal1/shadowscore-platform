@@ -58,7 +58,7 @@ export function WorkspaceShell({ children, locale, actor }: { children: React.Re
       <a className="workspace-skip-link" href="#workspace-content">{copy.skipToContent}</a>
       <header className="workspace-header">
         <Link className="workspace-brand" href="/workspace" aria-label={`${copy.productName} ${copy.workspace}`}>
-          <Image src="/brand/shadowscore-infinity.svg" width={44} height={24} alt="" className="workspace-mark" />
+          <Image src="/brand/shadowscore-logo.svg" width={44} height={24} alt="" className="workspace-mark" />
           <span className="workspace-brand-name">{copy.productName}<small>Trust intelligence</small></span>
         </Link>
         <p className="workspace-context">{copy.workspace}</p>

@@ -10,7 +10,7 @@ Copy these files into your Next.js project:
 
 Required public assets:
 
-- public/shadowscore-shield-v8.png
+- public/brand/shadowscore-logo.svg
 - public/marketplaces-monitor-v8.png
 
 Local test:

@@ -931,7 +931,7 @@ export default function IntakePage() {
             className="flex items-center gap-3 text-sm text-zinc-500 hover:text-white"
           >
             <Image
-              src="/shadowscore-shield-v8.png"
+              src="/brand/shadowscore-logo.svg"
               alt="ShadowScore"
               width={32}
               height={32}
