@@ -167,7 +167,7 @@ export default function ShadowScoreLayout({
             className="flex items-center gap-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-300"
           >
             <Image
-              src="/brand/shadowscore-infinity.svg"
+              src="/brand/shadowscore-logo.svg"
               alt=""
               width={160}
               height={80}

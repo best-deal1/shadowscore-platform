@@ -23,7 +23,7 @@ const colors = [
   ["Knowledge", "#38BDF8"], ["Intelligence", "#8B5CF6"], ["Trusted", "#34D399"],
   ["Review", "#FBBF24"], ["Conflict", "#FB7185"], ["Historical", "#71717A"],
 ];
-function Mark({ mono = false }: { mono?: boolean }) { return <Image src={mono ? "/brand/shadowscore-infinity-mono.svg" : "/brand/shadowscore-infinity.svg"} alt="" width={160} height={80} className={styles.mark} />; }
+function Mark({ mono = false }: { mono?: boolean }) { return <Image src={mono ? "/brand/shadowscore-logo-mono.svg" : "/brand/shadowscore-logo.svg"} alt="" width={160} height={80} className={styles.mark} />; }
 function Pulse() { return <span className={styles.pulse}><span /></span>; }
 export default function BrandPage() {
   return <main className={styles.page}>
@@ -31,7 +31,7 @@ export default function BrandPage() {
 
     <section className={styles.hero}>
       <div className={styles.eyebrow}><Pulse /> Brand identity, version 1.0</div>
-      <div className={styles.heroGrid}><div><h1>Intelligence has<br/><em>no final state.</em></h1><p className={styles.lede}>ShadowScore turns observed evidence into connected knowledge and continuously recalculated trust.</p><div className={styles.actions}><a href="#product">Explore the system</a><a href="/brand/shadowscore-infinity.svg" download>Download SVG ↓</a></div></div><div className={styles.heroMark}><div className={styles.orbit}/><Mark/><span className={styles.resolution}>RESOLUTION</span></div></div>
+      <div className={styles.heroGrid}><div><h1>Intelligence has<br/><em>no final state.</em></h1><p className={styles.lede}>ShadowScore turns observed evidence into connected knowledge and continuously recalculated trust.</p><div className={styles.actions}><a href="#product">Explore the system</a><a href="/brand/shadowscore-logo.svg" download>Download SVG ↓</a></div></div><div className={styles.heroMark}><div className={styles.orbit}/><Mark/><span className={styles.resolution}>RESOLUTION</span></div></div>
       <div className={styles.loop}>{stages.map(([number,title,detail],i)=><article key={title}><span>{number}</span><div><strong>{title}</strong><small>{detail}</small></div>{i < stages.length-1 && <b>→</b>}</article>)}</div>
     </section>
 
