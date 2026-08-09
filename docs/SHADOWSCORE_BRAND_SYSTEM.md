@@ -12,7 +12,7 @@ The core line is: **Evidence. Knowledge. Trust.**
 
 | Asset | Use |
 | --- | --- |
-| `public/brand/shadowscore-infinity.svg` | Primary digital mark on dark and light surfaces |
+| `public/brand/shadowscore-infinity.svg` | Canonical source for the primary digital mark on dark and light surfaces |
 | `public/brand/shadowscore-infinity-mono.svg` | Single-color print, engraving, and constrained UI |
 
 Clear space is the height of the Resolution core on every side. The minimum digital width is 24 px for the symbol and 104 px for the symbol with the ShadowScore wordmark. Do not rotate, stretch, add a container, recolor individual observations, or remove the Resolution core.
