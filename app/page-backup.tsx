@@ -195,7 +195,7 @@ I would like to begin a private ShadowScore review.`;
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 md:px-6">
           <Link href="/" className="flex items-center gap-3">
             <img
-              src="/brand/shadowscore-logo.svg"
+              src="/brand/shadowscore-infinity.svg"
               alt="ShadowScore"
               className="h-10 w-10 rounded-xl object-contain bg-black p-1"
             />
@@ -299,7 +299,7 @@ I would like to begin a private ShadowScore review.`;
 
               <div className="relative flex h-full min-h-[440px] flex-col items-center justify-center text-center">
                 <img
-                  src="/brand/shadowscore-logo.svg"
+                  src="/brand/shadowscore-infinity.svg"
                   alt="ShadowScore cyber shield"
                   className="h-auto w-[230px] max-w-full object-contain drop-shadow-[0_0_34px_rgba(220,38,38,0.22)] md:w-[270px]"
                 />

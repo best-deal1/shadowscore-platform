@@ -1,8 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { access, readFile } from "node:fs/promises";
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
+const sha256 = (contents) => createHash("sha256").update(contents).digest("hex");
 
 test("beta purchase journey uses workspace as its canonical authenticated page", async () => {
   const [layout, config, login, investigations, proxy, home] = await Promise.all([
@@ -60,32 +62,30 @@ test("public navigation preserves authenticated customer continuity", async () =
   assert.doesNotMatch(layout, /Connected: \{user\.email\}/);
 });
 
-test("current beta keeps the approved production brand assets consistent", async () => {
+test("current beta preserves the approved infinity assets byte-for-byte", async () => {
   const [primaryMark, monoMark, browserIcon, brandSystem] = await Promise.all([
-    read("public/brand/shadowscore-logo.svg"),
-    read("public/brand/shadowscore-logo-mono.svg"),
+    read("public/brand/shadowscore-infinity.svg"),
+    read("public/brand/shadowscore-infinity-mono.svg"),
     read("app/icon.svg"),
     read("docs/SHADOWSCORE_BRAND_SYSTEM.md"),
   ]);
 
   for (const asset of [primaryMark, monoMark, browserIcon]) {
-    assert.match(asset, /ShadowScore production logo/);
-    assert.doesNotMatch(asset, /infinity mark|evidence network mark/i);
+    assert.match(asset, /ShadowScore infinity mark/);
+    assert.doesNotMatch(asset, /production logo|evidence network mark/i);
   }
 
-  assert.match(primaryMark, /shadowScoreLogo/);
-  assert.match(primaryMark, /M86 112c-33/);
-  assert.match(monoMark, /currentColor/);
-  assert.match(monoMark, /M86 112c-33/);
-  assert.match(browserIcon, /radialGradient id="core"/);
-  assert.match(browserIcon, /M80 40C62 14/);
-  assert.match(brandSystem, /shadowscore-logo-mono\.svg/);
+  assert.equal(sha256(primaryMark), "c5f8d30f4e046c278803256757f12748e467d02bb385d04f659b3f3bbb109733");
+  assert.equal(sha256(monoMark), "f7e35fd5d17b487762f9f001d8db0c001b489f83fc2baa949d203d08aa0c58bd");
+  assert.equal(sha256(browserIcon), "bd8df396725e2e729fed98fb7d14bf4bff673a355062281afe01d03e4ed06c92");
+  assert.match(brandSystem, /shadowscore-infinity-mono\.svg/);
   assert.match(brandSystem, /Clear space/);
   assert.match(brandSystem, /Typography/);
   assert.match(brandSystem, /WCAG contrast requirements/);
 
   for (const retiredAsset of [
-    "public/brand/shadowscore-infinity.svg",
+    "public/brand/shadowscore-logo.svg",
+    "public/brand/shadowscore-logo-mono.svg",
     "public/shadowscore-shield.png",
     "public/shadowscore-main-logo.jpg",
   ]) {

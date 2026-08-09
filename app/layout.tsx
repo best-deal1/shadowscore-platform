@@ -12,7 +12,7 @@ const organizationJsonLd = {
       "@type": "Organization",
       name: "ShadowScore",
       url: "https://shadowscore.io",
-      logo: "https://shadowscore.io/brand/shadowscore-logo.svg",
+      logo: "https://shadowscore.io/brand/shadowscore-infinity.svg",
       description: "Trust intelligence for source-backed business verification, due diligence, and vendor risk assessment.",
     },
     {

@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 160" role="img" aria-labelledby="title desc">
-  <title id="title">ShadowScore production logo</title>
-  <desc id="desc">The approved ShadowScore production logo in one color.</desc>
-  <path d="M86 112c-33 0-54-25-54-32s21-32 54-32c27 0 49 17 74 32 25 15 47 32 74 32 33 0 54-25 54-32s-21-32-54-32c-27 0-49 17-74 32-25 15-47 32-74 32Z" fill="none" stroke="currentColor" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="86" cy="80" r="9" fill="currentColor"/>
-  <circle cx="160" cy="80" r="8" fill="currentColor"/>
-  <circle cx="234" cy="80" r="9" fill="currentColor"/>
-</svg>
