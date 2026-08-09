@@ -6,6 +6,7 @@ This file records customer-visible improvements in each ShadowScore release.
 
 ### New
 
+- Investigation graphs now correlate company, domain, contact, and marketplace identities in one evidence trail. Exact identifiers drive entity resolution, while contradictions, evidence freshness, and source confidence shape a decision and its next action.
 - Workspace for authenticated investigations.
 - Authentication with a preserved return path after signup or login.
 - Investigation intake, checkout, payment, processing, and report flow.
