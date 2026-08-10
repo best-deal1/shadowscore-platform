@@ -64,6 +64,7 @@ This file records customer-visible improvements in each ShadowScore release.
 
 ### Fixed
 
+- Workspace investigation and recent report links now preserve the persisted investigation reference and resolve the associated report record before opening it.
 - Route validation now recognizes public assets, includes the ShadowScore infinity brand mark, and removes inert monitoring and brand actions from customer-facing screens.
 - Case, investigation, watchlist, entity intelligence, and homepage controls now declare explicit button intent for safer keyboard and form behavior.
 

@@ -36,9 +36,11 @@ test("workspace navigation is canonical, current, and actionable", async () => {
   assert.match(shell, /logoutUser/);
 });
 
-test("duplicate investigation routes resolve to canonical workspace routes", async () => {
+test("the investigation index resolves to the workspace and details retain canonical identity", async () => {
   assert.match(await read("app/investigations/page.tsx"), /redirect\("\/workspace"\)/);
-  assert.match(await read("app/investigations/\[investigationId\]/page.tsx"), /redirect\(`\/cases\//);
+  const details = await read("app/investigations/[investigationId]/page.tsx");
+  assert.match(details, /repository\.get\(investigationId\)/);
+  assert.doesNotMatch(details, /redirect\(`\/cases\//);
 });
 
 test("workspace destinations define loading and error states", async () => {

@@ -10,7 +10,7 @@ export type QueueRequest = <T>(path: string, init?: RequestInit, accessToken?: s
 const queueSelect = "public_id,title,investigation_id,status,priority,due_at,version,updated_at";
 
 function toQueueItem(row: QueueCaseRow): CaseQueueItemDto {
-  return { id: row.public_id, title: row.title, target: row.investigation_id, status: row.status, priority: row.priority, ownerName: null, dueAt: row.due_at, version: row.version, updatedAt: row.updated_at, openAlertCount: 0 };
+  return { id: row.public_id, investigationId: row.investigation_id, title: row.title, target: row.investigation_id, status: row.status, priority: row.priority, ownerName: null, dueAt: row.due_at, version: row.version, updatedAt: row.updated_at, openAlertCount: 0 };
 }
 
 export async function fetchOrganizationQueue(actor: Pick<WorkspaceActor, "organizationId">, accessToken: string, request: QueueRequest): Promise<CaseQueueDto> {
