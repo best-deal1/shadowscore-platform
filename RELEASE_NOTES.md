@@ -74,3 +74,5 @@ This file records customer-visible improvements in each ShadowScore release.
 - Payment completion is tied to the purchased report.
 - Verified payments now start report generation without relying on browser polling.
 - Report routes now require paid and ready states.
+
+- Fixed production brand rendering so headers, account entry points, workspace, intake, favicon, social metadata, and organization schema use the canonical ShadowScore logo asset.

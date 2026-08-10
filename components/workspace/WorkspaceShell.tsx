@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import type { Locale } from "@/lib/i18n";
 import { logoutUser } from "@/lib/auth";
+import { CANONICAL_LOGO_PATH } from "@/lib/brand";
 import type { WorkspaceActor } from "@/lib/workspace/actor";
 import { workspaceCopy } from "./workspace-copy";
 import { workspaceActorDisplayName } from "./actor-display";
@@ -58,7 +59,7 @@ export function WorkspaceShell({ children, locale, actor }: { children: React.Re
       <a className="workspace-skip-link" href="#workspace-content">{copy.skipToContent}</a>
       <header className="workspace-header">
         <Link className="workspace-brand" href="/workspace" aria-label={`${copy.productName} ${copy.workspace}`}>
-          <Image src="/brand/shadowscore-infinity.svg" width={44} height={24} alt="" className="workspace-mark" />
+          <Image src={CANONICAL_LOGO_PATH} width={44} height={24} alt="" unoptimized className="workspace-mark" />
           <span className="workspace-brand-name">{copy.productName}<small>Trust intelligence</small></span>
         </Link>
         <p className="workspace-context">{copy.workspace}</p>

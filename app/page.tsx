@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { CANONICAL_LOGO_PATH } from "../lib/brand";
 import MarketingHome from "./components/MarketingHome";
 import { siteUrl } from "./lib/marketing";
 
@@ -9,8 +10,8 @@ export const metadata: Metadata = {
   title,
   description,
   alternates: { canonical: "/", languages: { en: "/", he: "/he", "x-default": "/" } },
-  openGraph: { title, description, url: siteUrl, type: "website" },
-  twitter: { card: "summary_large_image", title, description },
+  openGraph: { title, description, url: siteUrl, type: "website", images: [CANONICAL_LOGO_PATH] },
+  twitter: { card: "summary_large_image", title, description, images: [CANONICAL_LOGO_PATH] },
 };
 
 export default function Home() {
