@@ -47,7 +47,9 @@ assert.match(source, /setPreviewStatus\("ready"\)/, 'intake page transitions loa
 assert.match(source, /setFreeScanRunning\(false\)/, 'intake page clears the running flag');
 assert.match(source, /Executive report ready/, 'free preview teases the completed executive report');
 assert.match(source, /Evidence items collected/, 'free preview shows high-level collection totals');
-assert.match(source, /Unlock Executive Report · \$9\.90/, 'free preview presents the one-time report purchase');
+assert.match(source, /buttonLabel={`Unlock \${BETA_PRODUCT\.deliverable} · \${BETA_PRODUCT\.price}`}/, 'free preview presents the canonical one-time report purchase');
+assert.match(source, /<dd className="font-bold text-white">{BETA_PRODUCT\.deliverable}<\/dd>/, 'purchase summary uses the canonical deliverable');
+assert.match(source, /<dd className="font-bold text-white">{BETA_PRODUCT\.price}<\/dd>/, 'purchase summary uses the canonical price');
 assert.doesNotMatch(source, /View technical preview/, 'free preview does not expose a technical report');
 assert.doesNotMatch(source, /Why it matters:/, 'free preview does not expose finding explanations');
 assert.doesNotMatch(source, /What this means:/, 'free preview does not expose decision reasoning');
