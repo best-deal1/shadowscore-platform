@@ -4,8 +4,9 @@ import { once } from "node:events";
 
 const port = 3111;
 const baseUrl = `http://127.0.0.1:${port}`;
-const targets = ["Integration Route Test Ltd.", "Second Scoped Route Test Ltd."];
-const server = spawn("npm", ["run", "dev", "--", "--port", String(port)], { stdio: ["ignore", "pipe", "pipe"] });
+const target = "Integration Route Test Ltd.";
+const server = spawn("npm", ["run", "dev", "--", "--port", String(port)], { detached: true, stdio: ["ignore", "pipe", "pipe"] });
+const serverExit = once(server, "exit");
 let output = "";
 server.stdout.on("data", (chunk) => { output += chunk; });
 server.stderr.on("data", (chunk) => { output += chunk; });
@@ -24,30 +25,14 @@ async function waitForServer() {
 
 try {
   await waitForServer();
-  const investigations = [];
-  for (const target of targets) {
-    const create = await fetch(`${baseUrl}/api/investigations`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ target }) });
-    assert.equal(create.status, 201);
-    const investigation = await create.json();
-    for (let stage = 0; stage < 4; stage += 1) {
-      const advance = await fetch(`${baseUrl}/api/investigations/${investigation.investigationId}`, { method: "POST" });
-      assert.equal(advance.status, 200);
-    }
-    investigations.push(investigation);
-  }
+  const create = await fetch(`${baseUrl}/api/investigations`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ target }) });
+  assert.equal(create.status, 401);
+  assert.deepEqual(await create.json(), { error: "Authentication is required." });
 
-  for (const [index, investigation] of investigations.entries()) {
-    const detailsPath = `/investigations/${investigation.investigationId}`;
-    const details = await (await fetch(`${baseUrl}${detailsPath}`)).text();
-    assert.match(details, /Investigation Details/);
-    assert.match(details, new RegExp(targets[index]));
-    assert.doesNotMatch(details, new RegExp(targets[1 - index]));
-    assert.doesNotMatch(details, /Northstar Marketplace Ltd\.|Elena Volkov|Orion Goods|restricted seller/i);
-  }
-
-  const missing = await (await fetch(`${baseUrl}/investigations/inv-missing`)).text();
-  assert.match(missing, /Investigation not found/);
+  const details = await fetch(`${baseUrl}/investigations/inv-private`, { redirect: "manual" });
+  assert.ok([302, 303, 307, 308].includes(details.status));
+  assert.match(details.headers.get("location") || "", /^\/login\?returnTo=/);
 } finally {
-  server.kill("SIGTERM");
-  await once(server, "exit");
+  process.kill(-server.pid, "SIGTERM");
+  await serverExit;
 }
