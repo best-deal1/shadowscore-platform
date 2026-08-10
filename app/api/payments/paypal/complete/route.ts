@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { PAYPAL_BUSINESS_EMAIL, getPayPalPdtIdentityToken } from "@/lib/config";
 import { resolveWebsiteSession } from "@/lib/websiteIntelligence/server";
-import { markPaymentPaidAndGenerateReport } from "@/lib/workspace.server";
+import { confirmPaymentAndQueueInvestigation } from "@/lib/workspace.server";
 import { REPORT_PRODUCT, type WorkspaceSession } from "@/lib/workspace";
 
 const PAYPAL_PDT_URL = "https://www.paypal.com/cgi-bin/webscr";
@@ -42,8 +42,8 @@ export async function POST(request: Request) {
     if (result.values.get("mc_currency") !== "USD" || result.values.get("mc_gross") !== REPORT_PRODUCT.amount) throw new Error("Payment amount could not be verified.");
 
     const session: WorkspaceSession = { userId: authenticated.userId, accessToken: authenticated.accessToken, name: "", email: "", startedAt: new Date().toISOString() };
-    const report = await markPaymentPaidAndGenerateReport(session, paymentIntentId);
-    return NextResponse.json({ reportId: report.reportId, reportStatus: report.reportStatus });
+    const queued = await confirmPaymentAndQueueInvestigation(session, paymentIntentId, body.transactionId);
+    return NextResponse.json({ reportId: queued.reportId, investigationId: queued.investigationId, reportStatus: queued.reportStatus });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Payment could not be confirmed." }, { status: 400 });
   }

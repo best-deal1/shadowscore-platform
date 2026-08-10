@@ -6,6 +6,19 @@ import { SupabaseWebsiteScanHistoryRepository } from "./websiteIntelligence/supa
 import { SupabaseWebsiteAlertRepository } from "./websiteIntelligence/supabaseAlerts";
 import { SupabaseWebsiteWatchlistRepository } from "./websiteIntelligence/supabaseWatchlist";
 
+export async function confirmPaymentAndQueueInvestigation(session: WorkspaceSession, paymentIntentId: string, providerReference: string) {
+  if (!isSupabaseConfigured() || !session.accessToken) {
+    requirePersistentSessionInProduction(session.accessToken);
+    throw new Error("Durable investigation execution requires persistent storage.");
+  }
+  const rows = await supabaseFetch<Array<{ investigation_id: string; investigation_job_id: string; report_id: string; status: string }>>("/rest/v1/rpc/confirm_paid_investigation", {
+    method: "POST",
+    body: JSON.stringify({ p_payment_intent_id: paymentIntentId, p_provider_reference: providerReference }),
+  }, session.accessToken);
+  if (!rows[0]?.investigation_id) throw new Error("The paid investigation could not be queued.");
+  return { investigationId: rows[0].investigation_id, investigationJobId: rows[0].investigation_job_id, reportId: rows[0].report_id, reportStatus: rows[0].status === "ready" || rows[0].status === "partial" ? "ready" as const : "generating" as const };
+}
+
 export async function markPaymentPaidAndGenerateReport(session: WorkspaceSession, paymentIntentId: string) {
   if (isSupabaseConfigured() && session.accessToken) {
     const snapshot = await getWorkspace(session);

@@ -77,6 +77,7 @@
     "test:investigation-engine": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types --test tests/investigation-engine-validation.test.mjs",
     "test:cross-intelligence": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types --test tests/investigation-cross-intelligence.test.mjs",
     "test:live-investigation": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types --test tests/live-investigation-orchestration.test.mjs",
+    "test:canonical-paid-investigation": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types --test tests/canonical-paid-investigation.test.mjs",
     "test:monitoring": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types --test tests/continuous-monitoring-pr7.test.mjs"
   },
   "dependencies": {

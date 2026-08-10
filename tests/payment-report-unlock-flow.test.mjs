@@ -48,7 +48,7 @@ test("payment pending stays on unlock", () => assert.match(nextReportRoute("r", 
 test("payment processing uses processing route", () => assert.match(nextReportRoute("r", "processing", "payment_pending"), /\/processing$/));
 test("paid and ready opens the full report", () => assert.equal(nextReportRoute("r", "paid", "ready"), "/reports/r"));
 test("payment failure never unlocks report", () => assert.equal(canViewFullReport({ paymentStatus: "failed", reportStatus: "ready" }), false));
-test("successful payment generation is guarded before execution", () => assert.match(source("../lib/workspace.server.ts"), /const completed = workspace\.reports\.find/));
+test("successful payment queues one durable investigation", () => assert.match(source("../lib/workspace.server.ts"), /rpc\/confirm_paid_investigation/));
 test("duplicate provider callback is protected", () => assert.match(source("../app/api/workspace/mark-paid/route.ts"), /x-payment-callback-secret/));
 test("generation success requires both server states", () => assert.equal(canViewFullReport({ paymentStatus: "paid", reportStatus: "ready" }), true));
 test("generation failure after payment stays in processing", () => assert.match(nextReportRoute("r", "paid", "failed"), /\/processing$/));
@@ -75,7 +75,8 @@ test("PayPal return is verified on the server before report generation", () => {
   assert.match(flow, /rm: "2"/);
   assert.match(flow, /\/api\/payments\/paypal\/complete/);
   for (const check of ["payment_status", "invoice", "receiver_email", "mc_currency", "mc_gross"]) assert.ok(callback.includes(check));
-  assert.match(callback, /markPaymentPaidAndGenerateReport/);
+  assert.match(callback, /confirmPaymentAndQueueInvestigation/);
+  assert.doesNotMatch(callback, /buildReadyReport|markPaymentPaidAndGenerateReport/);
 });
 test("browser state cannot unlock a report", () => {
   const access = source("../lib/reportAccess.ts");
