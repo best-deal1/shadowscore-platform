@@ -21,6 +21,8 @@ This file records customer-visible improvements in each ShadowScore release.
 
 ### Improved
 
+- Pricing now presents the canonical $9.90 Business Investigation without internal review messaging. The shared product contract and all other customer journeys remain unchanged.
+
 - The current beta restores the exact approved ShadowScore infinity mark across the public site, workspace, and browser icon. The original SVG geometry, gradients, metadata, accessibility text, and asset names remain unchanged.
 
 - Enterprise readiness review mode now adds a consistent trust checkpoint strip across the product shell and includes Account in authenticated navigation for easier procurement-style demos.

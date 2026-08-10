@@ -26,8 +26,16 @@ test("the beta SKU has one frozen commercial contract", () => {
 
 test("public pricing presents only the beta SKU and canonical promise", async () => {
   const pricing = await read("app/pricing/page.tsx");
+  const layout = await read("components/ShadowScoreLayout.tsx");
   assert.match(pricing, /BETA_PRODUCT\.promise/);
   assert.match(pricing, /Start Business Investigation/);
+  assert.match(pricing, /<ShadowScoreLayout hideReviewMessaging>/);
+  for (const internalMessage of ["beta offer", "beta Business Investigation", "Enterprise readiness review", "Enterprise review mode"]) {
+    assert.doesNotMatch(pricing, new RegExp(internalMessage, "i"));
+  }
+  assert.match(layout, /hideReviewMessaging = false/);
+  assert.match(layout, /!hideReviewMessaging \? <div className="ss-platform-bar"/);
+  assert.match(layout, /!hideReviewMessaging \? <section className="ss-enterprise-readiness"/);
   for (const retiredOffer of ["Quick Investigation", "Professional Investigation", "Business Intelligence Report", "Continuous Monitoring"]) {
     assert.doesNotMatch(pricing, new RegExp(retiredOffer));
   }
