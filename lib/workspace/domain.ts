@@ -154,6 +154,7 @@ export interface TimelinePageDto {
 /** A browser-safe queue representation. It deliberately excludes raw evidence and provider output. */
 export interface CaseQueueItemDto {
   id: OpaqueCaseId;
+  investigationId: string;
   title: string;
   target: string;
   status: CaseStatus;
