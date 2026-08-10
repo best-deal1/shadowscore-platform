@@ -68,8 +68,10 @@ function isActiveRoute(pathname: string, href: string) {
 
 export default function ShadowScoreLayout({
   children,
+  hideReviewMessaging = false,
 }: {
   children: ReactNode;
+  hideReviewMessaging?: boolean;
 }) {
   const pathname = usePathname() || "/";
   const { locale, t } = useLocale();
@@ -152,7 +154,7 @@ export default function ShadowScoreLayout({
     <div className="ss-public-shell min-h-screen overflow-x-hidden text-white">
       <a href="#main-content" className="sr-only z-[100] rounded-lg bg-white px-4 py-3 font-bold text-black focus:not-sr-only focus:fixed focus:left-4 focus:top-4">Skip to main content</a>
       <header className="ss-site-header sticky top-0 z-50">
-        <div className="ss-platform-bar">
+        {!hideReviewMessaging ? <div className="ss-platform-bar">
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-2 sm:px-6">
             <p className="flex items-center gap-2 text-[0.6875rem] font-bold uppercase tracking-[0.16em] text-slate-400">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" aria-hidden="true" />
@@ -160,7 +162,7 @@ export default function ShadowScoreLayout({
             </p>
             <p className="hidden text-xs text-slate-500 sm:block">Identity · Evidence · Access controls · Support</p>
           </div>
-        </div>
+        </div> : null}
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
           <Link
             href="/"
@@ -341,7 +343,7 @@ export default function ShadowScoreLayout({
         </nav>
       ) : null}
 
-      <section className="ss-enterprise-readiness" aria-label="Enterprise readiness signals">
+      {!hideReviewMessaging ? <section className="ss-enterprise-readiness" aria-label="Enterprise readiness signals">
         <div className="mx-auto grid max-w-7xl gap-3 px-5 py-4 sm:px-6 lg:grid-cols-[1.3fr_2fr] lg:items-center">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.2em] text-sky-300">Enterprise review mode</p>
@@ -354,7 +356,7 @@ export default function ShadowScoreLayout({
             <li><span aria-hidden="true">✓</span> Mobile access</li>
           </ul>
         </div>
-      </section>
+      </section> : null}
       <div id="main-content">{children}</div>
 
       <footer className="border-t border-white/10 bg-[#070b12] px-5 py-12 sm:px-6">

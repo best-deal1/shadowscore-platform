@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function PricingPage() {
   return (
-    <ShadowScoreLayout>
+    <ShadowScoreLayout hideReviewMessaging>
       <main className="pricing-page">
         <section className="pricing-hero px-6 pb-16 pt-20 text-center sm:pt-28">
           <div className="mx-auto max-w-4xl">
@@ -29,7 +29,7 @@ export default function PricingPage() {
         </section>
 
         <section className="pricing-section" aria-labelledby="available-title">
-          <div className="pricing-heading"><p className="pricing-eyebrow">Available now</p><h2 id="available-title">A complete investigation for {BETA_PRODUCT.price}</h2><p>The beta offer covers one Business and one Executive Report. It is a one-time purchase in USD, with no recurring charge.</p></div>
+          <div className="pricing-heading"><p className="pricing-eyebrow">Available now</p><h2 id="available-title">A complete investigation for {BETA_PRODUCT.price}</h2><p>{BETA_PRODUCT.promise} The price is in USD, with no recurring charge.</p></div>
           <article className="pricing-plan pricing-plan-featured mx-auto mt-10 max-w-4xl">
             <div className="pricing-plan-content"><div><span className="pricing-pill">One-time purchase</span><h3>{BETA_PRODUCT.name}</h3><p className="mt-3 max-w-xl text-sm leading-6 text-zinc-400">Review one Business using its submitted identity, available sources, and optional customer evidence.</p></div><div className="pricing-price-block"><strong>{BETA_PRODUCT.price}</strong><span>USD, {BETA_PRODUCT.period}</span></div></div>
             <div className="pricing-includes">
@@ -54,7 +54,7 @@ export default function PricingPage() {
 
         <section className="pricing-section pb-28" aria-labelledby="questions-title">
           <div className="pricing-heading"><p className="pricing-eyebrow">Purchase questions</p><h2 id="questions-title">Know what happens before you pay</h2></div>
-          <div className="pricing-faq mt-10"><details><summary>When do I pay?</summary><p>Start by submitting the Business identity and investigation scope. You can review those details and the total price before checkout.</p></details><details><summary>What will I receive?</summary><p>One Executive Report for the purchased Business Investigation. It includes an executive recommendation, findings, evidence gaps, a source trail, and prioritized actions.</p></details><details><summary>How long does processing take?</summary><p>Processing depends on the Business, submitted scope, and source availability. Your workspace shows the current status and provides access when the report is ready.</p></details><details><summary>Is this a subscription?</summary><p>No. The beta Business Investigation is a one-time purchase. Professional, Business, and Enterprise subscriptions are not available yet.</p></details></div>
+          <div className="pricing-faq mt-10"><details><summary>When do I pay?</summary><p>Start by submitting the Business identity and investigation scope. You can review those details and the total price before checkout.</p></details><details><summary>What will I receive?</summary><p>One Executive Report for the purchased Business Investigation. It includes an executive recommendation, findings, evidence gaps, a source trail, and prioritized actions.</p></details><details><summary>How long does processing take?</summary><p>Processing depends on the Business, submitted scope, and source availability. Your workspace shows the current status and provides access when the report is ready.</p></details><details><summary>Is this a subscription?</summary><p>The Business Investigation is a one-time purchase. Professional, Business, and Enterprise subscriptions are not available yet.</p></details></div>
           <div className="enterprise-cta mt-14"><div><p className="pricing-eyebrow">Need a team plan?</p><h2>Tell us about your investigation workflow.</h2><p>Share your review volume, collaboration needs, and procurement requirements. We will respond with the current options.</p></div><Link className="pricing-primary" href="/contact?subject=Team%20plan">Contact sales</Link></div>
         </section>
       </main>
