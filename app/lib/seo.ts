@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import { CANONICAL_LOGO_PATH } from "../../lib/brand";
 
 const siteUrl = "https://shadowscore.io";
-const defaultImage = "/marketplaces-monitor-enterprise-v5.png";
+const defaultImage = CANONICAL_LOGO_PATH;
 
 type SeoPage = { title: string; description: string; path: string; index?: boolean };
 
@@ -12,7 +13,7 @@ export function pageMetadata({ title, description, path, index = true }: SeoPage
     description,
     alternates: { canonical: path },
     robots: index ? { index: true, follow: true } : { index: false, follow: false },
-    openGraph: { title, description, url, siteName: "ShadowScore", type: "website", images: [{ url: defaultImage, width: 1200, height: 630, alt: "ShadowScore trust intelligence investigation workspace" }] },
+    openGraph: { title, description, url, siteName: "ShadowScore", type: "website", images: [{ url: defaultImage, width: 320, height: 160, alt: "ShadowScore" }] },
     twitter: { card: "summary_large_image", title, description, images: [defaultImage] },
   };
 }

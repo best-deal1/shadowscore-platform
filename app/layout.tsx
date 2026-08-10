@@ -4,6 +4,7 @@ import { LocaleProvider } from "../components/LocaleProvider";
 import { ProductFeedbackProvider } from "../components/ProductFeedback";
 import { defaultLocale, directionForLocale, isLocale } from "../lib/i18n";
 import "./globals.css";
+import { CANONICAL_LOGO_PATH, CANONICAL_LOGO_URL } from "../lib/brand";
 
 const organizationJsonLd = {
   "@context": "https://schema.org",
@@ -12,7 +13,7 @@ const organizationJsonLd = {
       "@type": "Organization",
       name: "ShadowScore",
       url: "https://shadowscore.io",
-      logo: "https://shadowscore.io/brand/shadowscore-infinity.svg",
+      logo: CANONICAL_LOGO_URL,
       description: "Trust intelligence for source-backed business verification, due diligence, and vendor risk assessment.",
     },
     {
@@ -36,7 +37,7 @@ export const metadata: Metadata = {
     url: "https://shadowscore.io",
     siteName: "ShadowScore",
     images: [
-      { url: "/marketplaces-monitor-enterprise-v5.png", width: 1200, height: 630, alt: "ShadowScore auditable business investigations" },
+      { url: CANONICAL_LOGO_PATH, width: 320, height: 160, alt: "ShadowScore" },
     ],
     locale: "en_US",
     type: "website",
@@ -46,11 +47,11 @@ export const metadata: Metadata = {
     title: "ShadowScore | Business Due Diligence & Company Verification",
     description:
       "Verify companies, suppliers, sellers, partners, and investment opportunities with source-backed business identity, risk, relationship, and evidence intelligence.",
-    images: ["/marketplaces-monitor-enterprise-v5.png"],
+    images: [CANONICAL_LOGO_PATH],
   },
   icons: {
-    icon: [{ url: "/icon.svg", type: "image/svg+xml", sizes: "any" }],
-    shortcut: [{ url: "/icon.svg", type: "image/svg+xml" }],
+    icon: [{ url: CANONICAL_LOGO_PATH, type: "image/svg+xml", sizes: "any" }],
+    shortcut: [{ url: CANONICAL_LOGO_PATH, type: "image/svg+xml" }],
   },
 };
 

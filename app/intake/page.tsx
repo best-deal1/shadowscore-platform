@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { CANONICAL_LOGO_PATH } from "@/lib/brand";
 import { useRouter } from "next/navigation";
 import PaymentButtons from "../../components/PaymentButtons";
 import { getCurrentSession } from "../../lib/auth";
@@ -931,10 +932,11 @@ export default function IntakePage() {
             className="flex items-center gap-3 text-sm text-zinc-500 hover:text-white"
           >
             <Image
-              src="/brand/shadowscore-infinity.svg"
+              src={CANONICAL_LOGO_PATH}
               alt="ShadowScore"
               width={32}
               height={32}
+              unoptimized
               className="h-8 w-8 object-contain"
             />
             {t.intakeUi.back}

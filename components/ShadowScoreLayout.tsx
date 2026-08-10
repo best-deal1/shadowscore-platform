@@ -16,6 +16,7 @@ import {
   YOUTUBE_URL,
 } from "../lib/config";
 import { getAuthenticatedUser, getCurrentUser, logoutUser, type ShadowScoreUser } from "../lib/auth";
+import { CANONICAL_LOGO_PATH } from "../lib/brand";
 
 const primaryNav = [
   { href: "/business-due-diligence", label: "Platform" },
@@ -167,10 +168,11 @@ export default function ShadowScoreLayout({
             className="flex items-center gap-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-300"
           >
             <Image
-              src="/brand/shadowscore-infinity.svg"
+              src={CANONICAL_LOGO_PATH}
               alt=""
               width={160}
               height={80}
+              unoptimized
               className="h-9 w-14 object-contain"
             />
             <div>
