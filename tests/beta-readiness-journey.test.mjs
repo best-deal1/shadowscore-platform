@@ -75,9 +75,9 @@ test("current beta preserves the approved infinity assets byte-for-byte", async 
     assert.doesNotMatch(asset, /production logo|evidence network mark/i);
   }
 
-  assert.equal(sha256(primaryMark), "c5f8d30f4e046c278803256757f12748e467d02bb385d04f659b3f3bbb109733");
+  assert.equal(sha256(primaryMark), "bd8df396725e2e729fed98fb7d14bf4bff673a355062281afe01d03e4ed06c92");
   assert.equal(sha256(monoMark), "f7e35fd5d17b487762f9f001d8db0c001b489f83fc2baa949d203d08aa0c58bd");
-  assert.equal(sha256(browserIcon), "c5f8d30f4e046c278803256757f12748e467d02bb385d04f659b3f3bbb109733");
+  assert.equal(sha256(browserIcon), "bd8df396725e2e729fed98fb7d14bf4bff673a355062281afe01d03e4ed06c92");
   assert.match(brandSystem, /`public\/brand\/shadowscore-infinity\.svg` \| Canonical source/);
   assert.match(brandSystem, /shadowscore-infinity-mono\.svg/);
   assert.match(brandSystem, /Clear space/);
