@@ -464,16 +464,93 @@ select {
 @media (max-width: 440px) { .iw-metrics { grid-template-columns: 1fr; }.iw-compact-panel { align-items: stretch; flex-direction: column; }.iw-compact-panel a, .iw-compact-panel button { text-align: center; } }
 @media (prefers-reduced-motion: reduce) { .iw-card { transition: none; }.iw-card:hover { transform: none; } }
 
-/* Pricing separates today's purchases from the quieter product roadmap. */
-.pricing-page { background: radial-gradient(circle at 50% 3%, rgb(127 29 29 / .34), transparent 25rem), #050505; color: #fff; }
-.pricing-hero { position: relative; overflow: hidden; }
-.pricing-hero::after { position: absolute; inset: auto 10% 0; height: 1px; content: ""; background: linear-gradient(90deg, transparent, rgb(248 113 113 / .45), transparent); }
-.pricing-eyebrow { color: #fca5a5; font-size: .72rem; font-weight: 900; letter-spacing: .22em; text-transform: uppercase; }
-.pricing-primary, .pricing-secondary { display: inline-flex; min-height: 3rem; align-items: center; justify-content: center; border-radius: .85rem; padding: .75rem 1.3rem; font-size: .875rem; font-weight: 900; transition: transform .2s ease, border-color .2s ease, background .2s ease; }
-.pricing-primary { background: #ef4444; color: #fff; box-shadow: 0 16px 38px rgb(220 38 38 / .2); }
-.pricing-primary:hover { background: #f87171; transform: translateY(-2px); }.pricing-secondary { border: 1px solid rgb(255 255 255 / .15); background: rgb(255 255 255 / .04); color: #fff; }.pricing-secondary:hover { border-color: rgb(248 113 113 / .55); background: rgb(255 255 255 / .07); transform: translateY(-2px); }
-.pricing-primary:focus-visible, .pricing-secondary:focus-visible, .pricing-faq summary:focus-visible { outline: 3px solid #fca5a5; outline-offset: 3px; }
-.pricing-section { max-width: 80rem; margin: 0 auto; padding: 6.5rem 1.5rem 0; }.pricing-heading { max-width: 48rem; margin: 0 auto; text-align: center; }.pricing-heading h2, .pricing-panel h2, .enterprise-cta h2 { margin-top: 1rem; font-size: clamp(2rem, 4vw, 3.25rem); font-weight: 900; letter-spacing: -.04em; line-height: 1.05; }.pricing-heading > p:last-child, .pricing-panel > p, .enterprise-cta > div > p:last-child { margin-top: 1.25rem; color: #a1a1aa; line-height: 1.75; }
+/* Pricing keeps the purchasable investigation ahead of future commercial paths. */
+.pricing-page { background: radial-gradient(circle at 18% 4%, rgb(127 29 29 / .32), transparent 27rem), #050505; color: #fff; }
+.pricing-eyebrow { color: #fca5a5; font-size: .7rem; font-weight: 900; letter-spacing: .2em; text-transform: uppercase; }
+.pricing-primary, .pricing-secondary { display: inline-flex; min-height: 3.15rem; align-items: center; justify-content: center; border-radius: .8rem; padding: .8rem 1.35rem; font-size: .875rem; font-weight: 900; text-align: center; transition: transform .2s ease, border-color .2s ease, background .2s ease; }
+.pricing-primary { background: #ef4444; color: #fff; box-shadow: 0 16px 38px rgb(220 38 38 / .22); }
+.pricing-primary:hover { background: #f87171; transform: translateY(-2px); }
+.pricing-secondary { border: 1px solid rgb(255 255 255 / .16); background: rgb(255 255 255 / .04); color: #fff; }
+.pricing-secondary:hover { border-color: rgb(248 113 113 / .55); background: rgb(255 255 255 / .08); transform: translateY(-2px); }
+.pricing-primary:focus-visible, .pricing-secondary:focus-visible, .pricing-faq summary:focus-visible, .pricing-compact-plans a:focus-visible { outline: 3px solid #fca5a5; outline-offset: 3px; }
+.pricing-hero { display: grid; max-width: 80rem; margin: 0 auto; align-items: center; gap: clamp(3rem, 7vw, 7rem); padding: clamp(4.5rem, 9vw, 8rem) 1.5rem 6rem; }
+.pricing-hero-copy h1 { max-width: 47rem; margin-top: 1.15rem; font-size: clamp(3rem, 7vw, 5.8rem); font-weight: 950; letter-spacing: -.06em; line-height: .96; }
+.pricing-hero-lede { max-width: 42rem; margin-top: 1.6rem; color: #d4d4d8; font-size: clamp(1rem, 2vw, 1.2rem); line-height: 1.75; }
+.pricing-hero-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 2rem; }
+.pricing-trust-strip { display: flex; flex-wrap: wrap; gap: .75rem 1.35rem; margin-top: 1.5rem; color: #a1a1aa; font-size: .78rem; font-weight: 700; }
+.pricing-trust-strip li { display: flex; align-items: center; gap: .45rem; }
+.pricing-trust-strip span, .pricing-offer-includes span { color: #86efac; }
+.pricing-offer { position: relative; overflow: hidden; border: 1px solid rgb(248 113 113 / .4); border-radius: 1.5rem; background: linear-gradient(145deg, rgb(39 12 15 / .98), rgb(13 10 11 / .98)); padding: clamp(1.5rem, 4vw, 2.25rem); box-shadow: 0 30px 80px rgb(0 0 0 / .5), inset 0 1px rgb(255 255 255 / .06); }
+.pricing-offer::before { position: absolute; inset: 0 0 auto; height: 3px; content: ""; background: linear-gradient(90deg, #ef4444, #fca5a5); }
+.pricing-offer-topline { display: flex; justify-content: space-between; gap: 1rem; color: #fca5a5; font-size: .67rem; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; }
+.pricing-offer h2 { margin-top: 1.8rem; font-size: 1.6rem; font-weight: 900; letter-spacing: -.025em; }
+.pricing-offer-description { margin-top: .55rem; color: #a1a1aa; font-size: .88rem; line-height: 1.6; }
+.pricing-price { display: flex; align-items: center; gap: 1rem; margin-top: 1.65rem; }
+.pricing-price strong { font-size: clamp(3.4rem, 7vw, 5rem); font-weight: 950; letter-spacing: -.07em; line-height: .9; }
+.pricing-price span { color: #a1a1aa; font-size: .72rem; font-weight: 800; line-height: 1.5; text-transform: uppercase; }
+.pricing-offer-rule { height: 1px; margin: 1.75rem 0; background: rgb(255 255 255 / .1); }
+.pricing-offer-label { font-size: .7rem; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; }
+.pricing-offer-includes { display: grid; gap: .75rem; margin-top: 1rem; color: #d4d4d8; font-size: .85rem; }
+.pricing-offer-includes li { display: flex; gap: .65rem; }
+.pricing-offer-action { width: 100%; margin-top: 1.75rem; }
+.pricing-terms-note { margin-top: 1rem; color: #71717a; font-size: .7rem; line-height: 1.6; }
+.pricing-section { max-width: 80rem; margin: 0 auto; padding: 7rem 1.5rem 0; }
+.pricing-heading { max-width: 48rem; margin: 0 auto; text-align: center; }
+.pricing-heading-left { margin-left: 0; text-align: left; }
+.pricing-heading h2, .pricing-report-intro h2, .pricing-final-cta h2 { margin-top: 1rem; font-size: clamp(2.15rem, 4.5vw, 3.7rem); font-weight: 900; letter-spacing: -.045em; line-height: 1.04; }
+.pricing-heading > p:last-child, .pricing-report-intro > p, .pricing-final-cta p:last-child { margin-top: 1.25rem; color: #a1a1aa; line-height: 1.75; }
+.pricing-flow { display: grid; gap: 3.5rem; border-top: 1px solid rgb(255 255 255 / .08); }
+.pricing-steps { border-top: 1px solid rgb(255 255 255 / .12); }
+.pricing-steps li { display: grid; grid-template-columns: 3.5rem 1fr; gap: 1rem; border-bottom: 1px solid rgb(255 255 255 / .12); padding: 1.4rem 0; }
+.pricing-step-number { color: #f87171; font-family: ui-monospace, monospace; font-size: .75rem; font-weight: 900; }
+.pricing-steps h3 { font-size: 1rem; font-weight: 900; }
+.pricing-steps p { max-width: 38rem; margin-top: .4rem; color: #a1a1aa; font-size: .85rem; line-height: 1.65; }
+.pricing-report { display: grid; gap: 3rem; }
+.pricing-report-intro > .pricing-secondary { margin-top: 1.75rem; }
+.pricing-report-grid { display: grid; gap: .8rem; }
+.pricing-report-grid article { border: 1px solid rgb(255 255 255 / .1); border-radius: 1rem; background: rgb(255 255 255 / .035); padding: 1.4rem; }
+.pricing-report-grid article > span { color: #f87171; font-family: ui-monospace, monospace; font-size: .68rem; font-weight: 900; }
+.pricing-report-grid h3 { margin-top: 1rem; font-size: 1rem; font-weight: 900; }
+.pricing-report-grid p { margin-top: .5rem; color: #a1a1aa; font-size: .8rem; line-height: 1.65; }
+.pricing-team-paths { display: grid; gap: 3rem; }
+.pricing-compact-plans { display: grid; gap: .75rem; }
+.pricing-compact-plans article { border: 1px solid rgb(255 255 255 / .1); border-radius: .9rem; background: rgb(255 255 255 / .025); padding: 1.25rem; }
+.pricing-compact-plans article > div { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.pricing-compact-plans h3 { font-size: 1rem; font-weight: 900; }
+.pricing-compact-plans article > div span { border: 1px solid rgb(255 255 255 / .12); border-radius: 999px; padding: .25rem .55rem; color: #a1a1aa; font-size: .6rem; font-weight: 800; text-transform: uppercase; }
+.pricing-compact-plans p { margin-top: .75rem; color: #a1a1aa; font-size: .78rem; line-height: 1.55; }
+.pricing-compact-plans a { display: inline-flex; gap: .35rem; margin-top: 1rem; border-radius: .25rem; color: #fca5a5; font-size: .75rem; font-weight: 900; }
+.pricing-faq-section { padding-bottom: 7rem; }
+.pricing-faq { max-width: 54rem; margin: 3rem auto 0; border-top: 1px solid rgb(255 255 255 / .12); }
+.pricing-faq details { border-bottom: 1px solid rgb(255 255 255 / .12); }
+.pricing-faq summary { display: flex; min-height: 4.75rem; cursor: pointer; list-style: none; align-items: center; justify-content: space-between; gap: 1rem; border-radius: .35rem; font-size: .95rem; font-weight: 850; }
+.pricing-faq summary::-webkit-details-marker { display: none; }
+.pricing-faq summary span:last-child { color: #f87171; font-size: 1.35rem; transition: transform .2s ease; }
+.pricing-faq details[open] summary span:last-child { transform: rotate(45deg); }
+.pricing-faq details p { max-width: 46rem; padding: 0 2.5rem 1.5rem 0; color: #a1a1aa; font-size: .85rem; line-height: 1.75; }
+.pricing-final-cta { display: flex; max-width: 80rem; margin: 0 auto; align-items: center; justify-content: space-between; gap: 2.5rem; border-top: 1px solid rgb(248 113 113 / .28); padding: 4rem 1.5rem 5rem; }
+.pricing-final-cta > div { max-width: 48rem; }
+.pricing-final-cta .pricing-primary { flex: 0 0 auto; }
+@media (min-width: 760px) {
+  .pricing-flow { grid-template-columns: .9fr 1.1fr; }
+  .pricing-report { grid-template-columns: .85fr 1.15fr; align-items: center; }
+  .pricing-report-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pricing-team-paths { grid-template-columns: .9fr 1.1fr; align-items: start; }
+}
+@media (min-width: 960px) { .pricing-hero { grid-template-columns: minmax(0, 1.15fr) minmax(22rem, .7fr); } }
+@media (max-width: 640px) {
+  .pricing-hero { padding-top: 3.75rem; }
+  .pricing-hero-actions { flex-direction: column; }
+  .pricing-hero-actions a { width: 100%; }
+  .pricing-trust-strip { display: grid; }
+  .pricing-section { padding-top: 5.5rem; }
+  .pricing-final-cta { align-items: stretch; flex-direction: column; }
+  .pricing-final-cta .pricing-primary { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pricing-primary, .pricing-secondary, .pricing-faq summary span:last-child { transition: none; }
+  .pricing-primary:hover, .pricing-secondary:hover { transform: none; }
+}
 @media print {
   body { background: white !important; }
   header, footer, nav, button, .print\:hidden { display: none !important; }

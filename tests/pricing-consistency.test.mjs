@@ -24,11 +24,14 @@ test("the beta SKU has one frozen commercial contract", () => {
   assert.equal(REPORT_PRODUCT.amount, BETA_PRODUCT.amount);
 });
 
-test("public pricing presents only the beta SKU and canonical promise", async () => {
+test("public pricing makes the canonical investigation the primary offer", async () => {
   const pricing = await read("app/pricing/page.tsx");
   const layout = await read("components/ShadowScoreLayout.tsx");
-  assert.match(pricing, /BETA_PRODUCT\.promise/);
+  assert.match(pricing, /BETA_PRODUCT\.price/);
+  assert.match(pricing, /BETA_PRODUCT\.currency/);
+  assert.match(pricing, /BETA_PRODUCT\.period/);
   assert.match(pricing, /Start Business Investigation/);
+  assert.match(pricing, /View Sample Report/);
   assert.match(pricing, /<ShadowScoreLayout hideReviewMessaging>/);
   for (const internalMessage of ["beta offer", "beta Business Investigation", "Enterprise readiness review", "Enterprise review mode"]) {
     assert.doesNotMatch(pricing, new RegExp(internalMessage, "i"));
@@ -38,5 +41,18 @@ test("public pricing presents only the beta SKU and canonical promise", async ()
   assert.match(layout, /!hideReviewMessaging \? <section className="ss-enterprise-readiness"/);
   for (const retiredOffer of ["Quick Investigation", "Professional Investigation", "Business Intelligence Report", "Continuous Monitoring"]) {
     assert.doesNotMatch(pricing, new RegExp(retiredOffer));
+  }
+});
+
+test("pricing replaces the old comparison experience with the purchase journey", async () => {
+  const pricing = await read("app/pricing/page.tsx");
+  for (const oldSection of ["Plans for growing teams", "Plan comparison", "pricing-table", "PLAN_COMPARISON"]) {
+    assert.doesNotMatch(pricing, new RegExp(oldSection));
+  }
+  for (const step of ["Submit", "Confirm scope", "Pay once", "Investigate", "Access report"]) {
+    assert.match(pricing, new RegExp(`\\[\\"${step}\\"`));
+  }
+  for (const faqTopic of ["When and how do I pay?", "What will I receive?", "How long does processing take?", "What happens when a source is unavailable?", "How do I access my report?", "Can I purchase another investigation?"]) {
+    assert.match(pricing, new RegExp(faqTopic.replace(/[?]/g, "\\?")));
   }
 });
