@@ -13,7 +13,6 @@ Per `node_modules/next/dist/docs/01-app/01-getting-started/14-metadata-and-og-im
 The following App Router pages/components are explicit Client Components today because they start with `"use client"`:
 
 - `app/page.tsx`
-- `app/page-backup.tsx`
 - `app/analysis/page.tsx`
 - `app/admin/page.tsx`
 - `app/report/analysis/page.tsx`
