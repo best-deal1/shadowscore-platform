@@ -203,7 +203,7 @@ export class AuthoritativeCompanyEvidenceProvider extends ProductionProvider { r
   protected async collect(context: ProviderExecutionContext): Promise<Pick<ProviderResult, "findings" | "evidence" | "metadata">> {
     const target = publicCompanyTarget(context); if (!target.supported) throw new Error("Authoritative public-company lookup requires a ticker or CIK; domains, page titles and SSL certificates are not legal-identity sources.");
     const dataset = await fetchSecJson<SecCompanyTickerExchange>(SEC_COMPANY_TICKERS_EXCHANGE_URL);
-    let row = dataset.data.find(([cik, , ticker]) => (target.cik && String(cik).padStart(10, "0") === target.cik) || (target.ticker && ticker.toUpperCase() === target.ticker));
+    const row = dataset.data.find(([cik, , ticker]) => (target.cik && String(cik).padStart(10, "0") === target.cik) || (target.ticker && ticker.toUpperCase() === target.ticker));
     let submissions: { name?: string; website?: string; sic?: string; stateOfIncorporation?: string } | undefined;
     if (!row && target.domain) throw new Error("SEC authoritative identity lookup requires a ticker or CIK. Bulk issuer probing is disabled for domain Quick Checks.");
     if (!row) throw new Error(`SEC authoritative company lookup found no public-company row for ${target.ticker || target.cik || target.domain}`);

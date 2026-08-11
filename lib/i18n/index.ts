@@ -602,7 +602,7 @@ const reportFallbackTranslations = {
 const footerTranslations = {
   en: {
     product: "Product",
-    start: "Start investigation",
+    start: "Run free Quick Check",
     example: "Example report",
     methodology: "Methodology",
     trust: "Trust & Legal",
