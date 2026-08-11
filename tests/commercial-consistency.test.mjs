@@ -29,7 +29,7 @@ test("pricing presents every commercial path from one catalog", async () => {
   ]);
   for (const plan of ["Professional", "Business", "Enterprise"]) assert.match(catalog, new RegExp(`name: "${plan}"`));
   assert.match(pricing, /PLANNED_PLANS\.map/);
-  assert.match(pricing, /PLAN_COMPARISON\.map/);
+  assert.doesNotMatch(pricing, /PLAN_COMPARISON/);
   assert.match(home, /COMMERCIAL_PATHS\.teamPlans/);
 });
 
