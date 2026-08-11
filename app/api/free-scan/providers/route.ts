@@ -1,13 +1,8 @@
 import { NextResponse } from "next/server";
 
-import { buildTrustInsights } from "../../../../lib/insightEngine";
-import { buildBusinessProfile } from "../../../../lib/businessProfileEngine";
-import { buildTrustTimeline } from "../../../../lib/trustTimeline";
-import { buildDecision } from "../../../../lib/decisionEngine";
-import { analyzeRisk } from "../../../../lib/riskEngine";
-import { resolveBusinessIdentity } from "../../../../lib/businessIdentityResolver";
 import { ProviderManager, createDefaultProviders } from "../../../../lib/providers";
 import type { ProviderExecutionContext } from "../../../../lib/providers/types";
+import { buildQuickCheckReport } from "../../../../lib/quickCheck/report";
 
 const productionProviderManager = new ProviderManager().registerMany(createDefaultProviders());
 
@@ -44,55 +39,55 @@ export async function POST(request: Request) {
       providerTimeoutMs: { http: 2_500, ssl: 2_000, whois: 2_500, dns: 1_000 },
     };
 
-    const previewRun = await productionProviderManager.runFreePreview(context, { budgetMs: 8_000, concurrencyLimit: 4 });
+    const previewRun = await productionProviderManager.runFreePreview(context, { budgetMs: 12_000, concurrencyLimit: 5 });
     const providerResults = previewRun.providerResults;
-    const completedProviderResults = providerResults.filter((result) => result.status === "completed" || result.evidence.length > 0);
-
-    const riskOutput = analyzeRisk({
-      marketplace: context.platform,
-      caseType: context.caseType,
-      store: context.target,
-      email: context.email,
-      fileNames: context.fileNames,
-      providerResults: completedProviderResults,
-    });
-    const insightOutput = buildTrustInsights({ providerResults: completedProviderResults, riskOutput, audience: "free" });
     const generatedAt = new Date().toISOString();
-    const businessProfile = buildBusinessProfile({ providerResults: completedProviderResults, target: context.target, generatedAt });
-    const canonicalIdentity = resolveBusinessIdentity(context.target, { providerResults: completedProviderResults, businessProfile, observedAt: generatedAt, generatedAt }).canonicalIdentity;
-    const timeline = buildTrustTimeline({
-      providerResults: completedProviderResults,
-      insights: insightOutput.insights,
-      insightEngineVersion: insightOutput.engineVersion,
-      audience: "free",
-    });
-    const decisionPreview = buildDecision({
-      providerResults: completedProviderResults,
-      riskOutput,
-      insights: insightOutput.insights,
-      timeline,
-      audience: "free",
-      targetType: context.scanMode === "marketplace" ? "marketplaceSeller" : "website",
+    const quickCheck = buildQuickCheckReport(providerResults);
+
+    console.info("quick_check.completed", {
+      target,
+      decision: quickCheck.decision,
+      score: quickCheck.score,
+      evidenceCoverage: quickCheck.evidenceCoverage,
+      elapsedMs: previewRun.telemetry.elapsedMs,
+      completedProviders: providerResults.filter((result) => result.status === "completed").length,
+      deferredProviders: previewRun.telemetry.deferredProviders.length,
     });
 
     return NextResponse.json({
       status: "ready",
-      message: "Preview ready. Additional sources are checked in the full report.",
+      message: "Quick Check ready. Review the evidence and gaps before paying.",
       reportReadyEvent: { type: "free-preview-ready", status: "ready", ready: true, emittedAt: generatedAt },
       executedAt: generatedAt,
       targetResolution: {
         requestedTarget: target,
         resolvedTarget: context.target,
-        legalName: canonicalIdentity.legalName,
       },
+      quickCheck,
+      providers: providerResults.map((result) => ({
+        providerId: result.providerId,
+        providerName: result.metadata.providerName,
+        status: result.status,
+        durationMs: result.duration,
+        evidence: result.status === "completed" ? result.evidence : [],
+        findings: result.findings,
+        error: result.errors[0],
+      })),
       previewSummary: {
-        confidence: decisionPreview.confidenceScore,
+        score: quickCheck.score,
+        decision: quickCheck.decision,
+        confidence: quickCheck.confidence,
+        evidenceCoverage: quickCheck.evidenceCoverage,
         providersQueried: providerResults.length,
-        evidenceCollected: providerResults.reduce((total, result) => total + result.evidence.length, 0),
+        sourcesSuccessfullyQueried: quickCheck.sourcesSuccessfullyQueried,
+        evidenceCollected: providerResults.filter((result) => result.status === "completed").reduce((total, result) => total + result.evidence.length, 0),
         findingsDiscovered: providerResults.reduce((total, result) => total + result.findings.length, 0),
+        evidenceGaps: quickCheck.evidenceGaps,
+        runtimeMs: previewRun.telemetry.elapsedMs,
       },
     });
   } catch (error) {
+    console.error("quick_check.failed", { error: error instanceof Error ? error.message : "Unknown Quick Check error" });
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to run free provider scan." }, { status: 500 });
   }
 }

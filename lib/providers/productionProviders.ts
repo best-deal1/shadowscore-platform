@@ -24,6 +24,7 @@ type RdapResponse = { objectClassName?: string; ldhName?: string; handle?: strin
 
 const DNS_RECORD_TYPES: DnsRecordType[] = ["A", "AAAA", "MX", "NS", "TXT", "CNAME"];
 const RDAP_BASE_URL = "https://rdap.org/domain/";
+const URLHAUS_HOST_LOOKUP_URL = "https://urlhaus-api.abuse.ch/v1/host/";
 
 const SEC_COMPANY_TICKERS_EXCHANGE_URL = "https://www.sec.gov/files/company_tickers_exchange.json";
 const SEC_SUBMISSIONS_URL = "https://data.sec.gov/submissions/CIK";
@@ -204,12 +205,7 @@ export class AuthoritativeCompanyEvidenceProvider extends ProductionProvider { r
     const dataset = await fetchSecJson<SecCompanyTickerExchange>(SEC_COMPANY_TICKERS_EXCHANGE_URL);
     let row = dataset.data.find(([cik, , ticker]) => (target.cik && String(cik).padStart(10, "0") === target.cik) || (target.ticker && ticker.toUpperCase() === target.ticker));
     let submissions: { name?: string; website?: string; sic?: string; stateOfIncorporation?: string } | undefined;
-    if (!row && target.domain) {
-      for (const candidate of dataset.data) {
-        const candidateCik = String(candidate[0]).padStart(10, "0");
-        try { const candidateSubmissions = await fetchSecJson<typeof submissions>(`${SEC_SUBMISSIONS_URL}${candidateCik}.json`); if (normalizeSecDomain(candidateSubmissions?.website) === target.domain) { row = candidate; submissions = candidateSubmissions; break; } } catch {}
-      }
-    }
+    if (!row && target.domain) throw new Error("SEC authoritative identity lookup requires a ticker or CIK. Bulk issuer probing is disabled for domain Quick Checks.");
     if (!row) throw new Error(`SEC authoritative company lookup found no public-company row for ${target.ticker || target.cik || target.domain}`);
     const [cikNumber, legalName, ticker, exchange] = row; const cik = String(cikNumber).padStart(10, "0"); const submissionsUrl = `${SEC_SUBMISSIONS_URL}${cik}.json`;
     if (!submissions) { try { submissions = await fetchSecJson<typeof submissions>(submissionsUrl); } catch {} }
@@ -269,3 +265,117 @@ function validPhone(value: string) { const trimmed = value.trim(); if (/\b\d{4}-
 function extractVisiblePhones(html: string) { const telLinks = Array.from(html.matchAll(/href=["']tel:([^"']+)["']/gi)).map((m) => m[1]); const schemaPhones = Array.from(html.matchAll(/"telephone"\s*:\s*"([^"]+)"/gi)).map((m) => m[1]); const visible = stripScriptsAndMetadata(html); const contextual = Array.from(visible.matchAll(/(?:phone|tel|telephone|contact|call)[^+\d]{0,40}(\+?\d[\d\s().-]{5,}\d)/gi)).map((m) => m[1]); return Array.from(new Set([...telLinks, ...schemaPhones, ...contextual].map((p) => p.trim()).filter(validPhone))).slice(0, 5); }
 export class ContactDiscoveryProvider extends ProductionProvider { readonly id = "contact-discovery"; readonly name = "Contact Discovery Provider"; readonly version = "1.0.0"; readonly category = "business_profile" as const; protected async collect(context: ProviderExecutionContext): Promise<Pick<ProviderResult, "findings" | "evidence" | "metadata">> { const t = this.normalize(context); if (!t.supported || !t.websiteUrl) throw new Error("Not Supported"); const r = await acquireTimedSharedHttp(context); const emails = Array.from(new Set(r.text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi) || [])); const phones = extractVisiblePhones(r.text); return { findings: [], evidence: [{ id: "contact-email", type: "observation", label: "Discovered contact email", value: emails[0] || t.email || "unavailable", source: r.finalUrl || r.requestedUrl }, { id: "contact-phone", type: "observation", label: "Discovered contact phone", value: phones[0] || "unavailable", source: r.finalUrl || r.requestedUrl }], metadata: { integrationStatus: "connected", lookupPerformed: true, emailCount: emails.length, phoneCount: phones.length, httpOutcome: r.outcome, httpDiagnostics: r.diagnostics, httpAttempts: r.attempts, sharedHttpFetchCount: (context as MutableProviderContext).sharedHttpFetchCount } }; } }
 export class SocialProfileProvider extends ProductionProvider { readonly id = "social-profile"; readonly name = "Social Profile Discovery Provider"; readonly version = "1.0.0"; readonly category = "business_profile" as const; protected async collect(context: ProviderExecutionContext): Promise<Pick<ProviderResult, "findings" | "evidence" | "metadata">> { const t = this.normalize(context); if (!t.supported || !t.websiteUrl) throw new Error("Not Supported"); const r = await acquireTimedSharedHttp(context); const links = Array.from(new Set((r.text.match(/https?:\/\/[^"'\s<>]+/gi) || []).filter((u) => WELL_KNOWN_SOCIALS.some((s) => u.toLowerCase().includes(s))))).slice(0, 10); return { findings: [], evidence: [{ id: "social-links", type: "observation", label: "Social profile links", value: links.join(", ") || "unavailable", source: r.finalUrl || r.requestedUrl }], metadata: { integrationStatus: "connected", lookupPerformed: true, socialProfileCount: links.length, httpOutcome: r.outcome, httpDiagnostics: r.diagnostics, httpAttempts: r.attempts, sharedHttpFetchCount: (context as MutableProviderContext).sharedHttpFetchCount } }; } }
+
+type UrlHausResponse = {
+  query_status?: string;
+  urls?: Array<{ url?: string; url_status?: string; date_added?: string; threat?: string; tags?: string[] }>;
+};
+
+export class ThreatReputationProvider extends ProductionProvider {
+  readonly id = "threat-reputation";
+  readonly name = "URLhaus Threat Reputation";
+  readonly version = "1.0.0";
+  readonly category = "reputation" as const;
+
+  async health(): Promise<ProviderHealth> {
+    return { providerId: this.id, providerVersion: this.version, status: "healthy", checkedAt: new Date().toISOString(), metadata: { category: this.category, providerName: this.name, integration: "URLhaus host lookup", endpoint: URLHAUS_HOST_LOOKUP_URL } };
+  }
+
+  protected async collect(context: ProviderExecutionContext): Promise<Pick<ProviderResult, "findings" | "evidence" | "metadata">> {
+    const target = this.normalize(context);
+    if (!target.supported) throw new Error("Threat lookup requires a domain target.");
+    const timeout = timeoutSignal(context.providerTimeoutMs?.reputation ?? 3_000);
+    const response = await fetch(URLHAUS_HOST_LOOKUP_URL, {
+      method: "POST",
+      signal: timeout.signal,
+      headers: { "content-type": "application/x-www-form-urlencoded", accept: "application/json", "user-agent": STANDARD_USER_AGENT },
+      body: new URLSearchParams({ host: target.domain }),
+    }).finally(timeout.done);
+    if (!response.ok) throw new Error(`URLhaus lookup failed: ${response.status}`);
+    const payload = await response.json() as UrlHausResponse;
+    if (!payload.query_status) throw new Error("URLhaus returned an invalid response.");
+    const listings = payload.urls || [];
+    const activeListings = listings.filter((item) => item.url_status === "online");
+    const evidence: ProviderEvidence[] = [{
+      id: "urlhaus-host-status",
+      type: "observation",
+      label: "URLhaus host lookup",
+      value: listings.length ? `${listings.length} historical listing${listings.length === 1 ? "" : "s"}; ${activeListings.length} currently online` : "No URLhaus listings returned",
+      source: URLHAUS_HOST_LOOKUP_URL,
+      authoritative: false,
+    }];
+    listings.slice(0, 5).forEach((item, index) => evidence.push({ id: `urlhaus-listing-${index + 1}`, type: "document", label: "URLhaus malware URL", value: [item.url_status, item.threat, item.date_added, item.url].filter(Boolean).join(" | "), source: URLHAUS_HOST_LOOKUP_URL }));
+    const findings: ProviderFinding[] = activeListings.map((item, index) => ({ id: `urlhaus-active-${index + 1}`, title: "Active malware URL reported by URLhaus", description: `${item.threat || "Malware"} listing is currently online at ${item.url || target.domain}.`, severity: "critical" }));
+    return { findings, evidence, metadata: { integrationStatus: "connected", lookupPerformed: true, sourceType: "independent_threat_intelligence", domain: target.domain, queryStatus: payload.query_status, listingCount: listings.length, activeListingCount: activeListings.length, endpoint: URLHAUS_HOST_LOOKUP_URL } };
+  }
+}
+
+function visibleText(html: string) {
+  return stripScriptsAndMetadata(html).replace(/<[^>]+>/g, " ").replace(/&nbsp;|&#160;/gi, " ").replace(/&amp;/gi, "&").replace(/\s+/g, " ").trim();
+}
+
+function sameOriginPolicyLinks(html: string, baseUrl: string) {
+  const terms = /(?:contact|about|terms|privacy|returns?|refund|cancel|shipping|payment|checkout|צור.?קשר|אודות|תקנון|החזר|ביטול|משלוח|תשלום)/i;
+  const origin = new URL(baseUrl).origin;
+  const links = Array.from(html.matchAll(/<a\b[^>]*href=["']([^"'#]+)["'][^>]*>([\s\S]*?)<\/a>/gi)).flatMap((match) => {
+    try {
+      const url = new URL(match[1], baseUrl);
+      const label = visibleText(match[2]);
+      return url.origin === origin && terms.test(`${url.pathname} ${label}`) ? [url.toString()] : [];
+    } catch {
+      return [];
+    }
+  });
+  return Array.from(new Set(links)).slice(0, 4);
+}
+
+function findFirst(text: string, patterns: RegExp[]) {
+  return patterns.map((pattern) => text.match(pattern)?.[1]?.trim()).find(Boolean);
+}
+
+export class WebsiteCommerceProvider extends ProductionProvider {
+  readonly id = "website-commerce";
+  readonly name = "Website Commerce Evidence";
+  readonly version = "1.0.0";
+  readonly category = "payment" as const;
+
+  protected async collect(context: ProviderExecutionContext): Promise<Pick<ProviderResult, "findings" | "evidence" | "metadata">> {
+    const target = this.normalize(context);
+    if (!target.supported || !target.websiteUrl) throw new Error("Not Supported");
+    const home = await acquireTimedSharedHttp(context);
+    if (!home.diagnostics.responseWasHtml) throw new Error("Website did not return HTML.");
+    const homeUrl = home.finalUrl || home.requestedUrl;
+    const policyLinks = sameOriginPolicyLinks(home.text, homeUrl);
+    const pageResults = await Promise.all(policyLinks.map((url) => fetchText(url, target, Math.min(httpProviderTimeoutMs(context), 2_500))));
+    const pages = [{ url: homeUrl, html: home.text }, ...pageResults.filter((result) => result.diagnostics.responseWasHtml).map((result) => ({ url: result.finalUrl || result.requestedUrl, html: result.text }))];
+    const combinedText = pages.map((page) => visibleText(page.html)).join(" ");
+    const combinedHtml = pages.map((page) => page.html).join("\n");
+    const evidence: ProviderEvidence[] = [];
+    const businessName = findFirst(combinedHtml, [/"@type"\s*:\s*"(?:Organization|LocalBusiness)"[\s\S]{0,2500}?"name"\s*:\s*"([^"]+)"/i, /<meta[^>]+property=["']og:site_name["'][^>]+content=["']([^"']+)/i]);
+    const registrationNumber = findFirst(combinedText, [/(?:ח\.?\s*פ\.?|עוסק\s+מורשה|company\s+(?:number|no\.?|registration))\s*[:#]?\s*([0-9-]{7,12})/i]);
+    if (businessName) evidence.push({ id: "commerce-observed-business-name", type: "document", label: "Website-published business name", value: businessName, source: homeUrl });
+    if (registrationNumber) evidence.push({ id: "commerce-observed-registration-number", type: "document", label: "Website-published registration number", value: registrationNumber, source: pages.find((page) => visibleText(page.html).includes(registrationNumber))?.url || homeUrl });
+
+    const paymentPatterns: Array<[string, RegExp]> = [["Visa", /\bvisa\b/i], ["Mastercard", /\bmastercard\b/i], ["PayPal", /\bpaypal\b/i], ["American Express", /american express|\bamex\b/i], ["Apple Pay", /apple pay/i], ["Google Pay", /google pay/i], ["Bit", /(?:^|\s)bit(?:\s|$)/i], ["Credit card", /credit card|כרטיס(?:י)? אשראי/i]];
+    const paymentMethods = paymentPatterns.filter(([, pattern]) => pattern.test(`${combinedText} ${combinedHtml}`)).map(([label]) => label);
+    if (paymentMethods.length) evidence.push({ id: "commerce-payment-methods", type: "observation", label: "Website-observed payment methods", value: Array.from(new Set(paymentMethods)).join(", "), source: homeUrl });
+
+    const returnsPage = pages.find((page) => /return|refund|החזר|החזרה/i.test(`${page.url} ${visibleText(page.html)}`));
+    const cancellationPage = pages.find((page) => /cancel|ביטול/i.test(`${page.url} ${visibleText(page.html)}`));
+    const termsPage = pages.find((page) => /terms|תקנון/i.test(page.url));
+    if (returnsPage) evidence.push({ id: "commerce-returns-policy", type: "document", label: "Published returns or refund policy", value: returnsPage.url, source: returnsPage.url });
+    if (cancellationPage) evidence.push({ id: "commerce-cancellation-policy", type: "document", label: "Published cancellation policy", value: cancellationPage.url, source: cancellationPage.url });
+    if (termsPage) evidence.push({ id: "commerce-terms-page", type: "document", label: "Published terms page", value: termsPage.url, source: termsPage.url });
+
+    const emails = Array.from(new Set(combinedHtml.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi) || [])).slice(0, 10);
+    const phones = extractVisiblePhones(combinedHtml);
+    const address = findFirst(combinedHtml, [/"streetAddress"\s*:\s*"([^"]+)"/i]);
+    if (emails.length) evidence.push({ id: "commerce-contact-email", type: "observation", label: "Published contact email", value: emails.join(", "), source: homeUrl });
+    if (phones.length) evidence.push({ id: "commerce-contact-phone", type: "observation", label: "Published contact phone", value: phones.join(", "), source: homeUrl });
+    if (address) evidence.push({ id: "commerce-contact-address", type: "observation", label: "Published contact address", value: address, source: homeUrl });
+    const matchingEmail = emails.some((email) => email.toLowerCase().endsWith(`@${target.domain}`));
+    if (emails.length) evidence.push({ id: "commerce-contact-domain-consistency", type: "observation", label: "Contact email domain consistency", value: matchingEmail ? "A published email uses the website domain" : "Published email uses a different domain", source: homeUrl });
+
+    return { findings: [], evidence, metadata: { integrationStatus: "connected", lookupPerformed: true, sourceType: "first_party_website_observation", domain: target.domain, pagesAttempted: 1 + policyLinks.length, pagesCollected: pages.length, policyLinks, paymentMethodCount: paymentMethods.length, emailCount: emails.length, phoneCount: phones.length, contactDomainMatch: matchingEmail } };
+  }
+}

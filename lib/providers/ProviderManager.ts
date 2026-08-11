@@ -41,9 +41,9 @@ const ENGINE_PROVIDER_ALIASES: Record<string, string[]> = {
 
 const DEFAULT_PREVIEW_BUDGET_MS = 12_000;
 const DEFAULT_PREVIEW_CONCURRENCY = 4;
-const CRITICAL_PREVIEW_PROVIDER_IDS = new Set(["dns", "whois", "ssl", "business-profile", "website-metadata"]);
-const PREVIEW_PROVIDER_PRIORITY = ["dns", "whois", "ssl", "business-profile", "website-metadata", "reputation", "contact-discovery", "social-profile", "security-headers", "spf", "dmarc", "authoritative-company"];
-const FULL_REPORT_ONLY_PREVIEW_PROVIDER_IDS = new Set(["security-headers", "spf", "dmarc", "authoritative-company"]);
+const CRITICAL_PREVIEW_PROVIDER_IDS = new Set(["dns", "whois", "ssl", "business-profile", "website-metadata", "threat-reputation", "website-commerce"]);
+const PREVIEW_PROVIDER_PRIORITY = ["dns", "whois", "ssl", "threat-reputation", "business-profile", "website-commerce", "website-metadata", "contact-discovery", "security-headers", "spf", "dmarc", "social-profile", "reputation", "authoritative-company"];
+const FULL_REPORT_ONLY_PREVIEW_PROVIDER_IDS = new Set<string>();
 
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
