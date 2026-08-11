@@ -66,6 +66,7 @@ This file records customer-visible improvements in each ShadowScore release.
 
 ### Fixed
 
+- Production checks now run without legacy page copies or lint warnings from inactive source files.
 - The investigation purchase summary and unlock action now use the same canonical product name and price.
 - Workspace investigation and recent report links now preserve the persisted investigation reference and resolve the associated report record before opening it.
 - Route validation now recognizes public assets, includes the ShadowScore infinity brand mark, and removes inert monitoring and brand actions from customer-facing screens.
