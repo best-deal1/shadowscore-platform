@@ -531,6 +531,7 @@ export default function IntakePage() {
   const [previewStatus, setPreviewStatus] = useState<"idle" | "loading" | "ready" | "failed">("idle");
   const [freeScanError, setFreeScanError] = useState("");
   const [saveError, setSaveError] = useState("");
+  const [checkoutStage, setCheckoutStage] = useState(false);
 
   useEffect(() => {
     const session = getCurrentSession();
@@ -1266,7 +1267,7 @@ export default function IntakePage() {
                     <section className="overflow-hidden rounded-[32px] border border-emerald-400/25 bg-emerald-500/[0.07]">
                       <div className="border-b border-white/10 p-7 sm:p-9">
                         <div className="flex flex-wrap items-start justify-between gap-5">
-                          <div><p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-300">Business found</p><h2 className="mt-3 text-3xl font-black text-white sm:text-4xl">{businessName}</h2><p className="mt-3 flex items-center gap-2 text-sm font-bold text-emerald-100"><span aria-hidden="true">✓</span> Investigation completed</p></div>
+                          <div><p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-300">Business found</p><h2 className="mt-3 text-3xl font-black text-white sm:text-4xl">{businessName}</h2><p className="mt-3 flex items-center gap-2 text-sm font-bold text-emerald-100"><span aria-hidden="true">✓</span> Free Quick Check completed</p></div>
                           <div className="rounded-2xl border border-white/10 bg-black/30 px-5 py-4 text-right"><p className="text-xs uppercase tracking-[0.18em] text-zinc-400">Confidence</p><p className="mt-1 text-3xl font-black text-white">{confidence}%</p></div>
                         </div>
                         <div className="mt-7 rounded-2xl border border-amber-300/20 bg-amber-300/[0.08] p-5"><p className="text-xs font-black uppercase tracking-[0.2em] text-amber-200">Trust status</p><p className="mt-2 text-xl font-black text-white">Verification recommended</p></div>
@@ -1277,27 +1278,34 @@ export default function IntakePage() {
                     </section>
 
                     <section className="rounded-[28px] border border-white/10 bg-white/[0.035] p-6 sm:p-8">
-                      <p className="text-xs font-black uppercase tracking-[0.22em] text-red-300">Executive report ready</p>
-                      <h3 className="mt-3 text-2xl font-black text-white">The investigation record is complete. Your Executive Report is ready.</h3>
+                      <p className="text-xs font-black uppercase tracking-[0.22em] text-red-300">Free Quick Check</p>
+                      <h3 className="mt-3 text-2xl font-black text-white">Your Quick Check is complete.</h3>
+                      <p className="mt-3 text-sm leading-6 text-zinc-400">This free result is saved while you confirm the paid investigation. The Executive Report is prepared only after payment and processing complete.</p>
                       <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                        {[`${findingsDiscovered} important findings available`, "Executive recommendation ready", "Ownership analysis available", "Commercial risk assessment available", "Relationship analysis available", "Evidence package available"].map((item) => <div key={item} className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/35 p-4"><span className="font-bold text-zinc-200">{item}</span><span className="ml-4 rounded-full border border-red-300/20 bg-red-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-red-200">Locked</span></div>)}
+                        {[`${findingsDiscovered} preliminary signals found`, "Business identity to investigate", "Ownership analysis scope", "Commercial risk scope", "Relationship analysis scope", "Evidence package scope"].map((item) => <div key={item} className="rounded-2xl border border-white/10 bg-black/35 p-4 font-bold text-zinc-200">{item}</div>)}
                       </div>
                     </section>
 
-                    <section className="rounded-[28px] border border-yellow-400/20 bg-yellow-500/10 p-6 text-sm leading-7 text-yellow-100">
-                      <div className="text-xs uppercase tracking-[0.22em] text-yellow-200">Unlock the Executive Report</div>
-                      <p className="mt-3 text-lg font-bold text-white">Confirm the Business and scope before payment.</p>
-                      <p className="mt-2 text-sm text-yellow-100">Use evidence-backed findings to verify identity, detect commercial inconsistencies, assess payment risk, and document your decision.</p>
+                    {!checkoutStage ? (
+                      <button type="button" onClick={() => setCheckoutStage(true)} className="block w-full rounded-2xl bg-emerald-500 px-7 py-5 text-center text-sm font-black uppercase tracking-[0.12em] text-black hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200">
+                        Run Full Investigation · {BETA_PRODUCT.price}
+                      </button>
+                    ) : (
+                    <section className="rounded-[28px] border border-yellow-400/20 bg-yellow-500/10 p-6 text-sm leading-7 text-yellow-100" aria-labelledby="paid-intake-title">
+                      <div className="text-xs uppercase tracking-[0.22em] text-yellow-200">Business Investigation intake</div>
+                      <h3 id="paid-intake-title" className="mt-3 text-lg font-bold text-white">Confirm the business, scope, customer account, and purchase.</h3>
+                      <p className="mt-2 text-sm text-yellow-100">Your Free Quick Check remains attached to this intake. Payment starts the full investigation. Your Executive Report becomes available after processing completes.</p>
                       <div className="mt-5 rounded-2xl border border-white/10 bg-black/30 p-5">
-                        <dl className="mb-5 grid gap-3 text-sm sm:grid-cols-2"><div><dt className="text-zinc-500">Business</dt><dd className="font-bold text-white">{businessName}</dd></div><div><dt className="text-zinc-500">Investigation scope</dt><dd className="font-bold text-white">{activeMode.label}</dd></div><div><dt className="text-zinc-500">Deliverable</dt><dd className="font-bold text-white">{BETA_PRODUCT.deliverable}</dd></div><div><dt className="text-zinc-500">One-time price</dt><dd className="font-bold text-white">{BETA_PRODUCT.price}</dd></div></dl>
+                        <dl className="mb-5 grid gap-3 text-sm sm:grid-cols-2"><div><dt className="text-zinc-500">Business</dt><dd className="font-bold text-white">{businessName}</dd></div><div><dt className="text-zinc-500">Investigation scope</dt><dd className="font-bold text-white">{activeMode.label}</dd></div><div><dt className="text-zinc-500">Existing result</dt><dd className="font-bold text-white">Free Quick Check</dd></div><div><dt className="text-zinc-500">Purchase</dt><dd className="font-bold text-white">Full Business Investigation · {BETA_PRODUCT.price}</dd></div></dl>
                         <label><div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">Customer email (required)</div><input type="email" required value={email} onChange={(e) => { setEmail(e.target.value); setSaveError(""); }} aria-describedby={saveError ? "checkout-email-error" : undefined} className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white" placeholder="you@example.com" /></label>
                         {saveError && <p id="checkout-email-error" className="mt-3 text-sm text-red-200" role="alert">{saveError}</p>}
-                        <ul className="mt-4 space-y-2 text-sm font-bold leading-6 text-white" aria-label="Purchase confidence"><li>✓ One investigation per report</li><li>✓ One-time payment</li><li>✓ No subscription</li><li>✓ Available immediately after payment</li><li>✓ Evidence preserved for download</li></ul>
-                        <div className="mt-5"><PaymentButtons planName={BETA_PRODUCT.name} price={BETA_PRODUCT.price} buttonLabel={`Unlock ${BETA_PRODUCT.deliverable} · ${BETA_PRODUCT.price}`} intakeId={intake?.intakeId} email={email} onEmailResolved={setEmail} onPersistIntake={saveLead} /></div>
-                        <button type="button" onClick={saveForLater} className="mx-auto mt-4 block text-xs font-bold text-zinc-400 underline underline-offset-4 hover:text-white">Save for later</button>
+                        <ul className="mt-4 space-y-2 text-sm font-bold leading-6 text-white" aria-label="Purchase confidence"><li>✓ One paid investigation</li><li>✓ One-time payment of {BETA_PRODUCT.price}</li><li>✓ No subscription</li><li>✓ Processing begins after payment</li><li>✓ Executive Report available after completion</li></ul>
+                        <div className="mt-5"><PaymentButtons planName={BETA_PRODUCT.name} price={BETA_PRODUCT.price} buttonLabel={`Continue to payment · ${BETA_PRODUCT.price}`} intakeId={intake?.intakeId} email={email} onEmailResolved={setEmail} onPersistIntake={saveLead} /></div>
+                        <button type="button" onClick={saveForLater} className="mx-auto mt-4 block text-xs font-bold text-zinc-400 underline underline-offset-4 hover:text-white">Save intake for later</button>
                       </div>
-                      {leadSaved && <div className="mt-4 rounded-2xl border border-emerald-400/25 bg-emerald-500/10 p-4 text-sm text-emerald-100">Investigation saved. The Executive Report is ready to unlock.</div>}
+                      {leadSaved && <div className="mt-4 rounded-2xl border border-emerald-400/25 bg-emerald-500/10 p-4 text-sm text-emerald-100">Intake saved. Continue to payment when you are ready.</div>}
                     </section>
+                    )}
                   </>;
                 })()}
               </div>
