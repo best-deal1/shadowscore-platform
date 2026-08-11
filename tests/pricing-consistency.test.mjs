@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFile } from "node:fs/promises";
 
-import { BETA_PRODUCT } from "../lib/pricing.ts";
+import { BETA_PRODUCT, PRICING_PLANS } from "../lib/pricing.ts";
 import { REPORT_PRODUCT } from "../lib/workspace.ts";
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
@@ -24,35 +24,39 @@ test("the beta SKU has one frozen commercial contract", () => {
   assert.equal(REPORT_PRODUCT.amount, BETA_PRODUCT.amount);
 });
 
-test("public pricing makes the canonical investigation the primary offer", async () => {
+test("public pricing uses the canonical four-tier catalog", async () => {
   const pricing = await read("app/pricing/page.tsx");
   const layout = await read("components/ShadowScoreLayout.tsx");
+  assert.match(pricing, /PRICING_PLANS\.map/);
+  assert.match(pricing, /PLAN_COMPARISON\.map/);
   assert.match(pricing, /BETA_PRODUCT\.price/);
-  assert.match(pricing, /BETA_PRODUCT\.currency/);
-  assert.match(pricing, /BETA_PRODUCT\.period/);
-  assert.match(pricing, /Start Business Investigation/);
-  assert.match(pricing, /View Sample Report/);
   assert.match(pricing, /<ShadowScoreLayout hideReviewMessaging>/);
-  for (const internalMessage of ["beta offer", "beta Business Investigation", "Enterprise readiness review", "Enterprise review mode"]) {
-    assert.doesNotMatch(pricing, new RegExp(internalMessage, "i"));
-  }
   assert.match(layout, /hideReviewMessaging = false/);
-  assert.match(layout, /!hideReviewMessaging \? <div className="ss-platform-bar"/);
-  assert.match(layout, /!hideReviewMessaging \? <section className="ss-enterprise-readiness"/);
-  for (const retiredOffer of ["Quick Investigation", "Professional Investigation", "Business Intelligence Report", "Continuous Monitoring"]) {
-    assert.doesNotMatch(pricing, new RegExp(retiredOffer));
-  }
+
+  assert.deepEqual(PRICING_PLANS.map(({ name, price }) => [name, price]), [
+    ["Individual", "$9.90"],
+    ["Professional", "$49"],
+    ["Business", "$199"],
+    ["Enterprise", "$299"],
+  ]);
+  assert.equal(PRICING_PLANS.find(({ recommended }) => recommended)?.name, "Business");
 });
 
-test("pricing replaces the old comparison experience with the purchase journey", async () => {
-  const pricing = await read("app/pricing/page.tsx");
-  for (const oldSection of ["Plans for growing teams", "Plan comparison", "pricing-table", "PLAN_COMPARISON"]) {
-    assert.doesNotMatch(pricing, new RegExp(oldSection));
+test("pricing distinguishes one-time and monthly plans", () => {
+  assert.equal(PRICING_PLANS[0].cadence, "one-time purchase");
+  for (const plan of PRICING_PLANS.slice(1)) assert.equal(plan.cadence, "per month");
+  assert.deepEqual(PRICING_PLANS[0].features.slice(0, 3), [
+    "One Business Investigation",
+    "One Executive Report",
+    "Workspace access for that investigation",
+  ]);
+});
+
+test("pricing includes comparison, FAQ, CTAs, and no future-product language", async () => {
+  const pricing = `${await read("app/pricing/page.tsx")}\n${await read("lib/pricing.ts")}`;
+  for (const copy of ["The essentials, side by side.", "Pricing FAQ", "Start an investigation", "Choose Professional", "Choose Business", "Choose Enterprise"]) {
+    assert.match(pricing, new RegExp(copy.replace(/[.]/g, "\\.")));
   }
-  for (const step of ["Submit", "Confirm scope", "Pay once", "Investigate", "Access report"]) {
-    assert.match(pricing, new RegExp(`\\[\\"${step}\\"`));
-  }
-  for (const faqTopic of ["When and how do I pay?", "What will I receive?", "How long does processing take?", "What happens when a source is unavailable?", "How do I access my report?", "Can I purchase another investigation?"]) {
-    assert.match(pricing, new RegExp(faqTopic.replace(/[?]/g, "\\?")));
-  }
+  assert.doesNotMatch(await read("app/pricing/page.tsx"), /Planned|subscriptions are unavailable|For larger review programs|roadmap|preview/i);
+  assert.doesNotMatch(await read("lib/pricing.ts"), /Planned|subscriptions are unavailable|For larger review programs/i);
 });
