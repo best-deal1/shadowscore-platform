@@ -67,13 +67,16 @@ test("signup explicitly redirects confirmation email links to ShadowScore", asyn
   const sessionStorage = storageWith(null);
   globalThis.window = { sessionStorage };
   let signupRequest;
+  let signupRequestCount = 0;
   globalThis.fetch = async (input, init) => {
+    signupRequestCount += 1;
     signupRequest = { input, init };
     return Response.json({ user: { id: "user-1", email: "person@example.com" } });
   };
   const { signupUser } = await import(`../lib/auth.ts?redirect=${Date.now()}`);
 
   await assert.rejects(() => signupUser("Person", "person@example.com", "password"), /confirm your account/);
+  assert.equal(signupRequestCount, 1, "signup sends exactly one Supabase request");
   assert.equal(signupRequest.input, "https://example.supabase.co/auth/v1/signup?redirect_to=https%3A%2F%2Fshadowscore.io");
   assert.deepEqual(JSON.parse(signupRequest.init.body), {
     email: "person@example.com",
