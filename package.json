@@ -38,6 +38,8 @@
     "validate:business-intelligence": "node --experimental-strip-types scripts/validate-business-intelligence.mjs",
     "validate:platform-capabilities": "node --experimental-strip-types tests/platform-capabilities.mjs",
     "test:preview-flow": "node tests/free-scan-preview-flow.mjs",
+    "test:quick-check": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types --test tests/quick-check-report.test.mjs tests/quick-check-providers.test.mjs",
+    "validate:quick-check-live": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types scripts/validate-quick-check-live.mjs",
     "test:payment-flow": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types --test tests/payment-report-unlock-flow.test.mjs",
     "test:intake-checkout": "node --experimental-strip-types --test tests/investigation-checkout-flow.test.mjs",
     "test:admin-access": "node --test tests/admin-report-access.test.mjs",

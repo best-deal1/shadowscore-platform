@@ -75,8 +75,8 @@ await run('preview completes within execution budget', async () => {
 });
 
 const route = readFileSync('app/api/free-scan/providers/route.ts', 'utf8');
-assert.match(route, /Preview ready\. Additional sources are checked in the full report\./);
-assert.match(route, /runFreePreview\(context, \{ budgetMs: 8_000, concurrencyLimit: 4 \}\)/);
+assert.match(route, /Quick Check ready\. Review the evidence and gaps before paying\./);
+assert.match(route, /runFreePreview\(context, \{ budgetMs: 12_000, concurrencyLimit: 5 \}\)/);
 
 rmSync('.tmp-tests-preview-budget', { recursive: true, force: true });
 console.log('free preview execution budget regression tests passed');

@@ -1,4 +1,4 @@
-import { AuthoritativeCompanyEvidenceProvider, BusinessProfileProvider, ContactDiscoveryProvider, DMARCProvider, DNSProvider, ReputationProvider, SecurityHeadersProvider, SocialProfileProvider, SPFProvider, SSLProvider, WebsiteMetadataProvider, WHOISProvider } from "./productionProviders";
+import { AuthoritativeCompanyEvidenceProvider, BusinessProfileProvider, ContactDiscoveryProvider, DMARCProvider, DNSProvider, ReputationProvider, SecurityHeadersProvider, SocialProfileProvider, SPFProvider, SSLProvider, ThreatReputationProvider, WebsiteCommerceProvider, WebsiteMetadataProvider, WHOISProvider } from "./productionProviders";
 
 export function createDefaultProviders() {
   return [
@@ -11,8 +11,10 @@ export function createDefaultProviders() {
     new AuthoritativeCompanyEvidenceProvider(),
     new BusinessProfileProvider(),
     new ReputationProvider(),
+    new ThreatReputationProvider(),
     new WebsiteMetadataProvider(),
     new ContactDiscoveryProvider(),
     new SocialProfileProvider(),
+    new WebsiteCommerceProvider(),
   ];
 }

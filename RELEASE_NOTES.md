@@ -2,6 +2,7 @@
 
 ## Live intelligence collection and orchestration
 
+- Quick Check now queries the production-safe provider inventory for domain registration, DNS, TLS, threat reputation, website identity, payment, policy, and contact evidence. It reports all ten decision categories, keeps missing categories marked as not verified, and limits the score when source coverage or identity evidence is weak.
 - Investigations can now start from one email or domain and collect traceable DNS evidence from Google Public DNS.
 - A bounded discovery loop controls depth, duplicate work, provider calls, retries, timeouts, and investigation cost.
 - Marketplace provider capabilities are explicit. Credentialed marketplace collection remains unavailable until a partner client is configured, and the system never substitutes fixture evidence.
