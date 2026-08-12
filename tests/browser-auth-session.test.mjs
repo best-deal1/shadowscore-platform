@@ -49,7 +49,7 @@ test("login stores the browser session only after the server accepts its access 
   assert.equal(sessionStorage.getItem("shadowscore.session.v19"), null);
 });
 
-test("signup without a Supabase access token does not create an authenticated browser session", async () => {
+test("signup without a Supabase access token reports that confirmation is required", async () => {
   process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "anon-key";
   const sessionStorage = storageWith(null);
@@ -57,7 +57,7 @@ test("signup without a Supabase access token does not create an authenticated br
   globalThis.fetch = async () => Response.json({ user: { id: "user-1", email: "person@example.com" } });
   const { signupUser } = await import(`../lib/auth.ts?confirmation=${Date.now()}`);
 
-  await assert.rejects(() => signupUser("Person", "person@example.com", "password"), /confirm your account/);
+  assert.deepEqual(await signupUser("Person", "person@example.com", "password"), { status: "confirmation_required" });
   assert.equal(sessionStorage.getItem("shadowscore.session.v19"), null);
 });
 
@@ -73,13 +73,36 @@ test("signup explicitly redirects confirmation email links to ShadowScore", asyn
   };
   const { signupUser } = await import(`../lib/auth.ts?redirect=${Date.now()}`);
 
-  await assert.rejects(() => signupUser("Person", "person@example.com", "password"), /confirm your account/);
-  assert.equal(signupRequest.input, "https://example.supabase.co/auth/v1/signup?redirect_to=https%3A%2F%2Fshadowscore.io");
+  assert.deepEqual(await signupUser("Person", "person@example.com", "password"), { status: "confirmation_required" });
+  assert.equal(signupRequest.input, "https://example.supabase.co/auth/v1/signup?redirect_to=https%3A%2F%2Fshadowscore.io%2Fauth%2Fcallback");
   assert.deepEqual(JSON.parse(signupRequest.init.body), {
     email: "person@example.com",
     password: "password",
     data: { name: "Person" },
   });
+});
+
+test("email confirmation establishes the server session before Workspace redirect", async () => {
+  process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "anon-key";
+  const sessionStorage = storageWith(null);
+  globalThis.window = { sessionStorage };
+  globalThis.fetch = async (input, init) => {
+    if (input === "https://example.supabase.co/auth/v1/user") {
+      assert.equal(init.headers.get("Authorization"), "Bearer confirmed-token");
+      return Response.json({ id: "user-1", email: "person@example.com", user_metadata: { name: "Person" } });
+    }
+    if (input === "/api/auth/session") {
+      assert.deepEqual(JSON.parse(init.body), { accessToken: "confirmed-token" });
+      return Response.json({ ok: true });
+    }
+    throw new Error(`Unexpected request: ${input}`);
+  };
+  const { establishSession } = await import(`../lib/auth.ts?callback=${Date.now()}`);
+
+  const user = await establishSession("confirmed-token", "refresh-token", 3600);
+  assert.equal(user.id, "user-1");
+  assert.equal(JSON.parse(sessionStorage.getItem("shadowscore.session.v19")).accessToken, "confirmed-token");
 });
 
 test("the public site restores a user from the server session after browser storage is cleared", async () => {

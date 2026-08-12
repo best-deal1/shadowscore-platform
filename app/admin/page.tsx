@@ -1,10 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import type { AdminConsoleData } from "../../lib/adminTypes";
-import { getCurrentUser } from "../../lib/auth";
 import type { PaymentStatus, ReportStatus } from "../../lib/workspace";
 
 function formatDate(value?: string) {
@@ -30,22 +28,14 @@ function EmptyState({ label }: { label: string }) {
 }
 
 export default function AdminPage() {
-  const router = useRouter();
   const [data, setData] = useState<AdminConsoleData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedJson, setSelectedJson] = useState<unknown>(null);
 
   useEffect(() => {
-    const user = getCurrentUser();
-    if (!user) {
-      router.push("/login");
-      return;
-    }
-    const session = window.sessionStorage.getItem("shadowscore.session.v19");
     fetch("/api/admin/console", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ session: session ? JSON.parse(session) : null, user }),
+      method: "GET",
+      cache: "no-store",
     })
       .then(async (response) => {
         if (!response.ok) {
@@ -56,7 +46,7 @@ export default function AdminPage() {
       })
       .then(setData)
       .catch((err) => setError(err instanceof Error ? err.message : "Unable to load admin console."));
-  }, [router]);
+  }, []);
 
   const overview = useMemo(() => {
     if (!data) return [];

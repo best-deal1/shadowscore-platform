@@ -13,7 +13,7 @@ export type ShadowScoreUser = {
 export type ShadowScoreSession = WorkspaceSession;
 
 const SESSION_STORAGE_KEY = "shadowscore.session.v19";
-const EMAIL_AUTH_REDIRECT_URL = SITE_URL;
+const EMAIL_AUTH_REDIRECT_URL = `${SITE_URL.replace(/\/$/, "")}/auth/callback`;
 
 function emailAuthPath(path: string) {
   const separator = path.includes("?") ? "&" : "?";
@@ -27,6 +27,13 @@ async function persistSession(session: ShadowScoreSession) {
     if (!response.ok) throw new Error("Could not establish the workspace session.");
   }
   window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+}
+
+export async function establishSession(accessToken: string, refreshToken?: string, expiresIn = 3600) {
+  const user = await supabaseFetch<SupabaseAuthResponse["user"]>("/auth/v1/user", {}, accessToken);
+  const session = toSession({ access_token: accessToken, refresh_token: refreshToken, expires_in: expiresIn, user }, user.email || "Account");
+  await persistSession(session);
+  return getCurrentUserFromSession(session);
 }
 
 type SupabaseAuthResponse = {
@@ -66,9 +73,10 @@ export async function signupUser(name: string, email: string, password: string) 
       method: "POST",
       body: JSON.stringify({ email: cleanEmail, password: cleanPassword, data: { name: cleanName } }),
     });
+    if (!auth.access_token) return { status: "confirmation_required" as const };
     const session = toSession(auth, cleanName);
     await persistSession(session);
-    return getCurrentUserFromSession(session);
+    return { status: "authenticated" as const, user: getCurrentUserFromSession(session) };
   }
 
   throw new Error("Authentication is not configured.");

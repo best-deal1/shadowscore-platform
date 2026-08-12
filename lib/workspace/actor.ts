@@ -29,7 +29,16 @@ export async function resolveWorkspaceActor(accessToken: string | undefined, req
     throw new WorkspaceAccessError("A valid workspace session is required.");
   }
 
-  const membership = memberships.find((candidate) => candidate.status === "active");
+  let membership = memberships.find((candidate) => candidate.status === "active");
+  if (user.id && !membership) {
+    try {
+      await request("/rest/v1/rpc/ensure_customer_workspace", { method: "POST", body: "{}" }, accessToken);
+      const provisioned = await request<MembershipRow[]>("/rest/v1/organization_memberships?select=organization_id,role,status&status=eq.active&order=updated_at.desc&limit=1", {}, accessToken);
+      membership = provisioned.find((candidate) => candidate.status === "active");
+    } catch {
+      // The access error below is intentionally generic and does not expose tenant data.
+    }
+  }
   if (!user.id || !membership) throw new WorkspaceAccessError("An active organization membership is required.");
 
   let profile: ProfileRow | null = null;

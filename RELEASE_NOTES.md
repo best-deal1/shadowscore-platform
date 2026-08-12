@@ -86,3 +86,8 @@ This file records customer-visible improvements in each ShadowScore release.
 - Report routes now require paid and ready states.
 
 - Fixed production brand rendering so headers, account entry points, workspace, intake, favicon, social metadata, and organization schema use the canonical ShadowScore logo asset.
+## 2026-08-11
+
+- Fixed account confirmation and Workspace session handoff for new customers.
+- Added automatic recovery for accounts missing a Workspace membership.
+- Moved administrator console authorization to the persisted Supabase profile role.
