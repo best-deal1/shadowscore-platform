@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFile } from "node:fs/promises";
 
-import { BETA_PRODUCT } from "../lib/pricing.ts";
+import { BETA_PRODUCT, PRICING_PLANS } from "../lib/pricing.ts";
 import { REPORT_PRODUCT } from "../lib/workspace.ts";
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
@@ -22,6 +22,15 @@ test("the beta SKU has one frozen commercial contract", () => {
   assert.equal(REPORT_PRODUCT.name, BETA_PRODUCT.name);
   assert.equal(REPORT_PRODUCT.price, BETA_PRODUCT.price);
   assert.equal(REPORT_PRODUCT.amount, BETA_PRODUCT.amount);
+});
+
+test("the canonical catalog defines all four commercial paths", () => {
+  assert.deepEqual(PRICING_PLANS.map(({ name, price, cadence, availability, href, recommended }) => ({ name, price, cadence, availability, href, recommended })), [
+    { name: "Individual", price: "$9.90", cadence: "one time", availability: "Available now", href: "/intake", recommended: false },
+    { name: "Professional", price: "$49", cadence: "per month", availability: "Early Access", href: "/contact?subject=Professional", recommended: false },
+    { name: "Business", price: "$199", cadence: "per month", availability: "Early Access", href: "/contact?subject=Business", recommended: true },
+    { name: "Enterprise", price: "$299", cadence: "per month", availability: "Contact Sales", href: "/contact?subject=Enterprise", recommended: false },
+  ]);
 });
 
 test("public pricing makes the canonical investigation the primary offer", async () => {

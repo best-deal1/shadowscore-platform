@@ -24,6 +24,8 @@ This file records customer-visible improvements in each ShadowScore release.
 
 ### Improved
 
+- Pricing now shows Individual, Professional, Business, and Enterprise prices together. Individual remains available through one-time checkout, while subscription plans use a clear sales-led access path.
+
 - Pricing now leads with the purchasable Business Investigation, explains the five-step purchase and investigation flow, details the Executive Report, and answers practical purchase questions. Team paths remain available in a compact secondary section.
 
 - Pricing now presents the canonical $9.90 Business Investigation without internal review messaging. The shared product contract and all other customer journeys remain unchanged.

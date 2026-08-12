@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import ShadowScoreLayout from "@/components/ShadowScoreLayout";
-import { BETA_PRODUCT, PLANNED_PLANS } from "@/lib/pricing";
+import { BETA_PRODUCT, PRICING_PLANS } from "@/lib/pricing";
 
 export const metadata: Metadata = {
   title: "Business Investigation pricing | ShadowScore",
@@ -111,21 +111,28 @@ export default function PricingPage() {
           </div>
         </section>
 
-        <section className="pricing-section pricing-team-paths" aria-labelledby="team-paths-title">
-          <div className="pricing-heading pricing-heading-left">
-            <p className="pricing-eyebrow">For larger review programs</p>
-            <h2 id="team-paths-title">Need a team or organization path?</h2>
-            <p>Professional, Business, and Enterprise options support conversations about higher investigation volume, collaboration, and governance.</p>
+        <section className="pricing-section pricing-plan-section" aria-labelledby="plans-title">
+          <div className="pricing-heading">
+            <p className="pricing-eyebrow">Plans</p>
+            <h2 id="plans-title">Choose the right investigation path.</h2>
+            <p>Individual is available as a one-time purchase. Subscription plans begin with a sales conversation while access and provisioning are prepared.</p>
           </div>
-          <div className="pricing-compact-plans">
-            {PLANNED_PLANS.map((plan) => (
-              <article key={plan.name}>
-                <div><h3>{plan.name}</h3><span>{plan.availability}</span></div>
-                <p>{plan.audience}</p>
-                <Link href={`/contact?subject=${plan.name}`}>Discuss requirements <span aria-hidden="true">→</span></Link>
+          <div className="pricing-plan-grid">
+            {PRICING_PLANS.map((plan) => (
+              <article className={plan.recommended ? "pricing-plan pricing-plan-recommended" : "pricing-plan"} key={plan.name}>
+                <div className="pricing-plan-topline">
+                  <span>{plan.availability}</span>
+                  {plan.recommended ? <strong>Recommended</strong> : null}
+                </div>
+                <h3>{plan.name}</h3>
+                <p className="pricing-plan-audience">{plan.audience}</p>
+                <p className="pricing-plan-price"><strong>{plan.price}</strong><span>{plan.cadence}</span></p>
+                <ul>{plan.features.map((feature) => <li key={feature}><span aria-hidden="true">✓</span>{feature}</li>)}</ul>
+                <Link className={plan.recommended ? "pricing-primary" : "pricing-secondary"} href={plan.href}>{plan.cta}</Link>
               </article>
             ))}
           </div>
+          <p className="pricing-plan-note">Prices are shown in USD. The Individual plan is a one-time purchase. Subscription access, terms, and billing are confirmed with sales before activation.</p>
         </section>
 
         <section className="pricing-section pricing-faq-section" aria-labelledby="questions-title">
