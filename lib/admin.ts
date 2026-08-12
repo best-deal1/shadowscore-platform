@@ -1,4 +1,4 @@
-import { getCurrentSession, getCurrentUser, type ShadowScoreUser } from "./auth";
+import type { ShadowScoreUser } from "./auth";
 import type { AdminConsoleData, AdminUserRow } from "./adminTypes";
 import { DEFAULT_PROVIDER_METADATA } from "./providers/metadata";
 import { REPORT_ENGINE_VERSION } from "./reportPipeline";
@@ -10,26 +10,11 @@ export const PROVIDER_FRAMEWORK_VERSION = "provider-framework-v23";
 
 export type { AdminConsoleData, AdminUserRow } from "./adminTypes";
 
-function configuredAdminEmails() {
-  return (process.env.NEXT_PUBLIC_ADMIN_ALLOWLIST || process.env.NEXT_PUBLIC_ADMIN_EMAILS || "")
-    .split(",")
-    .map((item) => item.trim().toLowerCase())
-    .filter(Boolean);
-}
-
-export function isAdminAllowed(email?: string) {
-  if (!email) return false;
-  const allowlist = configuredAdminEmails();
-  return allowlist.length > 0 && allowlist.includes(email.trim().toLowerCase());
-}
-
 function latestDate(values: Array<string | undefined>) {
   return values.filter(Boolean).sort().at(-1) || "No activity";
 }
 
-export async function getAdminConsoleDataForSession(session: NonNullable<ReturnType<typeof getCurrentSession>>, currentUser: ShadowScoreUser): Promise<AdminConsoleData> {
-  if (!isAdminAllowed(currentUser.email)) throw new Error("This account is not on the admin allowlist.");
-
+export async function getAdminConsoleDataForSession(session: import("./workspace").WorkspaceSession, currentUser: ShadowScoreUser): Promise<AdminConsoleData> {
   const workspace = await getWorkspace(session);
   const reports = workspace.reports;
   const paymentIntents = workspace.paymentIntents;
@@ -96,11 +81,4 @@ export async function getAdminConsoleDataForSession(session: NonNullable<ReturnT
       registeredProviders: DEFAULT_PROVIDER_METADATA,
     },
   };
-}
-
-export async function getAdminConsoleData(): Promise<AdminConsoleData> {
-  const session = getCurrentSession();
-  const currentUser = getCurrentUser();
-  if (!session || !currentUser) throw new Error("Admin console requires an authenticated session.");
-  return getAdminConsoleDataForSession(session, currentUser);
 }
