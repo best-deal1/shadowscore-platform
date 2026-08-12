@@ -5,30 +5,20 @@ import { REPORT_ENGINE_VERSION } from "./reportPipeline";
 import { RISK_ENGINE_VERSION } from "./riskEngine";
 import { isSupabaseConfigured } from "./supabase";
 import { getWorkspace, workspaceModeLabel } from "./workspace";
+import { getAdministratorRole } from "./adminReportAccess";
 
 export const PROVIDER_FRAMEWORK_VERSION = "provider-framework-v23";
 
 export type { AdminConsoleData, AdminUserRow } from "./adminTypes";
-
-function configuredAdminEmails() {
-  return (process.env.NEXT_PUBLIC_ADMIN_ALLOWLIST || process.env.NEXT_PUBLIC_ADMIN_EMAILS || "")
-    .split(",")
-    .map((item) => item.trim().toLowerCase())
-    .filter(Boolean);
-}
-
-export function isAdminAllowed(email?: string) {
-  if (!email) return false;
-  const allowlist = configuredAdminEmails();
-  return allowlist.length > 0 && allowlist.includes(email.trim().toLowerCase());
-}
 
 function latestDate(values: Array<string | undefined>) {
   return values.filter(Boolean).sort().at(-1) || "No activity";
 }
 
 export async function getAdminConsoleDataForSession(session: NonNullable<ReturnType<typeof getCurrentSession>>, currentUser: ShadowScoreUser): Promise<AdminConsoleData> {
-  if (!isAdminAllowed(currentUser.email)) throw new Error("This account is not on the admin allowlist.");
+  if (session.userId !== currentUser.id || await getAdministratorRole(session) !== "admin") {
+    throw new Error("Administrator access is required.");
+  }
 
   const workspace = await getWorkspace(session);
   const reports = workspace.reports;

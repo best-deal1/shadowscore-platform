@@ -17,6 +17,7 @@ export default function SignupPage() {
   const [accepted, setAccepted] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [confirmationSent, setConfirmationSent] = useState(false);
 
   async function handleSignup(event: FormEvent) {
     event.preventDefault();
@@ -31,7 +32,11 @@ export default function SignupPage() {
     }
     setLoading(true);
     try {
-      await signupUser(name, email, password);
+      const result = await signupUser(name, email, password);
+      if (result.status === "confirmation_required") {
+        setConfirmationSent(true);
+        return;
+      }
       const requested = new URLSearchParams(window.location.search).get("returnTo") || "/workspace";
       window.location.assign(requested.startsWith("/") && !requested.startsWith("//") ? requested : "/workspace");
     } catch (err) {
@@ -74,7 +79,8 @@ export default function SignupPage() {
               </span>
             </label>
 
-            {error && <div className="rounded-2xl border border-red-400/30 bg-red-600/10 px-4 py-3 text-sm text-red-100">{error}</div>}
+            {confirmationSent && <div role="status" className="rounded-2xl border border-emerald-400/30 bg-emerald-600/10 px-4 py-3 text-sm text-emerald-100">Account created. Check your email to confirm your address, then continue to your Workspace.</div>}
+            {error && <div role="alert" className="rounded-2xl border border-red-400/30 bg-red-600/10 px-4 py-3 text-sm text-red-100">{error}</div>}
             <button type="submit" disabled={loading || !accepted} className="rounded-2xl bg-red-600 px-5 py-4 text-sm font-black text-white hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50">
               {loading ? page.creating : page.create}
             </button>
