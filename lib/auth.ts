@@ -1,5 +1,3 @@
-import { supabaseFetch, isSupabaseConfigured } from "./supabase";
-import { SITE_URL } from "./config";
 import type { WorkspaceSession } from "./workspace";
 
 export type ShadowScoreUser = {
@@ -13,112 +11,51 @@ export type ShadowScoreUser = {
 export type ShadowScoreSession = WorkspaceSession;
 
 const SESSION_STORAGE_KEY = "shadowscore.session.v19";
-const EMAIL_AUTH_REDIRECT_URL = SITE_URL;
 
-function emailAuthPath(path: string) {
-  const separator = path.includes("?") ? "&" : "?";
-  return `${path}${separator}redirect_to=${encodeURIComponent(EMAIL_AUTH_REDIRECT_URL)}`;
-}
-
-async function persistSession(session: ShadowScoreSession) {
-  if (typeof window === "undefined") return;
-  if (session.accessToken) {
-    const response = await fetch("/api/auth/session", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ accessToken: session.accessToken }) });
-    if (!response.ok) throw new Error("Could not establish the workspace session.");
-  }
-  window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
-}
-
-type SupabaseAuthResponse = {
-  access_token?: string;
-  refresh_token?: string;
-  expires_in?: number;
-  user: { id: string; email?: string; user_metadata?: { name?: string }; created_at?: string; last_sign_in_at?: string };
-};
-
-function toSession(response: SupabaseAuthResponse, fallbackName: string): ShadowScoreSession {
-  if (!response.access_token) {
-    throw new Error("Check your email to confirm your account, then sign in.");
-  }
-  const user = response.user;
-  return {
-    userId: user.id,
-    email: user.email || "",
-    name: user.user_metadata?.name || fallbackName,
-    accessToken: response.access_token,
-    refreshToken: response.refresh_token,
-    expiresAt: Date.now() + (response.expires_in ?? 3600) * 1000,
-    startedAt: new Date().toISOString(),
-  };
-}
-
-export async function signupUser(name: string, email: string, password: string) {
-  const cleanName = name.trim();
-  const cleanEmail = email.trim().toLowerCase();
-  const cleanPassword = password.trim();
-
-  if (!cleanName) throw new Error("Name is required.");
-  if (!cleanEmail || !cleanEmail.includes("@")) throw new Error("A valid email is required.");
-  if (cleanPassword.length < 8) throw new Error("Password must be at least 8 characters.");
-
-  if (isSupabaseConfigured()) {
-    const auth = await supabaseFetch<SupabaseAuthResponse>(emailAuthPath("/auth/v1/signup"), {
-      method: "POST",
-      body: JSON.stringify({ email: cleanEmail, password: cleanPassword, data: { name: cleanName } }),
-    });
-    const session = toSession(auth, cleanName);
-    await persistSession(session);
-    return getCurrentUserFromSession(session);
-  }
-
-  throw new Error("Authentication is not configured.");
-}
-
-export async function loginUser(email: string, password: string) {
-  const cleanEmail = email.trim().toLowerCase();
-  const cleanPassword = password.trim();
-
-  if (isSupabaseConfigured()) {
-    const auth = await supabaseFetch<SupabaseAuthResponse>("/auth/v1/token?grant_type=password", {
-      method: "POST",
-      body: JSON.stringify({ email: cleanEmail, password: cleanPassword }),
-    });
-    const session = toSession(auth, cleanEmail);
-    await persistSession(session);
-    return getCurrentUserFromSession(session);
-  }
-
-  throw new Error("Authentication is not configured.");
-}
-
-function getCurrentUserFromSession(session: ShadowScoreSession): ShadowScoreUser {
-  return {
-    id: session.userId,
-    name: session.name,
-    email: session.email,
-    createdAt: session.startedAt,
-    lastLoginAt: session.startedAt,
-  };
-}
-
-export function getCurrentSession(): ShadowScoreSession | null {
+function storedUser(): ShadowScoreUser | null {
   if (typeof window === "undefined") return null;
   try {
     const parsed = JSON.parse(window.sessionStorage.getItem(SESSION_STORAGE_KEY) || "null");
-    if (!parsed?.userId || !parsed?.email) return null;
-    if (!parsed.accessToken || (typeof parsed.expiresAt === "number" && parsed.expiresAt <= Date.now())) {
-      window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
-      return null;
-    }
-    return parsed;
+    if (parsed?.id && parsed?.email) return parsed;
+    window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    return null;
   } catch {
     return null;
   }
 }
 
-export function getCurrentUser(): ShadowScoreUser | null {
-  const session = getCurrentSession();
-  return session ? getCurrentUserFromSession(session) : null;
+function storeUser(user: ShadowScoreUser) {
+  if (typeof window !== "undefined") window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(user));
+}
+
+async function authenticate(path: "/api/auth/signup" | "/api/auth/login", body: Record<string, string>) {
+  const response = await fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const payload = await response.json().catch(() => ({})) as { user?: ShadowScoreUser; error?: string };
+  if (!response.ok || !payload.user) throw new Error(payload.error || "Authentication failed.");
+  storeUser(payload.user);
+  return payload.user;
+}
+
+export async function signupUser(name: string, email: string, password: string) {
+  return authenticate("/api/auth/signup", { name: name.trim(), email: email.trim().toLowerCase(), password: password.trim() });
+}
+
+export async function loginUser(email: string, password: string) {
+  return authenticate("/api/auth/login", { email: email.trim().toLowerCase(), password: password.trim() });
+}
+
+export function getCurrentSession(): ShadowScoreSession | null {
+  const user = storedUser();
+  if (!user) return null;
+  return { userId: user.id, email: user.email, name: user.name, startedAt: user.lastLoginAt || user.createdAt || new Date(0).toISOString() };
+}
+
+export function getCurrentUser() {
+  return storedUser();
 }
 
 export async function getAuthenticatedUser(): Promise<ShadowScoreUser | null> {
@@ -129,6 +66,7 @@ export async function getAuthenticatedUser(): Promise<ShadowScoreUser | null> {
   }
   if (!response.ok) throw new Error("Could not confirm the account session.");
   const payload = await response.json() as { user?: ShadowScoreUser | null };
+  if (payload.user) storeUser(payload.user);
   return payload.user || null;
 }
 
@@ -136,8 +74,6 @@ export async function logoutUser() {
   if (typeof window === "undefined") return;
   try {
     await fetch("/api/auth/session", { method: "DELETE", cache: "no-store" });
-  } catch {
-    // Local credentials must still be removed when the network is unavailable.
   } finally {
     window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
   }

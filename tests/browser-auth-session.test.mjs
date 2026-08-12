@@ -31,55 +31,40 @@ test("configured Supabase rejects a legacy browser session without an access tok
   assert.equal(sessionStorage.getItem("shadowscore.session.v19"), null);
 });
 
-test("login stores the browser session only after the server accepts its access token", async () => {
+test("login uses only the same-origin server route", async () => {
   process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "anon-key";
   const sessionStorage = storageWith(null);
   globalThis.window = { sessionStorage };
-  globalThis.fetch = async (input) => {
-    if (input === "https://example.supabase.co/auth/v1/token?grant_type=password") {
-      return Response.json({ access_token: "access-token", refresh_token: "refresh-token", user: { id: "user-1", email: "person@example.com" } });
-    }
-    if (input === "/api/auth/session") return new Response(null, { status: 401 });
-    throw new Error(`Unexpected request: ${input}`);
+  let request;
+  globalThis.fetch = async (input, init) => {
+    request = { input, init };
+    return Response.json({ user: { id: "user-1", email: "person@example.com", name: "Person", createdAt: "" } });
   };
   const { loginUser } = await import(`../lib/auth.ts?rejected=${Date.now()}`);
 
-  await assert.rejects(() => loginUser("person@example.com", "password"), /Could not establish the workspace session/);
-  assert.equal(sessionStorage.getItem("shadowscore.session.v19"), null);
+  await loginUser("person@example.com", "password");
+  assert.equal(request.input, "/api/auth/login");
+  assert.deepEqual(JSON.parse(request.init.body), { email: "person@example.com", password: "password" });
+  assert.doesNotMatch(sessionStorage.getItem("shadowscore.session.v19"), /accessToken|refreshToken/);
 });
 
-test("signup without a Supabase access token does not create an authenticated browser session", async () => {
+test("signup invokes exactly one same-origin request", async () => {
   process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "anon-key";
   const sessionStorage = storageWith(null);
   globalThis.window = { sessionStorage };
-  globalThis.fetch = async () => Response.json({ user: { id: "user-1", email: "person@example.com" } });
+  let count = 0;
+  globalThis.fetch = async (input, init) => {
+    count += 1;
+    assert.equal(input, "/api/auth/signup");
+    assert.deepEqual(JSON.parse(init.body), { name: "Person", email: "person@example.com", password: "password" });
+    return Response.json({ user: { id: "user-1", email: "person@example.com", name: "Person", createdAt: "" } });
+  };
   const { signupUser } = await import(`../lib/auth.ts?confirmation=${Date.now()}`);
 
-  await assert.rejects(() => signupUser("Person", "person@example.com", "password"), /confirm your account/);
-  assert.equal(sessionStorage.getItem("shadowscore.session.v19"), null);
-});
-
-test("signup explicitly redirects confirmation email links to ShadowScore", async () => {
-  process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "anon-key";
-  const sessionStorage = storageWith(null);
-  globalThis.window = { sessionStorage };
-  let signupRequest;
-  globalThis.fetch = async (input, init) => {
-    signupRequest = { input, init };
-    return Response.json({ user: { id: "user-1", email: "person@example.com" } });
-  };
-  const { signupUser } = await import(`../lib/auth.ts?redirect=${Date.now()}`);
-
-  await assert.rejects(() => signupUser("Person", "person@example.com", "password"), /confirm your account/);
-  assert.equal(signupRequest.input, "https://example.supabase.co/auth/v1/signup?redirect_to=https%3A%2F%2Fshadowscore.io");
-  assert.deepEqual(JSON.parse(signupRequest.init.body), {
-    email: "person@example.com",
-    password: "password",
-    data: { name: "Person" },
-  });
+  await signupUser("Person", "person@example.com", "password");
+  assert.equal(count, 1);
 });
 
 test("the public site restores a user from the server session after browser storage is cleared", async () => {

@@ -1,17 +1,14 @@
 import { NextResponse } from "next/server";
 import { getAdminConsoleDataForSession } from "../../../../lib/admin";
-import type { ShadowScoreUser } from "../../../../lib/auth";
-import type { WorkspaceSession } from "../../../../lib/workspace";
+import { AdminAuthorizationError, authorizeAdministrator } from "@/lib/admin.server";
 
-export async function POST(request: Request) {
+export async function GET() {
   try {
-    const body = (await request.json()) as { session?: WorkspaceSession; user?: ShadowScoreUser };
-    if (!body.session || !body.user) {
-      return NextResponse.json({ error: "Admin console requires an authenticated session." }, { status: 401 });
-    }
-    const data = await getAdminConsoleDataForSession(body.session, body.user);
-    return NextResponse.json(data);
+    const { session, user } = await authorizeAdministrator();
+    return NextResponse.json(await getAdminConsoleDataForSession(session, user), { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to load admin console." }, { status: 403 });
+    const status = error instanceof AdminAuthorizationError ? error.status : 500;
+    if (status === 500) console.error("Admin console loading failed.", error);
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to load admin console." }, { status });
   }
 }

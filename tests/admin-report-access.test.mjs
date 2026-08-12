@@ -15,13 +15,12 @@ test("administrator report access is authorized from the server-side profile rol
   assert.doesNotMatch(service, /NEXT_PUBLIC_ADMIN_EMAILS|nir@012\.net\.il/);
 });
 
-test("administrator generation stores a non-paid report in Archive-compatible state", async () => {
-  const [service, archive, access] = await Promise.all([read("lib/adminReportAccess.ts"), read("app/archive/ArchiveClient.tsx"), read("lib/reportAccess.ts")]);
+test("administrator generation stores a non-paid report with shared report access", async () => {
+  const [service, access] = await Promise.all([read("lib/adminReportAccess.ts"), read("lib/reportAccess.ts")]);
   assert.match(service, /buildReadyReport/);
   assert.match(service, /payment_status: "admin_comped"/);
   assert.match(service, /access_type: "administrator"/);
   assert.match(service, /report_status: "ready"/);
-  assert.match(archive, /r\.paymentStatus === "admin_comped"/);
   assert.match(access, /report\.paymentStatus === "admin_comped"/);
 });
 
