@@ -87,3 +87,5 @@ This file records customer-visible improvements in each ShadowScore release.
 - Report routes now require paid and ready states.
 
 - Fixed production brand rendering so headers, account entry points, workspace, intake, favicon, social metadata, and organization schema use the canonical ShadowScore logo asset.
+
+- Pricing now presents four clear commercial tiers at $9.90, $49, $199, and $299, with comparable entitlements, billing cadence, and a recommended Business plan.

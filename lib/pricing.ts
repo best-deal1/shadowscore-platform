@@ -15,22 +15,67 @@ export const BETA_PRODUCT = {
   ],
 } as const;
 
-
-export const PLANNED_PLANS = [
-  { name: "Professional", audience: "For analysts with a regular investigation queue", availability: "Planned", features: ["Multiple active investigations", "Reusable review workflow", "Central report library", "Priority support path"] },
-  { name: "Business", audience: "For teams managing shared decisions", availability: "Planned", features: ["Shared team workspace", "Role-based access", "Monitoring workflows", "Central billing administration"] },
-  { name: "Enterprise", audience: "For organizations with governance requirements", availability: "Contact sales", features: ["Organization access controls", "Procurement and security review", "Workflow configuration", "Dedicated account support"] },
+export const PRICING_PLANS = [
+  {
+    id: "individual",
+    name: "Individual",
+    label: "Single Investigation",
+    price: BETA_PRODUCT.price,
+    cadence: "one-time purchase",
+    audience: "For one business decision that needs a documented review.",
+    features: ["One Business Investigation", "One Executive Report", "Workspace access for that investigation", "Evidence trail and action plan"],
+    cta: "Start an investigation",
+    href: "/intake",
+    recommended: false,
+  },
+  {
+    id: "professional",
+    name: "Professional",
+    label: "For individual analysts",
+    price: "$49",
+    cadence: "per month",
+    audience: "For professionals who investigate businesses throughout the month.",
+    features: ["Higher investigation volume", "Personal investigation workspace", "Reusable review workflow", "Central report library"],
+    cta: "Choose Professional",
+    href: "/contact?subject=Professional",
+    recommended: false,
+  },
+  {
+    id: "business",
+    name: "Business",
+    label: "For investigation teams",
+    price: "$199",
+    cadence: "per month",
+    audience: "For teams that coordinate investigations and share decisions.",
+    features: ["Higher team investigation volume", "Shared team workspace", "Collaboration and shared reports", "Role-based access"],
+    cta: "Choose Business",
+    href: "/contact?subject=Business",
+    recommended: true,
+  },
+  {
+    id: "enterprise",
+    name: "Enterprise",
+    label: "For organizations",
+    price: "$299",
+    cadence: "per month",
+    audience: "For organizations that need governed investigation workflows.",
+    features: ["Organization-level controls", "Governance and role policies", "Advanced workflow capabilities", "Priority support"],
+    cta: "Choose Enterprise",
+    href: "/contact?subject=Enterprise",
+    recommended: false,
+  },
 ] as const;
 
 export const PLAN_COMPARISON = [
-  ["Business identity and submitted scope", "Included", "Included", "Included", "Included"],
-  ["Executive Report", "One", "Multiple", "Multiple", "Configured"],
-  ["Evidence trail and action plan", "Included", "Included", "Included", "Included"],
-  ["Workspace", "Personal", "Personal", "Team", "Organization"],
-  ["Monitoring workflows", "Available separately", "Planned", "Planned", "Configured"],
+  ["Investigation access", "One", "Higher volume", "Higher team volume", "Organization volume"],
+  ["Executive Reports", "One", "Included", "Shared", "Shared"],
+  ["Workspace", "Investigation", "Personal", "Team", "Organization"],
+  ["Collaboration", "Individual", "Individual", "Included", "Advanced"],
+  ["Access controls", "Account", "Account", "Role-based", "Organization policies"],
+  ["Support", "Standard", "Standard", "Team support", "Priority"],
 ] as const;
 
 export const COMMERCIAL_PATHS = {
   selfService: `${BETA_PRODUCT.name}: ${BETA_PRODUCT.price} USD, ${BETA_PRODUCT.period}`,
-  teamPlans: "Professional and Business plans are planned. Enterprise evaluations are available through sales.",
+  teamPlans: "Professional, Business, and Enterprise plans provide monthly commercial paths.",
 } as const;
