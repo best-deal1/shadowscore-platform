@@ -1,10 +1,8 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "ShadowScore business trust intelligence";
-export const size = { width: 1200, height: 630 };
-export const contentType = "image/png";
+export const SOCIAL_PREVIEW_SIZE = { width: 1200, height: 630 };
 
-export default function OpenGraphImage() {
+export function createSocialPreviewImage() {
   return new ImageResponse(
     <div
       style={{
@@ -69,10 +67,10 @@ export default function OpenGraphImage() {
       </div>
 
       <div style={{ alignItems: "center", borderTop: "1px solid rgba(255, 255, 255, 0.16)", color: "#929bb7", display: "flex", fontSize: 21, justifyContent: "space-between", paddingTop: 24 }}>
-        <div style={{ display: "flex" }}>ShadowScore | Business Trust Intelligence | Due Diligence</div>
+        <div style={{ display: "flex" }}>Business Due Diligence &amp; Company Verification</div>
         <div style={{ color: "#f7f8ff", display: "flex", fontWeight: 700 }}>shadowscore.io</div>
       </div>
     </div>,
-    size,
+    SOCIAL_PREVIEW_SIZE,
   );
 }

@@ -73,6 +73,7 @@ This file records customer-visible improvements in each ShadowScore release.
 
 ### Fixed
 
+- Shared homepage previews now use one absolute, cacheable PNG URL for WhatsApp, Meta, LinkedIn, and X crawlers.
 - Signup and login now run through same-origin server routes. Secure server-owned cookies handle session refresh and logout, and the admin console verifies the authenticated database role on both the page and API boundaries.
 - Production checks now run without legacy page copies or lint warnings from inactive source files.
 - The investigation purchase summary and unlock action now use the same canonical product name and price.
