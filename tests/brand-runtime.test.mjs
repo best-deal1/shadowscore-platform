@@ -39,7 +39,8 @@ test("social previews use the generated 1200 by 630 image route", async () => {
   assert.match(layout, /SOCIAL_PREVIEW_URL/);
   assert.match(home, /url: SOCIAL_PREVIEW_URL, width: 1200, height: 630, type: "image\/png"/);
   assert.match(route, /dynamic = "force-static"/);
-  assert.match(route, /Cache-Control/);
+  assert.match(route, /public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800/);
+  assert.doesNotMatch(route, /immutable/);
   assert.match(image, /ImageResponse/);
   assert.match(image, /width: 1200/);
   assert.match(image, /height: 630/);
