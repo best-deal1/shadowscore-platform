@@ -4,10 +4,10 @@ import { LocaleProvider } from "../components/LocaleProvider";
 import { ProductFeedbackProvider } from "../components/ProductFeedback";
 import { defaultLocale, directionForLocale, isLocale } from "../lib/i18n";
 import "./globals.css";
-import { CANONICAL_LOGO_PATH, CANONICAL_LOGO_URL, SOCIAL_PREVIEW_PATH } from "../lib/brand";
+import { CANONICAL_LOGO_PATH, CANONICAL_LOGO_URL, SOCIAL_PREVIEW_URL } from "../lib/brand";
 
-const socialTitle = "ShadowScore | Business Trust Intelligence | Due Diligence";
-const socialDescription = "Source-backed business verification, risk signals, and evidence for due diligence decisions.";
+const socialTitle = "ShadowScore | Business Due Diligence & Company Verification";
+const socialDescription = "Verify companies, suppliers, partners, marketplaces, and investment opportunities using source-backed business identity, risk, relationship, and evidence intelligence.";
 
 const organizationJsonLd = {
   "@context": "https://schema.org",
@@ -30,8 +30,7 @@ const organizationJsonLd = {
 
 export const metadata: Metadata = {
   title: socialTitle,
-  description:
-    "Verify companies, suppliers, sellers, partners, and investment opportunities with source-backed business identity, risk, relationship, and evidence intelligence.",
+  description: socialDescription,
   metadataBase: new URL("https://shadowscore.io"),
   alternates: { canonical: "https://shadowscore.io/" },
   openGraph: {
@@ -40,7 +39,7 @@ export const metadata: Metadata = {
     url: "https://shadowscore.io/",
     siteName: "ShadowScore",
     images: [
-      { url: SOCIAL_PREVIEW_PATH, width: 1200, height: 630, alt: "ShadowScore business trust intelligence" },
+      { url: SOCIAL_PREVIEW_URL, width: 1200, height: 630, type: "image/png", alt: "ShadowScore business due diligence and company verification" },
     ],
     locale: "en_US",
     type: "website",
@@ -49,7 +48,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: socialTitle,
     description: socialDescription,
-    images: [SOCIAL_PREVIEW_PATH],
+    images: [SOCIAL_PREVIEW_URL],
   },
   icons: {
     icon: [{ url: CANONICAL_LOGO_PATH, type: "image/svg+xml", sizes: "any" }],
