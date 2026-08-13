@@ -1,0 +1,78 @@
+import { ImageResponse } from "next/og";
+
+export const alt = "ShadowScore business trust intelligence";
+export const size = { width: 1200, height: 630 };
+export const contentType = "image/png";
+
+export default function OpenGraphImage() {
+  return new ImageResponse(
+    <div
+      style={{
+        alignItems: "stretch",
+        background: "linear-gradient(135deg, #080b18 0%, #10142b 58%, #111936 100%)",
+        color: "#f7f8ff",
+        display: "flex",
+        flexDirection: "column",
+        fontFamily: "Arial, sans-serif",
+        height: "100%",
+        justifyContent: "space-between",
+        padding: "68px 76px",
+        position: "relative",
+        width: "100%",
+      }}
+    >
+      <div
+        style={{
+          background: "radial-gradient(circle, rgba(81, 208, 255, 0.2) 0%, rgba(81, 208, 255, 0) 70%)",
+          display: "flex",
+          height: 520,
+          position: "absolute",
+          right: -120,
+          top: -190,
+          width: 520,
+        }}
+      />
+
+      <div style={{ alignItems: "center", display: "flex", gap: 20 }}>
+        <div
+          style={{
+            alignItems: "center",
+            background: "linear-gradient(135deg, #6d5cff, #37c9f0)",
+            borderRadius: 18,
+            display: "flex",
+            fontSize: 50,
+            fontWeight: 700,
+            height: 76,
+            justifyContent: "center",
+            letterSpacing: -8,
+            paddingRight: 8,
+            width: 92,
+          }}
+        >
+          ∞
+        </div>
+        <div style={{ display: "flex", fontSize: 38, fontWeight: 700, letterSpacing: -1 }}>
+          ShadowScore
+        </div>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", maxWidth: 930 }}>
+        <div style={{ color: "#8fdfff", display: "flex", fontSize: 22, fontWeight: 700, letterSpacing: 3, marginBottom: 22, textTransform: "uppercase" }}>
+          Business Trust Intelligence
+        </div>
+        <div style={{ display: "flex", fontSize: 68, fontWeight: 700, letterSpacing: -2.5, lineHeight: 1.08 }}>
+          Due diligence for better business decisions.
+        </div>
+        <div style={{ color: "#bdc5dd", display: "flex", fontSize: 28, lineHeight: 1.4, marginTop: 26 }}>
+          Verify identity, review risk signals, and trace findings to source evidence.
+        </div>
+      </div>
+
+      <div style={{ alignItems: "center", borderTop: "1px solid rgba(255, 255, 255, 0.16)", color: "#929bb7", display: "flex", fontSize: 21, justifyContent: "space-between", paddingTop: 24 }}>
+        <div style={{ display: "flex" }}>ShadowScore | Business Trust Intelligence | Due Diligence</div>
+        <div style={{ color: "#f7f8ff", display: "flex", fontWeight: 700 }}>shadowscore.io</div>
+      </div>
+    </div>,
+    size,
+  );
+}

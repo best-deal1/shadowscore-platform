@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { CANONICAL_LOGO_PATH } from "../../lib/brand";
+import { SOCIAL_PREVIEW_PATH } from "../../lib/brand";
 
 export const siteUrl = "https://shadowscore.io";
 export type MarketingPage = {
@@ -35,5 +35,5 @@ export const hebrewPages: Record<string, MarketingPage> = {
 export function marketingMetadata(page: MarketingPage, locale: "en" | "he" = "en"): Metadata {
   const path = locale === "he" ? `/he/${page.slug}` : `/${page.slug}`;
   const alternate = locale === "he" ? `/${page.slug}` : `/he/${page.slug}`;
-  return { title: page.title, description: page.description, alternates: { canonical: path, languages: { en: locale === "en" ? path : alternate, he: locale === "he" ? path : alternate, "x-default": locale === "en" ? path : alternate } }, openGraph: { title: page.title, description: page.description, url: `${siteUrl}${path}`, locale: locale === "he" ? "he_IL" : "en_US", type: "website", images: [CANONICAL_LOGO_PATH] }, twitter: { card: "summary_large_image", title: page.title, description: page.description, images: [CANONICAL_LOGO_PATH] } };
+  return { title: page.title, description: page.description, alternates: { canonical: path, languages: { en: locale === "en" ? path : alternate, he: locale === "he" ? path : alternate, "x-default": locale === "en" ? path : alternate } }, openGraph: { title: page.title, description: page.description, url: `${siteUrl}${path}`, locale: locale === "he" ? "he_IL" : "en_US", type: "website", images: [SOCIAL_PREVIEW_PATH] }, twitter: { card: "summary_large_image", title: page.title, description: page.description, images: [SOCIAL_PREVIEW_PATH] } };
 }
