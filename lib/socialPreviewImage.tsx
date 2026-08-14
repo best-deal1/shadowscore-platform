@@ -3,12 +3,13 @@ import { join } from "node:path";
 
 import { ImageResponse } from "next/og";
 
-import { CANONICAL_LOGO_PATH } from "./brand";
-
 export const SOCIAL_PREVIEW_SIZE = { width: 1200, height: 630 };
 
 export async function createSocialPreviewImage() {
-  const canonicalLogo = await readFile(join(process.cwd(), "public", CANONICAL_LOGO_PATH));
+  const canonicalLogo = await readFile(
+    join(process.cwd(), "public/brand/shadowscore-infinity.svg"),
+    "base64",
+  );
 
   return new ImageResponse(
     <div
@@ -39,18 +40,13 @@ export async function createSocialPreviewImage() {
       />
 
       <div style={{ alignItems: "center", display: "flex", gap: 20 }}>
-        {/* ImageResponse requires a native image element for embedded SVG data. */}
+        {/* next/image is not supported by ImageResponse. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           alt=""
-          height="76"
-          src={`data:image/svg+xml;base64,${canonicalLogo.toString("base64")}`}
-          style={{
-            height: 76,
-            objectFit: "contain",
-            width: 92,
-          }}
-          width="92"
+          height={46}
+          src={`data:image/svg+xml;base64,${canonicalLogo}`}
+          width={92}
         />
         <div style={{ display: "flex", fontSize: 38, fontWeight: 700, letterSpacing: -1 }}>
           ShadowScore
