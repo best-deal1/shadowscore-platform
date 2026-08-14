@@ -26,6 +26,7 @@ export type InvestigationCollectionOptions = {
   budgetUsd?: number;
   now?: () => Date;
   logger?: Pick<Console, "info" | "warn" | "error">;
+  onProgress?: (progress: { run: ProviderRun; candidates: EntityCandidate[]; evidence: EvidenceAssertion[] }) => Promise<void> | void;
 };
 export type ProviderRun = { providerId: string; seed: CollectionSeed; depth: number; status: "completed" | "failed" | "timed_out" | "unavailable" | "budget_blocked"; attempts: number; evidenceCount: number; error?: string };
 export type LiveInvestigation = { graph: InvestigationGraph; providerRuns: ProviderRun[]; discoveredSeeds: CollectionSeed[]; spentUsd: number; limits: { maxDepth: number; maxProviderCalls: number; timeoutMs: number; budgetUsd: number } };

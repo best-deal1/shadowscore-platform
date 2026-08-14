@@ -90,3 +90,7 @@ This file records customer-visible improvements in each ShadowScore release.
 - Report routes now require paid and ready states.
 
 - Fixed production brand rendering so headers, account entry points, workspace, intake, favicon, social metadata, and organization schema use the canonical ShadowScore logo asset.
+## 2026-08-10
+
+- Paid investigations now enter one durable background execution. Live evidence, entity resolution, decision data, the Executive Report, and workspace access share the intake investigation ID.
+- Provider failures are retained as diagnostics. Investigations with useful evidence can finish with limitations instead of losing completed work.
