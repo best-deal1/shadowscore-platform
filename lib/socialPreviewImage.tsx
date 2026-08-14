@@ -1,8 +1,15 @@
 import { ImageResponse } from "next/og";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 
 export const SOCIAL_PREVIEW_SIZE = { width: 1200, height: 630 };
 
-export function createSocialPreviewImage() {
+export async function createSocialPreviewImage() {
+  const canonicalLogo = await readFile(
+    join(process.cwd(), "public/brand/shadowscore-infinity.svg"),
+    "base64",
+  );
+
   return new ImageResponse(
     <div
       style={{
@@ -32,23 +39,14 @@ export function createSocialPreviewImage() {
       />
 
       <div style={{ alignItems: "center", display: "flex", gap: 20 }}>
-        <div
-          style={{
-            alignItems: "center",
-            background: "linear-gradient(135deg, #6d5cff, #37c9f0)",
-            borderRadius: 18,
-            display: "flex",
-            fontSize: 50,
-            fontWeight: 700,
-            height: 76,
-            justifyContent: "center",
-            letterSpacing: -8,
-            paddingRight: 8,
-            width: 92,
-          }}
-        >
-          ∞
-        </div>
+        {/* next/image is not supported by ImageResponse. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          alt=""
+          height={46}
+          src={`data:image/svg+xml;base64,${canonicalLogo}`}
+          width={92}
+        />
         <div style={{ display: "flex", fontSize: 38, fontWeight: 700, letterSpacing: -1 }}>
           ShadowScore
         </div>
