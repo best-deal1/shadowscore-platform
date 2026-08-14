@@ -42,6 +42,10 @@ test("social previews use the generated 1200 by 630 image route", async () => {
   assert.match(route, /public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800/);
   assert.doesNotMatch(route, /immutable/);
   assert.match(image, /ImageResponse/);
+  assert.match(image, /import \{ CANONICAL_LOGO_PATH \} from "\.\/brand"/);
+  assert.match(image, /readFile\(join\(process\.cwd\(\), "public", CANONICAL_LOGO_PATH\)\)/);
+  assert.match(image, /src=\{`data:image\/svg\+xml;base64,\$\{canonicalLogo\.toString\("base64"\)\}`\}/);
+  assert.doesNotMatch(image, />\s*∞\s*</);
   assert.match(image, /width: 1200/);
   assert.match(image, /height: 630/);
   assert.match(image, /Business Due Diligence &amp; Company Verification/);
