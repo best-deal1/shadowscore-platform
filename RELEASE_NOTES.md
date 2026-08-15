@@ -75,6 +75,7 @@ This file records customer-visible improvements in each ShadowScore release.
 
 ### Fixed
 
+- Investigation deletion now uses one tenant-scoped database operation, so deleted investigations stay removed after the workspace refreshes.
 - Signed-in customers can now save a Quick Check intake and reach checkout through the secure server session. Investigation deletion now reports success only after the database confirms the owned row was removed.
 - Shared homepage previews now use one absolute, cacheable PNG URL for WhatsApp, Meta, LinkedIn, and X crawlers.
 - Signup and login now run through same-origin server routes. Secure server-owned cookies handle session refresh and logout, and the admin console verifies the authenticated database role on both the page and API boundaries.
