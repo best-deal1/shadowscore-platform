@@ -36,7 +36,9 @@ export class CaseRepository implements CaseStore {
     return rows[0] ? mapRow(rows[0]) : null;
   }
   async delete(actor: WorkspaceActor, publicId: string): Promise<boolean> {
-    const rows = await this.request<Pick<CaseRow, "id">[]>(`/rest/v1/cases?public_id=eq.${encodeURIComponent(publicId)}&organization_id=eq.${encodeURIComponent(actor.organizationId)}&select=id`, { method: "DELETE", headers: { Prefer: "return=representation" } }, this.accessToken);
-    return rows.length === 1;
+    return this.request<boolean>("/rest/v1/rpc/delete_workspace_case", {
+      method: "POST",
+      body: JSON.stringify({ p_public_id: publicId, p_organization_id: actor.organizationId }),
+    }, this.accessToken);
   }
 }
