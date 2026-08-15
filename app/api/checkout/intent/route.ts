@@ -1,17 +1,17 @@
 import { NextResponse } from "next/server";
-import { resolveWebsiteSession } from "@/lib/websiteIntelligence/server";
+import { resolveServerSession, setAuthCookies } from "@/lib/auth-session.server";
 import { createCheckoutIntent, getWorkspace, REPORT_PRODUCT, reportIdForPayment, type WorkspaceSession } from "@/lib/workspace";
 
 export async function POST(request: Request) {
   try {
-    const authenticated = await resolveWebsiteSession(request);
+    const authenticated = await resolveServerSession();
     if (!authenticated) return NextResponse.json({ error: "Authentication is required." }, { status: 401 });
     const body = await request.json().catch(() => null) as { intakeId?: unknown } | null;
     if (typeof body?.intakeId !== "string" || !body.intakeId.trim()) {
       return NextResponse.json({ error: "A saved investigation is required." }, { status: 400 });
     }
     const session: WorkspaceSession = {
-      userId: authenticated.userId,
+      userId: authenticated.user.id,
       accessToken: authenticated.accessToken,
       name: "",
       email: "",
@@ -28,7 +28,9 @@ export async function POST(request: Request) {
     if (!workspace.reports.some((report) => report.reportId === reportId)) {
       throw new Error("Checkout did not create the locked report.");
     }
-    return NextResponse.json({ intent, reportId }, { status: 201 });
+    const response = NextResponse.json({ intent, reportId }, { status: 201 });
+    if (authenticated.refreshedAuth) setAuthCookies(response, authenticated.refreshedAuth);
+    return response;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Checkout could not be started.";
     return NextResponse.json({ error: message }, { status: 500 });

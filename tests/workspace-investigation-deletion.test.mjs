@@ -32,11 +32,16 @@ test("missing investigations return a not-found error", async () => {
   assert.equal(store.deleted, false);
 });
 
-test("repository deletion does not depend on a returned row representation", async () => {
+test("repository confirms the owned row returned by deletion", async () => {
   let request;
-  const repository = new CaseRepository(async (path, init) => { request = { path, init }; }, "token");
+  const repository = new CaseRepository(async (path, init) => { request = { path, init }; return [{ public_id: "case-1", organization_id: "org-1" }]; }, "token");
   assert.equal(await repository.delete(actor(), "case-1"), true);
   assert.match(request.path, /public_id=eq\.case-1/);
   assert.match(request.path, /organization_id=eq\.org-1/);
-  assert.equal(request.init.headers.Prefer, "return=minimal");
+  assert.equal(request.init.headers.Prefer, "return=representation");
+});
+
+test("repository reports failure when RLS deletes zero rows", async () => {
+  const repository = new CaseRepository(async () => [], "token");
+  assert.equal(await repository.delete(actor(), "case-1"), false);
 });

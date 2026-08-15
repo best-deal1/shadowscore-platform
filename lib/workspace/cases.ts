@@ -94,8 +94,8 @@ export class CaseService {
   async delete(actor: WorkspaceActor, publicId: string): Promise<void> {
     if (!writableRoles.has(actor.role)) throw new CaseAccessError("This role cannot delete investigations.");
     if (!publicId.trim()) throw new CaseValidationError("An investigation ID is required.");
-    // Validate tenant ownership before deleting. Row-level security can hide a
-    // deleted row from a returned representation even when deletion succeeded.
+    // Validate tenant ownership before deletion, then require the repository to
+    // confirm that the owned row was actually removed.
     if (!await this.store.findById(actor, publicId)) throw new CaseNotFoundError("Investigation not found.");
     if (!await this.store.delete(actor, publicId)) throw new CaseNotFoundError("Investigation not found.");
   }

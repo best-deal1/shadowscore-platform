@@ -36,7 +36,7 @@ export class CaseRepository implements CaseStore {
     return rows[0] ? mapRow(rows[0]) : null;
   }
   async delete(actor: WorkspaceActor, publicId: string): Promise<boolean> {
-    await this.request<void>(`/rest/v1/cases?public_id=eq.${encodeURIComponent(publicId)}&organization_id=eq.${encodeURIComponent(actor.organizationId)}`, { method: "DELETE", headers: { Prefer: "return=minimal" } }, this.accessToken);
-    return true;
+    const rows = await this.request<CaseRow[]>(`/rest/v1/cases?public_id=eq.${encodeURIComponent(publicId)}&organization_id=eq.${encodeURIComponent(actor.organizationId)}&select=*`, { method: "DELETE", headers: { Prefer: "return=representation" } }, this.accessToken);
+    return rows.length === 1 && rows[0].public_id === publicId && rows[0].organization_id === actor.organizationId;
   }
 }
