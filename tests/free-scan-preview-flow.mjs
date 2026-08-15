@@ -42,22 +42,21 @@ const parsed = await flow.readPreviewJson({ ok: true, json: async () => complete
 assert.equal(parsed.status, 'ready', 'successful ready response resolves the JSON promise');
 
 const source = readFileSync('app/intake/page.tsx', 'utf8');
+const resultSource = readFileSync('components/quick-check/QuickCheckResult.tsx', 'utf8');
 assert.match(source, /isPreviewReadyResponse\(payload/, 'intake page checks the preview-ready API response');
 assert.match(source, /setPreviewStatus\("ready"\)/, 'intake page transitions loading state to ready');
 assert.match(source, /setFreeScanRunning\(false\)/, 'intake page clears the running flag');
-assert.match(source, /Executive report ready/, 'free preview teases the completed executive report');
-assert.match(source, /Evidence items collected/, 'free preview shows high-level collection totals');
-assert.match(source, /buttonLabel={`Unlock \${BETA_PRODUCT\.deliverable} · \${BETA_PRODUCT\.price}`}/, 'free preview presents the canonical one-time report purchase');
-assert.match(source, /<dd className="font-bold text-white">{BETA_PRODUCT\.deliverable}<\/dd>/, 'purchase summary uses the canonical deliverable');
-assert.match(source, /<dd className="font-bold text-white">{BETA_PRODUCT\.price}<\/dd>/, 'purchase summary uses the canonical price');
-assert.doesNotMatch(source, /View technical preview/, 'free preview does not expose a technical report');
-assert.doesNotMatch(source, /Why it matters:/, 'free preview does not expose finding explanations');
-assert.doesNotMatch(source, /What this means:/, 'free preview does not expose decision reasoning');
+assert.match(source, /quickCheck\?: QuickCheckReport/, 'frontend preserves the complete Quick Check contract');
+assert.match(resultSource, /Representative evidence/, 'Quick Check displays representative evidence');
+assert.match(resultSource, /Successfully queried sources/, 'Quick Check displays successful source names');
+assert.match(resultSource, /Evidence gaps/, 'Quick Check displays unresolved evidence gaps');
+assert.match(resultSource, /What the Full Investigation adds/, 'Quick Check explains the paid investigation difference');
+assert.doesNotMatch(resultSource, /Business found|Independent sources checked|Evidence items collected and documented|Commercial findings identified/, 'Quick Check removes misleading count-led claims');
 
 const routeSource = readFileSync('app/api/free-scan/providers/route.ts', 'utf8');
 const responseSource = routeSource.slice(routeSource.indexOf('return NextResponse.json({\n      status: "ready"'));
-assert.match(routeSource, /previewSummary:/, 'free preview API returns only the summary needed by the conversion view');
-assert.doesNotMatch(responseSource, /decisionPreview,\n/, 'free preview API does not return decision details');
+assert.match(responseSource, /quickCheck,/, 'free preview API returns the evidence-led Quick Check report');
+assert.match(responseSource, /sourcesSuccessfullyQueried: quickCheck\.sourcesSuccessfullyQueried/, 'free preview API exposes successful source names');
 assert.doesNotMatch(responseSource, /insights: insightOutput\.insights/, 'free preview API does not return insight details');
 
 rmSync('.tmp-tests', { recursive: true, force: true });
