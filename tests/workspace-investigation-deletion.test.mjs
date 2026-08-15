@@ -15,11 +15,13 @@ class Store {
   async delete(_actor, publicId) { this.deleted = publicId === caseRecord.publicId; return this.deleted; }
 }
 
-test("workspace members can delete an investigation", async () => {
-  const store = new Store();
-  await new CaseService(store).delete(actor(), "case-1");
-  assert.equal(store.deleted, true);
-});
+for (const role of ["owner", "manager", "analyst"]) {
+  test(`${role} can delete an investigation`, async () => {
+    const store = new Store();
+    await new CaseService(store).delete(actor(role), "case-1");
+    assert.equal(store.deleted, true);
+  });
+}
 
 test("viewers cannot delete investigations", async () => {
   await assert.rejects(() => new CaseService(new Store()).delete(actor("viewer"), "case-1"), CaseAccessError);
@@ -32,11 +34,17 @@ test("missing investigations return a not-found error", async () => {
   assert.equal(store.deleted, false);
 });
 
-test("repository deletion does not depend on a returned row representation", async () => {
+test("successful owned deletion returns a representation and true", async () => {
   let request;
-  const repository = new CaseRepository(async (path, init) => { request = { path, init }; }, "token");
+  const repository = new CaseRepository(async (path, init) => { request = { path, init }; return [{ id: "internal" }]; }, "token");
   assert.equal(await repository.delete(actor(), "case-1"), true);
   assert.match(request.path, /public_id=eq\.case-1/);
   assert.match(request.path, /organization_id=eq\.org-1/);
-  assert.equal(request.init.headers.Prefer, "return=minimal");
+  assert.match(request.path, /select=id/);
+  assert.equal(request.init.headers.Prefer, "return=representation");
+});
+
+test("zero-row deletion returns failure", async () => {
+  const repository = new CaseRepository(async () => [], "token");
+  assert.equal(await repository.delete(actor(), "missing"), false);
 });

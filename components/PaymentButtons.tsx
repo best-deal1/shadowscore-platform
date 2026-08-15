@@ -19,10 +19,10 @@ export default function PaymentButtons({ buttonLabel = "Unlock Executive Report"
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function createIntent(resolvedIntakeId: string, accessToken?: string) {
+  async function createIntent(resolvedIntakeId: string) {
     const response = await fetch("/api/checkout/intent", {
       method: "POST",
-      headers: { "Content-Type": "application/json", ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ intakeId: resolvedIntakeId }),
     });
     const text = await response.text();
@@ -59,7 +59,7 @@ export default function PaymentButtons({ buttonLabel = "Unlock Executive Report"
         email,
         authenticatedEmail: session.email,
         persistIntake: onPersistIntake || (async () => { throw new Error("Save the investigation before starting checkout."); }),
-        createIntent: (resolvedIntakeId) => createIntent(resolvedIntakeId, session.accessToken),
+        createIntent,
       });
       onEmailResolved?.(result.email);
       window.location.assign("/workspace");

@@ -210,6 +210,16 @@ export async function addWatchlistEntity(session: WorkspaceSession, entity: Shad
 }
 
 export async function createIntake(session: WorkspaceSession, record: Omit<ShadowScoreIntake, "intakeId" | "userId" | "paymentStatus" | "reportStatus" | "createdAt">) {
+  if (typeof window !== "undefined" && !session.accessToken) {
+    const response = await fetch("/api/intakes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(record),
+    });
+    const payload = await response.json().catch(() => null) as { intake?: ShadowScoreIntake; error?: string } | null;
+    if (!response.ok || !payload?.intake) throw new Error(payload?.error || "The investigation could not be saved.");
+    return payload.intake;
+  }
   const intake: ShadowScoreIntake = { intakeId: `intake-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`, userId: session.userId, ...record, paymentStatus: "payment_pending", reportStatus: "preview", createdAt: new Date().toISOString() };
   if (isSupabaseConfigured() && session.accessToken) {
     const [created] = await supabaseFetch<Record<string, any>[]>("/rest/v1/intakes?select=*", {
