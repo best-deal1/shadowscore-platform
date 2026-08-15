@@ -24,6 +24,8 @@ This file records customer-visible improvements in each ShadowScore release.
 
 ### Improved
 
+- The Free Quick Check now presents the submitted target, truthful identity status, preliminary assessment, representative evidence and sources, material findings, and unresolved evidence gaps before explaining the Full Investigation.
+
 - Shared links now use a code-generated ShadowScore social card with clear due diligence positioning for messaging and professional networks.
 
 - Pricing now leads with the purchasable Business Investigation, explains the five-step purchase and investigation flow, details the Executive Report, and answers practical purchase questions. Team paths remain available in a compact secondary section.

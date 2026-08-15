@@ -13,6 +13,8 @@ import JourneyProgress from "../../components/investigation/JourneyProgress";
 import { createIntake, ShadowScoreIntake } from "../../lib/workspace";
 import { useLocale } from "../../components/LocaleProvider";
 import { BETA_PRODUCT } from "../../lib/pricing";
+import QuickCheckResult from "../../components/quick-check/QuickCheckResult";
+import type { QuickCheckReport } from "../../lib/quickCheck/report";
 
 type Severity = "Low" | "Medium" | "High" | "Critical";
 type Finding = {
@@ -26,7 +28,7 @@ type Requirement = { label: string; hints: string[] };
 type ScanMode = "website" | "marketplace" | "evidence";
 
 type FileIssue = { file: string; issue: string; severity: "Block" | "Warning" };
-type FreeScanResult = { status?: "ready"; message?: string; reportReadyEvent?: { type: "free-preview-ready"; status: "ready"; ready: true; emittedAt: string }; executedAt: string; targetResolution?: { requestedTarget: string; resolvedTarget: string; legalName?: string }; previewSummary?: { confidence: number; providersQueried: number; evidenceCollected: number; findingsDiscovered: number } };
+type FreeScanResult = { status?: "ready"; message?: string; reportReadyEvent?: { type: "free-preview-ready"; status: "ready"; ready: true; emittedAt: string }; executedAt: string; targetResolution?: { requestedTarget: string; resolvedTarget: string; legalName?: string }; quickCheck?: QuickCheckReport; previewSummary?: { confidence: QuickCheckReport["confidence"]; providersQueried: number; sourcesSuccessfullyQueried: string[]; evidenceCollected: number; findingsDiscovered: number } };
 
 const CHECKOUT_DRAFT_KEY = "shadowscore.checkout-draft.v1";
 
@@ -1258,33 +1260,9 @@ export default function IntakePage() {
             {submitted && canAnalyze && previewStatus === "ready" && (
               <div className="mt-8 space-y-6">
                 {(() => {
-                  const providersQueried = freeScanResult?.previewSummary?.providersQueried ?? 0;
-                  const evidenceCollected = freeScanResult?.previewSummary?.evidenceCollected ?? files.length;
-                  const findingsDiscovered = freeScanResult?.previewSummary?.findingsDiscovered ?? findings.length;
-                  const confidence = freeScanResult?.previewSummary?.confidence ?? Math.min(95, 45 + (presentEvidence * 8));
-                  const businessName = freeScanResult?.targetResolution?.legalName || freeScanResult?.targetResolution?.resolvedTarget || activeTarget;
+                  const submittedTarget = freeScanResult?.targetResolution?.requestedTarget || activeTarget;
                   return <>
-                    <section className="overflow-hidden rounded-[32px] border border-emerald-400/25 bg-emerald-500/[0.07]">
-                      <div className="border-b border-white/10 p-7 sm:p-9">
-                        <div className="flex flex-wrap items-start justify-between gap-5">
-                          <div><p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-300">Business found</p><h2 className="mt-3 text-3xl font-black text-white sm:text-4xl">{businessName}</h2><p className="mt-3 flex items-center gap-2 text-sm font-bold text-emerald-100"><span aria-hidden="true">✓</span> Free Quick Check completed</p></div>
-                          <div className="rounded-2xl border border-white/10 bg-black/30 px-5 py-4 text-right"><p className="text-xs uppercase tracking-[0.18em] text-zinc-400">Confidence</p><p className="mt-1 text-3xl font-black text-white">{confidence}%</p></div>
-                        </div>
-                        <div className="mt-7 rounded-2xl border border-amber-300/20 bg-amber-300/[0.08] p-5"><p className="text-xs font-black uppercase tracking-[0.2em] text-amber-200">Trust status</p><p className="mt-2 text-xl font-black text-white">Verification recommended</p></div>
-                      </div>
-                      <div className="grid gap-px bg-white/10 sm:grid-cols-3">
-                        {[["Independent sources checked", providersQueried], ["Evidence items collected and documented", evidenceCollected], ["Commercial findings identified", findingsDiscovered]].map(([label, value]) => <div key={label} className="bg-black/50 p-5"><p className="text-2xl font-black text-white">{value}</p><p className="mt-1 text-xs text-zinc-400">{label}</p></div>)}
-                      </div>
-                    </section>
-
-                    <section className="rounded-[28px] border border-white/10 bg-white/[0.035] p-6 sm:p-8">
-                      <p className="text-xs font-black uppercase tracking-[0.22em] text-red-300">Free Quick Check</p>
-                      <h3 className="mt-3 text-2xl font-black text-white">Your Quick Check is complete.</h3>
-                      <p className="mt-3 text-sm leading-6 text-zinc-400">This free result is saved while you confirm the paid investigation. The Executive Report is prepared only after payment and processing complete.</p>
-                      <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                        {[`${findingsDiscovered} preliminary signals found`, "Business identity to investigate", "Ownership analysis scope", "Commercial risk scope", "Relationship analysis scope", "Evidence package scope"].map((item) => <div key={item} className="rounded-2xl border border-white/10 bg-black/35 p-4 font-bold text-zinc-200">{item}</div>)}
-                      </div>
-                    </section>
+                    <QuickCheckResult target={submittedTarget} report={freeScanResult?.quickCheck} />
 
                     {!checkoutStage ? (
                       <button type="button" onClick={() => setCheckoutStage(true)} className="block w-full rounded-2xl bg-emerald-500 px-7 py-5 text-center text-sm font-black uppercase tracking-[0.12em] text-black hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200">
@@ -1296,7 +1274,7 @@ export default function IntakePage() {
                       <h3 id="paid-intake-title" className="mt-3 text-lg font-bold text-white">Confirm the business, scope, customer account, and purchase.</h3>
                       <p className="mt-2 text-sm text-yellow-100">Your Free Quick Check remains attached to this intake. Payment starts the full investigation. Your Executive Report becomes available after processing completes.</p>
                       <div className="mt-5 rounded-2xl border border-white/10 bg-black/30 p-5">
-                        <dl className="mb-5 grid gap-3 text-sm sm:grid-cols-2"><div><dt className="text-zinc-500">Business</dt><dd className="font-bold text-white">{businessName}</dd></div><div><dt className="text-zinc-500">Investigation scope</dt><dd className="font-bold text-white">{activeMode.label}</dd></div><div><dt className="text-zinc-500">Existing result</dt><dd className="font-bold text-white">Free Quick Check</dd></div><div><dt className="text-zinc-500">Purchase</dt><dd className="font-bold text-white">Full Business Investigation · {BETA_PRODUCT.price}</dd></div></dl>
+                        <dl className="mb-5 grid gap-3 text-sm sm:grid-cols-2"><div><dt className="text-zinc-500">Business</dt><dd className="font-bold text-white">{submittedTarget}</dd></div><div><dt className="text-zinc-500">Investigation scope</dt><dd className="font-bold text-white">{activeMode.label}</dd></div><div><dt className="text-zinc-500">Existing result</dt><dd className="font-bold text-white">Free Quick Check</dd></div><div><dt className="text-zinc-500">Purchase</dt><dd className="font-bold text-white">Full Business Investigation · {BETA_PRODUCT.price}</dd></div></dl>
                         <label><div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">Customer email (required)</div><input type="email" required value={email} onChange={(e) => { setEmail(e.target.value); setSaveError(""); }} aria-describedby={saveError ? "checkout-email-error" : undefined} className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white" placeholder="you@example.com" /></label>
                         {saveError && <p id="checkout-email-error" className="mt-3 text-sm text-red-200" role="alert">{saveError}</p>}
                         <ul className="mt-4 space-y-2 text-sm font-bold leading-6 text-white" aria-label="Purchase confidence"><li>✓ One paid investigation</li><li>✓ One-time payment of {BETA_PRODUCT.price}</li><li>✓ No subscription</li><li>✓ Processing begins after payment</li><li>✓ Executive Report available after completion</li></ul>
