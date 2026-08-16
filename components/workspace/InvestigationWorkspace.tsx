@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
 import type { Locale } from "@/lib/i18n";
 import type { CaseQueueItemDto } from "@/lib/workspace/domain";
+import { deleteWorkspaceInvestigations, intersectVisibleSelection, reconcileDeletionResults } from "@/lib/workspace/bulkDeletion";
 
 type Filter = "all" | "active" | "completed" | "monitoring" | "high" | "favorites";
 
@@ -29,6 +30,9 @@ export function InvestigationWorkspace({ cases, locale, canDelete }: { cases: re
   const [deleting, setDeleting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState(() => new Set<string>());
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkRetryable, setBulkRetryable] = useState(true);
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   const visible = useMemo(() => investigations.filter((item) => {
@@ -41,6 +45,8 @@ export function InvestigationWorkspace({ cases, locale, canDelete }: { cases: re
     if (filter === "favorites") return favorites.has(item.id);
     return true;
   }), [favorites, filter, investigations, query]);
+  const visibleDeletableIds = useMemo(() => new Set(canDelete ? visible.map((item) => item.id) : []), [canDelete, visible]);
+  const selectedVisibleIds = useMemo(() => intersectVisibleSelection(selectedIds, visibleDeletableIds), [selectedIds, visibleDeletableIds]);
 
   const activeCount = investigations.filter((item) => ["draft", "active", "awaiting_input", "under_review"].includes(item.status)).length;
   const completed = investigations.filter((item) => ["closed", "archived"].includes(item.status));
@@ -56,8 +62,27 @@ export function InvestigationWorkspace({ cases, locale, canDelete }: { cases: re
   }
 
   function requestDelete(item: CaseQueueItemDto) {
+    setBulkDeleteOpen(false);
     setDeleteTarget(item);
     setDeleteError(null);
+    dialogRef.current?.showModal();
+  }
+
+  function toggleSelected(id: string) {
+    if (!visibleDeletableIds.has(id)) return;
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  function requestBulkDelete() {
+    if (!selectedVisibleIds.length) return;
+    setDeleteTarget(null);
+    setDeleteError(null);
+    setBulkRetryable(true);
+    setBulkDeleteOpen(true);
     dialogRef.current?.showModal();
   }
 
@@ -65,7 +90,36 @@ export function InvestigationWorkspace({ cases, locale, canDelete }: { cases: re
     if (deleting) return;
     dialogRef.current?.close();
     setDeleteTarget(null);
+    setBulkDeleteOpen(false);
     setDeleteError(null);
+  }
+
+  async function confirmBulkDelete() {
+    const ids = selectedVisibleIds;
+    if (!ids.length) return;
+    setDeleting(true);
+    setDeleteError(null);
+    const results = await deleteWorkspaceInvestigations(ids);
+    const outcome = reconcileDeletionResults(results);
+    const removedIds = new Set(outcome.removedIds);
+
+    if (removedIds.size) {
+      setInvestigations((current) => current.filter((item) => !removedIds.has(item.id)));
+      setFavorites((current) => new Set([...current].filter((id) => !removedIds.has(id))));
+    }
+    if (!outcome.shouldRefresh) {
+      setSelectedIds(new Set(outcome.failedIds));
+      setDeleteError(outcome.error);
+      setBulkRetryable(outcome.canRetry);
+      setNotice(removedIds.size ? `${removedIds.size} ${removedIds.size === 1 ? "investigation was" : "investigations were"} removed from the workspace.` : null);
+    } else {
+      setSelectedIds(new Set());
+      setBulkDeleteOpen(false);
+      dialogRef.current?.close();
+      setNotice(`${removedIds.size} ${removedIds.size === 1 ? "investigation was" : "investigations were"} removed from the workspace.`);
+      router.refresh();
+    }
+    setDeleting(false);
   }
 
   async function confirmDelete() {
@@ -125,10 +179,11 @@ export function InvestigationWorkspace({ cases, locale, canDelete }: { cases: re
           <label className="iw-search"><span aria-hidden="true">⌕</span><span className="sr-only">Search investigations</span><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search businesses or investigation ID" /></label>
           <div className="iw-filters" aria-label="Filter investigations">{(Object.keys(filterLabels) as Filter[]).map((item) => <button key={item} type="button" aria-pressed={filter === item} onClick={() => setFilter(item)}>{filterLabels[item]}</button>)}</div>
         </div>
+        {canDelete && visible.length ? <div className="iw-bulk-bar"><span>{selectedVisibleIds.length} selected</span><button type="button" disabled={!selectedVisibleIds.length} onClick={requestBulkDelete}>Delete selected</button></div> : null}
         {visible.length ? <div className="iw-card-grid">{visible.map((item, index) => {
           const reportReady = ["closed", "archived", "monitoring"].includes(item.status);
           return <article className="iw-card" key={item.id}>
-            <div className="iw-card-top"><div className="iw-company-mark" aria-hidden="true">{item.title.slice(0, 2).toUpperCase()}</div><button type="button" className="iw-favorite" aria-label={`${favorites.has(item.id) ? "Remove" : "Add"} ${item.title} ${favorites.has(item.id) ? "from" : "to"} favorites`} aria-pressed={favorites.has(item.id)} onClick={() => toggleFavorite(item.id)}>{favorites.has(item.id) ? "★" : "☆"}</button></div>
+            <div className="iw-card-top"><div className="iw-company-mark" aria-hidden="true">{item.title.slice(0, 2).toUpperCase()}</div><div className="iw-card-controls">{canDelete ? <label className="iw-select"><input type="checkbox" checked={selectedIds.has(item.id)} onChange={() => toggleSelected(item.id)} /><span className="sr-only">Select {item.title}</span></label> : null}<button type="button" className="iw-favorite" aria-label={`${favorites.has(item.id) ? "Remove" : "Add"} ${item.title} ${favorites.has(item.id) ? "from" : "to"} favorites`} aria-pressed={favorites.has(item.id)} onClick={() => toggleFavorite(item.id)}>{favorites.has(item.id) ? "★" : "☆"}</button></div></div>
             <h3>{item.title}</h3><p className="iw-case-id">{item.id} · {investigationType(index)}</p>
             <div className="iw-badges"><span className={`iw-status iw-status-${item.status}`}>{statusLabels[item.status]}</span><span className={`iw-risk iw-risk-${item.priority}`}>{item.priority} risk</span></div>
             <dl><div><dt>Last updated</dt><dd>{formatUpdated(item.updatedAt, locale)}</dd></div><div><dt>Report</dt><dd>{reportReady ? "Available" : "Pending"}</dd></div></dl>
@@ -151,10 +206,10 @@ export function InvestigationWorkspace({ cases, locale, canDelete }: { cases: re
       <dialog className="iw-delete-dialog" ref={dialogRef} onCancel={(event) => { event.preventDefault(); closeDeleteDialog(); }}>
         <form method="dialog" onSubmit={(event) => event.preventDefault()}>
           <span className="iw-delete-icon" aria-hidden="true">!</span>
-          <h2>Delete investigation?</h2>
-          <p><strong>{deleteTarget?.title}</strong> will be removed from this workspace. This action cannot be undone.</p>
-          {deleteError ? <p className="iw-delete-error" role="alert">{deleteError} The workspace has been synchronized. You can retry the deletion.</p> : null}
-          <div><button type="button" onClick={closeDeleteDialog} disabled={deleting}>Cancel</button><button className="iw-confirm-delete" type="button" onClick={confirmDelete} disabled={deleting}>{deleting ? "Deleting…" : deleteError ? "Retry deletion" : "Delete investigation"}</button></div>
+          <h2>{bulkDeleteOpen ? deleteError ? "Deletion could not be completed" : `Delete ${selectedVisibleIds.length} ${selectedVisibleIds.length === 1 ? "investigation" : "investigations"}?` : "Delete investigation?"}</h2>
+          <p>{bulkDeleteOpen ? deleteError ? "Review the details below." : "The selected investigations will be removed from this workspace. This action cannot be undone." : <><strong>{deleteTarget?.title}</strong> will be removed from this workspace. This action cannot be undone.</>}</p>
+          {deleteError ? <p className="iw-delete-error" role="alert">{deleteError}{bulkDeleteOpen && bulkRetryable ? " Retry will submit only the failed investigations." : ""}</p> : null}
+          <div><button type="button" onClick={closeDeleteDialog} disabled={deleting}>Cancel</button>{bulkDeleteOpen && deleteError && !bulkRetryable ? null : <button className="iw-confirm-delete" type="button" onClick={bulkDeleteOpen ? confirmBulkDelete : confirmDelete} disabled={deleting}>{deleting ? "Deleting…" : deleteError ? "Retry deletion" : bulkDeleteOpen ? "Delete selected" : "Delete investigation"}</button>}</div>
         </form>
       </dialog>
     </div>
