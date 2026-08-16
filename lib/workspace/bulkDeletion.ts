@@ -52,6 +52,11 @@ export function intersectVisibleSelection(selectedIds: Iterable<string>, visible
   return [...selectedIds].filter((id) => visibleDeletableIds.has(id));
 }
 
+export function getVisibleSelectionState(selectedVisibleCount: number, visibleCount: number) {
+  const checked = visibleCount > 0 && selectedVisibleCount === visibleCount;
+  return { checked, mixed: selectedVisibleCount > 0 && !checked };
+}
+
 export function toggleInvestigationSelection(selectedIds: Iterable<string>, id: string) {
   const next = new Set(selectedIds);
   if (next.has(id)) next.delete(id); else next.add(id);

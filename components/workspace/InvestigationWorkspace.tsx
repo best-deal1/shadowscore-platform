@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Locale } from "@/lib/i18n";
 import type { CaseQueueItemDto } from "@/lib/workspace/domain";
-import { deleteWorkspaceInvestigations, intersectVisibleSelection, reconcileDeletionResults, toggleInvestigationSelection, toggleVisibleSelection } from "@/lib/workspace/bulkDeletion";
+import { deleteWorkspaceInvestigations, getVisibleSelectionState, intersectVisibleSelection, reconcileDeletionResults, toggleInvestigationSelection, toggleVisibleSelection } from "@/lib/workspace/bulkDeletion";
 
 type Filter = "all" | "active" | "completed" | "monitoring" | "high" | "favorites";
 
@@ -34,6 +34,7 @@ export function InvestigationWorkspace({ cases, locale, canDelete }: { cases: re
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [bulkRetryable, setBulkRetryable] = useState(true);
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const selectVisibleRef = useRef<HTMLInputElement>(null);
 
   const visible = useMemo(() => investigations.filter((item) => {
     const matchesSearch = `${item.title} ${item.target} ${item.id}`.toLowerCase().includes(query.trim().toLowerCase());
@@ -47,7 +48,11 @@ export function InvestigationWorkspace({ cases, locale, canDelete }: { cases: re
   }), [favorites, filter, investigations, query]);
   const visibleDeletableIds = useMemo(() => new Set(canDelete ? visible.map((item) => item.id) : []), [canDelete, visible]);
   const selectedVisibleIds = useMemo(() => intersectVisibleSelection(selectedIds, visibleDeletableIds), [selectedIds, visibleDeletableIds]);
-  const allVisibleSelected = visibleDeletableIds.size > 0 && selectedVisibleIds.length === visibleDeletableIds.size;
+  const visibleSelectionState = getVisibleSelectionState(selectedVisibleIds.length, visibleDeletableIds.size);
+
+  useEffect(() => {
+    if (selectVisibleRef.current) selectVisibleRef.current.indeterminate = visibleSelectionState.mixed;
+  }, [visibleSelectionState.mixed]);
 
   const activeCount = investigations.filter((item) => ["draft", "active", "awaiting_input", "under_review"].includes(item.status)).length;
   const completed = investigations.filter((item) => ["closed", "archived"].includes(item.status));
@@ -176,7 +181,7 @@ export function InvestigationWorkspace({ cases, locale, canDelete }: { cases: re
           <label className="iw-search"><span aria-hidden="true">⌕</span><span className="sr-only">Search investigations</span><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search businesses or investigation ID" /></label>
           <div className="iw-filters" aria-label="Filter investigations">{(Object.keys(filterLabels) as Filter[]).map((item) => <button key={item} type="button" aria-pressed={filter === item} onClick={() => setFilter(item)}>{filterLabels[item]}</button>)}</div>
         </div>
-        {canDelete && visible.length ? <div className="iw-bulk-bar"><label className="iw-select-visible"><input type="checkbox" checked={allVisibleSelected} onChange={() => setSelectedIds((current) => toggleVisibleSelection(current, visibleDeletableIds))} />Select all visible</label><span>{selectedVisibleIds.length} selected</span><button type="button" disabled={!selectedVisibleIds.length} onClick={requestBulkDelete}>Delete selected</button></div> : null}
+        {canDelete && visible.length ? <div className="iw-bulk-bar"><label className="iw-select-visible"><input ref={selectVisibleRef} type="checkbox" checked={visibleSelectionState.checked} aria-checked={visibleSelectionState.mixed ? "mixed" : visibleSelectionState.checked} onChange={() => setSelectedIds((current) => toggleVisibleSelection(current, visibleDeletableIds))} />Select all visible</label><span>{selectedVisibleIds.length} selected</span><button type="button" disabled={!selectedVisibleIds.length} onClick={requestBulkDelete}>Delete selected</button></div> : null}
         {visible.length ? <div className="iw-card-grid">{visible.map((item, index) => {
           const reportReady = ["closed", "archived", "monitoring"].includes(item.status);
           return <article className="iw-card" key={item.id}>

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { CaseAccessError, CaseNotFoundError, CaseService } from "../lib/workspace/cases.ts";
 import { CaseRepository } from "../lib/workspace/caseRepository.ts";
 import { readFile } from "node:fs/promises";
-import { deleteWorkspaceInvestigations, intersectVisibleSelection, reconcileDeletionResults, toggleInvestigationSelection, toggleVisibleSelection } from "../lib/workspace/bulkDeletion.ts";
+import { deleteWorkspaceInvestigations, getVisibleSelectionState, intersectVisibleSelection, reconcileDeletionResults, toggleInvestigationSelection, toggleVisibleSelection } from "../lib/workspace/bulkDeletion.ts";
 
 const caseRecord = { id: "internal", publicId: "case-1", organizationId: "org-1", investigationId: "inv-1", title: "Acme", status: "active", priority: "normal", ownerId: "user-1", dueAt: null, version: 1, createdAt: "2026-08-01T00:00:00.000Z", updatedAt: "2026-08-01T00:00:00.000Z" };
 const actor = (role = "owner") => ({ userId: "user-1", organizationId: "org-1", email: "owner@example.com", role });
@@ -111,6 +111,16 @@ test("select all visible changes filtered search results only", () => {
 
   const deselected = toggleVisibleSelection(new Set(["case-hidden-selected", "case-visible-1", "case-visible-2"]), visibleAfterSearch);
   assert.deepEqual([...deselected], ["case-hidden-selected"]);
+});
+
+test("select all visible exposes unchecked, mixed, and checked states", async () => {
+  assert.deepEqual(getVisibleSelectionState(0, 3), { checked: false, mixed: false });
+  assert.deepEqual(getVisibleSelectionState(1, 3), { checked: false, mixed: true });
+  assert.deepEqual(getVisibleSelectionState(3, 3), { checked: true, mixed: false });
+
+  const workspace = await readFile(new URL("../components/workspace/InvestigationWorkspace.tsx", import.meta.url), "utf8");
+  assert.match(workspace, /\.indeterminate = visibleSelectionState\.mixed/);
+  assert.match(workspace, /aria-checked=\{visibleSelectionState\.mixed \? "mixed" : visibleSelectionState\.checked\}/);
 });
 
 test("individual investigation selection still toggles one investigation", () => {
