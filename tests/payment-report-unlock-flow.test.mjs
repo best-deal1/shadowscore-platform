@@ -54,8 +54,26 @@ test("generation success requires both server states", () => assert.equal(canVie
 test("generation failure after payment stays in processing", () => assert.match(nextReportRoute("r", "paid", "failed"), /\/processing$/));
 test("refresh during generation loads status without restarting generation", () => {
   const page = source("../app/reports/[reportId]/ReportFlow.tsx");
-  assert.match(page, /getWorkspace\(session\)/);
+  assert.match(page, /fetch\(`\/api\/reports\/\$\{encodeURIComponent\(reportId\)\}`\)/);
   assert.doesNotMatch(page, /markPaymentPaidAndGenerateReport/);
+});
+test("report review resolves production sessions at the server cookie boundary", () => {
+  const flow = source("../app/reports/[reportId]/ReportFlow.tsx");
+  const route = source("../app/api/reports/[reportId]/route.ts");
+  assert.match(route, /resolveServerSession\(\)/);
+  assert.match(route, /accessToken: authenticated\.accessToken/);
+  assert.match(route, /getWorkspace\(session\)/);
+  assert.match(route, /NextResponse\.json\(\{ report, intent \}\)/);
+  assert.doesNotMatch(flow, /getCurrentSession|getWorkspace\(session\)|accessToken/);
+  assert.doesNotMatch(route, /NextResponse\.json\([^\n]*accessToken/);
+});
+test("server-loaded review preserves the locked Step 2 payment state", () => {
+  const flow = source("../app/reports/[reportId]/ReportFlow.tsx");
+  const route = source("../app/api/reports/[reportId]/route.ts");
+  assert.match(flow, /mode === "unlock" \? 2/);
+  assert.match(flow, /paid \? <Link[\s\S]*: <button onClick=\{pay\}/);
+  assert.doesNotMatch(route, /markPaymentPaid|paymentStatus\s*=/);
+  assert.match(route, /item\.reportId === reportId \|\| item\.paymentIntentId === reportId\.replace/);
 });
 test("processing route supports direct navigation", () => assert.match(source("../app/reports/[reportId]/processing/page.tsx"), /mode="processing"/));
 test("paid report never renders the payment action", () => assert.match(source("../app/reports/[reportId]/ReportFlow.tsx"), /paid \? <Link[\s\S]*>Continue<\/Link> : <button/));

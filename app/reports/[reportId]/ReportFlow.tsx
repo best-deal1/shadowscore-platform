@@ -7,10 +7,9 @@ import { useRouter } from "next/navigation";
 import ExecutiveIntelligenceReport from "../../../components/report/ExecutiveIntelligenceReport";
 import JourneyProgress from "../../../components/investigation/JourneyProgress";
 import InvestigationAgent from "./InvestigationAgent";
-import { getCurrentSession } from "../../../lib/auth";
 import { canViewFullReport } from "../../../lib/reportAccess";
 import { PAYPAL_BUSINESS_EMAIL } from "../../../lib/config";
-import { REPORT_PRODUCT, getWorkspace, type PaymentIntent, type ShadowScoreReport } from "../../../lib/workspace";
+import { REPORT_PRODUCT, type PaymentIntent, type ShadowScoreReport } from "../../../lib/workspace";
 
 type Mode = "unlock" | "processing" | "report";
 
@@ -33,17 +32,16 @@ export default function ReportFlow({ reportId, mode }: { reportId: string; mode:
   const load = useCallback(async (background = false) => {
     if (!background) setLoading(true);
     setError("");
-    const session = getCurrentSession();
-    if (!session) {
-      router.replace(`/login?returnTo=${encodeURIComponent(`/reports/${reportId}/${mode === "report" ? "" : mode}`)}`);
-      return;
-    }
     try {
-      const workspace = await getWorkspace(session);
-      const current = workspace.reports.find((item) => item.reportId === reportId || item.paymentIntentId === reportId.replace(/^locked-/, ""));
-      if (!current) throw new Error("This report was not found in your account.");
-      setReport(current);
-      setIntent(workspace.paymentIntents.find((item) => item.id === current.paymentIntentId));
+      const response = await fetch(`/api/reports/${encodeURIComponent(reportId)}`);
+      if (response.status === 401) {
+        router.replace(`/login?returnTo=${encodeURIComponent(`/reports/${reportId}/${mode === "report" ? "" : mode}`)}`);
+        return;
+      }
+      const body = await response.json().catch(() => null) as { report?: ShadowScoreReport; intent?: PaymentIntent; error?: string } | null;
+      if (!response.ok || !body?.report) throw new Error(body?.error || "Report status could not be loaded.");
+      setReport(body.report);
+      setIntent(body.intent);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Report status could not be loaded.");
     } finally { if (!background) setLoading(false); }
