@@ -62,7 +62,7 @@ export default function PaymentButtons({ buttonLabel = "Unlock Executive Report"
         createIntent,
       });
       onEmailResolved?.(result.email);
-      window.location.assign("/workspace");
+      window.location.assign(`/reports/${result.intent.reportId}/unlock`);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Checkout could not be started.");
       setLoading(false);

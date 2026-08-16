@@ -77,6 +77,8 @@ This file records customer-visible improvements in each ShadowScore release.
 
 ### Fixed
 
+- Completed Quick Checks now continue to the existing review and payment step after the investigation is saved.
+
 - Investigation deletion now uses one tenant-scoped database operation, so deleted investigations stay removed after the workspace refreshes.
 - Signed-in customers can now save a Quick Check intake and reach checkout through the secure server session. Investigation deletion now reports success only after the database confirms the owned row was removed.
 - Shared homepage previews now use one absolute, cacheable PNG URL for WhatsApp, Meta, LinkedIn, and X crawlers.

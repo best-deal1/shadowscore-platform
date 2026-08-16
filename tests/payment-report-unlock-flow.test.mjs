@@ -8,10 +8,10 @@ const session = { userId: "payment-flow-user", email: "buyer@example.com", name:
 const intakeRecord = { scanMode: "website", target: "example.com", platform: "Website", email: session.email, fileNames: [], visibleSignalCategories: ["Identity", "Infrastructure"] };
 const source = (path) => fs.readFileSync(new URL(path, import.meta.url), "utf8");
 
-test("checkout sends the customer to the canonical workspace", () => {
+test("checkout sends the customer to the existing review and payment route", () => {
   const component = source("../components/PaymentButtons.tsx");
   assert.match(component, /if \(!body\.intent \|\| !body\.reportId\) throw new Error/);
-  assert.match(component, /window\.location\.assign\("\/workspace"\)/);
+  assert.match(component, /window\.location\.assign\(`\/reports\/\$\{result\.intent\.reportId\}\/unlock`\)/);
 });
 test("unlock summary states the purchase type, total, contents, and payment provider", () => {
   const page = source("../app/reports/[reportId]/ReportFlow.tsx");
