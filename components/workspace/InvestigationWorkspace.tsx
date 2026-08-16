@@ -48,6 +48,7 @@ export function InvestigationWorkspace({ cases, locale, canDelete }: { cases: re
   const visibleDeletableIds = useMemo(() => new Set(canDelete ? visible.map((item) => item.id) : []), [canDelete, visible]);
   const selectedVisibleIds = useMemo(() => intersectVisibleSelection(selectedIds, visibleDeletableIds), [selectedIds, visibleDeletableIds]);
   const allVisibleSelected = visibleDeletableIds.size > 0 && selectedVisibleIds.length === visibleDeletableIds.size;
+  const someVisibleSelected = selectedVisibleIds.length > 0 && !allVisibleSelected;
 
   const activeCount = investigations.filter((item) => ["draft", "active", "awaiting_input", "under_review"].includes(item.status)).length;
   const completed = investigations.filter((item) => ["closed", "archived"].includes(item.status));
@@ -176,7 +177,7 @@ export function InvestigationWorkspace({ cases, locale, canDelete }: { cases: re
           <label className="iw-search"><span aria-hidden="true">⌕</span><span className="sr-only">Search investigations</span><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search businesses or investigation ID" /></label>
           <div className="iw-filters" aria-label="Filter investigations">{(Object.keys(filterLabels) as Filter[]).map((item) => <button key={item} type="button" aria-pressed={filter === item} onClick={() => setFilter(item)}>{filterLabels[item]}</button>)}</div>
         </div>
-        {canDelete && visible.length ? <div className="iw-bulk-bar"><label className="iw-select-visible"><input type="checkbox" checked={allVisibleSelected} onChange={() => setSelectedIds((current) => toggleVisibleSelection(current, visibleDeletableIds))} />Select all visible</label><span>{selectedVisibleIds.length} selected</span><button type="button" disabled={!selectedVisibleIds.length} onClick={requestBulkDelete}>Delete selected</button></div> : null}
+        {canDelete && visible.length ? <div className="iw-bulk-bar"><label className="iw-select-visible"><input type="checkbox" checked={allVisibleSelected} aria-checked={someVisibleSelected ? "mixed" : allVisibleSelected} ref={(input) => { if (input) input.indeterminate = someVisibleSelected; }} onChange={() => setSelectedIds((current) => toggleVisibleSelection(current, visibleDeletableIds))} />Select all visible</label><span>{selectedVisibleIds.length} selected</span><button type="button" disabled={!selectedVisibleIds.length} onClick={requestBulkDelete}>Delete selected</button></div> : null}
         {visible.length ? <div className="iw-card-grid">{visible.map((item, index) => {
           const reportReady = ["closed", "archived", "monitoring"].includes(item.status);
           return <article className="iw-card" key={item.id}>
