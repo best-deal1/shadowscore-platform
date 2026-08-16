@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { CaseAccessError, CaseNotFoundError, CaseService } from "../lib/workspace/cases.ts";
 import { CaseRepository } from "../lib/workspace/caseRepository.ts";
 import { readFile } from "node:fs/promises";
+import { deleteWorkspaceInvestigations, intersectVisibleSelection, reconcileDeletionResults } from "../lib/workspace/bulkDeletion.ts";
 
 const caseRecord = { id: "internal", publicId: "case-1", organizationId: "org-1", investigationId: "inv-1", title: "Acme", status: "active", priority: "normal", ownerId: "user-1", dueAt: null, version: 1, createdAt: "2026-08-01T00:00:00.000Z", updatedAt: "2026-08-01T00:00:00.000Z" };
 const actor = (role = "owner") => ({ userId: "user-1", organizationId: "org-1", email: "owner@example.com", role });
@@ -87,4 +88,72 @@ test("the deletion RPC enforces role, tenant, authentication, and execution cont
   assert.match(migration, /revoke all on function public\.delete_workspace_case\(text, uuid\) from public/i);
   assert.match(migration, /grant execute on function public\.delete_workspace_case\(text, uuid\) to authenticated/i);
   assert.doesNotMatch(migration, /'viewer'/i);
+});
+
+test("bulk deletion submits only selected investigations that remain visible", () => {
+  const selected = new Set(["case-1", "case-2"]);
+  const visibleAfterSearch = new Set(["case-2", "case-3"]);
+  assert.deepEqual(intersectVisibleSelection(selected, visibleAfterSearch), ["case-2"]);
+});
+
+test("partial bulk deletion keeps only failed IDs available for retry and defers refresh", () => {
+  const outcome = reconcileDeletionResults([
+    { id: "case-1", ok: true, error: null, status: 204, retryable: false },
+    { id: "case-2", ok: false, error: "Record is locked", status: 409, retryable: true },
+  ]);
+  assert.deepEqual(outcome.successfulIds, ["case-1"]);
+  assert.deepEqual(outcome.failedIds, ["case-2"]);
+  assert.equal(outcome.error, "case-2: Record is locked");
+  assert.equal(outcome.canRetry, true);
+  assert.equal(outcome.shouldRefresh, false);
+
+  assert.deepEqual(intersectVisibleSelection(outcome.failedIds, new Set(["case-2"])), ["case-2"]);
+});
+
+test("bulk deletion retry submits only IDs that failed", async () => {
+  const submitted = [];
+  const firstAttempt = await deleteWorkspaceInvestigations(["case-1", "case-2"], async (id) => {
+    submitted.push(id);
+    return id === "case-1"
+      ? { ok: true, status: 204, json: async () => null }
+      : { ok: false, status: 409, json: async () => ({ error: "Record is locked" }) };
+  });
+  const { failedIds } = reconcileDeletionResults(firstAttempt);
+  await deleteWorkspaceInvestigations(failedIds, async (id) => {
+    submitted.push(id);
+    return { ok: true, status: 204, json: async () => null };
+  });
+
+  assert.deepEqual(submitted, ["case-1", "case-2", "case-2"]);
+});
+
+test("a fully successful bulk deletion allows the workspace to refresh", () => {
+  const outcome = reconcileDeletionResults([
+    { id: "case-1", ok: true, error: null, status: 204, retryable: false },
+  ]);
+  assert.deepEqual(outcome.failedIds, []);
+  assert.equal(outcome.shouldRefresh, true);
+});
+
+test("bulk deletion preserves authentication, permission, and record-specific API errors", async () => {
+  const responses = new Map([
+    ["case-1", { status: 401, error: "Your session has expired" }],
+    ["case-2", { status: 403, error: "Managers only" }],
+    ["case-3", { status: 409, error: "Investigation has an active export" }],
+  ]);
+  const results = await deleteWorkspaceInvestigations([...responses.keys()], async (id) => {
+    const response = responses.get(id);
+    return { ok: false, status: response.status, json: async () => ({ error: response.error }) };
+  });
+
+  assert.deepEqual(results.map(({ id, error, retryable }) => ({ id, error, retryable })), [
+    { id: "case-1", error: "Your session has expired", retryable: false },
+    { id: "case-2", error: "Managers only", retryable: false },
+    { id: "case-3", error: "Investigation has an active export", retryable: true },
+  ]);
+  const outcome = reconcileDeletionResults(results);
+  assert.match(outcome.error, /case-1: Your session has expired/);
+  assert.match(outcome.error, /case-2: Managers only/);
+  assert.match(outcome.error, /case-3: Investigation has an active export/);
+  assert.equal(outcome.canRetry, false);
 });
