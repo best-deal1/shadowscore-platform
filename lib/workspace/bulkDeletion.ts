@@ -20,12 +20,13 @@ export async function deleteWorkspaceInvestigations(
       const body = await response.json().catch(() => null) as { error?: unknown; message?: unknown } | null;
       const detail = typeof body?.error === "string" ? body.error : typeof body?.message === "string" ? body.message : null;
       const accessFailure = response.status === 401 || response.status === 403;
+      const terminalFailure = accessFailure || response.status === 404;
       return {
         id,
         ok: false,
         error: detail || (accessFailure ? "You do not have permission to delete this investigation." : "The investigation could not be deleted."),
         status: response.status,
-        retryable: !accessFailure,
+        retryable: !terminalFailure,
       };
     } catch (error) {
       return {
@@ -40,11 +41,11 @@ export async function deleteWorkspaceInvestigations(
 }
 
 export function summarizeDeletionFailures(results: readonly InvestigationDeletionResult[]) {
-  const failures = results.filter((result) => !result.ok);
+  const failures = results.filter((result) => !result.ok && result.status !== 404);
   if (!failures.length) return null;
   const details = failures.map((result) => `${result.id}: ${result.error}`).join(" ");
-  const canRetry = failures.every((result) => result.retryable);
-  return { ids: failures.map((result) => result.id), details, canRetry };
+  const retryableIds = failures.filter((result) => result.retryable).map((result) => result.id);
+  return { ids: failures.map((result) => result.id), retryableIds, details, canRetry: retryableIds.length > 0 };
 }
 
 export function intersectVisibleSelection(selectedIds: Iterable<string>, visibleDeletableIds: ReadonlySet<string>) {
@@ -52,11 +53,11 @@ export function intersectVisibleSelection(selectedIds: Iterable<string>, visible
 }
 
 export function reconcileDeletionResults(results: readonly InvestigationDeletionResult[]) {
-  const successfulIds = results.filter((result) => result.ok).map((result) => result.id);
+  const removedIds = results.filter((result) => result.ok || result.status === 404).map((result) => result.id);
   const failure = summarizeDeletionFailures(results);
   return {
-    successfulIds,
-    failedIds: failure?.ids ?? [],
+    removedIds,
+    failedIds: failure?.retryableIds ?? [],
     error: failure?.details ?? null,
     canRetry: failure?.canRetry ?? false,
     shouldRefresh: failure === null,

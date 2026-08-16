@@ -101,7 +101,7 @@ test("partial bulk deletion keeps only failed IDs available for retry and defers
     { id: "case-1", ok: true, error: null, status: 204, retryable: false },
     { id: "case-2", ok: false, error: "Record is locked", status: 409, retryable: true },
   ]);
-  assert.deepEqual(outcome.successfulIds, ["case-1"]);
+  assert.deepEqual(outcome.removedIds, ["case-1"]);
   assert.deepEqual(outcome.failedIds, ["case-2"]);
   assert.equal(outcome.error, "case-2: Record is locked");
   assert.equal(outcome.canRetry, true);
@@ -110,13 +110,13 @@ test("partial bulk deletion keeps only failed IDs available for retry and defers
   assert.deepEqual(intersectVisibleSelection(outcome.failedIds, new Set(["case-2"])), ["case-2"]);
 });
 
-test("bulk deletion retry submits only IDs that failed", async () => {
+test("bulk deletion retry submits only genuinely retryable failed IDs", async () => {
   const submitted = [];
-  const firstAttempt = await deleteWorkspaceInvestigations(["case-1", "case-2"], async (id) => {
+  const firstAttempt = await deleteWorkspaceInvestigations(["case-1", "case-2", "case-3"], async (id) => {
     submitted.push(id);
-    return id === "case-1"
-      ? { ok: true, status: 204, json: async () => null }
-      : { ok: false, status: 409, json: async () => ({ error: "Record is locked" }) };
+    if (id === "case-1") return { ok: true, status: 204, json: async () => null };
+    if (id === "case-2") return { ok: false, status: 403, json: async () => ({ error: "Managers only" }) };
+    return { ok: false, status: 409, json: async () => ({ error: "Record is locked" }) };
   });
   const { failedIds } = reconcileDeletionResults(firstAttempt);
   await deleteWorkspaceInvestigations(failedIds, async (id) => {
@@ -124,7 +124,7 @@ test("bulk deletion retry submits only IDs that failed", async () => {
     return { ok: true, status: 204, json: async () => null };
   });
 
-  assert.deepEqual(submitted, ["case-1", "case-2", "case-2"]);
+  assert.deepEqual(submitted, ["case-1", "case-2", "case-3", "case-3"]);
 });
 
 test("a fully successful bulk deletion allows the workspace to refresh", () => {
@@ -155,5 +155,40 @@ test("bulk deletion preserves authentication, permission, and record-specific AP
   assert.match(outcome.error, /case-1: Your session has expired/);
   assert.match(outcome.error, /case-2: Managers only/);
   assert.match(outcome.error, /case-3: Investigation has an active export/);
+  assert.deepEqual(outcome.failedIds, ["case-3"]);
+  assert.equal(outcome.canRetry, true);
+});
+
+test("authentication and permission failures are removed from retained retry selection", async () => {
+  const results = await deleteWorkspaceInvestigations(["case-1", "case-2"], async (id) => ({
+    ok: false,
+    status: id === "case-1" ? 401 : 403,
+    json: async () => ({ error: id === "case-1" ? "Your session has expired" : "Managers only" }),
+  }));
+  const outcome = reconcileDeletionResults(results);
+
+  assert.deepEqual(outcome.failedIds, []);
   assert.equal(outcome.canRetry, false);
+  assert.match(outcome.error, /Your session has expired/);
+  assert.match(outcome.error, /Managers only/);
+
+  const retainedSelection = new Set(outcome.failedIds);
+  const selectionAfterClosingAndReopening = intersectVisibleSelection(retainedSelection, new Set(["case-1", "case-2"]));
+  assert.deepEqual(selectionAfterClosingAndReopening, []);
+});
+
+test("a missing investigation is terminal and reconciled as already removed", async () => {
+  const results = await deleteWorkspaceInvestigations(["case-1"], async () => ({
+    ok: false,
+    status: 404,
+    json: async () => ({ error: "Investigation not found" }),
+  }));
+  const outcome = reconcileDeletionResults(results);
+
+  assert.equal(results[0].retryable, false);
+  assert.deepEqual(outcome.removedIds, ["case-1"]);
+  assert.deepEqual(outcome.failedIds, []);
+  assert.equal(outcome.error, null);
+  assert.equal(outcome.canRetry, false);
+  assert.equal(outcome.shouldRefresh, true);
 });

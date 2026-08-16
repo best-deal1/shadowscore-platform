@@ -101,22 +101,22 @@ export function InvestigationWorkspace({ cases, locale, canDelete }: { cases: re
     setDeleteError(null);
     const results = await deleteWorkspaceInvestigations(ids);
     const outcome = reconcileDeletionResults(results);
-    const successfulIds = new Set(outcome.successfulIds);
+    const removedIds = new Set(outcome.removedIds);
 
-    if (successfulIds.size) {
-      setInvestigations((current) => current.filter((item) => !successfulIds.has(item.id)));
-      setFavorites((current) => new Set([...current].filter((id) => !successfulIds.has(id))));
+    if (removedIds.size) {
+      setInvestigations((current) => current.filter((item) => !removedIds.has(item.id)));
+      setFavorites((current) => new Set([...current].filter((id) => !removedIds.has(id))));
     }
     if (!outcome.shouldRefresh) {
       setSelectedIds(new Set(outcome.failedIds));
       setDeleteError(outcome.error);
       setBulkRetryable(outcome.canRetry);
-      setNotice(successfulIds.size ? `${successfulIds.size} ${successfulIds.size === 1 ? "investigation was" : "investigations were"} deleted.` : null);
+      setNotice(removedIds.size ? `${removedIds.size} ${removedIds.size === 1 ? "investigation was" : "investigations were"} removed from the workspace.` : null);
     } else {
       setSelectedIds(new Set());
       setBulkDeleteOpen(false);
       dialogRef.current?.close();
-      setNotice(`${successfulIds.size} ${successfulIds.size === 1 ? "investigation was" : "investigations were"} deleted.`);
+      setNotice(`${removedIds.size} ${removedIds.size === 1 ? "investigation was" : "investigations were"} removed from the workspace.`);
       router.refresh();
     }
     setDeleting(false);
@@ -206,8 +206,8 @@ export function InvestigationWorkspace({ cases, locale, canDelete }: { cases: re
       <dialog className="iw-delete-dialog" ref={dialogRef} onCancel={(event) => { event.preventDefault(); closeDeleteDialog(); }}>
         <form method="dialog" onSubmit={(event) => event.preventDefault()}>
           <span className="iw-delete-icon" aria-hidden="true">!</span>
-          <h2>{bulkDeleteOpen ? `Delete ${selectedVisibleIds.length} ${selectedVisibleIds.length === 1 ? "investigation" : "investigations"}?` : "Delete investigation?"}</h2>
-          <p>{bulkDeleteOpen ? "The selected investigations will be removed from this workspace. This action cannot be undone." : <><strong>{deleteTarget?.title}</strong> will be removed from this workspace. This action cannot be undone.</>}</p>
+          <h2>{bulkDeleteOpen ? deleteError ? "Deletion could not be completed" : `Delete ${selectedVisibleIds.length} ${selectedVisibleIds.length === 1 ? "investigation" : "investigations"}?` : "Delete investigation?"}</h2>
+          <p>{bulkDeleteOpen ? deleteError ? "Review the details below." : "The selected investigations will be removed from this workspace. This action cannot be undone." : <><strong>{deleteTarget?.title}</strong> will be removed from this workspace. This action cannot be undone.</>}</p>
           {deleteError ? <p className="iw-delete-error" role="alert">{deleteError}{bulkDeleteOpen && bulkRetryable ? " Retry will submit only the failed investigations." : ""}</p> : null}
           <div><button type="button" onClick={closeDeleteDialog} disabled={deleting}>Cancel</button>{bulkDeleteOpen && deleteError && !bulkRetryable ? null : <button className="iw-confirm-delete" type="button" onClick={bulkDeleteOpen ? confirmBulkDelete : confirmDelete} disabled={deleting}>{deleting ? "Deleting…" : deleteError ? "Retry deletion" : bulkDeleteOpen ? "Delete selected" : "Delete investigation"}</button>}</div>
         </form>
