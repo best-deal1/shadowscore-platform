@@ -24,6 +24,8 @@ This file records customer-visible improvements in each ShadowScore release.
 
 ### Improved
 
+- Investigation Workspace now lets customers select or clear every investigation shown by the current search and filter before bulk deletion.
+
 - The Free Quick Check now presents the submitted target, truthful identity status, preliminary assessment, representative evidence and sources, material findings, and unresolved evidence gaps before explaining the Full Investigation.
 
 - Shared links now use a code-generated ShadowScore social card with clear due diligence positioning for messaging and professional networks.

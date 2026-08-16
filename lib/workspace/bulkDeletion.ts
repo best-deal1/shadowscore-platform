@@ -52,6 +52,21 @@ export function intersectVisibleSelection(selectedIds: Iterable<string>, visible
   return [...selectedIds].filter((id) => visibleDeletableIds.has(id));
 }
 
+export function toggleInvestigationSelection(selectedIds: Iterable<string>, id: string) {
+  const next = new Set(selectedIds);
+  if (next.has(id)) next.delete(id); else next.add(id);
+  return next;
+}
+
+export function toggleVisibleSelection(selectedIds: Iterable<string>, visibleDeletableIds: ReadonlySet<string>) {
+  const next = new Set(selectedIds);
+  const allVisibleSelected = visibleDeletableIds.size > 0 && [...visibleDeletableIds].every((id) => next.has(id));
+  for (const id of visibleDeletableIds) {
+    if (allVisibleSelected) next.delete(id); else next.add(id);
+  }
+  return next;
+}
+
 export function reconcileDeletionResults(results: readonly InvestigationDeletionResult[]) {
   const removedIds = results.filter((result) => result.ok || result.status === 404).map((result) => result.id);
   const failure = summarizeDeletionFailures(results);

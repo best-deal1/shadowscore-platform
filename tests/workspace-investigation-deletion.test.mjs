@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { CaseAccessError, CaseNotFoundError, CaseService } from "../lib/workspace/cases.ts";
 import { CaseRepository } from "../lib/workspace/caseRepository.ts";
 import { readFile } from "node:fs/promises";
-import { deleteWorkspaceInvestigations, intersectVisibleSelection, reconcileDeletionResults } from "../lib/workspace/bulkDeletion.ts";
+import { deleteWorkspaceInvestigations, intersectVisibleSelection, reconcileDeletionResults, toggleInvestigationSelection, toggleVisibleSelection } from "../lib/workspace/bulkDeletion.ts";
 
 const caseRecord = { id: "internal", publicId: "case-1", organizationId: "org-1", investigationId: "inv-1", title: "Acme", status: "active", priority: "normal", ownerId: "user-1", dueAt: null, version: 1, createdAt: "2026-08-01T00:00:00.000Z", updatedAt: "2026-08-01T00:00:00.000Z" };
 const actor = (role = "owner") => ({ userId: "user-1", organizationId: "org-1", email: "owner@example.com", role });
@@ -94,6 +94,29 @@ test("bulk deletion submits only selected investigations that remain visible", (
   const selected = new Set(["case-1", "case-2"]);
   const visibleAfterSearch = new Set(["case-2", "case-3"]);
   assert.deepEqual(intersectVisibleSelection(selected, visibleAfterSearch), ["case-2"]);
+});
+
+test("select all visible selects every visible investigation", () => {
+  assert.deepEqual([...toggleVisibleSelection(new Set(), new Set(["case-1", "case-2"]))], ["case-1", "case-2"]);
+});
+
+test("select all visible clears every visible investigation when all are selected", () => {
+  assert.deepEqual([...toggleVisibleSelection(new Set(["case-1", "case-2"]), new Set(["case-1", "case-2"]))], []);
+});
+
+test("select all visible changes filtered search results only", () => {
+  const selected = new Set(["case-hidden-selected"]);
+  const visibleAfterSearch = new Set(["case-visible-1", "case-visible-2"]);
+  assert.deepEqual([...toggleVisibleSelection(selected, visibleAfterSearch)], ["case-hidden-selected", "case-visible-1", "case-visible-2"]);
+
+  const deselected = toggleVisibleSelection(new Set(["case-hidden-selected", "case-visible-1", "case-visible-2"]), visibleAfterSearch);
+  assert.deepEqual([...deselected], ["case-hidden-selected"]);
+});
+
+test("individual investigation selection still toggles one investigation", () => {
+  const selected = toggleInvestigationSelection(new Set(["case-1"]), "case-2");
+  assert.deepEqual([...selected], ["case-1", "case-2"]);
+  assert.deepEqual([...toggleInvestigationSelection(selected, "case-1")], ["case-2"]);
 });
 
 test("partial bulk deletion keeps only failed IDs available for retry and defers refresh", () => {
