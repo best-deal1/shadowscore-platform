@@ -3,6 +3,9 @@ import { buildVerificationDecision } from "./model";
 import { loadReferenceProviderSnapshots, referenceProviderSnapshot } from "./snapshots";
 import { correlateEvidence } from "../correlation";
 import { isValidPhoneCandidate } from "../correlation/relationships";
+import { applicableEvidence, buildEvidenceItems } from "../evidence";
+import { buildBusinessIntelligence } from "../businessIntelligence";
+import { buildInvestigationIntelligence } from "../investigationIntelligence";
 
 export function runDecisionIntegrityValidationSuite() {
   const snapshots = loadReferenceProviderSnapshots();
@@ -31,5 +34,30 @@ export function runDecisionIntegrityValidationSuite() {
 
   const websiteCorrelation = correlateEvidence({ evidenceItems: [], targetType: "website" });
   assert.equal(websiteCorrelation.contradictions.some((c) => c.title === "Marketplace seller differs from company"), false);
-  return { rows, marketplaceIdentityMismatchFixture: { decision: marketplaceIdentityMismatch.decision, missingSignals: marketplaceIdentityMismatch.missingSignals, blockingIssues: marketplaceIdentityMismatch.blockingIssues }, missingDmarc: missingDmarc.decision };
+
+  const stripeCase = snapshots.integrityCases["stripe.com"];
+  if (typeof stripeCase === "string") throw new Error("Invalid Stripe integrity metadata");
+  const stripeProviderResults = referenceProviderSnapshot(stripeCase.snapshot);
+  const stripeRawEvidence = buildEvidenceItems(stripeProviderResults);
+  const stripeEvidence = applicableEvidence(stripeRawEvidence, "website");
+  const stripeCorrelation = correlateEvidence({ evidenceItems: stripeEvidence, targetType: "website" });
+  const stripeBusinessIntelligence = buildBusinessIntelligence(stripeProviderResults, "2026-07-11T00:00:00.000Z");
+  const stripeInvestigationIntelligence = buildInvestigationIntelligence({
+    evidenceItems: stripeEvidence,
+    correlationSummary: stripeCorrelation,
+    businessFindings: stripeBusinessIntelligence.findings,
+    knowledgeGraph: { entities: [], relationships: [], graphSummary: { entityCount: 0, relationshipCount: 0, entityTypes: {} as never, relationshipTypes: {} as never } },
+    generatedAt: "2026-07-11T00:00:00.000Z",
+  });
+  const stripeDecision = buildVerificationDecision({ providerResults: stripeProviderResults, evidenceItems: stripeEvidence, correlationSummary: stripeCorrelation, audience: "free", targetType: "website" });
+  const invalidGap = /marketplace|payment|compliance|aaaa|cname/i;
+  assert.ok(stripeRawEvidence.some((item) => /AAAA records|CNAME records/i.test(item.title)), "Stripe fixture preserves raw optional DNS observations");
+  assert.ok(!stripeEvidence.some((item) => invalidGap.test(item.title)), "optional Stripe observations do not become applicable evidence");
+  assert.ok(!stripeCorrelation.missingRelationships.some((item) => invalidGap.test(item.title)), "optional Stripe observations do not become correlation gaps");
+  assert.ok(!stripeInvestigationIntelligence.evidenceGaps.some((item) => invalidGap.test(item.missingEvidence)), "optional Stripe observations do not become investigation gaps");
+  assert.equal(stripeBusinessIntelligence.findings.some((item) => item.direction !== "supports_credibility"), false, "a domain and business name are not conflicting identity values");
+  assert.equal(stripeInvestigationIntelligence.risks.some((item) => item.severity === "high" || item.severity === "critical"), false, "Stripe does not receive a fabricated high-severity risk");
+  assert.ok(!stripeDecision.missingSignals.some((item) => invalidGap.test(item)), "optional Stripe observations do not become decision gaps");
+  assert.equal(stripeDecision.decision, "PASS");
+  return { rows, stripePipelineRegression: { providerResults: stripeProviderResults.length, rawEvidenceItems: stripeRawEvidence.length, applicableEvidenceItems: stripeEvidence.length, correlationContradictions: stripeCorrelation.contradictions.length, businessFindings: stripeBusinessIntelligence.findings.length, investigationGaps: stripeInvestigationIntelligence.evidenceGaps.map((item) => item.missingEvidence), decision: stripeDecision.decision, missingSignals: stripeDecision.missingSignals }, marketplaceIdentityMismatchFixture: { decision: marketplaceIdentityMismatch.decision, missingSignals: marketplaceIdentityMismatch.missingSignals, blockingIssues: marketplaceIdentityMismatch.blockingIssues }, missingDmarc: missingDmarc.decision };
 }

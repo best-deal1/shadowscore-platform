@@ -23,16 +23,50 @@ assert.equal(cleanPageTitle("The AI workspace that works for you. | Notion"), "N
 assert.equal(cleanPageTitle("BUG מחשבים וסלולר - מבצעים | BUG"), "BUG");
 assert.equal(cleanPageTitle("AT&T &amp; Business Solutions"), "AT&T & Business");
 
-for (const [domain, brand, legal] of [["microsoft.com", "Microsoft", "Microsoft Corporation"], ["apple.com", "Apple", "Apple Inc."], ["amazon.com", "Amazon", "Amazon.com, Inc."], ["cloudflare.com", "Cloudflare", "Cloudflare, Inc."], ["shopify.com", "Shopify", "Shopify Inc."], ["monday.com", "monday.com", "monday.com Ltd."], ["checkpoint.com", "Check Point Software Technologies", "Check Point Software Technologies Ltd."]]) {
+for (const domain of ["microsoft.com", "apple.com", "stripe.com", "openai.com", "ksp.co.il", "leumi.co.il"]) {
   const result = resolveBusinessIdentity(domain, { observedAt: now, generatedAt: now });
-  assert.equal(result.canonicalIdentity.brandName, brand, domain);
-  assert.equal(result.canonicalIdentity.legalName, legal, domain);
-  assert.equal(result.canonicalIdentity.companyType, "PUBLIC_COMPANY", domain);
+  assert.equal(result.canonicalIdentity.canonicalDisplayName, "Unknown", domain);
+  assert.equal(result.canonicalIdentity.legalName, undefined, domain);
+  assert.equal(result.canonicalIdentity.country, undefined, domain);
+  assert.equal(result.canonicalIdentity.companyType, "UNKNOWN", domain);
+  assert.equal(result.canonicalIdentity.identityStatus, "UNRESOLVED", domain);
+  assert.equal(result.canonicalIdentity.corroborationCount, 0, domain);
 }
-assert.equal(resolveBusinessIdentity("stripe.com", { observedAt: now, generatedAt: now }).canonicalIdentity.companyType, "PRIVATE_COMPANY");
-assert.equal(resolveBusinessIdentity("ksp.co.il", { observedAt: now, generatedAt: now }).canonicalIdentity.companyType, "UNKNOWN");
-assert.equal(resolveBusinessIdentity("leumi.co.il", { observedAt: now, generatedAt: now }).canonicalIdentity.companyType, "BANK");
-assert.equal(resolveBusinessIdentity("hapoalim.co.il", { observedAt: now, generatedAt: now }).canonicalIdentity.companyType, "BANK");
+
+// A, B and C: historical curated values cannot establish legal name, country, or company type.
+const curatedOnly = resolveBusinessIdentity("openai.com", { observedAt: now, generatedAt: now });
+assert.equal(curatedOnly.canonicalOrganization, null);
+assert.equal(curatedOnly.reviewStatus, "REVIEW");
+assert.equal(curatedOnly.canonicalIdentity.legalName, undefined);
+assert.equal(curatedOnly.canonicalIdentity.country, undefined);
+assert.equal(curatedOnly.canonicalIdentity.companyType, "UNKNOWN");
+assert.equal(curatedOnly.canonicalIdentity.hasAuthoritativeSource, false);
+
+// D: an authoritative registry record wins over historical curated knowledge without a fake conflict.
+const registryContradictsHistoricalMapping = resolveBusinessIdentity("openai.com", {
+  registryEvidence: [{ id: "registry-openai-adversarial", domain: "openai.com", legalName: "Independent Example Registry Ltd", country: "Canada", verified: true, verificationStatus: "authoritative", source: "official_business_registry", evidenceCategory: "public_registry", observedAt: now }],
+  observedAt: now,
+  generatedAt: now,
+});
+assert.equal(registryContradictsHistoricalMapping.canonicalIdentity.legalName, "Independent Example Registry Ltd");
+assert.equal(registryContradictsHistoricalMapping.canonicalIdentity.country, "Canada");
+assert.equal(registryContradictsHistoricalMapping.canonicalIdentity.companyType, "PRIVATE_COMPANY");
+assert.equal(registryContradictsHistoricalMapping.canonicalIdentity.hasAuthoritativeSource, true);
+assert.equal(registryContradictsHistoricalMapping.contradictions.length, 0);
+assert.equal(registryContradictsHistoricalMapping.canonicalIdentity.corroborationCount, 1);
+
+// E: a matching website disclosure remains one external source and cannot verify identity by itself.
+const oneMatchingExternalSource = resolveBusinessIdentity("openai.com", {
+  businessProfileEvidence: [{ id: "openai-footer", domain: "openai.com", legalName: "OpenAI, L.L.C.", country: "United States", verified: true, verificationStatus: "verified", source: "website_footer", evidenceCategory: "footer", observedAt: now }],
+  observedAt: now,
+  generatedAt: now,
+});
+assert.equal(oneMatchingExternalSource.canonicalOrganization, null);
+assert.equal(oneMatchingExternalSource.reviewStatus, "REVIEW");
+assert.equal(oneMatchingExternalSource.canonicalIdentity.legalName, undefined);
+assert.equal(oneMatchingExternalSource.canonicalIdentity.country, undefined);
+assert.equal(oneMatchingExternalSource.canonicalIdentity.companyType, "UNKNOWN");
+assert.equal(oneMatchingExternalSource.canonicalIdentity.corroborationCount, 1);
 
 const conflict = resolveBusinessIdentity("example.com", { providerResults: [provider("registry", { resolverEvidence: { legalName: "Company A Ltd", domain: "example.com", source: "government_registry", verificationStatus: "authoritative", verified: true }}), provider("footer", { resolverEvidence: { legalName: "Company B Ltd", domain: "example.com", source: "website_footer", verificationStatus: "verified", verified: true }})], observedAt: now, generatedAt: now });
 assert.ok(conflict.contradictions.length > 0);

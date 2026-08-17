@@ -77,6 +77,10 @@ This file records customer-visible improvements in each ShadowScore release.
 
 ### Fixed
 
+- Business investigations now keep curated company knowledge out of legal identity, jurisdiction, company type, confidence, corroboration, and decision results. Only collected provider evidence can establish those facts.
+- Website investigations now exclude optional DNS record absence and unrelated provider checks from material evidence gaps across correlation, investigation intelligence, and the final decision.
+- Business identity correlation now compares like attributes, so a company name and its domain no longer create a false identity conflict or high-severity risk.
+
 - Completed Quick Checks now continue to the existing review and payment step after the investigation is saved.
 
 - Investigation deletion now uses one tenant-scoped database operation, so deleted investigations stay removed after the workspace refreshes.

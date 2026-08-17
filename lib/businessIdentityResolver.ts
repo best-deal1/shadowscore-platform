@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck
-export const BUSINESS_IDENTITY_RESOLVER_VERSION = "private-business-identity-resolver-v9";
+export const BUSINESS_IDENTITY_RESOLVER_VERSION = "private-business-identity-resolver-v10";
 
 export const CANONICAL_IDENTITY_TYPES = ["LegalEntity", "Organization", "Brand", "Domain", "Email", "Phone", "MarketplaceAccount", "RegulatoryRegistration", "License", "ExchangeListing", "GovernmentAuthority"];
 export const VERIFIED_RELATIONSHIP_TYPES = ["OWNED_BY", "OPERATED_BY", "REPRESENTS", "DISCLOSED_AS", "LICENSED_BY", "REGISTERED_WITH", "LISTED_ON", "USES_DOMAIN", "USES_EMAIL", "USES_PHONE", "OPERATES_ACCOUNT"];
@@ -9,32 +9,6 @@ const ORGANIZATION_TYPES = new Set(["LegalEntity", "Organization"]);
 const IDENTIFIER_RELATIONSHIPS = { Domain: "USES_DOMAIN", Email: "USES_EMAIL", Phone: "USES_PHONE", MarketplaceAccount: "OPERATES_ACCOUNT" };
 
 
-const PUBLIC_COMPANY_BRANDS = new Map([
-  ["microsoft.com", { brandName: "Microsoft", legalName: "Microsoft Corporation", country: "United States" }],
-  ["google.com", { brandName: "Google", legalName: "Google LLC", parentOrganization: "Alphabet Inc.", country: "United States" }],
-  ["apple.com", { brandName: "Apple", legalName: "Apple Inc." }],
-  ["amazon.com", { brandName: "Amazon", legalName: "Amazon.com, Inc.", country: "United States" }],
-  ["cloudflare.com", { brandName: "Cloudflare", legalName: "Cloudflare, Inc.", country: "United States" }],
-  ["shopify.com", { brandName: "Shopify", legalName: "Shopify Inc.", country: "Canada" }],
-  ["monday.com", { brandName: "monday.com", legalName: "monday.com Ltd.", country: "Israel" }],
-  ["checkpoint.com", { brandName: "Check Point Software Technologies", legalName: "Check Point Software Technologies Ltd.", country: "Israel" }],
-]);
-const REGULATED_BANK_BRANDS = new Map([
-  ["leumi.co.il", { brandName: "Leumi", legalName: "Bank Leumi le-Israel B.M.", country: "Israel" }],
-  ["hapoalim.co.il", { brandName: "Hapoalim", legalName: "Bank Hapoalim B.M.", country: "Israel" }],
-]);
-const PRIVATE_BRAND_OVERRIDES = new Map([
-  ["stripe.com", { brandName: "Stripe", legalName: "Stripe, Inc.", companyType: "PRIVATE_COMPANY", country: "United States" }],
-  ["openai.com", { brandName: "OpenAI", legalName: "OpenAI, L.L.C.", parentOrganization: "OpenAI, Inc.", companyType: "PRIVATE_COMPANY", country: "United States" }],
-  ["canva.com", { brandName: "Canva", legalName: "Canva Pty Ltd", companyType: "PRIVATE_COMPANY", country: "Australia" }],
-  ["wix.com", { brandName: "Wix", legalName: "Wix.com Ltd.", companyType: "PUBLIC_COMPANY", country: "Israel" }],
-  ["notion.so", { brandName: "Notion", companyType: "PRIVATE_COMPANY" }],
-  ["ksp.co.il", { brandName: "KSP", legalName: "K.S.P. Computers and Cellular Ltd.", companyType: "PRIVATE_COMPANY", country: "Israel" }],
-  ["bug.co.il", { brandName: "BUG", companyType: "UNKNOWN" }],
-  ["ivory.co.il", { brandName: "Ivory", companyType: "UNKNOWN" }],
-  ["keter.com", { brandName: "Keter", legalName: "Keter Group B.V.", companyType: "PRIVATE_COMPANY", country: "Netherlands" }],
-  ["shadowscore.io", { brandName: "ShadowScore", legalName: "ShadowScore", companyType: "PRIVATE_COMPANY" }],
-]);
 function cleanPageTitleName(input) {
   let value = normalizeName(String(input || "").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#x27;|&apos;/g, "'").replace(/&nbsp;/g, " "));
   if (!value) return "";
@@ -45,24 +19,23 @@ function cleanPageTitleName(input) {
   return normalizeName(value.replace(/\b(the )?(all[- ]in[- ]one|leader in|financial infrastructure|ai workspace|commerce platform|official website|homepage|solutions?|platform)\b.*$/i, "").replace(/[|:;,.\-–\u2014]+$/g, ""));
 }
 function brandFromLegal(legalName) { return normalizeName(String(legalName || "").replace(/\b(incorporated|inc\.?|corp\.?|corporation|ltd\.?|limited|plc|llc|co\.?|company)\b/gi, "").replace(/[,()]/g, " ")); }
-function canonicalCompanyType(classification, domain) {
-  if (PUBLIC_COMPANY_BRANDS.has(domain)) return "PUBLIC_COMPANY";
-  if (REGULATED_BANK_BRANDS.has(domain)) return "BANK";
+function canonicalCompanyType(classification, canonical) {
+  if (!canonical) return "UNKNOWN";
   if (classification.afterCanonicalResolution?.some((item) => /public company/i.test(item))) return "PUBLIC_COMPANY";
   if (classification.afterCanonicalResolution?.some((item) => /regulated financial|bank/i.test(item))) return "REGULATED_FINANCIAL_INSTITUTION";
-  return PRIVATE_BRAND_OVERRIDES.get(domain)?.companyType || (classification.afterCanonicalResolution?.length ? "PRIVATE_COMPANY" : "UNKNOWN");
+  return "PRIVATE_COMPANY";
 }
-function buildCanonicalIdentity(primaryIdentity, canonical, classification, normalizedDomain, conflicts, graph) {
-  const override = PUBLIC_COMPANY_BRANDS.get(normalizedDomain) || REGULATED_BANK_BRANDS.get(normalizedDomain) || PRIVATE_BRAND_OVERRIDES.get(normalizedDomain);
-  const legalName = canonical?.type === "LegalEntity" ? canonical.label : override?.legalName;
+function buildCanonicalIdentity(primaryIdentity, canonical, canonicalSupport, classification, normalizedDomain, conflicts, graph) {
+  const legalName = canonical?.type === "LegalEntity" ? canonical.label : undefined;
   const observedBrand = [...graph.nodes.values()].find((node) => node.type === "Brand")?.label;
-  const brandName = override?.brandName || observedBrand || brandFromLegal(legalName) || (canonical?.type === "Organization" ? canonical.label : undefined) || cleanPageTitleName(primaryIdentity.displayName);
-  const supported = Boolean(canonical || override?.legalName);
-  const companyType = canonicalCompanyType(classification, normalizedDomain);
-  const authoritative = companyType === "PUBLIC_COMPANY" || companyType === "BANK" || companyType === "REGULATED_FINANCIAL_INSTITUTION" || Boolean(canonical);
+  const fallbackDisplayName = primaryIdentity.displayName === "Unknown" ? undefined : cleanPageTitleName(primaryIdentity.displayName);
+  const brandName = observedBrand || brandFromLegal(legalName) || (canonical?.type === "Organization" ? canonical.label : undefined) || fallbackDisplayName;
+  const supported = Boolean(canonical);
+  const companyType = canonicalCompanyType(classification, canonical);
+  const authoritative = Boolean(canonicalSupport?.singleAuthoritative);
   const score = conflicts.length ? 45 : authoritative ? 90 : supported ? 70 : brandName ? 45 : 0;
-  const country = override?.country || canonical?.attributes?.country;
-  return { canonicalDisplayName: brandName || legalName || "Unknown", brandName: brandName || undefined, legalName: legalName || undefined, country: country || undefined, parentOrganization: override?.parentOrganization, primaryDomain: normalizedDomain || undefined, companyType, identityConfidence: { score, label: score >= 80 ? "High" : score >= 50 ? "Medium" : score > 0 ? "Low" : "Unknown" }, identityStatus: conflicts.length ? "CONFLICTED" : supported ? "SUPPORTED" : brandName ? "PARTIAL" : "UNRESOLVED", supportingSources: [...new Set(graph.relationships.map((rel) => rel.source).filter(Boolean))], evidenceCategories: [...new Set(graph.relationships.map((rel) => rel.attributes?.evidenceCategory).filter(Boolean))], corroborationCount: [...new Set(graph.relationships.map((rel) => rel.source).filter(Boolean))].length, hasAuthoritativeSource: authoritative, contradictorySourceCount: conflicts.length, legalNameSupported: Boolean(legalName && (canonical || override?.legalName)), domainDerivedFallback: !brandName && Boolean(normalizedDomain) };
+  const country = canonical?.attributes?.country;
+  return { canonicalDisplayName: brandName || legalName || "Unknown", brandName: brandName || undefined, legalName: legalName || undefined, country: country || undefined, primaryDomain: normalizedDomain || undefined, companyType, identityConfidence: { score, label: score >= 80 ? "High" : score >= 50 ? "Medium" : score > 0 ? "Low" : "Unknown" }, identityStatus: conflicts.length ? "CONFLICTED" : supported ? "SUPPORTED" : brandName ? "PARTIAL" : "UNRESOLVED", supportingSources: [...new Set(graph.relationships.map((rel) => rel.source).filter(Boolean))], evidenceCategories: [...new Set(graph.relationships.map((rel) => rel.attributes?.evidenceCategory).filter(Boolean))], corroborationCount: [...new Set(graph.relationships.map((rel) => rel.source).filter(Boolean))].length, hasAuthoritativeSource: authoritative, contradictorySourceCount: conflicts.length, legalNameSupported: Boolean(legalName && canonical), domainDerivedFallback: !brandName && Boolean(normalizedDomain) };
 }
 
 function normalizeValue(value) { return String(value ?? "").trim(); }
@@ -107,7 +80,7 @@ function evidenceCategory(evidence) {
   if (/profile/.test(haystack)) return "business_profile";
   return "other";
 }
-function isAuthoritativeSingleSource(rel) { return AUTHORITATIVE_STATUSES.has(rel.verificationStatus) && /sec|exchange|regulator/i.test(`${rel.source || ""} ${rel.attributes?.evidenceCategory || ""}`); }
+function isAuthoritativeSingleSource(rel) { return AUTHORITATIVE_STATUSES.has(rel.verificationStatus) && /sec|exchange|regulator|public_registry|business_registry|company_registry/i.test(`${rel.source || ""} ${rel.attributes?.evidenceCategory || ""}`); }
 function supportedCanonical(graph, node) {
   const rels = graph.relationships.filter((rel) => rel.from === node.id || rel.to === node.id);
   const sources = independentSources(rels);
@@ -270,7 +243,6 @@ export function resolveBusinessIdentity(input, options = {}) {
   const primaryIdentity = legacyPrimary(canonical, normalizedDomain, normalizedEmail, graph, unresolved, conflicts);
   const attributeConfidence = identityAttributeConfidence(graph, canonical?.id, primaryIdentity);
   const evidenceExplainability = evidenceExplainabilityFor(attributeConfidence);
-  const canonicalIdentity = buildCanonicalIdentity(primaryIdentity, canonical, classification, normalizedDomain, conflicts, graph);
-  return { resolverVersion: BUSINESS_IDENTITY_RESOLVER_VERSION, canonicalIdentityTypes: CANONICAL_IDENTITY_TYPES, verifiedRelationshipTypes: VERIFIED_RELATIONSHIP_TYPES, normalizedInput: { raw: normalizeValue(target), domain: normalizedDomain || undefined, email: normalizedEmail || undefined }, canonicalOrganization: canonical ? { id: canonical.id, type: canonical.type, label: canonical.label } : null, canonicalIdentity, identityResolutionStatus: conflicts.length ? "resolved_with_conflicts" : unresolved ? "unresolved" : "resolved", reviewStatus: unresolved || conflicts.length ? "REVIEW" : "PASS", identityConfidence: unresolved ? "Low" : conflicts.length ? "Low" : classification.confidence, canonicalIdentityGraph: canonicalGraph, identityResolutionFlow: ["Normalize submitted target into identifier evidence.", "Discover candidate legal entities from collected evidence sources; do not consult curated company fixtures or predefined organization catalogs.", "Load authoritative company evidence, website disclosures, registries, business profiles, structured metadata, regulatory records and submitted evidence as canonical identity nodes when present.", "Verify relationships with source, confidence, evidenceRefs, observedAt and verificationStatus.", "Resolve a canonical LegalEntity or Organization before entity classification.", unresolved ? "No canonical organization resolved; stop regulated/public-company inference." : "Classify from verified canonical relationships."], attributeConfidence, evidenceConfidence: attributeConfidence, evidenceExplainability, contradictions: conflicts, relationshipProvenance: canonicalGraph.relationships.map((rel) => ({ relationshipId: rel.id, type: rel.type, source: rel.source, confidence: rel.confidence, evidenceRefs: rel.evidenceRefs, observedAt: rel.observedAt, verificationStatus: rel.verificationStatus })), entityClassification: classification, missingEvidence, unresolvedIdentityBehavior: unresolved ? `Returns REVIEW with unresolved identity, low confidence, no inferred regulated or public-company class, and missing evidence: ${missingEvidence.join(" ") || "corroborating evidence"}` : undefined, primaryIdentity, candidates: [primaryIdentity], limitations: ["Domains, emails, phones and marketplace accounts are identifiers or evidence objects, not the business itself.", "Unresolved inputs return Unknown identity labels; hostnames are not converted into organization names.", "Identity attributes carry their own evidence confidence and cross-provider corroboration metadata.", "Entity classification is derived only from the canonical organization and verified relationships.", "Predefined organization seeds are intentionally ignored; canonical legal identities must be discovered from collected evidence.", "Private business identity resolution requires multiple independent evidence sources unless a public-company exchange/SEC or regulator source is authoritative."] };
+  const canonicalIdentity = buildCanonicalIdentity(primaryIdentity, canonical, canonicalCandidate?.support, classification, normalizedDomain, conflicts, graph);
+  return { resolverVersion: BUSINESS_IDENTITY_RESOLVER_VERSION, canonicalIdentityTypes: CANONICAL_IDENTITY_TYPES, verifiedRelationshipTypes: VERIFIED_RELATIONSHIP_TYPES, normalizedInput: { raw: normalizeValue(target), domain: normalizedDomain || undefined, email: normalizedEmail || undefined }, canonicalOrganization: canonical ? { id: canonical.id, type: canonical.type, label: canonical.label } : null, canonicalIdentity, identityResolutionStatus: conflicts.length ? "resolved_with_conflicts" : unresolved ? "unresolved" : "resolved", reviewStatus: unresolved || conflicts.length ? "REVIEW" : "PASS", identityConfidence: unresolved ? "Low" : conflicts.length ? "Low" : classification.confidence, canonicalIdentityGraph: canonicalGraph, identityResolutionFlow: ["Normalize submitted target into identifier evidence.", "Discover candidate legal entities from collected evidence sources; do not consult curated company fixtures or predefined organization catalogs.", "Load authoritative company evidence, website disclosures, registries, business profiles, structured metadata, regulatory records and submitted evidence as canonical identity nodes when present.", "Verify relationships with source, confidence, evidenceRefs, observedAt and verificationStatus.", "Resolve a canonical LegalEntity or Organization before entity classification.", unresolved ? "No canonical organization resolved; stop regulated/public-company inference." : "Classify from verified canonical relationships."], attributeConfidence, evidenceConfidence: attributeConfidence, evidenceExplainability, contradictions: conflicts, relationshipProvenance: canonicalGraph.relationships.map((rel) => ({ relationshipId: rel.id, type: rel.type, source: rel.source, confidence: rel.confidence, evidenceRefs: rel.evidenceRefs, observedAt: rel.observedAt, verificationStatus: rel.verificationStatus })), entityClassification: classification, missingEvidence, unresolvedIdentityBehavior: unresolved ? `Returns REVIEW with unresolved identity, low confidence, no inferred regulated or public-company class, and missing evidence: ${missingEvidence.join(" ") || "corroborating evidence"}` : undefined, primaryIdentity, candidates: [primaryIdentity], limitations: ["Domains, emails, phones and marketplace accounts are identifiers or evidence objects, not the business itself.", "Unresolved inputs return Unknown identity labels; hostnames are not converted into organization names.", "Identity attributes carry their own evidence confidence and cross-provider corroboration metadata.", "Entity classification is derived only from the canonical organization and verified relationships.", "Predefined organization seeds are intentionally ignored; canonical legal identities must be discovered from collected evidence.", "Private business identity resolution requires multiple independent evidence sources unless an authoritative registry, public-company exchange, SEC, or regulator source establishes the identity."] };
 }
-

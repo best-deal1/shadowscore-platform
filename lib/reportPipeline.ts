@@ -1,6 +1,7 @@
 import { correlateEvidence } from "./correlation";
 import { buildDecision, evaluateDecisionEvidence } from "./decisionEngine";
 import { buildEvidenceItems, summarizeEvidence } from "./evidence";
+import { applicableEvidence } from "./evidence/applicability";
 import { rememberBusinessScan } from "./businessMemory";
 import { classifyTarget } from "./targetClassifier";
 import { planFromClassification } from "./orchestrator";
@@ -92,8 +93,8 @@ export async function buildReadyReport(input: {
       .filter((record) => record.status === "pending" || record.status === "skipped")
       .map((record) => ({ providerId: record.providerId || record.engineId, reason: record.reason || "Provider was not checked in this execution plan." })),
   });
-  const evidenceItems = [...providerEvidenceItems, ...websiteEvidenceItems];
-  const correlationSummary = correlateEvidence({ evidenceItems });
+  const evidenceItems = applicableEvidence([...providerEvidenceItems, ...websiteEvidenceItems], intake.scanMode);
+  const correlationSummary = correlateEvidence({ evidenceItems, targetType: intake.scanMode });
   const providerCategories = Object.fromEntries(providerManager.listProviders().map((provider) => [provider.id, provider.category]));
   const canonicalEvidenceSummary = summarizeEvidence(evidenceItems, providerCategories);
   executionRecords

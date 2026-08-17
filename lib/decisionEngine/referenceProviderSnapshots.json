@@ -18,7 +18,7 @@
       "label": "Provider failure",
       "snapshot": "provider-failure",
       "expected": [
-        "PROCEED_WITH_VERIFICATION"
+        "REVIEW"
       ]
     },
     {
@@ -104,7 +104,7 @@
       "label": "Missing data only",
       "snapshot": "missing-data-only",
       "expected": [
-        "PROCEED_WITH_VERIFICATION"
+        "REVIEW"
       ]
     },
     {

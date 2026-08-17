@@ -12,5 +12,6 @@ execFileSync(process.execPath, [tscPath, "lib/decisionEngine/integrityValidation
 const { runDecisionIntegrityValidationSuite } = require(join(outDir, "decisionEngine", "integrityValidation.js"));
 const results = runDecisionIntegrityValidationSuite();
 console.table(results.rows);
+console.log("Stripe full-pipeline regression:", results.stripePipelineRegression);
 console.log("Marketplace identity mismatch fixture:", results.marketplaceIdentityMismatchFixture);
 console.log("Missing DMARC fixture decision:", results.missingDmarc);
