@@ -8,6 +8,7 @@ import type { ProviderResult } from "../providers/types";
 import type { RiskEngineOutput } from "../riskEngine";
 import type { TrustTimelineItem } from "../trustTimeline";
 import { buildCanonicalDecision, decisionDisplayLabel, type CanonicalDecision } from "../canonicalDecision";
+import { applicableEvidence } from "../evidence/applicability";
 
 export type VerificationDecision = "PASS" | "PROCEED_WITH_VERIFICATION" | "REVIEW" | "FAIL";
 export type DecisionColor = "green" | "yellow" | "orange" | "red";
@@ -66,17 +67,6 @@ function unique(items: string[]) {
   return Array.from(new Set(items.filter((item) => item.trim().length > 0)));
 }
 
-function isApplicableEvidence(item: EvidenceItem, targetType: string) {
-  const providerId = item.provider.toLowerCase();
-  const title = item.title.toLowerCase();
-  const isWebsite = targetType === "website" || targetType === "business" || targetType === "Website" || targetType === "Business";
-  if (isWebsite && ["marketplace", "payment", "compliance"].includes(providerId)) return false;
-  if (isWebsite && /(marketplace|seller-to-company|payout|payment processor|compliance authority|regulatory relationship)/i.test(title)) return false;
-  if ((item.category === "Missing" || item.category === "Unavailable" || item.category === "Not Checked") && /\b(aaaa|cname) records?\b/i.test(item.title)) return false;
-  if ((item.category === "Missing" || item.category === "Unavailable") && /http header/i.test(item.title)) return false;
-  return item.category !== "Not Applicable";
-}
-
 function gapKey(title: string) {
   return title.toLowerCase().replace(/\s+missing$/, "").replace(/\s+record$/, " record").replace(/ provider (not checked|unavailable|availability)$/, " provider").trim();
 }
@@ -104,7 +94,7 @@ export function buildVerificationDecision(input: {
   const providerResults = input.providerResults || [];
   const rawEvidenceItems = input.evidenceItems || buildEvidenceItems(providerResults);
   const targetType = input.targetType || "website";
-  const applicableEvidenceItems = rawEvidenceItems.filter((item) => isApplicableEvidence(item, targetType));
+  const applicableEvidenceItems = applicableEvidence(rawEvidenceItems, targetType);
   const evidenceItems = dedupeEvidence(applicableEvidenceItems);
   const correlationSummary = input.correlationSummary || correlateEvidence({ evidenceItems, targetType });
   const correlationContradictions = correlationSummary.contradictions;
@@ -216,7 +206,7 @@ export function buildVerificationDecision(input: {
   const hasCompoundingUncertainty = reviewOnlyNegativeEvidenceItems.length >= 2 || (reviewOnlyNegativeEvidenceItems.length >= 1 && reviewOnlyCorrelationContradictions.length >= 1);
   const hasCoreOwnershipGap = missingSignals.some((item) => /ownership|owner|beneficial/i.test(item));
   const hasStrongBusinessEvidence = positiveEvidenceCount >= 3 && infrastructureScore >= 70 && identityScore >= 60 && !hasCoreOwnershipGap;
-  const cannotMakeTrustDecision = completedProviders === 0 || positiveEvidenceCount === 0;
+  const cannotMakeTrustDecision = positiveEvidenceCount === 0;
 
   let decision: VerificationDecision = "PROCEED_WITH_VERIFICATION";
   if (confirmedRiskEligible) decision = "FAIL";
