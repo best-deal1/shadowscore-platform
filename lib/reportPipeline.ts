@@ -28,7 +28,8 @@ import type { PaymentIntent, ShadowScoreIntake, ShadowScoreReport } from "./work
 import { resolveBusinessIdentity } from "./businessIdentityResolver";
 import { applyCanonicalIdentityToBusinessProfile, applyCanonicalIdentityToIdentityProfile } from "./canonicalReportIdentity";
 import { buildInvestigationIntelligence } from "./investigationIntelligence";
-import { isolateProviderResults, canonicalWebsiteTarget } from "./targetIntegrity";
+import { isolateProviderResults } from "./targetIntegrity";
+import { resolveFirstPartyEntities, resolutionTarget } from "./entityResolution/firstParty";
 
 export const REPORT_ENGINE_VERSION = "report-pipeline-v22";
 
@@ -54,13 +55,18 @@ export async function buildReadyReport(input: {
     throw new Error("Report generation requires paymentStatus == paid.");
   }
 
-  const canonicalTarget = intake.scanMode === "website" ? canonicalWebsiteTarget(intake.target) : intake.target.trim();
+  const submittedTarget = intake.target.trim();
+  const submittedClassification = classifyTarget(submittedTarget);
+  const resolvableTarget = ["Email", "Website"].includes(submittedClassification.targetType);
+  const resolution = resolvableTarget ? resolutionTarget(submittedTarget) : undefined;
+  const providerTarget = intake.scanMode === "website" && resolution ? resolution.domain : submittedTarget;
+  const canonicalTarget = submittedTarget;
   const investigationEmail = intake.scanMode === "website" ? undefined : intake.email;
   const providerContext: ProviderExecutionContext = {
     intakeId: intake.intakeId,
     scanMode: intake.scanMode,
-    target: canonicalTarget,
-    requestedTarget: intake.target,
+    target: providerTarget,
+    requestedTarget: submittedTarget,
     investigationId: intake.intakeId,
     canonicalTarget,
     platform: intake.platform,
@@ -72,18 +78,19 @@ export async function buildReadyReport(input: {
   };
   const startedAt = Date.now();
   const executionFlow: string[] = [];
-  const classification = classifyTarget(canonicalTarget);
+  const classification = submittedClassification;
   executionFlow.push(`✓ Target classified as ${classification.targetType}`);
   const executionPlan = planFromClassification(classification);
   executionFlow.push("✓ Execution plan created");
   const execution = await providerManager.runExecutionPlan(providerContext, executionPlan.executionPlan, executionPlan.skippedEngines);
-  const isolated = intake.scanMode === "website" ? isolateProviderResults({ investigationId: intake.intakeId, submittedTarget: intake.target, providerResults: execution.providerResults }) : undefined;
+  const isolated = intake.scanMode === "website" && resolution?.inputType !== "email" ? isolateProviderResults({ investigationId: intake.intakeId, submittedTarget, providerResults: execution.providerResults }) : undefined;
   const providerResults = isolated?.providerResults || execution.providerResults;
   const targetResolution = isolated?.resolution;
   const executionRecords = execution.executionRecords;
   console.info("investigation_target_resolution", { investigationId: intake.intakeId, submittedTarget: intake.target, canonicalTarget, providerTargets: providerResults.map((item) => item.metadata.providerTarget), evidenceTargets: providerResults.flatMap((item) => item.evidence.map((evidence) => evidence.canonicalTarget || canonicalTarget)), reportTarget: canonicalTarget, redirectDomainMismatch: targetResolution?.redirectDomainMismatch, rejectedEvidenceCount: targetResolution?.rejectedEvidenceCount });
+  const resolvedEntities = resolution ? await resolveFirstPartyEntities(submittedTarget) : undefined;
   const alerting = input.websiteTenantId && input.websiteAlertRepository ? { tenantId: input.websiteTenantId, repository: input.websiteAlertRepository, watchlistRepository: input.websiteWatchlistRepository } : undefined;
-  const websiteMonitoring = intake.scanMode === "website" ? await investigateAndRecordWebsite({ target: canonicalTarget }, input.websiteHistoryRepository, alerting) : undefined;
+  const websiteMonitoring = intake.scanMode === "website" ? await investigateAndRecordWebsite({ target: providerTarget }, input.websiteHistoryRepository, alerting) : undefined;
   const websiteIntelligence = websiteMonitoring?.report;
   const canonicalWebsiteReport = websiteIntelligence ? toCanonicalWebsiteReport(websiteIntelligence) : undefined;
   const websiteEvidenceItems = websiteIntelligence ? normalizeWebsiteEvidence(websiteIntelligence) : [];
@@ -259,6 +266,7 @@ export async function buildReadyReport(input: {
         .filter((provider) => provider.status === "completed")
         .map((provider) => ({ label: provider.providerId.replace(/[-_]/g, " "), completedAt: provider.completedAt })),
       targetResolution,
+      resolvedEntities,
     },
     riskScore: undefined,
     confidenceScore: undefined,

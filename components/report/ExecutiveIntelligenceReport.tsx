@@ -56,6 +56,7 @@ export default function ExecutiveIntelligenceReport({ report }: { report: Shadow
   const materialGaps = materialEvidenceGaps(report);
   const execution = report.reportSummary?.execution;
   const intelligence = report.reportSummary?.investigationIntelligence;
+  const resolved = report.reportSummary?.resolvedEntities;
   const graphSummary = report.reportSummary?.knowledgeGraph?.graphSummary;
   const riskScore = report.riskScore;
   const confidence = report.confidenceScore === undefined ? narrative?.confidence || "Not recorded" : `${report.confidenceScore}%`;
@@ -145,6 +146,18 @@ export default function ExecutiveIntelligenceReport({ report }: { report: Shadow
 
           <div className="mt-6 border border-slate-300 bg-white p-5 sm:p-6"><h3 className="text-sm font-bold uppercase tracking-[0.16em] text-slate-500">Investigation Scope</h3><ul className="mt-4 grid gap-x-8 gap-y-3 text-sm sm:grid-cols-2">{investigationScope.map((item) => <li key={item} className="flex items-center gap-3 border-b border-slate-100 pb-2"><span aria-hidden="true" className="text-cyan-800">●</span><span className="font-medium text-slate-950">{item}</span></li>)}</ul></div>
         </section>
+
+        {resolved && <section id="resolved-entities" aria-labelledby="resolved-entities-title" className="mt-12 border-t border-slate-300 pt-10">
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-800">First-party evidence</p>
+          <h2 id="resolved-entities-title" className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">Resolved Entities</h2>
+          <dl className="mt-7 grid border border-slate-300 bg-white sm:grid-cols-3">
+            <div className="p-5"><dt className="text-xs font-bold uppercase tracking-wider text-slate-500">Investigated target</dt><dd className="mt-2 break-all font-semibold text-slate-950">{resolved.originalInput}</dd></div>
+            <div className="border-t border-slate-200 p-5 sm:border-l sm:border-t-0"><dt className="text-xs font-bold uppercase tracking-wider text-slate-500">Investigation type</dt><dd className="mt-2 font-semibold capitalize text-slate-950">{resolved.inputType}</dd></div>
+            <div className="border-t border-slate-200 p-5 sm:border-l sm:border-t-0"><dt className="text-xs font-bold uppercase tracking-wider text-slate-500">Resolved domain</dt><dd className="mt-2 break-all font-semibold text-slate-950">{resolved.resolvedDomain}</dd></div>
+          </dl>
+          {resolved.entities.length ? <div className="mt-5 grid gap-4 sm:grid-cols-2">{resolved.entities.map((entity) => <article key={`${entity.type}:${entity.value}`} className="border border-slate-300 bg-white p-5"><p className="text-xs font-bold uppercase tracking-wider text-cyan-800">{entity.type}</p><p className="mt-2 break-words font-semibold text-slate-950">{entity.value}</p><ul className="mt-3 space-y-1 text-sm">{entity.evidenceUrls.map((url) => <li key={url}><a className="break-all text-cyan-800 underline" href={url} rel="noreferrer" target="_blank">View first-party evidence</a></li>)}</ul></article>)}</div> : <p className="mt-5 border border-slate-300 bg-white p-5">No entity claims were established from fetched first-party evidence.</p>}
+          {resolved.relationships.length > 0 && <div className="mt-5 border border-slate-300 bg-white p-5"><h3 className="font-semibold text-slate-950">Evidence-backed relationships</h3><ul className="mt-3 space-y-2 text-sm">{resolved.relationships.map((relationship) => <li key={`${relationship.from}:${relationship.type}:${relationship.to}:${relationship.evidenceUrl}`}>{relationship.from} <strong>{relationship.type}</strong> {relationship.to}. <a className="text-cyan-800 underline" href={relationship.evidenceUrl} rel="noreferrer" target="_blank">Evidence</a></li>)}</ul></div>}
+        </section>}
 
         <section id="decision-brief" aria-labelledby="summary-title" className="mt-12 border-t border-slate-300 pt-10">
           <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-800">01 / Decision brief</p><h2 id="summary-title" className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">Executive Decision Brief</h2>
