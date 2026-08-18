@@ -169,14 +169,47 @@ function addEntity(entities: FirstPartyEntity[], type: FirstPartyEntity["type"],
   entities.push({ type, value: clean, evidenceUrls: [url] });
 }
 
+function isCrediblePhone(value: string) {
+  const clean = value.trim();
+  const digits = clean.replace(/\D/g, "");
+  if (digits.length < 9 || digits.length > 15) return false;
+  // Sitemap dates and timestamps can otherwise resemble punctuated phone numbers.
+  if (/^(?:19|20)\d{2}[-/.](?:0?[1-9]|1[0-2])[-/.](?:0?[1-9]|[12]\d|3[01])(?:\D|$)/.test(clean)) return false;
+  const internationalPrefix = /^\s*(?:\+|00)\d/.test(clean);
+  const parenthesizedAreaCode = /\(\s*\d{2,4}\s*\)/.test(clean);
+  const separatedGroups = (clean.match(/[ .-]/g) || []).length >= 2;
+  return internationalPrefix || parenthesizedAreaCode || separatedGroups;
+}
+
+function organizationNamesFromJsonLd(content: string) {
+  const names: string[] = [];
+  const organizationalTypes = new Set(["organization", "corporation", "localbusiness"]);
+  const visit = (value: unknown, organizationalContext = false) => {
+    if (Array.isArray(value)) { for (const item of value) visit(item, organizationalContext); return; }
+    if (!value || typeof value !== "object") return;
+    const record = value as Record<string, unknown>;
+    const types = Array.isArray(record["@type"]) ? record["@type"] : [record["@type"]];
+    const isOrganization = organizationalContext || types.some((type) => typeof type === "string" && organizationalTypes.has(type.toLowerCase()));
+    const name = typeof record.legalName === "string" ? record.legalName : isOrganization && typeof record.name === "string" ? record.name : undefined;
+    if (isOrganization && name) names.push(name);
+    for (const [key, child] of Object.entries(record)) {
+      if (key !== "name" && key !== "legalName" && key !== "@type") visit(child, isOrganization);
+    }
+  };
+  for (const script of content.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)) {
+    try { visit(JSON.parse(script[1])); } catch { /* Ignore invalid publisher-supplied structured data. */ }
+  }
+  return names;
+}
+
 function extractPage(content: string, url: string, targetEmail: string | undefined, entities: FirstPartyEntity[], relationships: FirstPartyRelationship[]) {
   const text = decode(content);
   const emailFound = targetEmail && text.toLowerCase().includes(targetEmail);
   if (emailFound) addEntity(entities, "Email", targetEmail, url);
-  const phones = [...text.matchAll(/(?:\+|00)?\d[\d ().-]{7,}\d/g)].map((match) => match[0]);
+  const phones = [...text.matchAll(/(?:\+|00)?\d[\d ().-]{7,}\d/g)].map((match) => match[0]).filter(isCrediblePhone);
   for (const phone of phones) addEntity(entities, "Phone", phone, url);
   const organization = /<meta[^>]+(?:property|name)=["'](?:og:site_name|application-name)["'][^>]+content=["']([^"']+)/i.exec(content)?.[1]
-    || /"(?:legalName|name)"\s*:\s*"([^"]{2,100})"/i.exec(content)?.[1];
+    || organizationNamesFromJsonLd(content)[0];
   if (organization) addEntity(entities, "Organization", organization, url);
   if (!emailFound || !targetEmail) return;
   const escaped = targetEmail.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -202,7 +235,9 @@ export async function resolveFirstPartyEntities(input: string, options: { fetch?
   const limit = Math.min(Math.max(options.maxUrls || MAX_URLS, 2), MAX_URLS);
   const homepage = `https://${target.domain}/`;
   const sitemap = new URL("/sitemap.xml", homepage).href;
-  const queue = [homepage, sitemap];
+  const submittedUrl = target.inputType === "url" ? new URL(target.originalInput) : undefined;
+  if (submittedUrl) { submittedUrl.protocol = "https:"; submittedUrl.hash = ""; }
+  const queue = [...new Set([...(submittedUrl ? [submittedUrl.href] : []), homepage, sitemap])];
   const discovered = new Set(queue);
   const internal = new Set<string>();
   const sitemapUrls = new Set<string>();

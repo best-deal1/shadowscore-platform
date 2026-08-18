@@ -109,3 +109,4 @@ This file records customer-visible improvements in each ShadowScore release.
 # August 18, 2026
 
 - Hardened first-party entity discovery with DNS validation, pinned public network connections, and manual validation of every redirect. Added evidence-backed Hebrew person and professional role extraction for multilingual business pages.
+- First-party reports now prioritize an explicitly submitted page, reject dates and unrelated structured-data names as resolved entities, and distinguish unavailable, partial, and empty evidence coverage.

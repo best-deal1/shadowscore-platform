@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFile } from "node:fs/promises";
 import { isPublicIpAddress, resolveFirstPartyEntities, resolutionTarget } from "../lib/entityResolution/firstParty.ts";
 
 const publicLookup = async () => [{ address: "93.184.216.34", family: 4 }];
@@ -101,4 +102,48 @@ test("does not invent a person from an email local-part without a nearby named r
   });
   assert.ok(result.entities.some((item) => item.type === "Email"));
   assert.equal(result.entities.some((item) => item.type === "Person"), false);
+});
+
+test("fetches the exact submitted URL before homepage and sitemap discovery", async () => {
+  const seen = [];
+  await resolveFirstPartyEntities("https://example.com/team/alice?view=full#bio", {
+    lookup: publicLookup,
+    fetch: async (url) => { seen.push(String(url)); return new Response("Page"); },
+    maxUrls: 3,
+  });
+  assert.deepEqual(seen, ["https://example.com/team/alice?view=full", "https://example.com/", "https://example.com/sitemap.xml"]);
+});
+
+test("rejects sitemap dates and other date-like values as phone entities", async () => {
+  const result = await resolveFirstPartyEntities("example.com", {
+    lookup: publicLookup,
+    fetch: async (url) => new Response(String(url).endsWith("sitemap.xml")
+      ? "<urlset><url><loc>https://example.com/</loc><lastmod>2026-08-18</lastmod></url></urlset>"
+      : "Updated 2026-08-18 12:30. Call +1 (212) 555-0198."),
+  });
+  assert.deepEqual(result.entities.filter((item) => item.type === "Phone").map((item) => item.value), ["+1 (212) 555-0198"]);
+});
+
+test("uses only explicit organization context from JSON-LD names", async () => {
+  for (const type of ["Person", "Product", "WebPage", "BreadcrumbList"]) {
+    const result = await resolveFirstPartyEntities("example.com", {
+      lookup: publicLookup,
+      fetch: async (url) => new Response(String(url).endsWith("sitemap.xml") ? "" : `<script type="application/ld+json">{"@type":"${type}","name":"Not An Organization"}</script>`),
+    });
+    assert.equal(result.entities.some((item) => item.type === "Organization"), false, type);
+  }
+  const result = await resolveFirstPartyEntities("example.com", {
+    lookup: publicLookup,
+    fetch: async (url) => new Response(String(url).endsWith("sitemap.xml") ? "" : '<script type="application/ld+json">{"@type":"Organization","name":"Example Holdings"}</script>'),
+  });
+  assert.ok(result.entities.some((item) => item.type === "Organization" && item.value === "Example Holdings"));
+});
+
+test("Executive Report distinguishes failed, partial, and successful empty discovery", async () => {
+  const source = await readFile(new URL("../components/report/ExecutiveIntelligenceReport.tsx", import.meta.url), "utf8");
+  assert.match(source, /totalUrlsFetched === 0 && resolved\.discovery\.failures\.length > 0/);
+  assert.match(source, /First-party evidence could not be retrieved/);
+  assert.match(source, /First-party coverage is partial/);
+  assert.match(source, /failure\.url.*failure\.reason/s);
+  assert.match(source, /No entity claims were established from the first-party pages retrieved/);
 });
