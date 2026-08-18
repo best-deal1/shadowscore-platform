@@ -16,6 +16,8 @@ This file records customer-visible improvements in each ShadowScore release.
 
 ### New
 
+- Email, domain, and URL investigations now preserve the submitted target, discover bounded first-party pages and sitemaps, and show evidence-backed resolved entities in the Executive Report.
+
 - Investigation graphs now correlate company, domain, contact, and marketplace identities in one evidence trail. Exact identifiers drive entity resolution, while contradictions, evidence freshness, and source confidence shape a decision and its next action.
 - Workspace for authenticated investigations.
 - Authentication with a preserved return path after signup or login.
@@ -103,3 +105,8 @@ This file records customer-visible improvements in each ShadowScore release.
 
 - Fixed production brand rendering so headers, account entry points, workspace, intake, favicon, social metadata, and organization schema use the canonical ShadowScore logo asset.
 - Bulk investigation deletion now keeps filtered selections safe and preserves actionable retry details when only some deletions succeed.
+
+# August 18, 2026
+
+- Hardened first-party entity discovery with DNS validation, pinned public network connections, and manual validation of every redirect. Added evidence-backed Hebrew person and professional role extraction for multilingual business pages.
+- First-party reports now prioritize an explicitly submitted page, reject dates and unrelated structured-data names as resolved entities, and distinguish unavailable, partial, and empty evidence coverage.
