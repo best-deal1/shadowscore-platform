@@ -105,3 +105,7 @@ This file records customer-visible improvements in each ShadowScore release.
 
 - Fixed production brand rendering so headers, account entry points, workspace, intake, favicon, social metadata, and organization schema use the canonical ShadowScore logo asset.
 - Bulk investigation deletion now keeps filtered selections safe and preserves actionable retry details when only some deletions succeed.
+
+# August 18, 2026
+
+- Hardened first-party entity discovery with DNS validation, pinned public network connections, and manual validation of every redirect. Added evidence-backed Hebrew person and professional role extraction for multilingual business pages.
