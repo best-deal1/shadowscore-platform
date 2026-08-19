@@ -41,6 +41,7 @@ const MAX_URLS = 24;
 const MAX_REDIRECTS = 5;
 const MAX_SITEMAP_INDEXES = 3;
 const USER_AGENT = "ShadowScore First-Party Intelligence/1.0 (+https://shadowscore.com)";
+export const PUBLIC_EMAIL_DOMAINS = new Set(["gmail.com", "googlemail.com", "outlook.com", "hotmail.com", "live.com", "yahoo.com", "icloud.com", "proton.me", "protonmail.com", "aol.com"]);
 
 function ipv4Bytes(address: string) {
   const bytes = address.split(".").map(Number);
@@ -66,7 +67,6 @@ function ipv6Bytes(address: string) {
   return groups.flatMap((item) => { const value = Number.parseInt(item, 16); return [value >> 8, value & 255]; });
 }
 
-/** Reject every non-global address class before the crawler opens a socket. */
 export function isPublicIpAddress(address: string) {
   if (isIP(address) === 4) {
     const b = ipv4Bytes(address)!;
@@ -138,7 +138,6 @@ async function safeFetch(start: string, domain: string, fetcher: FetchLike | und
     if (current.protocol !== "https:" || current.hostname.toLowerCase().replace(/^www\./, "") !== domain) throw new Error("Redirect left the first-party HTTPS domain.");
     const addresses = await validatedAddresses(current.hostname, lookup);
     const init = { redirect: "manual" as const, signal: AbortSignal.timeout(timeoutMs), headers: { "user-agent": USER_AGENT, accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.5" } };
-    // Native requests use the validated address directly, preventing a second DNS lookup from rebinding the connection.
     const response = fetcher ? await fetcher(current, init) : await pinnedHttpsFetch(current, init, addresses);
     if (![301, 302, 303, 307, 308].includes(response.status)) return { response, url: current.href };
     const location = response.headers.get("location");
@@ -172,7 +171,7 @@ function urlsFrom(content: string, base: string, domain: string) {
         url.hash = "";
         found.add(url.href);
       }
-    } catch { /* Ignore malformed links published by the target website. */ }
+    } catch { }
   }
   return [...found];
 }
@@ -189,7 +188,6 @@ function isCrediblePhone(value: string) {
   const clean = value.trim();
   const digits = clean.replace(/\D/g, "");
   if (digits.length < 9 || digits.length > 15) return false;
-  // Sitemap dates and timestamps can otherwise resemble punctuated phone numbers.
   if (/^(?:19|20)\d{2}[-/.](?:0?[1-9]|1[0-2])[-/.](?:0?[1-9]|[12]\d|3[01])(?:\D|$)/.test(clean)) return false;
   const internationalPrefix = /^\s*(?:\+|00)\d/.test(clean);
   const parenthesizedAreaCode = /\(\s*\d{2,4}\s*\)/.test(clean);
@@ -213,7 +211,7 @@ function organizationNamesFromJsonLd(content: string) {
     }
   };
   for (const script of content.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)) {
-    try { visit(JSON.parse(script[1])); } catch { /* Ignore invalid publisher-supplied structured data. */ }
+    try { visit(JSON.parse(script[1])); } catch { }
   }
   return names;
 }
@@ -234,7 +232,6 @@ function extractPage(content: string, url: string, targetEmail: string | undefin
   const role = new RegExp(rolePattern, "iu").exec(context)?.[0];
   const latinName = String.raw`[\p{Lu}][\p{Ll}\p{M}'’-]{1,30}(?:\s+[\p{Lu}][\p{Ll}\p{M}'’-]{1,30}){1,3}`;
   const hebrewName = String.raw`[\p{Script=Hebrew}\p{M}'״׳-]{2,30}(?:\s+[\p{Script=Hebrew}\p{M}'״׳-]{2,30}){1,3}`;
-  // A name is reliable only when the page explicitly pairs it with a recognized professional role.
   const paired = role && (new RegExp(`(${latinName}|${hebrewName})\\s*[,|:;·-]?\\s*${rolePattern}`, "iu").exec(context)
     || new RegExp(`${rolePattern}\\s*[,|:;·-]?\\s*(${latinName}|${hebrewName})`, "iu").exec(context));
   const person = paired?.[1];
@@ -248,6 +245,15 @@ function extractPage(content: string, url: string, targetEmail: string | undefin
 
 export async function resolveFirstPartyEntities(input: string, options: { fetch?: FetchLike; lookup?: LookupLike; timeoutMs?: number; maxUrls?: number } = {}): Promise<FirstPartyResolution> {
   const target = resolutionTarget(input);
+  if (target.inputType === "email" && PUBLIC_EMAIL_DOMAINS.has(target.domain)) {
+    return {
+      originalInput: target.originalInput,
+      inputType: target.inputType,
+      resolvedDomain: target.domain,
+      discovery: { homepageFetched: false, sitemapFetched: false, internalLinksDiscovered: 0, sitemapUrlsDiscovered: 0, totalUrlsDiscovered: 0, totalUrlsFetched: 0, failures: [] },
+      entities: [], relationships: [], evidenceUrls: [],
+    };
+  }
   const limit = Math.min(Math.max(options.maxUrls || MAX_URLS, 2), MAX_URLS);
   const homepage = `https://${target.domain}/`;
   const sitemap = new URL("/sitemap.xml", homepage).href;
