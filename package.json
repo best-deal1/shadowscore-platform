@@ -37,6 +37,7 @@
     "validate:business-identity-intelligence": "node --experimental-strip-types scripts/validate-business-identity-intelligence.mjs",
     "validate:business-intelligence": "node --experimental-strip-types scripts/validate-business-intelligence.mjs",
     "validate:platform-capabilities": "node --experimental-strip-types tests/platform-capabilities.mjs",
+    "validate:intelligence-layer": "node --experimental-strip-types tests/intelligence-layer.mjs",
     "test:preview-flow": "node tests/free-scan-preview-flow.mjs",
     "test:quick-check": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types --test tests/quick-check-report.test.mjs tests/quick-check-providers.test.mjs",
     "test:quick-check-journey": "node --test tests/quick-check-paid-journey.test.mjs",
