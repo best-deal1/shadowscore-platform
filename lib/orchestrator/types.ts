@@ -13,6 +13,7 @@ export type OrchestratorEngineId =
   | "reputation"
   | "graph"
   | "email-intelligence"
+  | "external-identity"
   | "domain"
   | "evidence-parser"
   | "contradiction-engine";
