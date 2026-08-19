@@ -50,6 +50,33 @@ test("rejects hostnames resolving to loopback or RFC1918 addresses before fetch"
   }
 });
 
+test("normalizes string, object, IPv4, and IPv6 DNS resolver results", async () => {
+  for (const result of ["93.184.216.34", { address: "93.184.216.34", family: 4 }, ["2606:4700:4700::1111"], [{ address: "2606:4700:4700::1111", family: 6 }]]) {
+    let requests = 0;
+    const resolution = await resolveFirstPartyEntities("example.com", {
+      lookup: async () => result,
+      fetch: async () => { requests++; return new Response("Public page"); },
+      maxUrls: 2,
+    });
+    assert.equal(requests, 2);
+    assert.equal(resolution.discovery.failures.length, 0);
+  }
+});
+
+test("rejects nullish and malformed DNS resolver entries before IP classification or fetch", async () => {
+  for (const result of [undefined, null, {}, [{ family: 4 }]]) {
+    let requests = 0;
+    const resolution = await resolveFirstPartyEntities("example.com", {
+      lookup: async () => result,
+      fetch: async () => { requests++; return new Response("unexpected"); },
+      maxUrls: 2,
+    });
+    assert.equal(requests, 0);
+    assert.match(resolution.discovery.failures[0].reason, /invalid address/);
+    assert.doesNotMatch(resolution.discovery.failures[0].reason, /Invalid IP address: undefined/);
+  }
+});
+
 test("validates every redirect and blocks localhost and private IP destinations", async () => {
   for (const location of ["https://localhost/admin", "https://10.0.0.5/admin"]) {
     let requests = 0;

@@ -27,3 +27,11 @@ test("explains contradictions, risks, impact, evidence, and exact gap remediatio
   assert.match(result.evidenceGaps[0].recommendation, /registry extract and beneficial ownership record/i);
   assert.deepEqual(result.decisionSupport.conditions, [result.evidenceGaps[0].recommendation]);
 });
+
+test("routes technical provider failures to further investigation instead of do not proceed", () => {
+  const failedCollection = evidence({ id: "provider-failure", category: "Negative", status: "negative", confidence: 99, title: "DNS provider unavailable", description: "Technical collection failure: request timed out.", businessImpact: "Provider collection failed." });
+  const result = buildInvestigationIntelligence({ evidenceItems: [failedCollection], correlationSummary: correlations, businessFindings: [], knowledgeGraph: graph });
+  assert.equal(result.decisionSupport.outcome, "Further Investigation Required");
+  assert.equal(result.risks.length, 0);
+  assert.match(result.decisionSupport.justification, /not adverse business evidence/i);
+});
