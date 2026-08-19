@@ -35,7 +35,8 @@ export type FirstPartyResolution = {
 
 type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 type LookupAddress = { address: string; family: 4 | 6 };
-type LookupLike = (hostname: string) => Promise<LookupAddress[]>;
+type LookupResult = LookupAddress | LookupAddress[] | string | string[];
+type LookupLike = (hostname: string) => Promise<LookupResult>;
 const MAX_URLS = 24;
 const MAX_REDIRECTS = 5;
 const MAX_SITEMAP_INDEXES = 3;
@@ -90,11 +91,26 @@ export function isPublicIpAddress(address: string) {
   return false;
 }
 
-const defaultLookup: LookupLike = async (hostname) => (await dnsLookup(hostname, { all: true, verbatim: true })) as LookupAddress[];
+const defaultLookup: LookupLike = async (hostname) => (await dnsLookup(hostname, { all: true, verbatim: true }))
+  .map(({ address, family }) => ({ address, family: family as 4 | 6 }));
+
+function normalizeLookupResult(result: LookupResult): LookupAddress[] {
+  const values = Array.isArray(result) ? result : [result];
+  return values.map((value) => {
+    const address = typeof value === "string" ? value : value?.address;
+    if (!address || typeof address !== "string") throw new Error("DNS resolution returned an invalid address.");
+    const detectedFamily = isIP(address);
+    if (detectedFamily !== 4 && detectedFamily !== 6) throw new Error(`DNS resolution returned an invalid address: ${address}.`);
+    const suppliedFamily = typeof value === "string" ? undefined : value.family;
+    if (suppliedFamily !== undefined && suppliedFamily !== detectedFamily) throw new Error(`DNS resolution returned a mismatched address family for ${address}.`);
+    return { address, family: detectedFamily };
+  });
+}
 
 async function validatedAddresses(hostname: string, lookup: LookupLike) {
-  const addresses = isIP(hostname) ? [{ address: hostname, family: isIP(hostname) as 4 | 6 }] : await lookup(hostname);
-  if (!addresses.length || addresses.some(({ address }) => !isPublicIpAddress(address))) throw new Error("Destination resolves to a non-public network address.");
+  const addresses = isIP(hostname) ? normalizeLookupResult(hostname) : normalizeLookupResult(await lookup(hostname));
+  if (!addresses.length) throw new Error("DNS resolution returned no addresses.");
+  if (addresses.some(({ address }) => !isPublicIpAddress(address))) throw new Error("Destination resolves to a non-public network address.");
   return addresses;
 }
 
