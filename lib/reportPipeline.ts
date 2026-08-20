@@ -23,6 +23,7 @@ import { buildTrustTimeline } from "./trustTimeline";
 import { buildReasoning } from "./reasoning";
 import { ProviderManager, createDefaultProviders } from "./providers";
 import type { ProviderExecutionContext } from "./providers/types";
+import type { ExternalIdentityCandidate } from "./providers/externalIdentityProvider";
 import { analyzeRisk } from "./riskEngine";
 import type { PaymentIntent, ShadowScoreIntake, ShadowScoreReport } from "./workspace";
 import { resolveBusinessIdentity } from "./businessIdentityResolver";
@@ -59,9 +60,10 @@ export async function buildReadyReport(input: {
   const submittedClassification = classifyTarget(submittedTarget);
   const resolvableTarget = ["Email", "Website"].includes(submittedClassification.targetType);
   const resolution = resolvableTarget ? resolutionTarget(submittedTarget) : undefined;
-  const providerTarget = intake.scanMode === "website" && resolution ? resolution.domain : submittedTarget;
+  const emailInvestigation = submittedClassification.targetType === "Email";
+  const providerTarget = intake.scanMode === "website" && resolution && !emailInvestigation ? resolution.domain : submittedTarget;
   const canonicalTarget = submittedTarget;
-  const investigationEmail = intake.scanMode === "website" ? undefined : intake.email;
+  const investigationEmail = emailInvestigation ? submittedTarget : intake.scanMode === "website" ? undefined : intake.email;
   const providerContext: ProviderExecutionContext = {
     intakeId: intake.intakeId,
     scanMode: intake.scanMode,
@@ -90,7 +92,7 @@ export async function buildReadyReport(input: {
   console.info("investigation_target_resolution", { investigationId: intake.intakeId, submittedTarget: intake.target, canonicalTarget, providerTargets: providerResults.map((item) => item.metadata.providerTarget), evidenceTargets: providerResults.flatMap((item) => item.evidence.map((evidence) => evidence.canonicalTarget || canonicalTarget)), reportTarget: canonicalTarget, redirectDomainMismatch: targetResolution?.redirectDomainMismatch, rejectedEvidenceCount: targetResolution?.rejectedEvidenceCount });
   const resolvedEntities = resolution ? await resolveFirstPartyEntities(submittedTarget) : undefined;
   const alerting = input.websiteTenantId && input.websiteAlertRepository ? { tenantId: input.websiteTenantId, repository: input.websiteAlertRepository, watchlistRepository: input.websiteWatchlistRepository } : undefined;
-  const websiteMonitoring = intake.scanMode === "website" ? await investigateAndRecordWebsite({ target: providerTarget }, input.websiteHistoryRepository, alerting) : undefined;
+  const websiteMonitoring = intake.scanMode === "website" && !emailInvestigation ? await investigateAndRecordWebsite({ target: providerTarget }, input.websiteHistoryRepository, alerting) : undefined;
   const websiteIntelligence = websiteMonitoring?.report;
   const canonicalWebsiteReport = websiteIntelligence ? toCanonicalWebsiteReport(websiteIntelligence) : undefined;
   const websiteEvidenceItems = websiteIntelligence ? normalizeWebsiteEvidence(websiteIntelligence) : [];
@@ -100,8 +102,11 @@ export async function buildReadyReport(input: {
       .filter((record) => record.status === "pending" || record.status === "skipped")
       .map((record) => ({ providerId: record.providerId || record.engineId, reason: record.reason || "Provider was not checked in this execution plan." })),
   });
-  const evidenceItems = applicableEvidence([...providerEvidenceItems, ...websiteEvidenceItems], intake.scanMode);
-  const correlationSummary = correlateEvidence({ evidenceItems, targetType: intake.scanMode });
+  const investigationType = emailInvestigation ? "email" : intake.scanMode;
+  const evidenceItems = applicableEvidence([...providerEvidenceItems, ...websiteEvidenceItems], investigationType);
+  const correlationSummary = correlateEvidence({ evidenceItems, targetType: investigationType });
+  const externalIdentityMetadata = providerResults.find((result) => result.providerId === "external-identity")?.metadata as Record<string, unknown> | undefined;
+  const publicIdentityCandidates = (externalIdentityMetadata?.externalIdentityCandidates || []) as ExternalIdentityCandidate[];
   const providerCategories = Object.fromEntries(providerManager.listProviders().map((provider) => [provider.id, provider.category]));
   const canonicalEvidenceSummary = summarizeEvidence(evidenceItems, providerCategories);
   executionRecords
@@ -208,7 +213,7 @@ export async function buildReadyReport(input: {
     intakeId: intake.intakeId,
     paymentIntentId: paymentIntent.id,
     userId: intake.userId,
-    title: `${intake.scanMode === "website" ? "Website" : "Trust"} Intelligence Report`,
+    title: `${emailInvestigation ? "Email" : intake.scanMode === "website" ? "Website" : "Trust"} Intelligence Report`,
     entity: canonicalTarget,
     platform: intake.platform,
     scanMode: intake.scanMode,
@@ -267,6 +272,9 @@ export async function buildReadyReport(input: {
         .map((provider) => ({ label: provider.providerId.replace(/[-_]/g, " "), completedAt: provider.completedAt })),
       targetResolution,
       resolvedEntities,
+      investigationType: emailInvestigation ? "EMAIL" : intake.scanMode.toUpperCase(),
+      mailboxProviderDomain: emailInvestigation && resolution ? resolution.domain : undefined,
+      publicIdentityCandidates,
     },
     riskScore: undefined,
     confidenceScore: undefined,

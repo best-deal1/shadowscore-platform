@@ -1,5 +1,5 @@
 import { BaseProvider } from "./BaseProvider";
-import type { ProviderEvidence, ProviderExecutionContext, ProviderFailureReason, ProviderFinding, ProviderResult } from "./types";
+import type { ProviderEvidence, ProviderExecutionContext, ProviderFailureReason, ProviderResult } from "./types";
 import { isPublicMailboxDomain } from "../emailDomains";
 
 const SEARCH_ENDPOINT = "https://api.search.brave.com/res/v1/web/search";
@@ -17,6 +17,10 @@ const SOCIAL_HOSTS: Record<string, string> = {
 export type ExternalIdentityCandidate = {
   platform: string;
   profileUrl: string;
+  observedDisplayName?: string;
+  matchedIdentifiers: string[];
+  matchType: "exact_email" | "username";
+  status: "Candidate" | "Corroborated" | "Verified";
   matchLevel: "exact_match" | "unverified_candidate";
   matchBasis: string;
   confidence: number;
@@ -24,6 +28,8 @@ export type ExternalIdentityCandidate = {
   evidenceQuery: string;
   evidenceSnippet: string;
   methods: string[];
+  sourceProvider: "Brave Search";
+  evidenceReference: string;
 };
 
 type SearchResult = { title: string; url: string; description?: string };
@@ -88,6 +94,7 @@ export async function discoverExternalIdentityCandidates(email: string, apiKey: 
   const domain = normalized.split("@")[1];
   const searches = [
     { method: "exact_email", query: `"${normalized}"` },
+    { method: "exact_email_profile", query: `"${normalized}" profile OR social` },
     { method: "username_profile", query: `"${localPart}" profile` },
     { method: "social_profile", query: `"${localPart}" site:facebook.com OR site:instagram.com OR site:linkedin.com OR site:x.com OR site:tiktok.com` },
     { method: "identity_context", query: `"${localPart}" "${domain}"` },
@@ -117,12 +124,18 @@ export async function discoverExternalIdentityCandidates(email: string, apiKey: 
     return {
       platform: matches[0].platform,
       profileUrl,
+      observedDisplayName: evidence.title && !containsExactEmailToken(evidence.title, normalized) ? evidence.title.trim() : undefined,
+      matchedIdentifiers: exact ? [normalized] : [localPart],
+      matchType: exact ? "exact_email" : "username",
+      status: exact ? "Corroborated" : "Candidate",
       matchLevel,
       confidence,
       evidenceUrl: publicSearchEvidenceUrl(evidence.query),
       evidenceQuery: evidence.query,
       evidenceSnippet: snippet,
       methods,
+      sourceProvider: "Brave Search",
+      evidenceReference: publicSearchEvidenceUrl(evidence.query),
       matchBasis: exact
         ? "The exact submitted email appears as a complete token in preserved public-search result evidence for this profile."
         : "The submitted email local-part generated this public profile candidate. Candidate only, not verified identity.",
@@ -146,7 +159,7 @@ export class EmailIntelligenceProvider extends BaseProvider {
       evidence: [{
         id: "email-target-classification",
         type: "placeholder",
-        label: "Submitted email identifier classification",
+        label: "Mailbox classification",
         value: publicMailbox ? "Public mailbox provider" : "Corporate/custom domain candidate",
         source: "submitted-target",
         investigationId: context.investigationId || context.intakeId,
@@ -182,32 +195,24 @@ export class ExternalIdentityProvider extends BaseProvider {
       const candidates = await discoverExternalIdentityCandidates(email, apiKey, controller.signal);
       const evidence: ProviderEvidence[] = candidates.map((candidate, index) => ({
         id: `external-identity-${index + 1}`,
-        type: candidate.matchLevel === "unverified_candidate" ? "placeholder" : "document",
+        type: "search_result",
         label: candidate.matchLevel === "unverified_candidate" ? "Potential public identity candidate" : "Public identity exact-email match",
-        value: candidate.matchLevel === "unverified_candidate"
-          ? `${candidate.platform} candidate | ${candidate.matchLevel} | confidence ${candidate.confidence}% | generated from submitted-email local-part only | ${candidate.matchBasis}`
-          : `${candidate.platform} | profile ${candidate.profileUrl} | ${candidate.matchLevel} | confidence ${candidate.confidence}% | query ${candidate.evidenceQuery} | snippet ${candidate.evidenceSnippet} | ${candidate.matchBasis}`,
+        value: `${candidate.platform} | profile ${candidate.profileUrl} | status ${candidate.status} | matched ${candidate.matchedIdentifiers.join(", ")} | confidence ${candidate.confidence}% | query ${candidate.evidenceQuery} | snippet ${candidate.evidenceSnippet} | ${candidate.matchBasis}`,
         source: candidate.evidenceUrl,
         investigationId: context.investigationId || context.intakeId,
         canonicalTarget: email,
         providerName: this.name,
         collectedAt: new Date().toISOString(),
       }));
-      const findings: ProviderFinding[] = candidates.filter((candidate) => candidate.matchLevel === "exact_match").slice(0, 5).map((candidate, index) => ({
-        id: `external-identity-finding-${index + 1}`,
-        title: `${candidate.platform} exact-email identity match`,
-        description: `${candidate.matchBasis} Profile: ${candidate.profileUrl}. Search evidence: ${candidate.evidenceUrl}. Query: ${candidate.evidenceQuery}. Snippet: ${candidate.evidenceSnippet}`,
-        severity: "info",
-      }));
       return {
-        findings,
+        findings: [],
         evidence,
         metadata: {
           lookupPerformed: true,
           submittedEmail: email,
           candidateCount: candidates.length,
           externalIdentityCandidates: candidates,
-          evidencePolicy: "Username-only candidates are placeholder evidence and their social/profile URLs are withheld from evidence values so downstream identity facts cannot treat them as detected. Exact-email matches preserve the search query and result snippet used for the claim.",
+          evidencePolicy: "Search-result candidates retain their profile URL and provenance. They remain candidates or corroborated search observations, not verified people, unless independent page or primary-source evidence verifies the same identity.",
         },
       };
     } finally {

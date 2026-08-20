@@ -23,6 +23,7 @@ function normalize(value: string) {
 
 function fieldFor(label: string, key?: string): Field | undefined {
   const text = `${key || ""} ${label}`;
+  if (/public identity (?:candidate|exact-email match)|external identity candidates/i.test(text)) return undefined;
   if (/business name|brand|store name|seller name|organization|identity|email|domain|website/i.test(text)) return "identity";
   return FIELD_PATTERNS.find((item) => item.pattern.test(text))?.field;
 }
@@ -30,8 +31,8 @@ function fieldFor(label: string, key?: string): Field | undefined {
 function comparisonKeyFor(field: Field, label: string, key?: string) {
   if (field !== "identity") return field;
   const text = `${key || ""} ${label}`.toLowerCase();
-  if (/email/.test(text)) return "identity_email";
   if (/domain|website/.test(text)) return "identity_domain";
+  if (/email/.test(text)) return "identity_email";
   if (/business name|brand|store name|seller name|organization|company|identity/.test(text)) return "identity_name";
   return "identity_other";
 }

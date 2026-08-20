@@ -114,3 +114,6 @@ This file records customer-visible improvements in each ShadowScore release.
 # August 19, 2026
 
 - First-party discovery now accepts normalized IPv4 and IPv6 resolver responses while rejecting malformed or private destinations. Provider collection failures now require further investigation instead of producing a blocking decision.
+# 2026-08-20
+
+- Email investigations now keep public mailbox providers separate from the investigated identity. Public search candidates, profile links, match reasons, confidence, status, and evidence provenance are visible in the Executive Report.
