@@ -1,7 +1,10 @@
 import { AuthoritativeCompanyEvidenceProvider, BusinessProfileProvider, ContactDiscoveryProvider, DMARCProvider, DNSProvider, ReputationProvider, SecurityHeadersProvider, SocialProfileProvider, SPFProvider, SSLProvider, ThreatReputationProvider, WebsiteCommerceProvider, WebsiteMetadataProvider, WHOISProvider } from "./productionProviders";
+import { EmailIntelligenceProvider, ExternalIdentityProvider } from "./externalIdentityProvider";
 
 export function createDefaultProviders() {
   return [
+    new EmailIntelligenceProvider(),
+    new ExternalIdentityProvider(),
     new SSLProvider(),
     new DNSProvider(),
     new WHOISProvider(),
