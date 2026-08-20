@@ -50,6 +50,8 @@ function extractDomains(text: string) { return text.match(/(?:https?:\/\/)?(?:ww
 export function extractEvidenceFacts(evidenceItems: EvidenceItem[]): EvidenceFacts {
   const facts: EvidenceFacts = { businessNames: [], registryNames: [], domains: [], websites: [], emails: [], phones: [], dnsHosts: [], sslHosts: [], marketplaceSellers: [], paymentAccounts: [], fraudSignals: [], negativeSignals: [] };
   for (const item of evidenceItems) {
+    if (item.evidenceRefs.some((ref) => ref.type === "search_result")) continue;
+
     const haystack = values(item);
     const lower = haystack.toLowerCase();
     const source = `${item.provider} ${item.source}`.toLowerCase();
@@ -59,7 +61,6 @@ export function extractEvidenceFacts(evidenceItems: EvidenceItem[]): EvidenceFac
     const explicitValues = item.evidenceRefs.map((ref) => ref.value).filter((value): value is string => Boolean(value?.trim()));
 
     for (const email of emailMatches) addUnique(facts.emails, endpoint("email", email.toLowerCase(), item));
-    if (item.evidenceRefs.some((ref) => ref.type === "search_result")) continue;
     for (const phone of phoneMatches) addUnique(facts.phones, endpoint("phone", phone.replace(/\s+/g, " ").trim(), item));
     for (const domain of domainMatches) addUnique(facts.domains, endpoint("domain", domain, item));
 
