@@ -1,9 +1,6 @@
 import { BaseProvider } from "./BaseProvider";
 import type { ProviderEvidence, ProviderExecutionContext, ProviderFailureReason, ProviderFinding, ProviderResult } from "./types";
-import { PUBLIC_EMAIL_DOMAINS } from "../entityResolution/firstParty";
-import { PUBLIC_MAILBOX_DOMAINS, isPublicMailboxDomain } from "../emailDomains";
-
-for (const domain of PUBLIC_MAILBOX_DOMAINS) PUBLIC_EMAIL_DOMAINS.add(domain);
+import { isPublicMailboxDomain } from "../emailDomains";
 
 const SEARCH_ENDPOINT = "https://api.search.brave.com/res/v1/web/search";
 const SOCIAL_HOSTS: Record<string, string> = {
@@ -34,6 +31,11 @@ type SearchResult = { title: string; url: string; description?: string };
 function emailFromContext(context: ProviderExecutionContext) {
   const values = [context.requestedTarget, context.target, context.email].filter(Boolean) as string[];
   return values.map((value) => value.trim().toLowerCase()).find((value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value));
+}
+
+function containsExactEmailToken(text: string, email: string) {
+  const escaped = email.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(^|[^A-Z0-9._%+\\-])${escaped}($|[^A-Z0-9._%+\\-])`, "i").test(text);
 }
 
 function platformFor(url: string) {
@@ -100,7 +102,7 @@ export async function discoverExternalIdentityCandidates(email: string, apiKey: 
   for (const hit of hits) {
     const platform = platformFor(hit.url);
     if (!platform) continue;
-    const exactEmail = `${hit.title} ${hit.description || ""}`.toLowerCase().includes(normalized);
+    const exactEmail = containsExactEmailToken(`${hit.title} ${hit.description || ""}`, normalized);
     const key = canonicalUrl(hit.url);
     grouped.set(key, [...(grouped.get(key) || []), { ...hit, platform, exactEmail }]);
   }
@@ -122,7 +124,7 @@ export async function discoverExternalIdentityCandidates(email: string, apiKey: 
       evidenceSnippet: snippet,
       methods,
       matchBasis: exact
-        ? "The exact submitted email appears in preserved public-search result evidence for this profile."
+        ? "The exact submitted email appears as a complete token in preserved public-search result evidence for this profile."
         : "The submitted email local-part generated this public profile candidate. Candidate only, not verified identity.",
     };
   }).sort((a, b) => b.confidence - a.confidence || a.profileUrl.localeCompare(b.profileUrl));
@@ -160,7 +162,7 @@ export class EmailIntelligenceProvider extends BaseProvider {
 export class ExternalIdentityProvider extends BaseProvider {
   readonly id = "external-identity";
   readonly name = "External Identity Discovery";
-  readonly version = "1.1.0";
+  readonly version = "1.2.0";
   readonly category = "business_profile" as const;
 
   failureReason(error: unknown): ProviderFailureReason {
@@ -182,7 +184,9 @@ export class ExternalIdentityProvider extends BaseProvider {
         id: `external-identity-${index + 1}`,
         type: candidate.matchLevel === "unverified_candidate" ? "placeholder" : "document",
         label: candidate.matchLevel === "unverified_candidate" ? "Potential public identity candidate" : "Public identity exact-email match",
-        value: `${candidate.platform} | profile ${candidate.profileUrl} | ${candidate.matchLevel} | confidence ${candidate.confidence}% | query ${candidate.evidenceQuery} | snippet ${candidate.evidenceSnippet} | ${candidate.matchBasis}`,
+        value: candidate.matchLevel === "unverified_candidate"
+          ? `${candidate.platform} candidate | ${candidate.matchLevel} | confidence ${candidate.confidence}% | generated from submitted-email local-part only | ${candidate.matchBasis}`
+          : `${candidate.platform} | profile ${candidate.profileUrl} | ${candidate.matchLevel} | confidence ${candidate.confidence}% | query ${candidate.evidenceQuery} | snippet ${candidate.evidenceSnippet} | ${candidate.matchBasis}`,
         source: candidate.evidenceUrl,
         investigationId: context.investigationId || context.intakeId,
         canonicalTarget: email,
@@ -203,7 +207,7 @@ export class ExternalIdentityProvider extends BaseProvider {
           submittedEmail: email,
           candidateCount: candidates.length,
           externalIdentityCandidates: candidates,
-          evidencePolicy: "Username-only candidates are placeholder evidence and never count as verified identity. Exact-email matches preserve the search query and result snippet used for the claim.",
+          evidencePolicy: "Username-only candidates are placeholder evidence and their social/profile URLs are withheld from evidence values so downstream identity facts cannot treat them as detected. Exact-email matches preserve the search query and result snippet used for the claim.",
         },
       };
     } finally {
