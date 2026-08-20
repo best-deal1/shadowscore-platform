@@ -6,29 +6,14 @@ import type {
   SkippedEngine,
   TargetClassificationInput,
 } from "./types";
+import { isPublicMailboxDomain } from "../emailDomains";
 
 const ENGINE_DEFINITIONS: Record<OrchestratorEngineId, EngineDefinition> = {
-  dns: {
-    engineId: "dns",
-    label: "DNS",
-    supportedTargets: ["Website", "Business", "Company", "Brand", "Business Profile", "Evidence Package"],
-  },
-  whois: {
-    engineId: "whois",
-    label: "WHOIS",
-    supportedTargets: ["Website", "Business", "Company", "Brand", "Business Profile", "Evidence Package"],
-  },
-  ssl: {
-    engineId: "ssl",
-    label: "SSL",
-    supportedTargets: ["Website", "Business", "Company", "Brand", "Business Profile", "Evidence Package"],
-  },
+  dns: { engineId: "dns", label: "DNS", supportedTargets: ["Website", "Business", "Company", "Brand", "Business Profile", "Evidence Package"] },
+  whois: { engineId: "whois", label: "WHOIS", supportedTargets: ["Website", "Business", "Company", "Brand", "Business Profile", "Evidence Package"] },
+  ssl: { engineId: "ssl", label: "SSL", supportedTargets: ["Website", "Business", "Company", "Brand", "Business Profile", "Evidence Package"] },
   headers: { engineId: "headers", label: "Headers", supportedTargets: ["Website", "Evidence Package"] },
-  "business-profile": {
-    engineId: "business-profile",
-    label: "Business Profile",
-    supportedTargets: ["Website", "Business", "Marketplace Seller", "Marketplace Store", "Company", "Brand", "Business Profile", "Evidence Package"],
-  },
+  "business-profile": { engineId: "business-profile", label: "Business Profile", supportedTargets: ["Website", "Business", "Marketplace Seller", "Marketplace Store", "Company", "Brand", "Business Profile", "Evidence Package"] },
   marketplace: { engineId: "marketplace", label: "Marketplace Engine", supportedTargets: ["Marketplace Seller", "Marketplace Store"] },
   reputation: { engineId: "reputation", label: "Reputation", supportedTargets: ["Marketplace Seller", "Marketplace Store", "Business", "Company", "Brand", "Business Profile"] },
   graph: { engineId: "graph", label: "Graph", supportedTargets: ["Marketplace Seller", "Marketplace Store", "Business", "Company", "Brand", "Business Profile", "Evidence Package"] },
@@ -47,11 +32,24 @@ const TARGET_ENGINE_MATRIX: Record<TargetClassificationInput["targetType"], Orch
   Company: ["business-profile", "reputation", "graph"],
   Brand: ["business-profile", "reputation", "graph"],
   "Business Profile": ["business-profile", "reputation", "graph"],
-  Email: ["external-identity", "email-intelligence"],
+  Email: ["email-intelligence", "external-identity", "domain"],
   Phone: ["business-profile", "reputation"],
   "Evidence Package": ["evidence-parser", "contradiction-engine", "graph"],
   Unknown: [],
 };
+
+function emailDomain(target: string) {
+  const match = /^[^\s@]+@([^\s@]+)$/i.exec(target.trim());
+  return match?.[1]?.toLowerCase().replace(/^www\./, "");
+}
+
+function enginesFor(classification: TargetClassificationInput): OrchestratorEngineId[] {
+  if (classification.targetType !== "Email") return TARGET_ENGINE_MATRIX[classification.targetType] ?? [];
+  const domain = emailDomain(classification.normalizedTarget || "");
+  return domain && isPublicMailboxDomain(domain)
+    ? ["email-intelligence", "external-identity"]
+    : ["email-intelligence", "external-identity", "domain"];
+}
 
 function planIdFor(classification: TargetClassificationInput, engineIds: OrchestratorEngineId[]): string {
   const target = classification.normalizedTarget || "unknown";
@@ -75,16 +73,16 @@ function reasonForEngine(engineId: OrchestratorEngineId, classification: TargetC
     case "marketplace": return `Marketplace-specific checks apply because the target was classified as ${classification.targetType}.`;
     case "reputation": return "Reputation signals are useful for public-facing commercial targets.";
     case "graph": return "Graph analysis links entities, identifiers, and evidence relationships.";
-    case "email-intelligence": return "Email intelligence applies to a directly classified email address.";
+    case "email-intelligence": return "Email intelligence preserves and classifies the submitted email identifier without treating a public mailbox provider as the subject business.";
     case "external-identity": return "Public web discovery searches for evidence-backed profiles and identity candidates associated with the submitted email.";
-    case "domain": return "The email domain can be extracted and evaluated without contacting external APIs.";
+    case "domain": return "A custom email domain can be investigated as a candidate corporate domain while the submitted email remains the primary identifier.";
     case "evidence-parser": return "Evidence packages must be parsed before downstream checks can compare claims.";
     case "contradiction-engine": return "Contradiction checks compare parsed evidence for inconsistent claims.";
   }
 }
 
 export function createExecutionPlan(classification: TargetClassificationInput): ExecutionPlan {
-  const engineIds = TARGET_ENGINE_MATRIX[classification.targetType] ?? [];
+  const engineIds = enginesFor(classification);
   const selected = new Set(engineIds);
   const executionPlan: EnginePlanStep[] = engineIds.map((engineId, index) => ({
     engineId,
@@ -109,7 +107,12 @@ export function createExecutionPlan(classification: TargetClassificationInput): 
     classification.reasoning,
     engineIds.length > 0 ? `Selected ${engineIds.length} deterministic engine(s) for this target type.` : "No deterministic engine path is available for this target type.",
   ];
-
+  if (classification.targetType === "Email") {
+    const domain = emailDomain(classification.normalizedTarget || "");
+    if (domain) reasoning.push(isPublicMailboxDomain(domain)
+      ? `Detected public mailbox domain ${domain}; business-domain infrastructure checks are suppressed.`
+      : `Detected custom email domain ${domain}; domain evidence remains available as a candidate corporate signal.`);
+  }
   if (classification.detectedPlatform) reasoning.push(`Detected platform ${classification.detectedPlatform} influenced marketplace-aware planning.`);
 
   return {
