@@ -1,6 +1,7 @@
 import { lookup as dnsLookup } from "node:dns/promises";
 import { request as httpsRequest } from "node:https";
 import { isIP } from "node:net";
+import { PUBLIC_MAILBOX_DOMAINS, isPublicMailboxDomain } from "../emailDomains";
 
 export type FirstPartyEntity = {
   type: "Email" | "Person" | "Role" | "Organization" | "Phone";
@@ -41,7 +42,7 @@ const MAX_URLS = 24;
 const MAX_REDIRECTS = 5;
 const MAX_SITEMAP_INDEXES = 3;
 const USER_AGENT = "ShadowScore First-Party Intelligence/1.0 (+https://shadowscore.com)";
-export const PUBLIC_EMAIL_DOMAINS = new Set(["gmail.com", "googlemail.com", "outlook.com", "hotmail.com", "live.com", "yahoo.com", "icloud.com", "proton.me", "protonmail.com", "aol.com"]);
+export const PUBLIC_EMAIL_DOMAINS = PUBLIC_MAILBOX_DOMAINS;
 
 function ipv4Bytes(address: string) {
   const bytes = address.split(".").map(Number);
@@ -245,7 +246,7 @@ function extractPage(content: string, url: string, targetEmail: string | undefin
 
 export async function resolveFirstPartyEntities(input: string, options: { fetch?: FetchLike; lookup?: LookupLike; timeoutMs?: number; maxUrls?: number } = {}): Promise<FirstPartyResolution> {
   const target = resolutionTarget(input);
-  if (target.inputType === "email" && PUBLIC_EMAIL_DOMAINS.has(target.domain)) {
+  if (target.inputType === "email" && isPublicMailboxDomain(target.domain)) {
     return {
       originalInput: target.originalInput,
       inputType: target.inputType,
