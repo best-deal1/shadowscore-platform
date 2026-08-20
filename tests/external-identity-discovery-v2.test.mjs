@@ -4,6 +4,7 @@ import { discoverExternalIdentityCandidates, EmailIntelligenceProvider, External
 import { resolveFirstPartyEntities } from "../lib/entityResolution/firstParty.ts";
 import { createExecutionPlan } from "../lib/orchestrator/planner.ts";
 import { buildEvidenceItems } from "../lib/evidence/index.ts";
+import { buildIdentityProfile } from "../lib/identityEngine.ts";
 
 const EMAIL = "nastikmastik358@gmail.com";
 
@@ -36,6 +37,18 @@ test("public search preserves the query and snippet supporting an exact-email pr
   }
 });
 
+test("a longer different email token cannot become an exact submitted-email match", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => Response.json({ web: { results: [{ title: "Different person", url: "https://facebook.com/notalice", description: "Contact notalice@example.com" }] } });
+  try {
+    const candidates = await discoverExternalIdentityCandidates("alice@example.com", "test-key", new AbortController().signal);
+    assert.ok(candidates.length > 0);
+    assert.ok(candidates.every((candidate) => candidate.matchLevel === "unverified_candidate"));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("repeated username searches do not upgrade an unverified candidate", async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (input) => {
@@ -53,7 +66,7 @@ test("repeated username searches do not upgrade an unverified candidate", async 
   }
 });
 
-test("unverified candidates are placeholder evidence and cannot enter verified evidence scoring", async () => {
+test("unverified candidates stay out of verified evidence and identity social facts", async () => {
   const originalFetch = globalThis.fetch;
   const originalKey = process.env.BRAVE_SEARCH_API_KEY;
   process.env.BRAVE_SEARCH_API_KEY = "test-key";
@@ -65,6 +78,8 @@ test("unverified candidates are placeholder evidence and cannot enter verified e
     assert.equal(result.findings.length, 0);
     const items = buildEvidenceItems([result]);
     assert.ok(items.every((item) => item.category !== "Verified"));
+    const profile = buildIdentityProfile({ providerResults: [result], target: EMAIL, generatedAt: new Date().toISOString() });
+    assert.equal(profile.businessIdentity.socialPresence.confidence, "Not Found");
   } finally {
     globalThis.fetch = originalFetch;
     if (originalKey === undefined) delete process.env.BRAVE_SEARCH_API_KEY; else process.env.BRAVE_SEARCH_API_KEY = originalKey;
@@ -72,7 +87,7 @@ test("unverified candidates are placeholder evidence and cannot enter verified e
 });
 
 test("free mailbox email and common aliases are not crawled as first-party business evidence", async () => {
-  for (const email of [EMAIL, "user@me.com", "user@yahoo.co.uk", "user@hotmail.fr", "user@msn.com"]) {
+  for (const email of [EMAIL, "user@me.com", "user@yahoo.co.uk", "user@yahoo.com.br", "user@hotmail.fr", "user@msn.com"]) {
     let fetches = 0;
     const result = await resolveFirstPartyEntities(email, { fetch: async () => { fetches += 1; return new Response("unexpected"); } });
     assert.equal(result.inputType, "email");
