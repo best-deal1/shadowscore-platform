@@ -1,5 +1,9 @@
 import { BaseProvider } from "./BaseProvider";
-import type { ProviderEvidence, ProviderExecutionContext, ProviderFinding, ProviderResult } from "./types";
+import type { ProviderEvidence, ProviderExecutionContext, ProviderFailureReason, ProviderFinding, ProviderResult } from "./types";
+import { PUBLIC_EMAIL_DOMAINS } from "../entityResolution/firstParty";
+import { PUBLIC_MAILBOX_DOMAINS, isPublicMailboxDomain } from "../emailDomains";
+
+for (const domain of PUBLIC_MAILBOX_DOMAINS) PUBLIC_EMAIL_DOMAINS.add(domain);
 
 const SEARCH_ENDPOINT = "https://api.search.brave.com/res/v1/web/search";
 const SOCIAL_HOSTS: Record<string, string> = {
@@ -16,10 +20,12 @@ const SOCIAL_HOSTS: Record<string, string> = {
 export type ExternalIdentityCandidate = {
   platform: string;
   profileUrl: string;
-  matchLevel: "exact_match" | "strong_match" | "weak_match" | "unverified_candidate";
+  matchLevel: "exact_match" | "unverified_candidate";
   matchBasis: string;
   confidence: number;
   evidenceUrl: string;
+  evidenceQuery: string;
+  evidenceSnippet: string;
   methods: string[];
 };
 
@@ -54,6 +60,12 @@ function canonicalUrl(url: string) {
   }
 }
 
+function publicSearchEvidenceUrl(query: string) {
+  const url = new URL("https://search.brave.com/search");
+  url.searchParams.set("q", query);
+  return url.toString();
+}
+
 async function braveSearch(query: string, apiKey: string, signal: AbortSignal): Promise<SearchResult[]> {
   const url = new URL(SEARCH_ENDPOINT);
   url.searchParams.set("q", query);
@@ -81,7 +93,7 @@ export async function discoverExternalIdentityCandidates(email: string, apiKey: 
 
   const hits = (await Promise.all(searches.map(async (search) => {
     const results = await braveSearch(search.query, apiKey, signal);
-    return results.map((result) => ({ ...result, method: search.method }));
+    return results.map((result) => ({ ...result, method: search.method, query: search.query }));
   }))).flat();
 
   const grouped = new Map<string, Array<(typeof hits)[number] & { platform: string; exactEmail: boolean }>>();
@@ -95,41 +107,72 @@ export async function discoverExternalIdentityCandidates(email: string, apiKey: 
 
   return [...grouped.entries()].map(([profileUrl, matches]): ExternalIdentityCandidate => {
     const methods = [...new Set(matches.map((item) => item.method))];
-    const exactEmail = matches.some((item) => item.exactEmail);
-    const corroborated = methods.length > 1;
-    const matchLevel: ExternalIdentityCandidate["matchLevel"] = exactEmail && corroborated
-      ? "exact_match"
-      : corroborated
-        ? "strong_match"
-        : exactEmail
-          ? "weak_match"
-          : "unverified_candidate";
-    const confidence = matchLevel === "exact_match" ? 92 : matchLevel === "strong_match" ? 76 : matchLevel === "weak_match" ? 58 : 30;
+    const exact = matches.find((item) => item.exactEmail);
+    const matchLevel: ExternalIdentityCandidate["matchLevel"] = exact ? "exact_match" : "unverified_candidate";
+    const confidence = exact ? 90 : 30;
+    const evidence = exact || matches[0];
+    const snippet = `${evidence.title}${evidence.description ? ` - ${evidence.description}` : ""}`.trim();
     return {
       platform: matches[0].platform,
       profileUrl,
       matchLevel,
       confidence,
-      evidenceUrl: matches.find((item) => item.exactEmail)?.url || matches[0].url,
+      evidenceUrl: publicSearchEvidenceUrl(evidence.query),
+      evidenceQuery: evidence.query,
+      evidenceSnippet: snippet,
       methods,
-      matchBasis: exactEmail
-        ? (corroborated ? "The exact submitted email appears in public search evidence and an independent query returned the same profile." : "The exact submitted email appears in public search evidence for this profile.")
-        : (corroborated ? "Multiple independent username/context searches returned the same public profile candidate." : "The submitted email local-part generated this public profile candidate. Candidate only, not verified identity."),
+      matchBasis: exact
+        ? "The exact submitted email appears in preserved public-search result evidence for this profile."
+        : "The submitted email local-part generated this public profile candidate. Candidate only, not verified identity.",
     };
   }).sort((a, b) => b.confidence - a.confidence || a.profileUrl.localeCompare(b.profileUrl));
 }
 
-export class ExternalIdentityProvider extends BaseProvider {
-  readonly id = "external-identity";
-  readonly name = "External Identity Discovery";
+export class EmailIntelligenceProvider extends BaseProvider {
+  readonly id = "email-intelligence";
+  readonly name = "Email Intelligence";
   readonly version = "1.0.0";
   readonly category = "business_profile" as const;
 
   protected async collect(context: ProviderExecutionContext): Promise<Pick<ProviderResult, "findings" | "evidence" | "metadata">> {
     const email = emailFromContext(context);
+    if (!email) throw new Error("Email intelligence requires an email target.");
+    const domain = email.split("@")[1];
+    const publicMailbox = isPublicMailboxDomain(domain);
+    return {
+      findings: [],
+      evidence: [{
+        id: "email-target-classification",
+        type: "placeholder",
+        label: "Submitted email identifier classification",
+        value: publicMailbox ? "Public mailbox provider" : "Corporate/custom domain candidate",
+        source: "submitted-target",
+        investigationId: context.investigationId || context.intakeId,
+        canonicalTarget: email,
+        providerName: this.name,
+        collectedAt: new Date().toISOString(),
+      }],
+      metadata: { lookupPerformed: true, submittedEmail: email, emailDomain: domain, publicMailbox },
+    };
+  }
+}
+
+export class ExternalIdentityProvider extends BaseProvider {
+  readonly id = "external-identity";
+  readonly name = "External Identity Discovery";
+  readonly version = "1.1.0";
+  readonly category = "business_profile" as const;
+
+  failureReason(error: unknown): ProviderFailureReason {
+    if (error instanceof Error && /BRAVE_SEARCH_API_KEY|credential|not configured|provider unavailable/i.test(error.message)) return "Unavailable";
+    return super.failureReason(error);
+  }
+
+  protected async collect(context: ProviderExecutionContext): Promise<Pick<ProviderResult, "findings" | "evidence" | "metadata">> {
+    const email = emailFromContext(context);
     if (!email) throw new Error("External identity discovery requires an email target.");
     const apiKey = process.env.BRAVE_SEARCH_API_KEY;
-    if (!apiKey) throw new Error("BRAVE_SEARCH_API_KEY is required for external identity discovery.");
+    if (!apiKey) throw new Error("External identity provider unavailable: BRAVE_SEARCH_API_KEY is not configured.");
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8_000);
@@ -137,19 +180,19 @@ export class ExternalIdentityProvider extends BaseProvider {
       const candidates = await discoverExternalIdentityCandidates(email, apiKey, controller.signal);
       const evidence: ProviderEvidence[] = candidates.map((candidate, index) => ({
         id: `external-identity-${index + 1}`,
-        type: "document",
-        label: candidate.matchLevel === "unverified_candidate" ? "Potential public identity candidate" : "Public identity match",
-        value: `${candidate.platform} | ${candidate.profileUrl} | ${candidate.matchLevel} | confidence ${candidate.confidence}% | ${candidate.matchBasis}`,
+        type: candidate.matchLevel === "unverified_candidate" ? "placeholder" : "document",
+        label: candidate.matchLevel === "unverified_candidate" ? "Potential public identity candidate" : "Public identity exact-email match",
+        value: `${candidate.platform} | profile ${candidate.profileUrl} | ${candidate.matchLevel} | confidence ${candidate.confidence}% | query ${candidate.evidenceQuery} | snippet ${candidate.evidenceSnippet} | ${candidate.matchBasis}`,
         source: candidate.evidenceUrl,
         investigationId: context.investigationId || context.intakeId,
         canonicalTarget: email,
         providerName: this.name,
         collectedAt: new Date().toISOString(),
       }));
-      const findings: ProviderFinding[] = candidates.slice(0, 5).map((candidate, index) => ({
+      const findings: ProviderFinding[] = candidates.filter((candidate) => candidate.matchLevel === "exact_match").slice(0, 5).map((candidate, index) => ({
         id: `external-identity-finding-${index + 1}`,
-        title: `${candidate.platform} identity candidate`,
-        description: `${candidate.matchBasis} Evidence: ${candidate.evidenceUrl}`,
+        title: `${candidate.platform} exact-email identity match`,
+        description: `${candidate.matchBasis} Profile: ${candidate.profileUrl}. Search evidence: ${candidate.evidenceUrl}. Query: ${candidate.evidenceQuery}. Snippet: ${candidate.evidenceSnippet}`,
         severity: "info",
       }));
       return {
@@ -160,7 +203,7 @@ export class ExternalIdentityProvider extends BaseProvider {
           submittedEmail: email,
           candidateCount: candidates.length,
           externalIdentityCandidates: candidates,
-          evidencePolicy: "Candidates are not promoted to verified people or organizations without direct or corroborated evidence.",
+          evidencePolicy: "Username-only candidates are placeholder evidence and never count as verified identity. Exact-email matches preserve the search query and result snippet used for the claim.",
         },
       };
     } finally {
