@@ -157,7 +157,7 @@ export function buildIdentityProfile(input: IdentityEngineInput): IdentityProfil
   const businessEvidence = [...publicEvidence(businessProfile), ...publicEvidence(marketplace)];
   const country = metadataString(businessProfile, ["country", "countryCode"]) || metadataString(whois, ["country", "registrantCountry"]) || (domain ? COUNTRY_TLDS[domain.split(".").pop() || ""] : undefined);
   const marketplaceValue = input.marketplaceSeller || metadataString(marketplace, ["sellerName", "storeName", "marketplace"]);
-  const socialEvidence = providerResults.flatMap((result) => result.evidence).filter((item) => SOCIAL_DOMAINS.some((social) => `${item.value || ""} ${item.source}`.toLowerCase().includes(social))).map((item) => `${item.label}: ${item.value || item.source}`);
+  const socialEvidence = providerResults.flatMap((result) => result.evidence).filter((item) => item.type !== "search_result" && SOCIAL_DOMAINS.some((social) => `${item.value || ""} ${item.source}`.toLowerCase().includes(social))).map((item) => `${item.label}: ${item.value || item.source}`);
   const foundSignals = [name, country, domain, hasEmail, hasEmailAuth, hasOwnership, businessEvidence.length > 0, marketplaceValue, socialEvidence.length > 0].filter(Boolean).length;
   const confidence: IdentityConfidence = foundSignals >= 6 ? "High" : foundSignals >= 3 ? "Medium" : "Low";
   const status: BusinessIdentityStatus = foundSignals >= 6 ? "Detected" : foundSignals >= 3 ? "Likely" : foundSignals > 0 ? "Insufficient Public Evidence" : "Not Found";

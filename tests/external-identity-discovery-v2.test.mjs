@@ -5,6 +5,10 @@ import { resolveFirstPartyEntities } from "../lib/entityResolution/firstParty.ts
 import { createExecutionPlan } from "../lib/orchestrator/planner.ts";
 import { buildEvidenceItems } from "../lib/evidence/index.ts";
 import { buildIdentityProfile } from "../lib/identityEngine.ts";
+import { buildBusinessIntelligence } from "../lib/businessIntelligence/index.ts";
+import { correlateEvidence } from "../lib/correlation/index.ts";
+import { buildInvestigationIntelligence } from "../lib/investigationIntelligence/index.ts";
+import { readFile } from "node:fs/promises";
 
 const EMAIL = "nastikmastik358@gmail.com";
 
@@ -27,6 +31,9 @@ test("public search preserves the query and snippet supporting an exact-email pr
     assert.equal(candidates[0].platform, "Facebook");
     assert.equal(candidates[0].profileUrl, "https://www.facebook.com/nastikmastik");
     assert.equal(candidates[0].matchLevel, "exact_match");
+    assert.equal(candidates[0].status, "Corroborated");
+    assert.deepEqual(candidates[0].matchedIdentifiers, [EMAIL]);
+    assert.equal(candidates[0].sourceProvider, "Brave Search");
     assert.ok(candidates[0].confidence >= 90);
     assert.match(candidates[0].matchBasis, /exact submitted email/i);
     assert.match(candidates[0].evidenceQuery, /nastikmastik358@gmail\.com/);
@@ -74,12 +81,52 @@ test("unverified candidates stay out of verified evidence and identity social fa
   try {
     const result = await new ExternalIdentityProvider().execute({ intakeId: "i-1", scanMode: "website", target: EMAIL, requestedTarget: EMAIL, platform: "website", fileNames: [], visibleSignalCategories: [] });
     assert.equal(result.status, "completed");
-    assert.equal(result.evidence[0].type, "placeholder");
+    assert.equal(result.evidence[0].type, "search_result");
+    assert.match(result.evidence[0].value, /https:\/\/instagram\.com\/nastikmastik358/);
     assert.equal(result.findings.length, 0);
     const items = buildEvidenceItems([result]);
     assert.ok(items.every((item) => item.category !== "Verified"));
     const profile = buildIdentityProfile({ providerResults: [result], target: EMAIL, generatedAt: new Date().toISOString() });
     assert.equal(profile.businessIdentity.socialPresence.confidence, "Not Found");
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalKey === undefined) delete process.env.BRAVE_SEARCH_API_KEY; else process.env.BRAVE_SEARCH_API_KEY = originalKey;
+  }
+});
+
+test("production email candidate remains visible without creating a false identity conflict", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalKey = process.env.BRAVE_SEARCH_API_KEY;
+  process.env.BRAVE_SEARCH_API_KEY = "test-key";
+  globalThis.fetch = async (input) => {
+    const query = new URL(String(input)).searchParams.get("q") || "";
+    return Response.json({ web: { results: responseFor(query) } });
+  };
+  try {
+    const emailResult = await new EmailIntelligenceProvider().execute({ intakeId: "acceptance", scanMode: "website", target: EMAIL, requestedTarget: EMAIL, platform: "website", fileNames: [], visibleSignalCategories: [] });
+    const identityResult = await new ExternalIdentityProvider().execute({ intakeId: "acceptance", scanMode: "website", target: EMAIL, requestedTarget: EMAIL, platform: "website", fileNames: [], visibleSignalCategories: [] });
+    const candidate = identityResult.metadata.externalIdentityCandidates[0];
+    assert.equal(candidate.profileUrl, "https://www.facebook.com/nastikmastik");
+    assert.equal(candidate.status, "Corroborated");
+    assert.notEqual(candidate.status, "Verified");
+    assert.equal(candidate.observedDisplayName, "Public profile");
+    assert.notEqual(candidate.observedDisplayName, "nastikmastik358");
+    const providerResults = [emailResult, identityResult];
+    const businessIntelligence = buildBusinessIntelligence(providerResults);
+    assert.equal(businessIntelligence.findings.some((finding) => /Conflicting identity records/i.test(finding.title)), false);
+    const evidenceItems = buildEvidenceItems(providerResults);
+    const correlationSummary = correlateEvidence({ evidenceItems, targetType: "email" });
+    const intelligence = buildInvestigationIntelligence({ evidenceItems, correlationSummary, businessFindings: businessIntelligence.findings, knowledgeGraph: { entities: [], relationships: [] } });
+    assert.equal(intelligence.contradictions.length, 0);
+    assert.notEqual(intelligence.decisionSupport.outcome, "Do Not Proceed");
+    const reportSource = await readFile(new URL("../components/report/ExecutiveIntelligenceReport.tsx", import.meta.url), "utf8");
+    assert.match(reportSource, /Public Identity Candidates/);
+    assert.match(reportSource, /candidate\.profileUrl/);
+    assert.match(reportSource, /candidate\.evidenceReference/);
+    assert.match(reportSource, /candidate\.status/);
+    const pipelineSource = await readFile(new URL("../lib/reportPipeline.ts", import.meta.url), "utf8");
+    assert.match(pipelineSource, /investigationType: emailInvestigation \? "EMAIL"/);
+    assert.match(pipelineSource, /intake\.scanMode === "website" && !emailInvestigation/);
   } finally {
     globalThis.fetch = originalFetch;
     if (originalKey === undefined) delete process.env.BRAVE_SEARCH_API_KEY; else process.env.BRAVE_SEARCH_API_KEY = originalKey;

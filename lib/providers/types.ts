@@ -33,7 +33,7 @@ export type ProviderFinding = {
 
 export type ProviderEvidence = {
   id: string;
-  type: "placeholder" | "configuration" | "document" | "observation";
+  type: "placeholder" | "configuration" | "document" | "observation" | "search_result";
   label: string;
   value?: string;
   source: string;

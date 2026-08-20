@@ -50,6 +50,8 @@ function extractDomains(text: string) { return text.match(/(?:https?:\/\/)?(?:ww
 export function extractEvidenceFacts(evidenceItems: EvidenceItem[]): EvidenceFacts {
   const facts: EvidenceFacts = { businessNames: [], registryNames: [], domains: [], websites: [], emails: [], phones: [], dnsHosts: [], sslHosts: [], marketplaceSellers: [], paymentAccounts: [], fraudSignals: [], negativeSignals: [] };
   for (const item of evidenceItems) {
+    if (item.evidenceRefs.some((ref) => ref.type === "search_result")) continue;
+
     const haystack = values(item);
     const lower = haystack.toLowerCase();
     const source = `${item.provider} ${item.source}`.toLowerCase();

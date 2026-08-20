@@ -7,6 +7,10 @@ export const INVESTIGATION_INTELLIGENCE_VERSION = "investigation-intelligence-v1
 const clamp = (value: number) => Math.max(0, Math.min(100, Math.round(value)));
 const quality = (score: number): SectionConfidence["evidenceQuality"] => score >= 80 ? "High" : score >= 55 ? "Medium" : "Low";
 
+function isSearchResultEvidence(item: EvidenceItem) {
+  return item.evidenceRefs.some((ref) => ref.type === "search_result");
+}
+
 function gapRecommendation(item: EvidenceItem) {
   const text = `${item.title} ${item.description} ${item.provider}`.toLowerCase();
   if (/owner|registrant|company|registr/.test(text)) return "Obtain a current registry extract and beneficial ownership record, then match both to the contracting entity.";
@@ -33,6 +37,7 @@ function isTechnicalCollectionFailure(item: EvidenceItem) {
 
 export function buildInvestigationIntelligence(input: InvestigationIntelligenceInput): InvestigationIntelligence {
   const { evidenceItems, correlationSummary, businessFindings, knowledgeGraph } = input;
+  const factualEvidenceItems = evidenceItems.filter((item) => !isSearchResultEvidence(item));
   const contradictions = correlationSummary.contradictions.map((item) => ({
     id: item.id,
     title: item.title,
@@ -47,18 +52,18 @@ export function buildInvestigationIntelligence(input: InvestigationIntelligenceI
     ...knowledgeGraph.relationships.map((item) => ({ id: item.id, type: item.type, from: knowledgeGraph.entities.find((entity) => entity.id === item.from)?.label || item.from, to: knowledgeGraph.entities.find((entity) => entity.id === item.to)?.label || item.to, confidence: 75, evidenceIds: item.sourceScanIds, explanation: item.context || `Observed ${item.type.toLowerCase().replace(/_/g, " ")} relationship.` })),
   ].filter((item, index, all) => all.findIndex((candidate) => candidate.id === item.id) === index);
 
-  const technicalFailures = evidenceItems.filter(isTechnicalCollectionFailure);
-  const negativeEvidence = evidenceItems.filter((item) => item.category === "Negative" && !isTechnicalCollectionFailure(item));
+  const technicalFailures = factualEvidenceItems.filter(isTechnicalCollectionFailure);
+  const negativeEvidence = factualEvidenceItems.filter((item) => item.category === "Negative" && !isTechnicalCollectionFailure(item));
   const risks = [
     ...negativeEvidence.map((item) => ({ id: `risk:${item.id}`, title: item.title, severity: (item.confidence >= 95 ? "critical" : item.confidence >= 85 ? "high" : "medium") as "critical" | "high" | "medium", whyDetected: item.description, supportingEvidence: item.evidenceRefs.map((evidence) => ({ id: evidence.id, label: evidence.label, source: evidence.source })), businessImpact: item.businessImpact })),
     ...businessFindings.filter((item) => item.direction !== "supports_credibility").map((item) => ({ id: `risk:${item.id}`, title: item.title, severity: (item.direction === "weakens_credibility" ? "high" : "medium") as "high" | "medium", whyDetected: item.statement, supportingEvidence: item.evidence.map((evidence) => ({ id: evidence.id, label: evidence.label, source: evidence.source })), businessImpact: item.direction === "weakens_credibility" ? "The inconsistency raises the chance of contracting with, paying, or relying on the wrong business entity." : "The finding requires resolution before the related commercial control can be treated as reliable." })),
   ];
 
-  const gaps = evidenceItems.filter((item) => ["Missing", "Unavailable", "Not Checked"].includes(item.category) || isTechnicalCollectionFailure(item));
+  const gaps = factualEvidenceItems.filter((item) => ["Missing", "Unavailable", "Not Checked"].includes(item.category) || isTechnicalCollectionFailure(item));
   const evidenceGaps = gaps.map((item) => ({ id: `gap:${item.id}`, missingEvidence: item.title, recommendation: gapRecommendation(item), confidenceImpact: `Resolving this gap would improve ${/owner|company|registr|identity/i.test(item.title) ? "identity" : /domain|dns|ssl|website/i.test(item.title) ? "relationship" : "decision"} confidence.` }));
-  const identity = confidence(evidenceItems, (item) => /identity|business|company|owner|registr|email/.test(`${item.title} ${item.description}`.toLowerCase()), contradictions.length * 5);
-  const relation = confidence(evidenceItems, (item) => /domain|dns|ssl|website|marketplace|payment|address/.test(`${item.title} ${item.description}`.toLowerCase()), correlationSummary.unresolvedRelationships.length * 4);
-  const risk = confidence(evidenceItems, () => true, contradictions.length * 6);
+  const identity = confidence(factualEvidenceItems, (item) => /identity|business|company|owner|registr|email/.test(`${item.title} ${item.description}`.toLowerCase()), contradictions.length * 5);
+  const relation = confidence(factualEvidenceItems, (item) => /domain|dns|ssl|website|marketplace|payment|address/.test(`${item.title} ${item.description}`.toLowerCase()), correlationSummary.unresolvedRelationships.length * 4);
+  const risk = confidence(factualEvidenceItems, () => true, contradictions.length * 6);
   const decisionScore = clamp((identity.score + relation.score + risk.score) / 3 - (risks.some((item) => item.severity === "critical") ? 15 : 0));
   const sectionConfidence: SectionConfidence[] = [
     { section: "Identity", confidence: identity.score, evidenceQuality: quality(identity.score), missingEvidence: identity.gaps },
