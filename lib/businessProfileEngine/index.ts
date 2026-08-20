@@ -43,7 +43,6 @@ const EVIDENCE_RELIABILITY: Record<BusinessEvidenceType, { reliability: Evidence
   provider_observation: { reliability: "Low", weight: 0.35 },
 };
 
-
 function provider(providerResults: ProviderResult[], id: string) {
   return providerResults.find((result) => result.providerId === id);
 }
@@ -64,6 +63,7 @@ function metadataString(result: ProviderResult | undefined, keys: string[]) {
 function evidenceValue(result: ProviderResult | undefined, labelPatterns: RegExp[]) {
   if (!result) return undefined;
   for (const item of result.evidence) {
+    if (item.type === "search_result") continue;
     const value = clean(item.value);
     if (!value || value.toLowerCase() === "unavailable") continue;
     if (labelPatterns.some((pattern) => pattern.test(item.label))) return value;
@@ -92,11 +92,15 @@ function normalizeDomain(input?: string) {
 
 function hasNonPlaceholderEvidence(result: ProviderResult | undefined) {
   if (!result || result.status !== "completed") return false;
-  return result.evidence.some((item) => item.type !== "placeholder" && clean(item.value) && item.value?.toLowerCase() !== "unavailable");
+  return result.evidence.some((item) => item.type !== "placeholder" && item.type !== "search_result" && clean(item.value) && item.value?.toLowerCase() !== "unavailable");
 }
 
 function isPlaceholderOnly(result: ProviderResult) {
-  return result.evidence.length > 0 && result.evidence.every((item) => item.type === "placeholder");
+  return result.evidence.length > 0 && result.evidence.every((item) => item.type === "placeholder" || item.type === "search_result");
+}
+
+function isSearchResultOnly(result: ProviderResult) {
+  return result.evidence.length > 0 && result.evidence.every((item) => item.type === "search_result");
 }
 
 function evidenceTypeFor(providerId: string, evidence?: ProviderEvidence): BusinessEvidenceType {
@@ -129,6 +133,7 @@ function freshness(result: ProviderResult): EvidenceFreshness {
 }
 
 function makeEvidenceItem(result: ProviderResult, evidence: ProviderEvidence): BusinessProfileEvidenceItem | undefined {
+  if (evidence.type === "search_result") return undefined;
   const value = clean(evidence.value);
   if (!value || value.toLowerCase() === "unavailable") return undefined;
   const type = evidenceTypeFor(result.providerId, evidence);
@@ -151,8 +156,12 @@ function buildEvidenceItems(providerResults: ProviderResult[]): BusinessProfileE
   return providerResults.flatMap((result) => result.evidence.map((item) => makeEvidenceItem(result, item)).filter((item): item is BusinessProfileEvidenceItem => Boolean(item)));
 }
 
+function factualProviderResults(providerResults: ProviderResult[]) {
+  return providerResults.filter((result) => !isSearchResultOnly(result));
+}
+
 export function buildBusinessProfileEvidenceSnapshot(input: BusinessProfileEngineInput): BusinessProfileEvidenceSnapshot {
-  const providerResults = input.providerResults || [];
+  const providerResults = factualProviderResults(input.providerResults || []);
   const dns = provider(providerResults, "dns");
   const whois = provider(providerResults, "whois");
   const businessProfile = provider(providerResults, "business-profile");
@@ -231,9 +240,8 @@ function unique(items: Array<string | undefined>) {
   return Array.from(new Set(items.filter((item): item is string => Boolean(item))));
 }
 
-
 function detectContradictions(snapshot: BusinessProfileEvidenceSnapshot, providerResults: ProviderResult[]): BusinessProfileContradictionSignal[] {
-  const providerNames = unique(providerResults.map((result) => metadataString(result, ["businessName", "name", "legalName", "sellerName", "storeName"])));
+  const providerNames = unique(factualProviderResults(providerResults).map((result) => metadataString(result, ["businessName", "name", "legalName", "sellerName", "storeName"])));
   const signals: BusinessProfileContradictionSignal[] = [];
 
   if (providerNames.length > 1) {
