@@ -45,6 +45,31 @@ function validate(input: InvestigationEngineInput) {
 function family(item: EvidenceAssertion) { return item.source.sourceFamily || item.source.sourceId; }
 function isSubjectEvidence(item: EvidenceAssertion) { return item.lifecycle === "corroborated" || item.lifecycle === "verified"; }
 
+function decisionEvidence(input: InvestigationEngineInput, entityByCandidate: Map<string, ResolvedEntity>) {
+  const seedKey = normalize({ kind: input.seed.kind, value: input.seed.value });
+  const seedValue = input.seed.value.trim().toLowerCase();
+  const subjectIds = new Set(input.candidates.filter((candidate) => candidate.identifiers.some((identifier) => normalize(identifier) === seedKey) || candidate.label.trim().toLowerCase() === seedValue).map((candidate) => entityByCandidate.get(candidate.candidateId)?.entityId).filter(Boolean));
+  if (!subjectIds.size) return [];
+  return input.evidence.filter((item) => {
+    if (!isSubjectEvidence(item)) return false;
+    const from = entityByCandidate.get(item.subjectCandidateId)?.entityId;
+    const to = item.objectCandidateId ? entityByCandidate.get(item.objectCandidateId)?.entityId : undefined;
+    return Boolean((from && subjectIds.has(from)) || (to && subjectIds.has(to)));
+  });
+}
+
+function independentFamilies(items: EvidenceAssertion[], allEvidence: EvidenceAssertion[]) {
+  const byId = new Map(allEvidence.map((item) => [item.evidenceId, item]));
+  const roots = (item: EvidenceAssertion, visited = new Set<string>()): Set<string> => {
+    if (visited.has(item.evidenceId)) return new Set();
+    visited.add(item.evidenceId);
+    const parents = (item.derivedFromEvidenceIds || []).map((id) => byId.get(id)).filter((parent): parent is EvidenceAssertion => Boolean(parent));
+    if (!parents.length) return new Set([family(item)]);
+    return new Set(parents.flatMap((parent) => [...roots(parent, new Set(visited))]));
+  };
+  return new Set(items.flatMap((item) => [...roots(item)]));
+}
+
 function resolveEntities(candidates: EntityCandidate[], evidence: EvidenceAssertion[]) {
   const parent = new Map(candidates.map((candidate) => [candidate.candidateId, candidate.candidateId]));
   const find = (id: string): string => parent.get(id) === id ? id : find(parent.get(id)!);
@@ -109,24 +134,26 @@ export function buildInvestigationGraph(input: InvestigationEngineInput): Invest
     const age = freshness(item.source.observedAt, now);
     const adjusted = Math.max(0, sourceAdjusted - (age === "stale" ? 20 : age === "aging" ? 8 : 0));
     const contradictionIds = contradictions.filter((entry) => entry.evidenceIds.includes(item.evidenceId)).map((entry) => entry.contradictionId);
-    return { edgeId: `edge:${item.evidenceId}`, fromEntityId: from.entityId, toEntityId: item.objectCandidateId ? entityByCandidate.get(item.objectCandidateId)?.entityId : undefined, relationship: item.relationship, value: item.value, confidence: adjusted, status: status(adjusted, contradictionIds.length > 0), contradictionIds, source: item.source, evidenceId: item.evidenceId, freshness: age };
+    return { edgeId: `edge:${item.evidenceId}`, fromEntityId: from.entityId, toEntityId: item.objectCandidateId ? entityByCandidate.get(item.objectCandidateId)?.entityId : undefined, relationship: item.relationship, value: item.value, confidence: adjusted, status: status(adjusted, contradictionIds.length > 0), contradictionIds, source: item.source, evidenceId: item.evidenceId, freshness: age, lifecycle: item.lifecycle || "lead", derivedFromEvidenceIds: item.derivedFromEvidenceIds || [], confidenceComponents: item.confidenceComponents, discovery: item.discovery };
   });
   const marketplaceEntities = entities.filter((entity) => entity.kind === "marketplace_account");
   const marketplaceEvidence = evidence.filter((item) => input.evidence.find((source) => source.evidenceId === item.evidenceId)?.evidenceType === "marketplace" || marketplaceEntities.some((entity) => entity.entityId === item.fromEntityId || entity.entityId === item.toEntityId));
-  const verifiedEvidence = input.evidence.filter(isSubjectEvidence);
-  const independentFamilies = new Set(verifiedEvidence.map(family));
-  const critical = contradictions.some((item) => item.severity === "critical");
-  const high = contradictions.some((item) => item.severity === "high");
+  const verifiedEvidence = decisionEvidence(input, entityByCandidate);
+  const families = independentFamilies(verifiedEvidence, input.evidence);
+  const decisionEvidenceIds = new Set(verifiedEvidence.map((item) => item.evidenceId));
+  const decisionContradictions = contradictions.filter((item) => item.evidenceIds.some((id) => decisionEvidenceIds.has(id)));
+  const critical = decisionContradictions.some((item) => item.severity === "critical");
+  const high = decisionContradictions.some((item) => item.severity === "high");
   const verifiedEdges = evidence.filter((edge) => verifiedEvidence.some((item) => item.evidenceId === edge.evidenceId));
   const average = verifiedEdges.length ? Math.round(verifiedEdges.reduce((sum, item) => sum + item.confidence, 0) / verifiedEdges.length) : 0;
-  const coverageGaps = verifiedEvidence.length ? [] : ["No corroborated or verified subject evidence was collected."];
+  const coverageGaps = verifiedEvidence.length === 0 ? ["No corroborated or verified subject evidence was collected."] : families.size < 2 ? ["Verified subject evidence needs support from another independent source family."] : [];
   const decisionBase = verifiedEvidence.length === 0
     ? { outcome: "investigate" as const, confidence: 0, summary: "The investigation has insufficient verified subject evidence for a transaction decision.", nextActions: ["Collect corroborated subject evidence from an independent source."] }
     : critical ? { outcome: "stop" as const, confidence: average, summary: "Critical verified contradictions require the transaction to stop pending resolution.", nextActions: ["Resolve the critical evidence conflicts with primary-source records."] }
     : high ? { outcome: "investigate" as const, confidence: average, summary: "Material verified identity conflicts require further investigation.", nextActions: ["Verify reused identifiers and ownership against independent primary sources."] }
-    : average >= 75 && independentFamilies.size >= 2 ? { outcome: "proceed" as const, confidence: average, summary: "Independent evidence supports the resolved entity and its relationships.", nextActions: ["Retain the evidence trail with the customer decision."] }
+    : average >= 75 && families.size >= 2 ? { outcome: "proceed" as const, confidence: average, summary: "Independent evidence supports the resolved entity and its relationships.", nextActions: ["Retain the evidence trail with the customer decision."] }
     : { outcome: "proceed_with_conditions" as const, confidence: average, summary: "Verified evidence is limited to one source family or has incomplete coverage.", nextActions: ["Collect another independent source for unresolved relationships."] };
-  const decision = { ...decisionBase, verifiedEvidenceCount: verifiedEvidence.length, independentSourceFamilyCount: independentFamilies.size, coverageGaps };
+  const decision = { ...decisionBase, verifiedEvidenceCount: verifiedEvidence.length, independentSourceFamilyCount: families.size, coverageGaps };
   input.logger?.info("investigation_graph_built", { seedKind: input.seed.kind, entities: entities.length, marketplaceEntities: marketplaceEntities.length, contradictions: contradictions.length, decision: decision.outcome });
   if (contradictions.length) input.logger?.warn("investigation_graph_contradictions", { count: contradictions.length, ids: contradictions.map((item) => item.contradictionId) });
   return { engineVersion: INVESTIGATION_ENGINE_VERSION, generatedAt: now.toISOString(), seed: input.seed, entities, evidence, contradictions, marketplace: { entityIds: marketplaceEntities.map((item) => item.entityId), evidenceIds: marketplaceEvidence.map((item) => item.evidenceId), connectedEntityIds: [...new Set(marketplaceEvidence.flatMap((item) => [item.fromEntityId, item.toEntityId]).filter((id): id is string => Boolean(id) && !marketplaceEntities.some((entity) => entity.entityId === id)))] }, decision };

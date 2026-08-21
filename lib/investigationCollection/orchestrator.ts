@@ -3,13 +3,22 @@ import type { EntityCandidate, EvidenceAssertion } from "../investigationEngine/
 import { GoogleDnsInvestigationProvider } from "./dnsProvider";
 import type { CollectionSeed, InvestigationCollectionOptions, InvestigationProvider, LiveInvestigation, ProviderRun } from "./types";
 import { isPublicMailboxDomain } from "../emailDomains";
+import { BravePublicWebInvestigationProvider } from "./publicWebProvider";
+import { PROVIDER_CAPABILITY_REGISTRY } from "./capabilityRegistry";
 
 const key = (seed: CollectionSeed) => `${seed.kind}:${seed.value.trim().toLowerCase()}`;
 const unavailableMarketplaceProvider = (): InvestigationProvider => ({
   manifest: { id: "marketplace-partner", name: "Marketplace partner intelligence", supportedSeedTypes: ["email", "phone", "company", "domain", "marketplace_identity"], supportedJurisdictions: ["global"], supportedMarketplaces: ["amazon", "ebay", "etsy", "shopify", "tiktok-shop"], availability: { status: "unavailable", reason: "The credentialed marketplace partner client is not configured." }, authentication: "api_key", rateLimit: "Defined by marketplace partner contract", cost: null, evidenceTypes: ["marketplace"], sourceFamily: "marketplace-partner", legalBasis: "licensed", capabilities: ["marketplace"] },
   async collect() { throw new Error("Marketplace partner credentials are unavailable."); },
 });
-export function createLiveInvestigationProviders(): InvestigationProvider[] { return [new GoogleDnsInvestigationProvider(), unavailableMarketplaceProvider()]; }
+const unavailableRegisteredProvider = (registration: (typeof PROVIDER_CAPABILITY_REGISTRY)[number]): InvestigationProvider => ({
+  manifest: { id: registration.id, name: registration.id.replace(/-/g, " "), supportedSeedTypes: registration.targetTypes, supportedJurisdictions: ["global"], supportedMarketplaces: [], availability: { status: "unavailable", reason: `The authorized ${registration.id} API client is not configured.` }, authentication: registration.credentialEnv ? "api_key" : "none", rateLimit: "Defined by provider contract", cost: null, evidenceTypes: ["other"], sourceFamily: registration.id, legalBasis: registration.legalBasis, capabilities: [registration.capability] },
+  async collect() { throw new Error(`The authorized ${registration.id} API client is not configured.`); },
+});
+export function createLiveInvestigationProviders(): InvestigationProvider[] {
+  const implemented = new Set(["public-social-discovery", "marketplace-partner"]);
+  return [new GoogleDnsInvestigationProvider(), new BravePublicWebInvestigationProvider(), unavailableMarketplaceProvider(), ...PROVIDER_CAPABILITY_REGISTRY.filter((item) => !implemented.has(item.id)).map(unavailableRegisteredProvider)];
+}
 
 export async function investigateLive(seed: CollectionSeed, options: InvestigationCollectionOptions = {}): Promise<LiveInvestigation> {
   if (!seed.value.trim()) throw new Error("Investigation seed value is required.");

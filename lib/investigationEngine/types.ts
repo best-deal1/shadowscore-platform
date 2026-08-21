@@ -38,6 +38,7 @@ export type EvidenceAssertion = {
   lifecycle?: "lead" | "observed" | "corroborated" | "verified";
   derivedFromEvidenceIds?: string[];
   confidenceComponents?: { identifierMatch: number; sourceReliability: number; independence: number; freshness: number; hopDecay: number };
+  discovery?: { query: string; resultUrl: string; sourceUrl: string; snippet: string; timestamp: string; hop: number; parentEvidenceIds: string[] };
   evidenceType: "registry" | "website" | "marketplace" | "contact" | "complaint" | "ownership" | "historical" | "other";
 };
 
@@ -65,6 +66,10 @@ export type EvidenceEdge = {
   source: SourceReference;
   evidenceId: string;
   freshness: "current" | "aging" | "stale";
+  lifecycle: "lead" | "observed" | "corroborated" | "verified";
+  derivedFromEvidenceIds: string[];
+  confidenceComponents?: EvidenceAssertion["confidenceComponents"];
+  discovery?: EvidenceAssertion["discovery"];
 };
 
 export type InvestigationContradiction = {

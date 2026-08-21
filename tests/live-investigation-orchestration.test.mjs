@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { GoogleDnsInvestigationProvider, createLiveInvestigationProviders, investigateLive } from "../lib/investigationCollection/index.ts";
+import { BravePublicWebInvestigationProvider, GoogleDnsInvestigationProvider, createLiveInvestigationProviders, investigateLive } from "../lib/investigationCollection/index.ts";
 import { buildInvestigationGraph } from "../lib/investigationEngine/index.ts";
 
 const NOW = new Date("2026-08-09T12:00:00.000Z");
@@ -102,4 +102,49 @@ test("enforces provider budgets and bounded retries", async () => {
   assert.equal(blocked.providerRuns[0].status, "budget_blocked"); assert.equal(calls, 0);
   const attempted = await investigateLive({ kind: "company", value: "Acme" }, { providers: [{ ...provider, manifest: { ...provider.manifest, cost: null } }], maxRetries: 1, now: () => NOW });
   assert.equal(attempted.providerRuns[0].attempts, 2); assert.equal(calls, 2);
+});
+
+test("scopes decisions to the seed subject and collapses derived source families", () => {
+  const source = (id, family) => ({ sourceId: id, sourceFamily: family, sourceName: id, observedAt: NOW.toISOString(), retrievedAt: NOW.toISOString(), reliability: 95 });
+  const candidates = [
+    { candidateId: "subject", kind: "company", label: "Subject", identifiers: [{ kind: "company", value: "Subject" }], evidenceIds: ["subject-primary", "subject-derived"] },
+    { candidateId: "other", kind: "company", label: "Other", identifiers: [{ kind: "company", value: "Other" }], evidenceIds: ["other-a", "other-b"] },
+  ];
+  const assertion = (evidenceId, subjectCandidateId, family, derivedFromEvidenceIds = []) => ({ evidenceId, subjectCandidateId, relationship: "registration", value: "active", confidence: 95, lifecycle: "verified", evidenceType: "registry", derivedFromEvidenceIds, source: source(evidenceId, family) });
+  const graph = buildInvestigationGraph({ seed: { kind: "company", value: "Subject" }, now: NOW.toISOString(), candidates, evidence: [
+    assertion("subject-primary", "subject", "registry-a"), assertion("subject-derived", "subject", "mirror-b", ["subject-primary"]),
+    assertion("other-a", "other", "other-a"), assertion("other-b", "other", "other-b"),
+  ] });
+  assert.equal(graph.decision.verifiedEvidenceCount, 2);
+  assert.equal(graph.decision.independentSourceFamilyCount, 1);
+  assert.equal(graph.decision.outcome, "proceed_with_conditions");
+  assert.match(graph.decision.coverageGaps[0], /independent source family/i);
+  assert.deepEqual(graph.evidence.find((item) => item.evidenceId === "subject-derived").derivedFromEvidenceIds, ["subject-primary"]);
+  assert.equal(graph.evidence.find((item) => item.evidenceId === "subject-derived").lifecycle, "verified");
+});
+
+test("executes configured public search and preserves discovery provenance", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => Response.json({ web: { results: [{ title: "Public profile", url: "https://facebook.com/example-person", description: "Contact person@example.com" }] } });
+  try {
+    const provider = new BravePublicWebInvestigationProvider({ BRAVE_SEARCH_API_KEY: "configured" });
+    const output = await investigateLive({ kind: "email", value: "person@example.com" }, { providers: [provider], now: () => NOW, maxRetries: 0 });
+    assert.equal(output.providerRuns[0].status, "completed");
+    assert.ok(output.providerRuns[0].evidenceCount > 0);
+    const item = output.graph.evidence[0];
+    assert.equal(item.lifecycle, "lead");
+    assert.equal(item.discovery.resultUrl, "https://facebook.com/example-person");
+    assert.match(item.discovery.query, /person@example\.com/);
+    assert.match(item.discovery.snippet, /Contact person@example\.com/);
+    assert.equal(item.discovery.timestamp, NOW.toISOString());
+    assert.equal(output.graph.decision.outcome, "investigate");
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+test("marks public search unavailable when credentials are missing", async () => {
+  const provider = new BravePublicWebInvestigationProvider({});
+  const output = await investigateLive({ kind: "email", value: "random-person@gmail.com" }, { providers: [provider], now: () => NOW });
+  assert.equal(output.providerRuns[0].status, "PROVIDER_UNAVAILABLE");
+  assert.match(output.providerRuns[0].error, /BRAVE_SEARCH_API_KEY/);
+  assert.equal(output.graph.evidence.length, 0);
 });
