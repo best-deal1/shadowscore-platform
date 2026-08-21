@@ -137,7 +137,14 @@ export function recommendedActions(report: ShadowScoreReport) {
   const items = report.reportSummary?.businessNarrative?.sections.find((section) => section.id === "recommendedNextSteps")?.body || [];
   const gapActions = report.reportSummary?.investigationIntelligence?.evidenceGaps.map((gap) => gap.recommendation) || [];
   const clean = Array.from(new Set([...gapActions, ...items].map((item) => item.trim()).filter(Boolean)));
-  const fallbacks = ["Verify business ownership and registration details.", "Use documented payment terms for the first transaction.", "Review material evidence gaps before proceeding."];
+  const isEmailIdentity = report.reportSummary?.investigationType === "EMAIL";
+  const fallbacks = isEmailIdentity
+    ? ["Corroborate public profile ownership.", "Verify a second independent identifier.", "Review linked public profiles and collect stronger first-party evidence."]
+    : ["Verify business ownership and registration details.", "Use documented payment terms for the first transaction.", "Review material evidence gaps before proceeding."];
+  if (isEmailIdentity) {
+    const businessOnly = /domain-based business email|dns|tls|contract|invoice|registry|business ownership/i;
+    return [...clean.filter((item) => !businessOnly.test(item)), ...fallbacks].filter((item, index, all) => all.indexOf(item) === index).slice(0, 3);
+  }
   return [...clean, ...fallbacks.filter((item) => !clean.includes(item))].slice(0, 3);
 }
 

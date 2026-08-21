@@ -176,3 +176,32 @@ test("missing search credentials is explicit technical unavailability and does n
     if (original === undefined) delete process.env.BRAVE_SEARCH_API_KEY; else process.env.BRAVE_SEARCH_API_KEY = original;
   }
 });
+
+test("bounded identity graph discovers a different-handle Instagram profile only through a preserved alias path", async () => {
+  const queries = [];
+  const search = async (query) => {
+    queries.push(query);
+    if (query.includes("Nastik") && !query.includes("nastikmastik358")) return [{ title: "kuki_nesti_ch", url: "https://www.instagram.com/kuki_nesti_ch/", description: "Public profile for Nastik" }];
+    if (query.includes("nastikmastik358")) return [{ title: "Facebook profile A", url: "https://www.facebook.com/nastikmastik", description: "Alias: Nastik" }];
+    return [];
+  };
+  const { discoverExternalIdentityGraph } = await import("../lib/providers/externalIdentityProvider.ts");
+  const graph = await discoverExternalIdentityGraph(EMAIL, "test-key", new AbortController().signal, { search, limits: { maxHops: 2, maxSearches: 8, maxIdentifiers: 6 } });
+  const instagram = graph.allCandidates.find((candidate) => candidate.profileUrl === "https://www.instagram.com/kuki_nesti_ch");
+  assert.ok(instagram);
+  assert.equal(instagram.matchType, "alias");
+  assert.notEqual(instagram.status, "Verified");
+  assert.ok(instagram.confidence > 30);
+  assert.match(instagram.discoveryPath.join(" -> "), /Facebook profile A.*Nastik.*Instagram/s);
+  assert.equal(queries.slice(0, 5).some((query) => query.includes("kuki_nesti_ch")), false);
+  assert.ok(graph.edges.every((edge) => edge.evidence.query && edge.evidence.url && edge.evidence.snippet));
+  assert.ok(graph.metrics.searchCount <= 8);
+  assert.ok(graph.metrics.maxHopReached <= 2);
+});
+
+test("submitted email echoes cannot create credibility support", () => {
+  const echoed = (providerId) => ({ providerId, providerName: providerId, providerVersion: "1", status: "completed", startedAt: "2026-01-01", completedAt: "2026-01-01", durationMs: 1, errors: [], findings: [], evidence: [], metadata: { submittedEmail: EMAIL } });
+  const result = buildBusinessIntelligence([echoed("email-intelligence"), echoed("external-identity")]);
+  assert.equal(result.findings.some((finding) => finding.direction === "supports_credibility"), false);
+  assert.equal(result.evidenceCount, 0);
+});

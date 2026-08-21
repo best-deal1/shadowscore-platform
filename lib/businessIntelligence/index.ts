@@ -39,6 +39,7 @@ function comparisonKeyFor(field: Field, label: string, key?: string) {
 
 function add(out: Observation[], result: ProviderResult, evidence: Pick<ProviderEvidence, "id" | "label" | "value" | "source">, key?: string) {
   if (!evidence.value?.trim() || evidence.value.trim().toLowerCase() === "unavailable") return;
+  if (evidence.source === "submitted-target" || /^(submittedEmail|submittedTarget|requestedTarget)$/i.test(key || "") || /submitted (?:email|target|input)/i.test(evidence.label)) return;
   const field = fieldFor(evidence.label, key);
   if (!field) return;
   out.push({ ...evidence, value: evidence.value.trim(), source: evidence.source || result.providerId, providerId: result.providerId, observedAt: result.completedAt, field, comparisonKey: comparisonKeyFor(field, evidence.label, key), normalizedValue: normalize(evidence.value) });
@@ -47,7 +48,7 @@ function add(out: Observation[], result: ProviderResult, evidence: Pick<Provider
 function observations(results: ProviderResult[]) {
   const out: Observation[] = [];
   for (const result of results.filter((item) => item.status === "completed")) {
-    result.evidence.forEach((evidence) => add(out, result, evidence));
+    result.evidence.filter((evidence) => evidence.type !== "placeholder" && evidence.type !== "search_result").forEach((evidence) => add(out, result, evidence));
     for (const [key, value] of Object.entries(result.metadata)) {
       if (typeof value === "string") add(out, result, { id: `metadata:${key}`, label: key.replace(/([A-Z])/g, " $1"), value, source: result.providerId }, key);
     }

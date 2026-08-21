@@ -117,3 +117,9 @@ This file records customer-visible improvements in each ShadowScore release.
 # 2026-08-20
 
 - Email investigations now keep public mailbox providers separate from the investigated identity. Public search candidates, profile links, match reasons, confidence, status, and evidence provenance are visible in the Executive Report.
+
+## Identity expansion graph
+
+- Email identity investigations now follow bounded, evidence-backed aliases across public profiles.
+- Executive reports show the discovery path, confidence, matched identifiers, and supporting evidence for ranked identity candidates.
+- Submitted input echoes no longer count as independent corroboration. Recommendations for personal email investigations now focus on identity evidence.
