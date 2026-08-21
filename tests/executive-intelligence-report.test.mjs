@@ -75,3 +75,21 @@ test("missing provider data is handled without synthetic sources", () => {
 test("both ready-report routes use the executive report presentation", () => {
   for (const path of ["../app/report/page.tsx", "../app/reports/[reportId]/ReportFlow.tsx"]) assert.match(readFileSync(new URL(path, import.meta.url), "utf8"), /ExecutiveIntelligenceReport report=\{report\}/);
 });
+
+test("personal email actions focus on identity while corporate email actions retain domain controls", () => {
+  const summary = {
+    ...report().reportSummary,
+    investigationType: "EMAIL",
+    investigationIntelligence: { risks: [], contradictions: [], evidenceGaps: [{ id: "dns", missingEvidence: "DNS", recommendation: "Review DNS and TLS controls.", confidenceImpact: "Domain posture remains unresolved." }] },
+  };
+  const personal = recommendedActions(report({ entity: "person@gmail.com", reportSummary: summary }));
+  const corporate = recommendedActions(report({ entity: "owner@example.com", reportSummary: summary }));
+  assert.equal(personal.some((action) => /dns|tls/i.test(action)), false);
+  assert.equal(corporate.some((action) => /dns|tls/i.test(action)), true);
+});
+
+test("saved identity candidates use backward-compatible rendering fallbacks", () => {
+  const component = readFileSync(new URL("../components/report/ExecutiveIntelligenceReport.tsx", import.meta.url), "utf8");
+  assert.match(component, /candidate\.discoveryPath \|\| \[candidate\.profileUrl\]/);
+  assert.match(component, /candidate\.supportingEvidence\?\.length \|\| 0/);
+});
