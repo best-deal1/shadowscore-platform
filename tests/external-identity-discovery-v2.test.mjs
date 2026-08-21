@@ -235,6 +235,18 @@ test("Brave query variants do not corroborate or inflate the same candidate", as
   assert.equal(candidate.evidenceReference, candidate.evidenceUrl);
 });
 
+test("login and search result pages are rejected as social-profile candidates", async () => {
+  const { discoverExternalIdentityGraph } = await import("../lib/providers/externalIdentityProvider.ts");
+  const graph = await discoverExternalIdentityGraph("subject@example.com", "key", new AbortController().signal, {
+    search: async () => [
+      { title: "Sign in", url: "https://instagram.com/accounts/login", description: "subject@example.com" },
+      { title: "Search", url: "https://facebook.com/search/people", description: "subject@example.com" },
+      { title: "Profile", url: "https://instagram.com/valid_profile", description: "subject@example.com" },
+    ],
+  });
+  assert.deepEqual(graph.allCandidates.map((candidate) => candidate.profileUrl), ["https://instagram.com/valid_profile"]);
+});
+
 test("identifier provenance is preserved while its follow-up search is deduplicated", async () => {
   const queries = [];
   const { discoverExternalIdentityGraph } = await import("../lib/providers/externalIdentityProvider.ts");
