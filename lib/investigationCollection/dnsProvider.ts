@@ -1,5 +1,6 @@
 import type { EntityCandidate, EvidenceAssertion } from "../investigationEngine/types";
 import type { CollectionSeed, InvestigationProvider, InvestigationProviderManifest, ProviderCollectionContext } from "./types";
+import { isPublicMailboxDomain } from "../emailDomains";
 
 const ENDPOINT = "https://dns.google/resolve";
 type DnsAnswer = { name?: string; type?: number; TTL?: number; data?: string };
@@ -11,11 +12,12 @@ function domainFrom(seed: CollectionSeed) {
 }
 
 export class GoogleDnsInvestigationProvider implements InvestigationProvider {
-  manifest: InvestigationProviderManifest = { id: "google-public-dns", name: "Google Public DNS", supportedSeedTypes: ["email", "domain"], supportedJurisdictions: ["global"], supportedMarketplaces: [], availability: { status: "available" }, authentication: "none", rateLimit: "Subject to Google Public DNS usage limits", cost: null, evidenceTypes: ["website"] };
+  manifest: InvestigationProviderManifest = { id: "google-public-dns", name: "Google Public DNS", supportedSeedTypes: ["email", "domain"], supportedJurisdictions: ["global"], supportedMarketplaces: [], availability: { status: "available" }, authentication: "none", rateLimit: "Subject to Google Public DNS usage limits", cost: null, evidenceTypes: ["website"], sourceFamily: "google-public-dns", legalBasis: "public", capabilities: ["business", "domain_history"] };
 
   async collect(seed: CollectionSeed, context: ProviderCollectionContext) {
     const domain = domainFrom(seed);
     if (!domain || !domain.includes(".")) throw new Error("A valid domain is required for DNS collection.");
+    if (seed.kind === "email" && isPublicMailboxDomain(domain)) return { candidates: [], evidence: [], discoveredSeeds: [] };
     const candidateId = `dns-domain:${domain}`;
     const candidates: EntityCandidate[] = [{ candidateId, kind: "domain", label: domain, identifiers: [{ kind: "domain", value: domain }], evidenceIds: [] }];
     const evidence: EvidenceAssertion[] = [];
@@ -29,7 +31,7 @@ export class GoogleDnsInvestigationProvider implements InvestigationProvider {
         const value = String(answer.data || "").replace(/^"|"$/g, "");
         const evidenceId = `dns:${domain}:${type}:${index}`;
         candidates[0].evidenceIds.push(evidenceId);
-        evidence.push({ evidenceId, subjectCandidateId: candidateId, relationship: `dns_${type.toLowerCase()}_record`, value, confidence: 92, evidenceType: "website", source: { sourceId: "google-public-dns", sourceName: "Google Public DNS", sourceUrl: url.toString(), retrievedAt, observedAt: retrievedAt, reliability: 90 } });
+        evidence.push({ evidenceId, subjectCandidateId: candidateId, relationship: `dns_${type.toLowerCase()}_record`, value, confidence: 92, lifecycle: "observed", evidenceType: "website", confidenceComponents: { identifierMatch: 100, sourceReliability: 90, independence: 100, freshness: 100, hopDecay: context.depth * 10 }, source: { sourceId: "google-public-dns", sourceFamily: "google-public-dns", sourceName: "Google Public DNS", sourceUrl: url.toString(), retrievedAt, observedAt: retrievedAt, reliability: 90, license: "public" } });
       }
     }
     return { candidates, evidence, discoveredSeeds: seed.kind === "email" ? [{ kind: "domain" as const, value: domain }] : [] };

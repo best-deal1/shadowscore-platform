@@ -126,3 +126,11 @@ This file records customer-visible improvements in each ShadowScore release.
 - Email identity investigations now follow bounded, evidence-backed aliases across public profiles.
 - Executive reports show the discovery path, confidence, matched identifiers, and supporting evidence for ranked identity candidates.
 - Submitted input echoes no longer count as independent corroboration. Recommendations for personal email investigations now focus on identity evidence.
+
+# 2026-08-21
+
+- Investigations now distinguish leads, observations, corroborated evidence, and verified evidence. Decisions require verified subject evidence and independent source families.
+- Public mailbox investigations no longer collect or inherit mailbox-provider infrastructure. Corporate email investigations can still expand into their business domain while retaining the submitted email as the original target.
+- Provider integrations now declare capabilities, legal basis, source family, availability, and required credentials across identity, phone, registry, business, domain, regulatory, reputation, marketplace, and payment intelligence.
+- Connected configured Brave Search discovery to live investigations. Reports now distinguish executed, unavailable, timed out, and failed providers, and retain query, result, snippet, hop, lineage, timestamp, source-family, and confidence provenance.
+- Scoped transaction decisions to verified evidence for the submitted subject. Derived mirrors count with their originating source family, and missing independent coverage is reported explicitly.

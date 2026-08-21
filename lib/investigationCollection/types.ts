@@ -13,6 +13,9 @@ export type InvestigationProviderManifest = {
   rateLimit: string;
   cost: { amount: number; currency: "USD" } | null;
   evidenceTypes: EvidenceAssertion["evidenceType"][];
+  sourceFamily: string;
+  legalBasis: "public" | "open_data" | "licensed";
+  capabilities: ("identity" | "social" | "phone" | "registry" | "business" | "domain_history" | "regulatory" | "reputation" | "marketplace" | "payment")[];
 };
 export type CollectionResult = { candidates: EntityCandidate[]; evidence: EvidenceAssertion[]; discoveredSeeds: CollectionSeed[] };
 export type ProviderCollectionContext = { signal: AbortSignal; now: string; depth: number };
@@ -27,5 +30,5 @@ export type InvestigationCollectionOptions = {
   now?: () => Date;
   logger?: Pick<Console, "info" | "warn" | "error">;
 };
-export type ProviderRun = { providerId: string; seed: CollectionSeed; depth: number; status: "completed" | "failed" | "timed_out" | "unavailable" | "budget_blocked"; attempts: number; evidenceCount: number; error?: string };
+export type ProviderRun = { providerId: string; seed: CollectionSeed; depth: number; status: "completed" | "failed" | "timed_out" | "PROVIDER_UNAVAILABLE" | "budget_blocked"; attempts: number; evidenceCount: number; error?: string };
 export type LiveInvestigation = { graph: InvestigationGraph; providerRuns: ProviderRun[]; discoveredSeeds: CollectionSeed[]; spentUsd: number; limits: { maxDepth: number; maxProviderCalls: number; timeoutMs: number; budgetUsd: number } };

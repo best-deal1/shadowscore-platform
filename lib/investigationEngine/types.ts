@@ -1,5 +1,5 @@
-export type InvestigationInputKind = "email" | "phone" | "person" | "company" | "registration_number" | "domain" | "marketplace_identity";
-export type EntityKind = "person" | "company" | "email" | "phone" | "domain" | "marketplace_account" | "address";
+export type InvestigationInputKind = "email" | "phone" | "person" | "username" | "social_profile" | "company" | "legal_entity" | "registration_number" | "domain" | "address" | "marketplace_identity" | "payment_identifier";
+export type EntityKind = "person" | "company" | "email" | "phone" | "username" | "social_profile" | "domain" | "marketplace_account" | "payment_identifier" | "address";
 export type ResolutionStatus = "confirmed" | "probable" | "possible" | "conflicting" | "unresolved";
 
 export type SourceReference = {
@@ -9,6 +9,9 @@ export type SourceReference = {
   observedAt: string;
   retrievedAt: string;
   reliability: number;
+  /** Sources in one family are one corroborating channel, even through mirrors. */
+  sourceFamily?: string;
+  license?: "public" | "open_data" | "licensed" | "submitted";
 };
 
 export type EntityIdentifier = {
@@ -32,6 +35,10 @@ export type EvidenceAssertion = {
   value: string;
   source: SourceReference;
   confidence: number;
+  lifecycle?: "lead" | "observed" | "corroborated" | "verified";
+  derivedFromEvidenceIds?: string[];
+  confidenceComponents?: { identifierMatch: number; sourceReliability: number; independence: number; freshness: number; hopDecay: number };
+  discovery?: { query: string; resultUrl: string; sourceUrl: string; snippet: string; timestamp: string; hop: number; parentEvidenceIds: string[] };
   evidenceType: "registry" | "website" | "marketplace" | "contact" | "complaint" | "ownership" | "historical" | "other";
 };
 
@@ -59,6 +66,10 @@ export type EvidenceEdge = {
   source: SourceReference;
   evidenceId: string;
   freshness: "current" | "aging" | "stale";
+  lifecycle: "lead" | "observed" | "corroborated" | "verified";
+  derivedFromEvidenceIds: string[];
+  confidenceComponents?: EvidenceAssertion["confidenceComponents"];
+  discovery?: EvidenceAssertion["discovery"];
 };
 
 export type InvestigationContradiction = {
@@ -76,6 +87,9 @@ export type InvestigationDecision = {
   confidence: number;
   summary: string;
   nextActions: string[];
+  verifiedEvidenceCount: number;
+  independentSourceFamilyCount: number;
+  coverageGaps: string[];
 };
 
 export type InvestigationGraph = {

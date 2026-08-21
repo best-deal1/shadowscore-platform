@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { GoogleDnsInvestigationProvider, createLiveInvestigationProviders, investigateLive } from "../lib/investigationCollection/index.ts";
+import { BravePublicWebInvestigationProvider, GoogleDnsInvestigationProvider, createLiveInvestigationProviders, investigateLive } from "../lib/investigationCollection/index.ts";
+import { buildInvestigationGraph } from "../lib/investigationEngine/index.ts";
 
 const NOW = new Date("2026-08-09T12:00:00.000Z");
 
@@ -20,7 +21,8 @@ test("collects sourced DNS evidence from an email and follows the discovered dom
     assert.equal(output.graph.evidence[0].source.sourceUrl.includes("dns.google/resolve"), true);
     assert.equal(output.graph.evidence[0].source.retrievedAt, NOW.toISOString());
     assert.equal(output.graph.entities[0].identifiers[0].value, "example.com");
-    assert.equal(output.graph.decision.outcome, "proceed");
+    assert.equal(output.graph.decision.outcome, "investigate");
+    assert.equal(output.graph.decision.verifiedEvidenceCount, 0);
   } finally { globalThis.fetch = originalFetch; }
 });
 
@@ -44,10 +46,53 @@ test("correlates marketplace evidence in the graph through a pluggable provider"
 test("reports unavailable credentialed providers without fabricating evidence", async () => {
   const marketplace = createLiveInvestigationProviders().find((provider) => provider.manifest.id === "marketplace-partner");
   const output = await investigateLive({ kind: "marketplace_identity", value: "etsy/acme" }, { providers: [marketplace], now: () => NOW });
-  assert.equal(output.providerRuns[0].status, "unavailable");
+  assert.equal(output.providerRuns[0].status, "PROVIDER_UNAVAILABLE");
   assert.match(output.providerRuns[0].error, /credentialed marketplace partner client/);
   assert.equal(output.graph.evidence.length, 0);
-  assert.equal(output.graph.decision.outcome, "proceed_with_conditions");
+  assert.equal(output.graph.decision.outcome, "investigate");
+});
+
+test("never treats public mailbox infrastructure as subject evidence", async () => {
+  let requests = 0;
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => { requests += 1; return Response.json({ Answer: [{ data: "mail.google.com" }] }); };
+  try {
+    const output = await investigateLive({ kind: "email", value: "subject@gmail.com" }, { providers: [new GoogleDnsInvestigationProvider()], now: () => NOW });
+    assert.equal(requests, 0);
+    assert.equal(output.graph.evidence.length, 0);
+    assert.equal(output.graph.decision.outcome, "investigate");
+    assert.equal(output.graph.contradictions.length, 0);
+    assert.deepEqual(output.discoveredSeeds, []);
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+test("zero verified evidence cannot create a decision or contradiction", () => {
+  const graph = buildInvestigationGraph({ seed: { kind: "email", value: "subject@example.com" }, now: NOW.toISOString(), candidates: [
+    { candidateId: "one", kind: "person", label: "One", identifiers: [{ kind: "email", value: "subject@example.com" }], evidenceIds: [] },
+    { candidateId: "two", kind: "company", label: "Two", identifiers: [{ kind: "email", value: "subject@example.com" }], evidenceIds: [] },
+  ], evidence: [] });
+  assert.equal(graph.decision.outcome, "investigate");
+  assert.equal(graph.decision.verifiedEvidenceCount, 0);
+  assert.equal(graph.contradictions.length, 0);
+  assert.doesNotMatch(graph.decision.summary, /supported/i);
+});
+
+test("mirrors in one source family cannot create independent corroboration", () => {
+  const candidate = { candidateId: "company", kind: "company", label: "Acme", identifiers: [{ kind: "registration_number", value: "123" }], evidenceIds: ["mirror-1", "mirror-2"] };
+  const assertion = (evidenceId, sourceId) => ({ evidenceId, subjectCandidateId: "company", relationship: "registration", value: "123", confidence: 95, lifecycle: "verified", evidenceType: "registry", source: { sourceId, sourceFamily: "syndicated-register", sourceName: sourceId, observedAt: NOW.toISOString(), retrievedAt: NOW.toISOString(), reliability: 95, license: "public" } });
+  const graph = buildInvestigationGraph({ seed: { kind: "company", value: "Acme" }, now: NOW.toISOString(), candidates: [candidate], evidence: [assertion("mirror-1", "mirror-a"), assertion("mirror-2", "mirror-b")] });
+  assert.equal(graph.decision.independentSourceFamilyCount, 1);
+  assert.equal(graph.decision.outcome, "proceed_with_conditions");
+});
+
+test("preserves successful evidence when another provider times out", async () => {
+  const manifest = { supportedSeedTypes: ["company"], supportedJurisdictions: ["global"], supportedMarketplaces: [], availability: { status: "available" }, authentication: "none", rateLimit: "none", cost: null, evidenceTypes: ["registry"], sourceFamily: "fixture", legalBasis: "open_data", capabilities: ["registry"] };
+  const good = { manifest: { ...manifest, id: "registry", name: "Registry" }, async collect(_seed, context) { return { candidates: [{ candidateId: "acme", kind: "company", label: "Acme", identifiers: [{ kind: "registration_number", value: "123" }], evidenceIds: ["registration"] }], evidence: [{ evidenceId: "registration", subjectCandidateId: "acme", relationship: "registration", value: "123", confidence: 95, lifecycle: "verified", evidenceType: "registry", source: { sourceId: "registry", sourceFamily: "official-registry", sourceName: "Registry", observedAt: context.now, retrievedAt: context.now, reliability: 98, license: "open_data" } }], discoveredSeeds: [] }; } };
+  const slow = { manifest: { ...manifest, id: "slow", name: "Slow" }, async collect(_seed, context) { await new Promise((resolve, reject) => { const timer = setTimeout(resolve, 100); context.signal.addEventListener("abort", () => { clearTimeout(timer); reject(new DOMException("Aborted", "AbortError")); }); }); return { candidates: [], evidence: [], discoveredSeeds: [] }; } };
+  const output = await investigateLive({ kind: "company", value: "Acme" }, { providers: [good, slow], timeoutMs: 5, maxRetries: 0, now: () => NOW });
+  assert.equal(output.providerRuns.find((run) => run.providerId === "slow").status, "timed_out");
+  assert.equal(output.graph.evidence.length, 1);
+  assert.equal(output.graph.decision.verifiedEvidenceCount, 1);
 });
 
 test("enforces provider budgets and bounded retries", async () => {
@@ -57,4 +102,49 @@ test("enforces provider budgets and bounded retries", async () => {
   assert.equal(blocked.providerRuns[0].status, "budget_blocked"); assert.equal(calls, 0);
   const attempted = await investigateLive({ kind: "company", value: "Acme" }, { providers: [{ ...provider, manifest: { ...provider.manifest, cost: null } }], maxRetries: 1, now: () => NOW });
   assert.equal(attempted.providerRuns[0].attempts, 2); assert.equal(calls, 2);
+});
+
+test("scopes decisions to the seed subject and collapses derived source families", () => {
+  const source = (id, family) => ({ sourceId: id, sourceFamily: family, sourceName: id, observedAt: NOW.toISOString(), retrievedAt: NOW.toISOString(), reliability: 95 });
+  const candidates = [
+    { candidateId: "subject", kind: "company", label: "Subject", identifiers: [{ kind: "company", value: "Subject" }], evidenceIds: ["subject-primary", "subject-derived"] },
+    { candidateId: "other", kind: "company", label: "Other", identifiers: [{ kind: "company", value: "Other" }], evidenceIds: ["other-a", "other-b"] },
+  ];
+  const assertion = (evidenceId, subjectCandidateId, family, derivedFromEvidenceIds = []) => ({ evidenceId, subjectCandidateId, relationship: "registration", value: "active", confidence: 95, lifecycle: "verified", evidenceType: "registry", derivedFromEvidenceIds, source: source(evidenceId, family) });
+  const graph = buildInvestigationGraph({ seed: { kind: "company", value: "Subject" }, now: NOW.toISOString(), candidates, evidence: [
+    assertion("subject-primary", "subject", "registry-a"), assertion("subject-derived", "subject", "mirror-b", ["subject-primary"]),
+    assertion("other-a", "other", "other-a"), assertion("other-b", "other", "other-b"),
+  ] });
+  assert.equal(graph.decision.verifiedEvidenceCount, 2);
+  assert.equal(graph.decision.independentSourceFamilyCount, 1);
+  assert.equal(graph.decision.outcome, "proceed_with_conditions");
+  assert.match(graph.decision.coverageGaps[0], /independent source family/i);
+  assert.deepEqual(graph.evidence.find((item) => item.evidenceId === "subject-derived").derivedFromEvidenceIds, ["subject-primary"]);
+  assert.equal(graph.evidence.find((item) => item.evidenceId === "subject-derived").lifecycle, "verified");
+});
+
+test("executes configured public search and preserves discovery provenance", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => Response.json({ web: { results: [{ title: "Public profile", url: "https://facebook.com/example-person", description: "Contact person@example.com" }] } });
+  try {
+    const provider = new BravePublicWebInvestigationProvider({ BRAVE_SEARCH_API_KEY: "configured" });
+    const output = await investigateLive({ kind: "email", value: "person@example.com" }, { providers: [provider], now: () => NOW, maxRetries: 0 });
+    assert.equal(output.providerRuns[0].status, "completed");
+    assert.ok(output.providerRuns[0].evidenceCount > 0);
+    const item = output.graph.evidence[0];
+    assert.equal(item.lifecycle, "lead");
+    assert.equal(item.discovery.resultUrl, "https://facebook.com/example-person");
+    assert.match(item.discovery.query, /person@example\.com/);
+    assert.match(item.discovery.snippet, /Contact person@example\.com/);
+    assert.equal(item.discovery.timestamp, NOW.toISOString());
+    assert.equal(output.graph.decision.outcome, "investigate");
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+test("marks public search unavailable when credentials are missing", async () => {
+  const provider = new BravePublicWebInvestigationProvider({});
+  const output = await investigateLive({ kind: "email", value: "random-person@gmail.com" }, { providers: [provider], now: () => NOW });
+  assert.equal(output.providerRuns[0].status, "PROVIDER_UNAVAILABLE");
+  assert.match(output.providerRuns[0].error, /BRAVE_SEARCH_API_KEY/);
+  assert.equal(output.graph.evidence.length, 0);
 });
