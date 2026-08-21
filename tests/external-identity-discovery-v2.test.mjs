@@ -31,10 +31,10 @@ test("public search preserves the query and snippet supporting an exact-email pr
     assert.equal(candidates[0].platform, "Facebook");
     assert.equal(candidates[0].profileUrl, "https://www.facebook.com/nastikmastik");
     assert.equal(candidates[0].matchLevel, "exact_match");
-    assert.equal(candidates[0].status, "Corroborated");
+    assert.equal(candidates[0].status, "Candidate");
     assert.deepEqual(candidates[0].matchedIdentifiers, [EMAIL]);
     assert.equal(candidates[0].sourceProvider, "Brave Search");
-    assert.ok(candidates[0].confidence >= 90);
+    assert.equal(candidates[0].confidence, 75);
     assert.match(candidates[0].matchBasis, /exact submitted email/i);
     assert.match(candidates[0].evidenceQuery, /nastikmastik358@gmail\.com/);
     assert.match(candidates[0].evidenceSnippet, /nastikmastik358@gmail\.com/);
@@ -107,7 +107,7 @@ test("production email candidate remains visible without creating a false identi
     const identityResult = await new ExternalIdentityProvider().execute({ intakeId: "acceptance", scanMode: "website", target: EMAIL, requestedTarget: EMAIL, platform: "website", fileNames: [], visibleSignalCategories: [] });
     const candidate = identityResult.metadata.externalIdentityCandidates[0];
     assert.equal(candidate.profileUrl, "https://www.facebook.com/nastikmastik");
-    assert.equal(candidate.status, "Corroborated");
+    assert.equal(candidate.status, "Candidate");
     assert.notEqual(candidate.status, "Verified");
     assert.equal(candidate.observedDisplayName, "Public profile");
     assert.notEqual(candidate.observedDisplayName, "nastikmastik358");
@@ -175,4 +175,98 @@ test("missing search credentials is explicit technical unavailability and does n
   } finally {
     if (original === undefined) delete process.env.BRAVE_SEARCH_API_KEY; else process.env.BRAVE_SEARCH_API_KEY = original;
   }
+});
+
+test("bounded identity graph discovers a different-handle Instagram profile only through a preserved alias path", async () => {
+  const queries = [];
+  const search = async (query) => {
+    queries.push(query);
+    if (query.includes("Nastik") && !query.includes("nastikmastik358")) return [{ title: "kuki_nesti_ch", url: "https://www.instagram.com/kuki_nesti_ch/", description: "Public profile for Nastik" }];
+    if (query.includes("nastikmastik358")) return [{ title: "Facebook profile A", url: "https://www.facebook.com/nastikmastik", description: "Alias: Nastik" }];
+    return [];
+  };
+  const { discoverExternalIdentityGraph } = await import("../lib/providers/externalIdentityProvider.ts");
+  const graph = await discoverExternalIdentityGraph(EMAIL, "test-key", new AbortController().signal, { search, limits: { maxHops: 2, maxSearches: 8, maxIdentifiers: 6 } });
+  const instagram = graph.allCandidates.find((candidate) => candidate.profileUrl === "https://www.instagram.com/kuki_nesti_ch");
+  assert.ok(instagram);
+  assert.equal(instagram.matchType, "alias");
+  assert.notEqual(instagram.status, "Verified");
+  assert.equal(instagram.confidence, 25);
+  assert.match(instagram.discoveryPath.join(" -> "), /Facebook profile A.*Nastik.*Instagram/s);
+  assert.equal(queries.slice(0, 5).some((query) => query.includes("kuki_nesti_ch")), false);
+  assert.ok(graph.edges.every((edge) => edge.evidence.query && edge.evidence.url && edge.evidence.snippet));
+  assert.ok(graph.metrics.searchCount <= 8);
+  assert.ok(graph.metrics.maxHopReached <= 2);
+});
+
+test("submitted email echoes cannot create credibility support", () => {
+  const echoed = (providerId) => ({ providerId, providerName: providerId, providerVersion: "1", status: "completed", startedAt: "2026-01-01", completedAt: "2026-01-01", durationMs: 1, errors: [], findings: [], evidence: [], metadata: { submittedEmail: EMAIL } });
+  const result = buildBusinessIntelligence([echoed("email-intelligence"), echoed("external-identity")]);
+  assert.equal(result.findings.some((finding) => finding.direction === "supports_credibility"), false);
+  assert.equal(result.evidenceCount, 0);
+});
+
+
+test("generic result titles and URL handles never become expansion aliases", async () => {
+  const queries = [];
+  const { discoverExternalIdentityGraph } = await import("../lib/providers/externalIdentityProvider.ts");
+  const graph = await discoverExternalIdentityGraph("john.smith@example.com", "key", new AbortController().signal, {
+    search: async (query) => {
+      queries.push(query);
+      if (query.includes("john.smith")) return [{ title: "John Smith - Facebook", url: "https://facebook.com/johnsmith", description: "Public profile" }];
+      return [{ title: "Unrelated profile", url: "https://instagram.com/unrelated", description: "John Smith" }];
+    },
+  });
+  assert.equal(queries.some((query) => /"John Smith"|"johnsmith"/.test(query)), false);
+  assert.equal(graph.edges.some((edge) => edge.relation === "observed_identifier"), false);
+  assert.ok(graph.allCandidates.every((candidate) => candidate.matchedIdentifiers.length === 0));
+});
+
+test("Brave query variants do not corroborate or inflate the same candidate", async () => {
+  const { discoverExternalIdentityGraph } = await import("../lib/providers/externalIdentityProvider.ts");
+  const graph = await discoverExternalIdentityGraph(EMAIL, "key", new AbortController().signal, {
+    search: async () => [{ title: "Public profile", url: "https://facebook.com/repeated", description: `Contact ${EMAIL}` }],
+  });
+  const candidate = graph.allCandidates[0];
+  assert.ok(candidate.supportingEvidence.length > 1);
+  assert.equal(candidate.status, "Candidate");
+  assert.equal(candidate.confidence, 75);
+  assert.deepEqual(candidate.matchedIdentifiers, [EMAIL]);
+  assert.equal(candidate.evidenceReference, candidate.evidenceUrl);
+});
+
+test("identifier provenance is preserved while its follow-up search is deduplicated", async () => {
+  const queries = [];
+  const { discoverExternalIdentityGraph } = await import("../lib/providers/externalIdentityProvider.ts");
+  const graph = await discoverExternalIdentityGraph(EMAIL, "key", new AbortController().signal, {
+    search: async (query) => {
+      queries.push(query);
+      if (query.includes("SharedAlias")) return [];
+      return [
+        { title: "Profile one", url: "https://facebook.com/one", description: "Alias: SharedAlias" },
+        { title: "Profile two", url: "https://instagram.com/two", description: `Alias: SharedAlias, contact ${EMAIL}` },
+      ];
+    },
+    limits: { maxSearches: 8, maxIdentifiers: 4 },
+  });
+  const aliasEdges = graph.edges.filter((edge) => edge.relation === "observed_identifier" && edge.to.toLowerCase() === "sharedalias");
+  assert.ok(aliasEdges.some((edge) => edge.from === "https://facebook.com/one"));
+  assert.ok(aliasEdges.some((edge) => edge.from === "https://instagram.com/two"));
+  assert.equal(queries.filter((query) => query.includes("SharedAlias")).length, 1);
+});
+
+test("an aborted late search returns the partial graph", async () => {
+  const controller = new AbortController();
+  let calls = 0;
+  const { discoverExternalIdentityGraph } = await import("../lib/providers/externalIdentityProvider.ts");
+  const graph = await discoverExternalIdentityGraph(EMAIL, "key", controller.signal, {
+    search: async () => {
+      calls += 1;
+      if (calls === 1) return [{ title: "Exact result", url: "https://facebook.com/exact", description: EMAIL }];
+      controller.abort();
+      throw new DOMException("Aborted", "AbortError");
+    },
+  });
+  assert.equal(graph.allCandidates.length, 1);
+  assert.equal(graph.metrics.partial, true);
 });
