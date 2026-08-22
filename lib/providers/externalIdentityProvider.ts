@@ -44,6 +44,10 @@ export type IdentityDiscoverySearchDiagnostic = {
 export type ResultAdmissionDiagnostic = {
   url: string; title: string; admissionScore: number; admissionDecision: "admitted" | "rejected";
   admissionReason: string; matchedAnchors: string[]; extractedClues: string[];
+  discoveryAdmissionScore: number; discoveryAdmissionDecision: "DISCOVERY_ADMITTED" | "REJECTED";
+  evidenceAdmissionScore: number; evidenceAdmissionDecision: "EVIDENCE_ADMITTED" | "REJECTED";
+  discoveryAdmissionReason: string; evidenceAdmissionReason: string; queryProvenanceContribution: number;
+  extractedDiscoveryClues: string[]; extractedEvidenceClues: string[];
   branchPriority: number; siblingRank: number; remainingBudget: number;
 };
 type SearchResult = { title: string; url: string; description?: string };
@@ -51,7 +55,7 @@ type SearchFn = (query: string, apiKey: string, signal: AbortSignal, limit: numb
 export type EntityInvestigationSeed = { type: EntityClueType; value: string };
 export type EntityRelationship = { from: string; to: string; relationship: "resolved_as" | "director" | "domain" | "related_entity"; discoveryPath: string[] };
 
-function admissionForResult(result: SearchResult, active: EntityClue, original: string, neighbors: string[]) {
+function evidenceAdmissionForResult(result: SearchResult, active: EntityClue, original: string, neighbors: string[]) {
   const text = `${result.title} ${result.description || ""} ${result.url}`;
   const anchors: Array<{ label: string; score: number }> = [];
   if (containsIdentifier(text, original)) anchors.push({ label: "original_target", score: 100 });
@@ -65,6 +69,37 @@ function admissionForResult(result: SearchResult, active: EntityClue, original: 
   if (urlHandle && normalizeIdentifier(urlHandle) === normalizeIdentifier(active.displayValue)) anchors.push({ label: "canonical_social_handle", score: 85 });
   const score = Math.min(100, anchors.reduce((sum, anchor) => sum + anchor.score, 0));
   return { score, admitted: score >= 60, anchors: anchors.map((anchor) => anchor.label), reason: score >= 60 ? `Subject relevance established by ${anchors.map((anchor) => anchor.label).join(", ")}.` : "No strong subject identifier or sufficient graph-neighbor evidence appears in the result." };
+}
+
+function discoveryAdmissionForResult(result: SearchResult, evidence: ReturnType<typeof evidenceAdmissionForResult>, context: { hop: number; intent: SearchIntent; query: string }) {
+  if (evidence.admitted) return { score: 100, admitted: true, provenance: 0, reason: "Result has subject-local evidence and is suitable for discovery." };
+  const profile = platformFor(result.url); const handle = socialUrlHandle(result.url); const aliases = titleAliases(result.title);
+  const text = `${result.title} ${result.description || ""}`;
+  const explicitIdentityLabel = /\b(?:person|director|company|organisation|organization|employer|handle|username|alias|known as)\s*:/iu.test(text);
+  const explicitlyUnrelated = /\bunrelated\b/iu.test(text);
+  const queryEmail = context.query.match(/[\p{L}\p{N}._%+-]+@[\p{L}\p{N}.-]+\.[\p{L}]{2,}/iu)?.[0].toLowerCase();
+  const conflictingEmail = [...text.matchAll(/[\p{L}\p{N}._%+-]+@[\p{L}\p{N}.-]+\.[\p{L}]{2,}/giu)].some((match) => !queryEmail || match[0].toLowerCase() !== queryEmail);
+  const titleConsistency = Boolean(handle && (containsIdentifier(result.title, handle) || aliases.length));
+  const seedIntent = context.hop === 0 && (context.intent === "social_profile_discovery" || context.intent === "open_web_identity");
+  const querySpecificity = seedIntent && /(?:site:|"[^\"]{3,}")/i.test(context.query) ? 15 : 0;
+  let structural = 0;
+  if (profile && handle) structural += 42;
+  if (aliases.length) structural += aliases.some(plausiblePersonName) ? 28 : 18;
+  if (/@[\p{L}\p{N}][\p{L}\p{N}_.-]{2,39}\b/u.test(text)) structural += 20;
+  if (explicitIdentityLabel) structural += 28;
+  if (explicitIdentityLabel && ["directory", "company_site", "registry"].includes(sourceClassFor(result.url))) structural += 20;
+  if (titleConsistency) structural += 12;
+  if (sourceClassFor(result.url) === "registry") structural += 20;
+  const provenance = seedIntent && structural >= 40 ? querySpecificity : 0;
+  const score = Math.min(100, structural + provenance);
+  const admitted = seedIntent && score >= 60 && !explicitlyUnrelated && !conflictingEmail;
+  return { score, admitted, provenance, reason: admitted ? `Structurally strong seed lead admitted for investigation${provenance ? " with a bounded targeted-query prior" : ""}.` : "Result lacks subject evidence and sufficient structured identity signals for seed discovery." };
+}
+
+function admissionDiagnostic(result: SearchResult, active: EntityClue, original: string, neighbors: string[], context: { hop: number; intent: SearchIntent; query: string }, branchPriority: number, siblingRank: number, remainingBudget: number): ResultAdmissionDiagnostic {
+  const evidence = evidenceAdmissionForResult(result, active, original, neighbors);
+  const discovery = discoveryAdmissionForResult(result, evidence, context);
+  return { url: result.url, title: result.title, admissionScore: evidence.score, admissionDecision: evidence.admitted ? "admitted" : "rejected", admissionReason: evidence.reason, matchedAnchors: evidence.anchors, extractedClues: [], discoveryAdmissionScore: discovery.score, discoveryAdmissionDecision: discovery.admitted ? "DISCOVERY_ADMITTED" : "REJECTED", evidenceAdmissionScore: evidence.score, evidenceAdmissionDecision: evidence.admitted ? "EVIDENCE_ADMITTED" : "REJECTED", discoveryAdmissionReason: discovery.reason, evidenceAdmissionReason: evidence.reason, queryProvenanceContribution: discovery.provenance, extractedDiscoveryClues: [], extractedEvidenceClues: [], branchPriority, siblingRank, remainingBudget };
 }
 
 /** Generic bounded loop used for non-email entity investigations and provider adapters. */
@@ -87,11 +122,15 @@ export async function investigateEntityClues(seed: EntityInvestigationSeed, sear
     clue.queriesPlanned.push(query); clue.queriesExecuted.push(query);
     const results = await search(query, clue); searchCount += 1; const produced: string[] = [];
     const resultDiagnostics: ResultAdmissionDiagnostic[] = [];
-    for (const [siblingIndex, result] of results.entries()) {
-      const admission = admissionForResult(result, clue, seedValue, neighbors);
-      const resultDiagnostic: ResultAdmissionDiagnostic = { url: result.url, title: result.title, admissionScore: admission.score, admissionDecision: admission.admitted ? "admitted" : "rejected", admissionReason: admission.reason, matchedAnchors: admission.anchors, extractedClues: [], branchPriority: clue.searchPriority, siblingRank: siblingIndex + 1, remainingBudget: limits.maxSearches - searchCount };
+    const assessedResults = results.map((result, siblingIndex) => ({ result, siblingIndex, diagnostic: admissionDiagnostic(result, clue, seedValue, neighbors, { hop: clue.hop, intent: "open_web_identity", query }, clue.searchPriority, siblingIndex + 1, limits.maxSearches - searchCount) }));
+    const discoveryBeam = new Set(assessedResults.filter(({ diagnostic }) => diagnostic.discoveryAdmissionDecision === "DISCOVERY_ADMITTED" && diagnostic.evidenceAdmissionDecision === "REJECTED").sort((a, b) => b.diagnostic.discoveryAdmissionScore - a.diagnostic.discoveryAdmissionScore || a.siblingIndex - b.siblingIndex).slice(0, 3).map(({ siblingIndex }) => siblingIndex));
+    for (const { result, siblingIndex, diagnostic: resultDiagnostic } of assessedResults) {
+      if (resultDiagnostic.discoveryAdmissionDecision === "DISCOVERY_ADMITTED" && resultDiagnostic.evidenceAdmissionDecision === "REJECTED" && !discoveryBeam.has(siblingIndex)) {
+        resultDiagnostic.discoveryAdmissionDecision = "REJECTED";
+        resultDiagnostic.discoveryAdmissionReason = "Structurally relevant lead fell outside the bounded top-three seed discovery beam.";
+      }
       resultDiagnostics.push(resultDiagnostic);
-      if (!admission.admitted) continue;
+      if (resultDiagnostic.discoveryAdmissionDecision === "REJECTED") continue;
       const text = `${result.title} | ${result.description || ""}`;
       for (const pattern of patterns) for (const match of text.matchAll(new RegExp(pattern.expression.source, pattern.expression.flags))) {
         const value = match[1].trim(); const id = `${pattern.type}:${normalizeIdentifier(value)}`; const path = [...clue.discoveryPath, value];
@@ -99,13 +138,14 @@ export async function investigateEntityClues(seed: EntityInvestigationSeed, sear
         const prior = clues.get(id);
         if (prior) { prior.observedBy = [...new Set([...prior.observedBy, `${query}|${result.url}`])]; prior.adjacentClueIds = [...new Set([...prior.adjacentClueIds, clue.id])]; continue; }
         const next: EntityClue = { id, type: pattern.type, normalizedValue: normalizeIdentifier(value), displayValue: value, source: result.url, discoveryPath: path, hop: clue.hop + 1, derivation: pattern.derivation, evidenceStrength: "observed", attributionState: "discovery", adjacentClueIds: [clue.id, ...clue.adjacentClueIds], observedBy: [`${query}|${result.url}`], ...schedulingFields({ type: pattern.type, value, derivation: pattern.derivation, adjacency: clue.adjacentClueIds.length + 1 }) };
-        clues.set(id, next); produced.push(value); resultDiagnostic.extractedClues.push(value); if (next.hop < limits.maxHops && next.enqueueDecision === "enqueued") queue.push(next);
+        clues.set(id, next); produced.push(value); resultDiagnostic.extractedClues.push(value); resultDiagnostic.extractedDiscoveryClues.push(value); if (resultDiagnostic.evidenceAdmissionDecision === "EVIDENCE_ADMITTED") resultDiagnostic.extractedEvidenceClues.push(value); if (next.hop < limits.maxHops && next.enqueueDecision === "enqueued") queue.push(next);
       }
     }
     diagnostics.push({ query, hop: clue.hop, pivot: clue.displayValue, resultCount: results.length, producedNewIdentifiers: produced.length > 0, newIdentifiers: produced, clueType: clue.type, clueQualityScore: clue.qualityScore, searchPriority: clue.searchPriority, remainingBudget: limits.maxSearches - searchCount, informationGain: produced.length, searchIntent: "graph_neighbor_expansion", sourceClasses: [...new Set(results.map((result) => sourceClassFor(result.url)))], extractedEntityClues: produced, prioritizationReason: "Highest-quality typed clue with adjacent graph context.", results: resultDiagnostics });
   }
   const convergences = [...clues.values()].filter((clue) => clue.observedBy.length > 1).map((clue) => ({ clueId: clue.id, convergingPaths: relationships.filter((edge) => edge.to === clue.id).map((edge) => edge.discoveryPath), sharedIdentifiers: [clue.normalizedValue], loopStrength: Math.min(100, clue.observedBy.length * 20), sourceClasses: [...new Set(clue.observedBy.map((observation) => sourceClassFor(observation.split("|").at(-1) || "")))] }));
-  const budgetExhaustionReason = searchCount >= limits.maxSearches && queue.length ? "max_searches" : clues.size >= limits.maxIdentifiers && queue.length ? "max_identifiers" : "closure_reached";
+  const anyAdmissible = diagnostics.some((entry) => entry.results.some((result) => result.discoveryAdmissionDecision === "DISCOVERY_ADMITTED"));
+  const budgetExhaustionReason = searchCount >= limits.maxSearches && queue.length ? "max_searches" : clues.size >= limits.maxIdentifiers && queue.length ? "max_identifiers" : !anyAdmissible && diagnostics.some((entry) => entry.resultCount > 0) ? "no_admissible_leads" : "closure_reached";
   return { clues: [...clues.values()], relationships, convergences, diagnostics, metrics: { searchCount, identifierCount: clues.size, budgetExhaustionReason } };
 }
 
@@ -355,15 +395,19 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
     }
     const identifiersBefore = new Set(edges.filter((edge) => edge.relation !== "search_result").map((edge) => edge.to));
     const resultDiagnostics: ResultAdmissionDiagnostic[] = [];
-    for (const [resultIndex, hit] of results.entries()) {
+    const activeClue = clues.get(`${item.clueType}:${normalizeIdentifier(item.label)}`) || clues.get(`email:${normalized}`)!;
+    const graphNeighbors = [...new Set([localPart, ...item.path, ...(activeClue.adjacentClueIds.map((id) => clues.get(id)?.displayValue).filter(Boolean) as string[])])];
+    const assessedResults = results.map((hit, resultIndex) => ({ hit, resultIndex, diagnostic: admissionDiagnostic(hit, activeClue, normalized, graphNeighbors, { hop: item.hop, intent: item.intent, query: item.query }, item.priority, item.siblingRank || resultIndex + 1, limits.maxSearches - searchCount) }));
+    const seedDiscoveryBeam = new Set(assessedResults.filter(({ diagnostic }) => diagnostic.discoveryAdmissionDecision === "DISCOVERY_ADMITTED" && diagnostic.evidenceAdmissionDecision === "REJECTED").sort((a, b) => b.diagnostic.discoveryAdmissionScore - a.diagnostic.discoveryAdmissionScore || a.resultIndex - b.resultIndex).slice(0, 3).map(({ resultIndex }) => resultIndex));
+    for (const { resultIndex, hit, diagnostic: resultDiagnostic } of assessedResults) {
       const sourceClass = sourceClassFor(hit.url);
       const platform = platformFor(hit.url);
-      const activeClue = clues.get(`${item.clueType}:${normalizeIdentifier(item.label)}`) || clues.get(`email:${normalized}`)!;
-      const graphNeighbors = [...new Set([localPart, ...item.path, ...(activeClue.adjacentClueIds.map((id) => clues.get(id)?.displayValue).filter(Boolean) as string[])])];
-      const admission = admissionForResult(hit, activeClue, normalized, graphNeighbors);
-      const resultDiagnostic: ResultAdmissionDiagnostic = { url: hit.url, title: hit.title, admissionScore: admission.score, admissionDecision: admission.admitted ? "admitted" : "rejected", admissionReason: admission.reason, matchedAnchors: admission.anchors, extractedClues: [], branchPriority: item.priority, siblingRank: item.siblingRank || resultIndex + 1, remainingBudget: limits.maxSearches - searchCount };
+      if (resultDiagnostic.discoveryAdmissionDecision === "DISCOVERY_ADMITTED" && resultDiagnostic.evidenceAdmissionDecision === "REJECTED" && !seedDiscoveryBeam.has(resultIndex)) {
+        resultDiagnostic.discoveryAdmissionDecision = "REJECTED";
+        resultDiagnostic.discoveryAdmissionReason = "Structurally relevant lead fell outside the bounded top-three seed discovery beam.";
+      }
       resultDiagnostics.push(resultDiagnostic);
-      if (!admission.admitted) continue;
+      if (resultDiagnostic.discoveryAdmissionDecision === "REJECTED") continue;
       if (!platform) {
         const snippet = `${hit.title}${hit.description ? ` - ${hit.description}` : ""}`.trim();
         const pivots = observedIdentifiers(hit, originals);
@@ -372,11 +416,13 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
           const id = normalizeIdentifier(pivot.value); const clueType = pivot.type || "unknown";
           const path = [...item.path, pivot.value];
           const relatedPerson = personPivots.find((person) => normalizeIdentifier(person.value) !== id);
-          edges.push({ from: relatedPerson ? normalizeIdentifier(relatedPerson.value) : hit.url, to: id, relation: clueType === "username" && relatedPerson ? "uses_handle_candidate" : pivot.relation, hop: item.hop + 1, evidence: { query: item.query, url: hit.url, snippet, provider: "Brave Search", sourceClass, searchIntent: item.intent, derivation: pivot.derivation } });
+          const evidenceAdmitted = resultDiagnostic.evidenceAdmissionDecision === "EVIDENCE_ADMITTED";
+          const relation = clueType === "username" && relatedPerson ? "uses_handle_candidate" : evidenceAdmitted ? pivot.relation : "discovery_lead";
+          edges.push({ from: relatedPerson ? normalizeIdentifier(relatedPerson.value) : hit.url, to: id, relation, hop: item.hop + 1, evidence: { query: item.query, url: hit.url, snippet, provider: "Brave Search", sourceClass, searchIntent: item.intent, derivation: pivot.derivation } });
           const adjacentLabels = [...new Set([item.label, ...(relatedPerson ? [relatedPerson.value] : [])])];
           const scheduling = schedulingFields({ type: clueType, value: pivot.value, derivation: pivot.derivation, adjacency: adjacentLabels.length, originalOverlap: originals.has(id) });
           addClue({ id: `${clueType}:${id}`, type: clueType, normalizedValue: id, displayValue: pivot.value, source: hit.url, discoveryPath: path, hop: item.hop + 1, derivation: pivot.derivation, evidenceStrength: "observed", attributionState: "discovery", adjacentClueIds: [item.id], observedBy: [`${item.query}|${hit.url}`], ...scheduling });
-          resultDiagnostic.extractedClues.push(pivot.value);
+          resultDiagnostic.extractedClues.push(pivot.value); resultDiagnostic.extractedDiscoveryClues.push(pivot.value); if (resultDiagnostic.evidenceAdmissionDecision === "EVIDENCE_ADMITTED") resultDiagnostic.extractedEvidenceClues.push(pivot.value);
           if (item.hop < limits.maxHops - 1 && scheduling.enqueueDecision === "enqueued") pendingIdentifiers.push({ id, label: pivot.value, hop: item.hop + 1, path, identifierStrength: "discovery_lead", exactSource: false, order: observationOrder++, derivation: pivot.derivation, clueType, adjacentLabels, qualityScore: scheduling.qualityScore, priority: scheduling.searchPriority + (pivot.derivation === "explicit_handle" ? 14 : clueType === "person_name" ? 8 : 0) });
         }
         continue;
@@ -425,14 +471,15 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
         const id = normalizeIdentifier(pivot.value);
         const evidence = { query: item.query, url: observation.url, snippet, provider: "Brave Search" as const, sourceClass, searchIntent: item.intent, derivation: pivot.derivation };
         // Preserve every observation edge. Search execution is deduplicated separately.
-        edges.push({ from: profileUrl, to: id, relation: pivot.relation, hop: item.hop + 1, evidence });
+        const admittedRelation = resultDiagnostic.evidenceAdmissionDecision === "EVIDENCE_ADMITTED" ? pivot.relation : "discovery_lead";
+        edges.push({ from: profileUrl, to: id, relation: admittedRelation, hop: item.hop + 1, evidence });
         const clueType = pivot.type || "unknown"; const clueId = `${clueType}:${id}`;
         const adjacentLabels = [...new Set([item.label, ...item.path.filter((step) => !/^https?:/i.test(step)).map((step) => step.replace(/^.*“|”$/g, ""))])].slice(-4);
         const cluePath = clueType === "person_name" ? [...item.path, ...precedingPersonClues, pivot.value] : [...path, pivot.value];
         const scheduling = schedulingFields({ type: clueType, value: pivot.value, derivation: pivot.derivation, adjacency: adjacentLabels.length, originalOverlap: originals.has(id) });
-        addClue({ id: clueId, type: clueType, normalizedValue: id, displayValue: pivot.value, source: profileUrl, discoveryPath: cluePath, hop: item.hop + 1, derivation: pivot.derivation, evidenceStrength: pivot.relation === "corroborated_identifier" ? "strong" : "observed", attributionState: pivot.relation === "corroborated_identifier" ? "corroborated" : "discovery", adjacentClueIds: [item.id], observedBy: [`${item.query}|${profileUrl}`], ...scheduling });
-        resultDiagnostic.extractedClues.push(pivot.value);
-        if (scheduling.enqueueDecision === "enqueued") pendingIdentifiers.push({ id, label: pivot.value, hop: item.hop + 1, path: cluePath, identifierStrength: pivot.relation, exactSource: exact, order: observationOrder++, derivation: pivot.derivation, clueType, adjacentLabels: [...adjacentLabels, ...precedingPersonClues], qualityScore: scheduling.qualityScore, priority: scheduling.searchPriority });
+        addClue({ id: clueId, type: clueType, normalizedValue: id, displayValue: pivot.value, source: profileUrl, discoveryPath: cluePath, hop: item.hop + 1, derivation: pivot.derivation, evidenceStrength: admittedRelation === "corroborated_identifier" ? "strong" : "observed", attributionState: admittedRelation === "corroborated_identifier" ? "corroborated" : "discovery", adjacentClueIds: [item.id], observedBy: [`${item.query}|${profileUrl}`], ...scheduling });
+        resultDiagnostic.extractedClues.push(pivot.value); resultDiagnostic.extractedDiscoveryClues.push(pivot.value); if (resultDiagnostic.evidenceAdmissionDecision === "EVIDENCE_ADMITTED") resultDiagnostic.extractedEvidenceClues.push(pivot.value);
+        if (scheduling.enqueueDecision === "enqueued") pendingIdentifiers.push({ id, label: pivot.value, hop: item.hop + 1, path: cluePath, identifierStrength: admittedRelation, exactSource: exact, order: observationOrder++, derivation: pivot.derivation, clueType, adjacentLabels: [...adjacentLabels, ...precedingPersonClues], qualityScore: scheduling.qualityScore, priority: scheduling.searchPriority });
         if (clueType === "person_name") precedingPersonClues.push(pivot.value);
       }
     }
@@ -455,7 +502,8 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
   const ranked = [...candidates.values()].sort((a, b) => Number(b.matchLevel === "exact_match") - Number(a.matchLevel === "exact_match") || (b.discoveryScore || 0) - (a.discoveryScore || 0) || b.confidence - a.confidence || a.profileUrl.localeCompare(b.profileUrl));
   const pathUrls = new Set(edges.filter((edge) => edge.relation !== "search_result").map((edge) => edge.from));
   const visible = ranked.filter((candidate, index) => candidate.confidence >= 45 || pathUrls.has(candidate.profileUrl) || index < 3).slice(0, limits.maxVisibleCandidates);
-  const budgetExhaustionReason = signal.aborted ? "timeout" : searchCount >= limits.maxSearches && queue.length ? "max_searches" : identifierCount >= limits.maxIdentifiers && pendingIdentifiers.length ? "max_identifiers" : "closure_reached";
+  const anyAdmissible = searches.some((entry) => entry.results.some((result) => result.discoveryAdmissionDecision === "DISCOVERY_ADMITTED"));
+  const budgetExhaustionReason = signal.aborted ? "timeout" : searchCount >= limits.maxSearches && queue.length ? "max_searches" : identifierCount >= limits.maxIdentifiers && pendingIdentifiers.length ? "max_identifiers" : !anyAdmissible && searches.some((entry) => entry.resultCount > 0) ? "no_admissible_leads" : "closure_reached";
   return { candidates: visible, allCandidates: ranked, clues: [...clues.values()], convergences, edges, searches, metrics: { searchCount, identifierCount, maxHopReached: edges.reduce((max, edge) => Math.max(max, edge.hop), 0), partial: signal.aborted, budgetExhaustionReason, reservedExpansionSearches: limits.reservedExpansionSearches, seedSearchCount: seedQueue.length - Math.max(0, seedQueue.length - seedSearchLimit) } };
 }
 export async function discoverExternalIdentityCandidates(email: string, apiKey: string, signal: AbortSignal) { return (await discoverExternalIdentityGraph(email, apiKey, signal)).candidates; }

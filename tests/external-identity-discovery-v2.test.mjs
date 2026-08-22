@@ -269,6 +269,63 @@ test("a discovered person name retains a budgeted site-restricted social search"
   assert.ok(graph.metrics.searchCount <= 6);
 });
 
+test("production seed discovery quarantines a structured first hop before later evidence finds the target handle", async () => {
+  const graph = await discoverExternalIdentityGraph("nastikmastik358@gmail.com", "key", new AbortController().signal, {
+    search: async (query) => {
+      if (query.includes("nastikmastik358") && query.includes("profile OR social")) return [
+        { title: "Anastasia (@thenastikedit) | Instagram", url: "https://instagram.com/thenastikedit", description: "Creator profile" },
+        { title: "Different person", url: "https://instagram.com/random_account", description: "Unrelated public profile" },
+        { title: "Footprints from the coast", url: "https://notes.example/footprints", description: "Edited prose and travel notes" },
+      ];
+      if (query.includes("thenastikedit")) return [{ title: "Anastasia uses @thenastikedit", url: "https://journal.example/interviews/anastasia", description: "Person: Anastasia. Instagram: nastik707" }];
+      if (query.includes("nastik707")) return [{ title: "Anastasia (@nastik707) | Instagram", url: "https://instagram.com/nastik707", description: "Anastasia and @thenastikedit" }];
+      return [];
+    },
+    limits: { maxSearches: 12, maxIdentifiers: 12 },
+  });
+
+  const seedResults = graph.searches.find((search) => search.query.includes("profile OR social")).results;
+  const lead = seedResults.find((result) => result.url.includes("thenastikedit"));
+  assert.equal(lead.discoveryAdmissionDecision, "DISCOVERY_ADMITTED");
+  assert.equal(lead.evidenceAdmissionDecision, "REJECTED");
+  assert.ok(lead.queryProvenanceContribution > 0);
+  assert.deepEqual(lead.extractedEvidenceClues, []);
+  assert.ok(lead.extractedDiscoveryClues.some((clue) => /Anastasia|thenastikedit/i.test(clue)));
+  assert.ok(seedResults.filter((result) => result.discoveryAdmissionDecision === "DISCOVERY_ADMITTED").length <= 3);
+  assert.ok(seedResults.filter((result) => /random_account|footprints/.test(result.url)).every((result) => result.discoveryAdmissionDecision === "REJECTED"));
+  assert.ok(graph.searches.some((search) => search.searchIntent === "open_web_identity"));
+  assert.ok(graph.searches.some((search) => search.hop > 0 && search.searchIntent === "social_profile_discovery"));
+  assert.ok(graph.allCandidates.some((candidate) => candidate.profileUrl === "https://instagram.com/nastik707" && candidate.status === "Candidate"));
+  assert.ok(graph.clues.filter((clue) => /anastasia|thenastikedit/i.test(clue.displayValue)).every((clue) => clue.attributionState === "discovery"));
+});
+
+test("PERSON seed discovery stays unattributed until graph-neighbor evidence", async () => {
+  const graph = await investigateEntityClues({ type: "username", value: "signal_1042" }, async (_query, clue) => {
+    if (clue.displayValue === "signal_1042") return [
+      { title: "Mira Vale | Instagram", url: "https://instagram.com/mira_field", description: "Person: Mira Vale" },
+      { title: "Unrelated profile", url: "https://instagram.com/random", description: "Unrelated public profile" },
+    ];
+    return [{ title: `${clue.displayValue} and signal_1042`, url: "https://directory.example/connection", description: `Person: ${clue.displayValue}` }];
+  }, { maxHops: 2, maxIdentifiers: 6, maxSearches: 3 });
+  const person = graph.clues.find((clue) => clue.displayValue === "Mira Vale");
+  assert.equal(person.attributionState, "discovery");
+  assert.equal(graph.diagnostics[0].results[0].discoveryAdmissionDecision, "DISCOVERY_ADMITTED");
+  assert.equal(graph.diagnostics[0].results[0].evidenceAdmissionDecision, "REJECTED");
+  assert.equal(graph.clues.some((clue) => clue.normalizedValue === "random"), false);
+});
+
+test("COMPANY seed discovery does not resolve a legal entity before registry evidence", async () => {
+  const graph = await investigateEntityClues({ type: "unknown", value: "merchant-1042" }, async (_query, clue) => {
+    if (clue.displayValue === "merchant-1042") return [{ title: "Northstar Lantern company profile", url: "https://directory.example/company/northstar", description: "Company: Northstar Lantern Ltd" }];
+    return [{ title: `${clue.displayValue} registry record for merchant-1042`, url: "https://registry.example/northstar", description: `Company: ${clue.displayValue}. Domain: northstar.example` }];
+  }, { maxHops: 2, maxIdentifiers: 6, maxSearches: 3 });
+  const company = graph.clues.find((clue) => clue.displayValue === "Northstar Lantern Ltd");
+  assert.equal(company.attributionState, "discovery");
+  assert.equal(graph.diagnostics[0].results[0].discoveryAdmissionDecision, "DISCOVERY_ADMITTED");
+  assert.equal(graph.diagnostics[0].results[0].evidenceAdmissionDecision, "REJECTED");
+  assert.ok(graph.relationships.some((relationship) => relationship.from === company.id && relationship.relationship === "domain"));
+});
+
 test("PERSON and COMPANY result admission blocks similarly named unanchored pages", async () => {
   for (const seed of [{ type: "person_name", value: "Avery Rowan" }, { type: "company_name", value: "Northstar Labs" }]) {
     const graph = await investigateEntityClues(seed, async () => [
