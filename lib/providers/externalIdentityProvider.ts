@@ -39,11 +39,33 @@ export type IdentityDiscoverySearchDiagnostic = {
   clueType: EntityClueType; clueQualityScore: number; searchPriority: number;
   remainingBudget: number; informationGain: number;
   searchIntent: SearchIntent; sourceClasses: SourceClass[]; extractedEntityClues: string[]; prioritizationReason: string;
+  results: ResultAdmissionDiagnostic[];
+};
+export type ResultAdmissionDiagnostic = {
+  url: string; title: string; admissionScore: number; admissionDecision: "admitted" | "rejected";
+  admissionReason: string; matchedAnchors: string[]; extractedClues: string[];
+  branchPriority: number; siblingRank: number; remainingBudget: number;
 };
 type SearchResult = { title: string; url: string; description?: string };
 type SearchFn = (query: string, apiKey: string, signal: AbortSignal, limit: number) => Promise<SearchResult[]>;
 export type EntityInvestigationSeed = { type: EntityClueType; value: string };
 export type EntityRelationship = { from: string; to: string; relationship: "resolved_as" | "director" | "domain" | "related_entity"; discoveryPath: string[] };
+
+function admissionForResult(result: SearchResult, active: EntityClue, original: string, neighbors: string[]) {
+  const text = `${result.title} ${result.description || ""} ${result.url}`;
+  const anchors: Array<{ label: string; score: number }> = [];
+  if (containsIdentifier(text, original)) anchors.push({ label: "original_target", score: 100 });
+  const originalLocalPart = original.includes("@") ? original.split("@")[0] : undefined;
+  if (originalLocalPart && containsIdentifier(text, originalLocalPart)) anchors.push({ label: "original_local_part", score: 65 });
+  if (containsIdentifier(text, active.displayValue)) anchors.push({ label: "active_clue", score: active.type === "person_name" || active.type === "company_name" ? 75 : 65 });
+  const matchedNeighbors = [...new Set(neighbors.filter((neighbor) => containsIdentifier(text, neighbor)))];
+  matchedNeighbors.forEach((neighbor) => anchors.push({ label: `graph_neighbor:${neighbor}`, score: 30 }));
+  if (matchedNeighbors.length >= 2) anchors.push({ label: "multiple_graph_neighbors", score: 35 });
+  const urlHandle = socialUrlHandle(result.url);
+  if (urlHandle && normalizeIdentifier(urlHandle) === normalizeIdentifier(active.displayValue)) anchors.push({ label: "canonical_social_handle", score: 85 });
+  const score = Math.min(100, anchors.reduce((sum, anchor) => sum + anchor.score, 0));
+  return { score, admitted: score >= 60, anchors: anchors.map((anchor) => anchor.label), reason: score >= 60 ? `Subject relevance established by ${anchors.map((anchor) => anchor.label).join(", ")}.` : "No strong subject identifier or sufficient graph-neighbor evidence appears in the result." };
+}
 
 /** Generic bounded loop used for non-email entity investigations and provider adapters. */
 export async function investigateEntityClues(seed: EntityInvestigationSeed, search: (query: string, clue: EntityClue) => Promise<SearchResult[]>, limits: Pick<IdentityDiscoveryLimits, "maxHops" | "maxIdentifiers" | "maxSearches"> = DEFAULT_IDENTITY_DISCOVERY_LIMITS) {
@@ -64,7 +86,12 @@ export async function investigateEntityClues(seed: EntityInvestigationSeed, sear
     const query = [clue.displayValue, ...neighbors.slice(0, 2)].map((value) => `"${value.replace(/["\\]/g, " ")}"`).join(" ");
     clue.queriesPlanned.push(query); clue.queriesExecuted.push(query);
     const results = await search(query, clue); searchCount += 1; const produced: string[] = [];
-    for (const result of results) {
+    const resultDiagnostics: ResultAdmissionDiagnostic[] = [];
+    for (const [siblingIndex, result] of results.entries()) {
+      const admission = admissionForResult(result, clue, seedValue, neighbors);
+      const resultDiagnostic: ResultAdmissionDiagnostic = { url: result.url, title: result.title, admissionScore: admission.score, admissionDecision: admission.admitted ? "admitted" : "rejected", admissionReason: admission.reason, matchedAnchors: admission.anchors, extractedClues: [], branchPriority: clue.searchPriority, siblingRank: siblingIndex + 1, remainingBudget: limits.maxSearches - searchCount };
+      resultDiagnostics.push(resultDiagnostic);
+      if (!admission.admitted) continue;
       const text = `${result.title} | ${result.description || ""}`;
       for (const pattern of patterns) for (const match of text.matchAll(new RegExp(pattern.expression.source, pattern.expression.flags))) {
         const value = match[1].trim(); const id = `${pattern.type}:${normalizeIdentifier(value)}`; const path = [...clue.discoveryPath, value];
@@ -72,10 +99,10 @@ export async function investigateEntityClues(seed: EntityInvestigationSeed, sear
         const prior = clues.get(id);
         if (prior) { prior.observedBy = [...new Set([...prior.observedBy, `${query}|${result.url}`])]; prior.adjacentClueIds = [...new Set([...prior.adjacentClueIds, clue.id])]; continue; }
         const next: EntityClue = { id, type: pattern.type, normalizedValue: normalizeIdentifier(value), displayValue: value, source: result.url, discoveryPath: path, hop: clue.hop + 1, derivation: pattern.derivation, evidenceStrength: "observed", attributionState: "discovery", adjacentClueIds: [clue.id, ...clue.adjacentClueIds], observedBy: [`${query}|${result.url}`], ...schedulingFields({ type: pattern.type, value, derivation: pattern.derivation, adjacency: clue.adjacentClueIds.length + 1 }) };
-        clues.set(id, next); produced.push(value); if (next.hop < limits.maxHops && next.enqueueDecision === "enqueued") queue.push(next);
+        clues.set(id, next); produced.push(value); resultDiagnostic.extractedClues.push(value); if (next.hop < limits.maxHops && next.enqueueDecision === "enqueued") queue.push(next);
       }
     }
-    diagnostics.push({ query, hop: clue.hop, pivot: clue.displayValue, resultCount: results.length, producedNewIdentifiers: produced.length > 0, newIdentifiers: produced, clueType: clue.type, clueQualityScore: clue.qualityScore, searchPriority: clue.searchPriority, remainingBudget: limits.maxSearches - searchCount, informationGain: produced.length, searchIntent: "graph_neighbor_expansion", sourceClasses: [...new Set(results.map((result) => sourceClassFor(result.url)))], extractedEntityClues: produced, prioritizationReason: "Highest-quality typed clue with adjacent graph context." });
+    diagnostics.push({ query, hop: clue.hop, pivot: clue.displayValue, resultCount: results.length, producedNewIdentifiers: produced.length > 0, newIdentifiers: produced, clueType: clue.type, clueQualityScore: clue.qualityScore, searchPriority: clue.searchPriority, remainingBudget: limits.maxSearches - searchCount, informationGain: produced.length, searchIntent: "graph_neighbor_expansion", sourceClasses: [...new Set(results.map((result) => sourceClassFor(result.url)))], extractedEntityClues: produced, prioritizationReason: "Highest-quality typed clue with adjacent graph context.", results: resultDiagnostics });
   }
   const convergences = [...clues.values()].filter((clue) => clue.observedBy.length > 1).map((clue) => ({ clueId: clue.id, convergingPaths: relationships.filter((edge) => edge.to === clue.id).map((edge) => edge.discoveryPath), sharedIdentifiers: [clue.normalizedValue], loopStrength: Math.min(100, clue.observedBy.length * 20), sourceClasses: [...new Set(clue.observedBy.map((observation) => sourceClassFor(observation.split("|").at(-1) || "")))] }));
   const budgetExhaustionReason = searchCount >= limits.maxSearches && queue.length ? "max_searches" : clues.size >= limits.maxIdentifiers && queue.length ? "max_identifiers" : "closure_reached";
@@ -233,7 +260,7 @@ function observedIdentifiers(hit: SearchResult, originals: Set<string>) {
 }
 async function braveSearch(query: string, apiKey: string, signal: AbortSignal, limit: number): Promise<SearchResult[]> { const url = new URL(SEARCH_ENDPOINT); url.searchParams.set("q", query); url.searchParams.set("count", String(limit)); url.searchParams.set("safesearch", "strict"); const response = await fetch(url, { signal, headers: { accept: "application/json", "x-subscription-token": apiKey } }); if (!response.ok) throw new Error(`Public search returned HTTP ${response.status}.`); const payload = await response.json() as { web?: { results?: Array<{ title?: string; url?: string; description?: string }> } }; return (payload.web?.results || []).filter((item): item is SearchResult => Boolean(item.title && item.url)).slice(0, limit); }
 
-type QueueItem = { id: string; label: string; hop: number; path: string[]; query: string; method: string; intent: SearchIntent; identifierStrength?: "discovery_lead" | "corroborated_identifier"; qualityScore: number; priority: number; clueType: EntityClueType };
+type QueueItem = { id: string; label: string; hop: number; path: string[]; query: string; method: string; intent: SearchIntent; identifierStrength?: "discovery_lead" | "corroborated_identifier"; qualityScore: number; priority: number; clueType: EntityClueType; siblingRank?: number };
 type PendingIdentifier = Omit<QueueItem, "query" | "method" | "intent"> & { exactSource: boolean; order: number; derivation: DiscoveryPivot["derivation"]; adjacentLabels: string[] };
 
 function contextualQueries(pivot: PendingIdentifier, localPart: string) {
@@ -248,6 +275,13 @@ function contextualQueries(pivot: PendingIdentifier, localPart: string) {
   if (pivot.derivation === "social_url" || pivot.derivation === "explicit_handle") queries.push({ query: `"${value}" "${neighbors[0] || localPart}"`, method: `${pivot.identifierStrength}_corroboration`, intent: "corroboration" });
   if (pivot.derivation === "explicit_handle") queries.sort((a, b) => Number(b.intent === "social_profile_discovery") - Number(a.intent === "social_profile_discovery"));
   return queries;
+}
+
+function budgetedContextualQueries(pivot: PendingIdentifier, localPart: string) {
+  const variants = contextualQueries(pivot, localPart);
+  if (pivot.derivation === "explicit_handle") return variants.slice(0, 2);
+  const socialVariant = variants.find((variant) => variant.intent === "social_profile_discovery");
+  return socialVariant ? [variants[0], socialVariant].filter((variant, index, selected) => selected.indexOf(variant) === index) : variants.slice(0, 2);
 }
 
 export async function discoverExternalIdentityGraph(email: string, apiKey: string, signal: AbortSignal, options: { limits?: Partial<IdentityDiscoveryLimits>; search?: SearchFn } = {}) {
@@ -285,15 +319,22 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
   const enqueuePending = () => {
     pendingIdentifiers.sort((a, b) => b.priority - a.priority || Number(b.exactSource) - Number(a.exactSource) || a.order - b.order);
     const accepted: Array<{ item: PendingIdentifier; variants: ReturnType<typeof contextualQueries> }> = [];
+    const deferred: PendingIdentifier[] = []; const selectedFamilies = new Set<string>();
     for (const item of pendingIdentifiers.splice(0)) {
       const id = normalizeIdentifier(item.id);
       if (queuedIdentifiers.has(id) || identifierCount >= limits.maxIdentifiers) continue;
+      const family = item.clueType === "username" || item.clueType === "social_profile" ? "social_handle" : item.clueType;
+      // Admit a small, diverse beam. A single result family cannot schedule a
+      // long run of equivalent handles ahead of person, company, or domain clues.
+      if (accepted.length >= 3 || (selectedFamilies.has(family) && family === "social_handle")) { deferred.push(item); continue; }
+      selectedFamilies.add(family);
       queuedIdentifiers.add(id); identifierCount += 1;
-      const variants = contextualQueries(item, localPart); accepted.push({ item, variants });
+      const variants = budgetedContextualQueries(item, localPart); accepted.push({ item, variants });
       const clue = clues.get(`${item.clueType}:${id}`); if (clue) clue.queriesPlanned = variants.map((variant) => variant.query);
     }
-    for (let variantIndex = 0; variantIndex < 3; variantIndex += 1) for (const { item, variants } of accepted) {
-      const variant = variants[variantIndex]; if (variant) queue.push({ ...item, ...variant, priority: item.priority - variantIndex * 8 });
+    pendingIdentifiers.push(...deferred);
+    for (let variantIndex = 0; variantIndex < 2; variantIndex += 1) for (const [siblingIndex, { item, variants }] of accepted.entries()) {
+      const variant = variants[variantIndex]; if (variant) queue.push({ ...item, ...variant, siblingRank: siblingIndex + 1, priority: item.priority - variantIndex * 30 });
     }
   };
 
@@ -313,12 +354,18 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
       throw error;
     }
     const identifiersBefore = new Set(edges.filter((edge) => edge.relation !== "search_result").map((edge) => edge.to));
-    for (const hit of results) {
+    const resultDiagnostics: ResultAdmissionDiagnostic[] = [];
+    for (const [resultIndex, hit] of results.entries()) {
       const sourceClass = sourceClassFor(hit.url);
       const platform = platformFor(hit.url);
+      const activeClue = clues.get(`${item.clueType}:${normalizeIdentifier(item.label)}`) || clues.get(`email:${normalized}`)!;
+      const graphNeighbors = [...new Set([localPart, ...item.path, ...(activeClue.adjacentClueIds.map((id) => clues.get(id)?.displayValue).filter(Boolean) as string[])])];
+      const admission = admissionForResult(hit, activeClue, normalized, graphNeighbors);
+      const resultDiagnostic: ResultAdmissionDiagnostic = { url: hit.url, title: hit.title, admissionScore: admission.score, admissionDecision: admission.admitted ? "admitted" : "rejected", admissionReason: admission.reason, matchedAnchors: admission.anchors, extractedClues: [], branchPriority: item.priority, siblingRank: item.siblingRank || resultIndex + 1, remainingBudget: limits.maxSearches - searchCount };
+      resultDiagnostics.push(resultDiagnostic);
+      if (!admission.admitted) continue;
       if (!platform) {
         const snippet = `${hit.title}${hit.description ? ` - ${hit.description}` : ""}`.trim();
-        if (item.hop > 0 && !containsIdentifier(snippet, item.label)) continue;
         const pivots = observedIdentifiers(hit, originals);
         const personPivots = pivots.filter((pivot) => pivot.type === "person_name");
         for (const pivot of pivots) {
@@ -329,6 +376,7 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
           const adjacentLabels = [...new Set([item.label, ...(relatedPerson ? [relatedPerson.value] : [])])];
           const scheduling = schedulingFields({ type: clueType, value: pivot.value, derivation: pivot.derivation, adjacency: adjacentLabels.length, originalOverlap: originals.has(id) });
           addClue({ id: `${clueType}:${id}`, type: clueType, normalizedValue: id, displayValue: pivot.value, source: hit.url, discoveryPath: path, hop: item.hop + 1, derivation: pivot.derivation, evidenceStrength: "observed", attributionState: "discovery", adjacentClueIds: [item.id], observedBy: [`${item.query}|${hit.url}`], ...scheduling });
+          resultDiagnostic.extractedClues.push(pivot.value);
           if (item.hop < limits.maxHops - 1 && scheduling.enqueueDecision === "enqueued") pendingIdentifiers.push({ id, label: pivot.value, hop: item.hop + 1, path, identifierStrength: "discovery_lead", exactSource: false, order: observationOrder++, derivation: pivot.derivation, clueType, adjacentLabels, qualityScore: scheduling.qualityScore, priority: scheduling.searchPriority + (pivot.derivation === "explicit_handle" ? 14 : clueType === "person_name" ? 8 : 0) });
         }
         continue;
@@ -336,8 +384,6 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
       const profileUrl = identityProfileUrl(hit.url); if (!profileUrl) continue;
       const snippet = `${hit.title}${hit.description ? ` - ${hit.description}` : ""}`.trim();
       const currentExact = containsExactEmailToken(snippet, normalized);
-      // A second-hop result must repeat the searched identifier in its own preserved evidence.
-      if (item.hop > 0 && !containsIdentifier(snippet, item.label)) continue;
       const prior = candidates.get(profileUrl); const exact = currentExact || prior?.matchLevel === "exact_match";
       const observation = { query: item.query, snippet, url: publicSearchEvidenceUrl(item.query), hop: item.hop };
       const supportingEvidence = [...(prior?.supportingEvidence || []), observation];
@@ -385,6 +431,7 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
         const cluePath = clueType === "person_name" ? [...item.path, ...precedingPersonClues, pivot.value] : [...path, pivot.value];
         const scheduling = schedulingFields({ type: clueType, value: pivot.value, derivation: pivot.derivation, adjacency: adjacentLabels.length, originalOverlap: originals.has(id) });
         addClue({ id: clueId, type: clueType, normalizedValue: id, displayValue: pivot.value, source: profileUrl, discoveryPath: cluePath, hop: item.hop + 1, derivation: pivot.derivation, evidenceStrength: pivot.relation === "corroborated_identifier" ? "strong" : "observed", attributionState: pivot.relation === "corroborated_identifier" ? "corroborated" : "discovery", adjacentClueIds: [item.id], observedBy: [`${item.query}|${profileUrl}`], ...scheduling });
+        resultDiagnostic.extractedClues.push(pivot.value);
         if (scheduling.enqueueDecision === "enqueued") pendingIdentifiers.push({ id, label: pivot.value, hop: item.hop + 1, path: cluePath, identifierStrength: pivot.relation, exactSource: exact, order: observationOrder++, derivation: pivot.derivation, clueType, adjacentLabels: [...adjacentLabels, ...precedingPersonClues], qualityScore: scheduling.qualityScore, priority: scheduling.searchPriority });
         if (clueType === "person_name") precedingPersonClues.push(pivot.value);
       }
@@ -392,7 +439,7 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
     const identifiersAfter = new Set(edges.filter((edge) => edge.relation !== "search_result").map((edge) => edge.to));
     const newIdentifiers = [...identifiersAfter].filter((id) => !identifiersBefore.has(id));
     const sourceClasses = [...new Set(results.map((result) => sourceClassFor(result.url)))];
-    searches.push({ query: item.query, hop: item.hop, pivot: item.label, originalTargetContext: { email: normalized, localPart, domain }, resultCount: results.length, producedNewIdentifiers: newIdentifiers.length > 0, newIdentifiers, clueType: item.clueType, clueQualityScore: item.qualityScore, searchPriority: item.priority, remainingBudget: limits.maxSearches - searchCount, informationGain: newIdentifiers.length, searchIntent: item.intent, sourceClasses, extractedEntityClues: newIdentifiers, prioritizationReason: item.hop === 0 ? "Reserved seed search for a strong submitted identifier." : `High-quality ${item.clueType} clue with graph-neighbor relevance.` });
+    searches.push({ query: item.query, hop: item.hop, pivot: item.label, originalTargetContext: { email: normalized, localPart, domain }, resultCount: results.length, producedNewIdentifiers: newIdentifiers.length > 0, newIdentifiers, clueType: item.clueType, clueQualityScore: item.qualityScore, searchPriority: item.priority, remainingBudget: limits.maxSearches - searchCount, informationGain: newIdentifiers.length, searchIntent: item.intent, sourceClasses, extractedEntityClues: newIdentifiers, prioritizationReason: item.hop === 0 ? "Reserved seed search for a strong submitted identifier." : `High-quality ${item.clueType} clue with graph-neighbor relevance. Sibling rank ${item.siblingRank || 1}.`, results: resultDiagnostics });
     if (newIdentifiers.length === 0 && item.hop > 0) for (const queued of queue) if (queued.id === item.id) queued.priority -= 20;
     if (item.hop === 0) {
       seedSearchesRemaining -= 1;
