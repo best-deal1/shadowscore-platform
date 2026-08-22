@@ -136,3 +136,8 @@ This file records customer-visible improvements in each ShadowScore release.
 - Provider integrations now declare capabilities, legal basis, source family, availability, and required credentials across identity, phone, registry, business, domain, regulatory, reputation, marketplace, and payment intelligence.
 - Connected configured Brave Search discovery to live investigations. Reports now distinguish executed, unavailable, timed out, and failed providers, and retain query, result, snippet, hop, lineage, timestamp, source-family, and confidence provenance.
 - Scoped transaction decisions to verified evidence for the submitted subject. Derived mirrors count with their originating source family, and missing independent coverage is reported explicitly.
+
+# 2026-08-22
+
+- Identity discovery now keeps the submitted target in contextual follow-up searches, extracts useful name tokens, rejects social discovery pages and generic titles, and ranks relevant multi-hop profile leads ahead of noisy first-hop results.
+- Investigation metadata now records each identity search, its pivot and hop, original target context, result count, and whether it produced a new identifier.

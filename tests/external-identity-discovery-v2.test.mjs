@@ -177,32 +177,36 @@ test("missing search credentials is explicit technical unavailability and does n
   }
 });
 
-test("Anastasia golden path discovers kuki_nesti_ch without increasing attribution confidence", async () => {
+test("production-realistic Anastasia results require contextual expansion to discover kuki_nesti_ch", async () => {
   const queries = [];
+  const noisyFirstHop = [
+    { title: "nastik707 | Instagram", url: "https://instagram.com/nastik707", description: "Photos and videos" },
+    { title: "thenastikedit | Instagram", url: "https://instagram.com/thenastikedit", description: "Public profile" },
+    { title: "NASTIK | Anastasia - TikTok", url: "https://www.tiktok.com/@nastikss/video/741111", description: "Watch NASTIK videos" },
+    { title: "nastik on TikTok", url: "https://www.tiktok.com/discover/nastik", description: "Discover popular videos" },
+  ];
   const search = async (query) => {
     queries.push(query);
-    if (query.includes("kuki_nesti_ch")) return [{ title: "@kuki_nesti_ch • Instagram", url: "https://www.instagram.com/kuki_nesti_ch/", description: "kuki_nesti_ch profile" }];
-    if (query.includes("Nastik") && !query.includes("nastikmastik358")) return [{ title: "Kuki Nesti | Instagram", url: "https://www.instagram.com/kuki_nesti_ch/", description: "Public profile for Nastik" }];
-    if (query.includes("nastikmastik358")) return [{ title: "Facebook profile A", url: "https://www.facebook.com/nastikmastik", description: "Alias: Nastik" }];
+    if (query === `"Anastasia" "nastikmastik358"`) {
+      return [{ title: "Kuki Nesti (@kuki_nesti_ch) | Instagram", url: "https://www.instagram.com/kuki_nesti_ch/", description: "Anastasia, known as Nastik" }];
+    }
+    if (query.includes("nastikmastik358")) return noisyFirstHop;
     return [];
   };
   const { discoverExternalIdentityGraph } = await import("../lib/providers/externalIdentityProvider.ts");
-  const graph = await discoverExternalIdentityGraph(EMAIL, "test-key", new AbortController().signal, { search, limits: { maxSearches: 10, maxIdentifiers: 8 } });
+  const graph = await discoverExternalIdentityGraph(EMAIL, "test-key", new AbortController().signal, { search, limits: { maxSearches: 12, maxIdentifiers: 10 } });
   const instagram = graph.allCandidates.find((candidate) => candidate.profileUrl === "https://www.instagram.com/kuki_nesti_ch");
   assert.ok(instagram);
   assert.equal(instagram.matchType, "alias");
-  assert.notEqual(instagram.status, "Verified");
+  assert.equal(instagram.status, "Candidate");
   assert.equal(instagram.confidence, 25);
-  assert.deepEqual(instagram.matchedIdentifiers, ["nastik"]);
-  assert.match(instagram.discoveryPath.join(" -> "), /Facebook profile A.*Nastik.*Instagram/s);
-  assert.equal(queries.some((query) => query.includes("kuki_nesti_ch")), true);
-  const handleEdge = graph.edges.find((edge) => edge.to === "kuki_nesti_ch" && edge.evidence.derivation === "social_url");
-  assert.ok(handleEdge);
-  assert.equal(handleEdge.relation, "discovery_lead");
-  assert.match(handleEdge.evidence.snippet, /Kuki Nesti/);
-  assert.ok(graph.edges.every((edge) => edge.evidence.query && edge.evidence.url && edge.evidence.snippet));
-  assert.ok(graph.metrics.searchCount <= 10);
-  assert.ok(graph.metrics.maxHopReached <= 3);
+  assert.deepEqual(instagram.matchedIdentifiers, []);
+  assert.match(instagram.discoveryPath.join(" -> "), /Anastasia.*Kuki Nesti/s);
+  assert.ok(queries.includes(`"Anastasia" "nastikmastik358"`));
+  assert.equal(queries.some((query, index) => index < 4 && query.includes("kuki_nesti_ch")), false);
+  assert.equal(graph.allCandidates.some((candidate) => candidate.profileUrl.includes("/discover/")), false);
+  assert.ok(graph.searches.every((entry) => entry.query && Number.isInteger(entry.hop) && entry.pivot && entry.originalTargetContext.localPart === "nastikmastik358" && typeof entry.resultCount === "number" && typeof entry.producedNewIdentifiers === "boolean"));
+  assert.ok(graph.metrics.searchCount <= 12);
 });
 
 test("submitted email echoes cannot create credibility support", () => {
@@ -257,6 +261,26 @@ test("login and search result pages are rejected as social-profile candidates", 
   assert.deepEqual(graph.allCandidates.map((candidate) => candidate.profileUrl), ["https://instagram.com/valid_profile"]);
 });
 
+test("TikTok discovery pages and generic titles consume neither candidate nor expansion budget", async () => {
+  const queries = [];
+  const { discoverExternalIdentityGraph } = await import("../lib/providers/externalIdentityProvider.ts");
+  const graph = await discoverExternalIdentityGraph("subject@example.com", "key", new AbortController().signal, {
+    search: async (query) => {
+      queries.push(query);
+      if (query.includes("subject")) return [
+        { title: "Discover popular videos", url: "https://www.tiktok.com/discover/subject", description: "TikTok discovery" },
+        { title: "Public profile | TikTok", url: "https://www.tiktok.com/search?q=subject", description: "Search results" },
+        { title: "Videos | TikTok", url: "https://www.tiktok.com/@useful_handle/video/123", description: "subject creator" },
+      ];
+      return [];
+    },
+    limits: { maxSearches: 8 },
+  });
+  assert.deepEqual(graph.allCandidates.map((candidate) => candidate.profileUrl), ["https://www.tiktok.com/@useful_handle"]);
+  assert.equal(queries.some((query) => /"(?:Discover|popular|videos|Public|profile|Search|results)"/.test(query)), false);
+  assert.ok(graph.edges.some((edge) => edge.to === "useful_handle" && edge.evidence.derivation === "social_url"));
+});
+
 test("identifier provenance is preserved while its follow-up search is deduplicated", async () => {
   const queries = [];
   const { discoverExternalIdentityGraph } = await import("../lib/providers/externalIdentityProvider.ts");
@@ -274,7 +298,7 @@ test("identifier provenance is preserved while its follow-up search is deduplica
   const aliasEdges = graph.edges.filter((edge) => edge.relation === "corroborated_identifier" && edge.to.toLowerCase() === "sharedalias");
   assert.ok(aliasEdges.some((edge) => edge.from === "https://facebook.com/one"));
   assert.ok(aliasEdges.some((edge) => edge.from === "https://instagram.com/two"));
-  assert.equal(queries.filter((query) => query.includes("SharedAlias")).length, 1);
+  assert.equal(queries.filter((query) => query.includes("SharedAlias")).length, 2);
 });
 
 test("an aborted late search returns the partial graph", async () => {
