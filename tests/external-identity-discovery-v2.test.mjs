@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { discoverExternalIdentityCandidates, discoverExternalIdentityGraph, EmailIntelligenceProvider, ExternalIdentityProvider } from "../lib/providers/externalIdentityProvider.ts";
+import { discoverExternalIdentityCandidates, discoverExternalIdentityGraph, investigateEntityClues, EmailIntelligenceProvider, ExternalIdentityProvider } from "../lib/providers/externalIdentityProvider.ts";
 import { resolveFirstPartyEntities } from "../lib/entityResolution/firstParty.ts";
 import { createExecutionPlan } from "../lib/orchestrator/planner.ts";
 import { buildEvidenceItems } from "../lib/evidence/index.ts";
@@ -235,6 +235,29 @@ test("unused expansion capacity falls back to omitted seed queries", async () =>
   ]);
 });
 
+test("open-web editorial evidence bridges an alias to a fuller name, handle, and later social profile", async () => {
+  const queries = [];
+  const graph = await discoverExternalIdentityGraph("fieldnote77@example.com", "key", new AbortController().signal, {
+    search: async (query) => {
+      queries.push(query);
+      if (query === '"fieldnote77" profile') return [{ title: "Nora Vale | contributor", url: "https://writers.example/people/nora", description: "Alias: Fieldnote" }];
+      if (query.includes('\"Nora Vale\"') && (query.includes('\"fieldnote77\"') || query.includes('\"Fieldnote\"'))) return [{ title: "Nora Elise Vale | Interview", url: "https://journal.example/article/nora-vale", description: "Nora Vale, Instagram: vale_field_notes" }];
+      if (query.includes("vale_field_notes") && query.includes("site:instagram.com")) return [{ title: "Nora Elise Vale (@vale_field_notes) | Instagram", url: "https://instagram.com/vale_field_notes", description: "Public profile" }];
+      return [];
+    },
+    limits: { maxSearches: 12, maxIdentifiers: 12 },
+  });
+  const candidate = graph.allCandidates.find((item) => item.profileUrl === "https://instagram.com/vale_field_notes");
+  assert.ok(candidate);
+  assert.equal(candidate.status, "Candidate");
+  assert.ok(graph.clues.some((clue) => clue.displayValue === "Nora Elise Vale" && clue.source === "https://journal.example/article/nora-vale"));
+  assert.ok(graph.edges.some((edge) => edge.relation === "uses_handle_candidate" && edge.to === "vale_field_notes" && edge.evidence.sourceClass === "editorial"));
+  assert.ok(graph.searches.some((entry) => entry.searchIntent === "open_web_identity"));
+  assert.ok(graph.searches.some((entry) => entry.searchIntent === "graph_neighbor_expansion"));
+  assert.ok(graph.searches.every((entry) => entry.prioritizationReason && Array.isArray(entry.sourceClasses) && Array.isArray(entry.extractedEntityClues)));
+  assert.equal(queries.slice(0, 4).some((query) => query.includes("vale_field_notes")), false);
+});
+
 test("title names accept lowercase particles and scripts without case while rejecting noise", async () => {
   const queries = [];
   const graph = await discoverExternalIdentityGraph("composer@example.com", "key", new AbortController().signal, {
@@ -255,7 +278,7 @@ test("title names accept lowercase particles and scripts without case while reje
   assert.equal(graph.clues.some((clue) => clue.normalizedValue === "open popular videos"), false);
 });
 
-test("company identifiers expand through legal company, director, and domain neighbors", async () => {
+test("COMPANY open-web pages bridge legal company, director, and domain graph nodes", async () => {
   const { investigateEntityClues } = await import("../lib/providers/externalIdentityProvider.ts");
   const queries = [];
   const graph = await investigateEntityClues({ type: "unknown", value: "VAT-ZZ-1042" }, async (query, clue) => {
@@ -273,6 +296,48 @@ test("company identifiers expand through legal company, director, and domain nei
   assert.ok(graph.clues.filter((clue) => ["company_name", "person_name", "domain"].includes(clue.type)).every((clue) => clue.qualityScore >= 80));
   assert.equal(graph.clues.some((clue) => ["open", "short", "video", "with", "100k"].includes(clue.normalizedValue)), false);
   assert.equal(graph.metrics.budgetExhaustionReason, "closure_reached");
+});
+
+test("PERSON open-web pages bridge a public name to company and domain graph nodes", async () => {
+  const graph = await investigateEntityClues({ type: "person_name", value: "Avery Rowan" }, async (_query, clue) => {
+    if (clue.displayValue === "Avery Rowan") return [{ title: "Avery Rowan biography", url: "https://publication.example/article/avery-rowan", description: "Company: Rowan Signal Studio. Alice leads product development. Website: rowan-signal.example. More details follow." }];
+    return [];
+  }, { maxHops: 3, maxIdentifiers: 8, maxSearches: 6 });
+  assert.ok(graph.clues.some((clue) => clue.type === "company_name" && clue.displayValue === "Rowan Signal Studio"));
+  assert.ok(graph.clues.some((clue) => clue.type === "domain" && clue.displayValue === "rowan-signal.example"));
+  assert.equal(graph.clues.some((clue) => clue.displayValue.includes("Alice leads") || clue.displayValue.includes("More details")), false);
+  assert.ok(graph.relationships.every((edge) => edge.discoveryPath[0] === "Avery Rowan"));
+  assert.equal(graph.diagnostics[0].searchIntent, "graph_neighbor_expansion");
+});
+
+test("labeled open-web context stays available without becoming standalone identity searches", async () => {
+  const queries = [];
+  const graph = await discoverExternalIdentityGraph("context.person@example.com", "key", new AbortController().signal, {
+    search: async (query) => {
+      queries.push(query);
+      if (query === '"context.person@example.com"') return [{
+        title: "Alice Morgan profile",
+        url: "https://directory.example/people/alice-morgan",
+        description: "Company: Acme Inc. Alice leads product development. Person: Alice Morgan. She founded the team. Domain: acme.example. Location: London. Role: CEO. Further details follow.",
+      }];
+      return [];
+    },
+    limits: { maxSearches: 10, maxIdentifiers: 12 },
+  });
+
+  assert.ok(graph.clues.some((clue) => clue.type === "company_name" && clue.displayValue === "Acme Inc"));
+  assert.ok(graph.clues.some((clue) => clue.type === "person_name" && clue.displayValue === "Alice Morgan"));
+  assert.ok(graph.clues.some((clue) => clue.type === "domain" && clue.displayValue === "acme.example"));
+  for (const [type, value] of [["location", "London"], ["role_title", "CEO"]]) {
+    const clue = graph.clues.find((item) => item.type === type && item.displayValue === value);
+    assert.ok(clue);
+    assert.equal(clue.enqueueDecision, "rejected");
+    assert.equal(clue.rejectionReason, "context_only");
+    assert.deepEqual(clue.queriesPlanned, []);
+    assert.deepEqual(clue.queriesExecuted, []);
+  }
+  assert.equal(queries.some((query) => query.includes('"London"') || query.includes('"CEO"')), false);
+  assert.equal(graph.clues.some((clue) => /Alice leads|She founded|Further details/.test(clue.displayValue)), false);
 });
 
 test("unrelated person names and handles outrank noisy social title copy", async () => {
