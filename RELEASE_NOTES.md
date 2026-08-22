@@ -26,6 +26,8 @@ This file records customer-visible improvements in each ShadowScore release.
 
 ### Improved
 
+- Entity discovery now prioritizes person, company, domain, and canonical profile clues. It rejects generic result-title noise and reserves search capacity for graph-neighbor investigation.
+
 - Entity investigations now enrich person, username, profile, email, domain, and company clues through bounded graph-neighbor searches. Administrator reports include the query trace and budget outcome.
 
 - Identity discovery now follows bounded social handles and useful profile names across three hops. URL and title leads retain their full evidence path and remain candidate-only until independent evidence supports attribution.

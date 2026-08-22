@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { discoverExternalIdentityCandidates, EmailIntelligenceProvider, ExternalIdentityProvider } from "../lib/providers/externalIdentityProvider.ts";
+import { discoverExternalIdentityCandidates, discoverExternalIdentityGraph, EmailIntelligenceProvider, ExternalIdentityProvider } from "../lib/providers/externalIdentityProvider.ts";
 import { resolveFirstPartyEntities } from "../lib/entityResolution/firstParty.ts";
 import { createExecutionPlan } from "../lib/orchestrator/planner.ts";
 import { buildEvidenceItems } from "../lib/evidence/index.ts";
@@ -182,12 +182,13 @@ test("production-realistic Anastasia results require contextual expansion to dis
   const noisyFirstHop = [
     { title: "nastik707 | Instagram", url: "https://instagram.com/nastik707", description: "Photos and videos" },
     { title: "thenastikedit | Instagram", url: "https://instagram.com/thenastikedit", description: "Public profile" },
-    { title: "NASTIK | Anastasia - TikTok", url: "https://www.tiktok.com/@nastikss/video/741111", description: "Watch NASTIK videos" },
+    { title: "NASTIK | Anastasia - A Bunch of Color and Coolness", url: "https://www.tiktok.com/@nastikss/video/741111", description: "Open short video with 100k views" },
+    { title: "CMMS pharaon and more social results", url: "https://example.com/search-result", description: "Generic title boilerplate" },
     { title: "nastik on TikTok", url: "https://www.tiktok.com/discover/nastik", description: "Discover popular videos" },
   ];
   const search = async (query) => {
     queries.push(query);
-    if (query === `"Anastasia" "nastikmastik358"`) {
+    if (query.toLowerCase() === `"anastasia" "nastik"`) {
       return [{ title: "Kuki Nesti (@kuki_nesti_ch) | Instagram", url: "https://www.instagram.com/kuki_nesti_ch/", description: "Anastasia, known as Nastik" }];
     }
     if (query.includes("nastikmastik358")) return noisyFirstHop;
@@ -202,10 +203,20 @@ test("production-realistic Anastasia results require contextual expansion to dis
   assert.equal(instagram.confidence, 25);
   assert.deepEqual(instagram.matchedIdentifiers, []);
   assert.deepEqual(instagram.discoveryPath, [EMAIL, "NASTIK", "Anastasia", "Instagram Kuki Nesti (@kuki_nesti_ch) | Instagram"]);
-  assert.ok(queries.includes(`"Anastasia" "nastikmastik358"`));
+  const anastasiaNastikQuery = queries.find((query) => query.toLowerCase() === `"anastasia" "nastik"`);
+  assert.ok(anastasiaNastikQuery);
+  const rejectedNoise = ["and", "open", "cmms", "short", "video", "with", "100k", "pharaon"];
+  assert.equal(queries.some((query) => rejectedNoise.some((noise) => query === `"${noise}" "nastikmastik358"`)), false);
+  const anastasiaClue = graph.clues.find((clue) => clue.normalizedValue === "anastasia");
+  const profileClue = graph.clues.find((clue) => clue.normalizedValue === "thenastikedit");
+  assert.equal(anastasiaClue.type, "person_name");
+  assert.ok(anastasiaClue.qualityScore >= 80);
+  assert.ok(profileClue.qualityScore >= 80);
+  assert.ok(anastasiaClue.queriesExecuted.includes(anastasiaNastikQuery));
+  assert.equal(graph.clues.some((clue) => rejectedNoise.includes(clue.normalizedValue)), false);
   assert.equal(queries.some((query, index) => index < 4 && query.includes("kuki_nesti_ch")), false);
   assert.equal(graph.allCandidates.some((candidate) => candidate.profileUrl.includes("/discover/")), false);
-  assert.ok(graph.searches.every((entry) => entry.query && Number.isInteger(entry.hop) && entry.pivot && entry.originalTargetContext.localPart === "nastikmastik358" && typeof entry.resultCount === "number" && typeof entry.producedNewIdentifiers === "boolean"));
+  assert.ok(graph.searches.every((entry) => entry.query && Number.isInteger(entry.hop) && entry.pivot && entry.originalTargetContext.localPart === "nastikmastik358" && typeof entry.resultCount === "number" && typeof entry.producedNewIdentifiers === "boolean" && typeof entry.clueQualityScore === "number" && typeof entry.remainingBudget === "number"));
   assert.ok(graph.metrics.searchCount <= 12);
 });
 
@@ -214,7 +225,7 @@ test("company identifiers expand through legal company, director, and domain nei
   const queries = [];
   const graph = await investigateEntityClues({ type: "unknown", value: "VAT-ZZ-1042" }, async (query, clue) => {
     queries.push(query);
-    if (clue.displayValue === "VAT-ZZ-1042") return [{ title: "Legal company: Northstar Lantern Labs Ltd", url: "https://registry.example/ZZ-1042", description: "Director: Mira Vale | Domain: northstar-lantern.example" }];
+    if (clue.displayValue === "VAT-ZZ-1042") return [{ title: "Legal company: Northstar Lantern Labs Ltd", url: "https://registry.example/ZZ-1042", description: "Director: Mira Vale | Domain: northstar-lantern.example | Open short video with 100k views" }];
     if (clue.displayValue === "Mira Vale" && query.includes("VAT-ZZ-1042")) return [{ title: "Related entity: Vale Signal Works Ltd", url: "https://directory.example/mira-vale", description: "Director: Mira Vale" }];
     return [];
   }, { maxHops: 3, maxIdentifiers: 10, maxSearches: 10 });
@@ -224,7 +235,29 @@ test("company identifiers expand through legal company, director, and domain nei
   assert.ok(graph.clues.some((clue) => clue.displayValue === "Vale Signal Works Ltd"));
   assert.deepEqual(graph.relationships.find((edge) => edge.to === "company_name:vale signal works ltd")?.discoveryPath, ["VAT-ZZ-1042", "Mira Vale", "Vale Signal Works Ltd"]);
   assert.ok(queries.some((query) => query.includes('"Mira Vale"') && query.includes('"VAT-ZZ-1042"')));
+  assert.ok(graph.clues.filter((clue) => ["company_name", "person_name", "domain"].includes(clue.type)).every((clue) => clue.qualityScore >= 80));
+  assert.equal(graph.clues.some((clue) => ["open", "short", "video", "with", "100k"].includes(clue.normalizedValue)), false);
   assert.equal(graph.metrics.budgetExhaustionReason, "closure_reached");
+});
+
+test("unrelated person names and handles outrank noisy social title copy", async () => {
+  const queries = [];
+  const graph = await discoverExternalIdentityGraph("riverquill@example.com", "key", new AbortController().signal, {
+    search: async (query) => {
+      queries.push(query);
+      if (query.toLowerCase() === '"morgan quill" "riverquill"') return [{ title: "Morgan Quill (@mq_field) | Instagram", url: "https://instagram.com/mq_field", description: "Morgan Quill, known as RiverQuill" }];
+      if (query.includes("riverquill")) return [{ title: "RiverQuill | Morgan Quill - Watch short video with 42k likes", url: "https://tiktok.com/@riverquill/video/42", description: "Open and discover more videos" }];
+      return [];
+    },
+  });
+  const person = graph.clues.find((clue) => clue.normalizedValue === "morgan quill");
+  const handle = graph.clues.find((clue) => clue.normalizedValue === "riverquill");
+  assert.equal(person.type, "person_name");
+  assert.equal(handle.type, "username");
+  assert.ok(person.qualityScore >= 80 && handle.qualityScore >= 80);
+  assert.ok(queries.some((query) => query.toLowerCase() === '"morgan quill" "riverquill"'));
+  assert.ok(graph.allCandidates.some((candidate) => candidate.profileUrl === "https://instagram.com/mq_field" && candidate.status === "Candidate"));
+  assert.equal(graph.clues.some((clue) => ["watch", "short", "video", "with", "42k", "likes", "open", "and", "discover", "more", "videos"].includes(clue.normalizedValue)), false);
 });
 
 test("submitted email echoes cannot create credibility support", () => {
@@ -316,7 +349,9 @@ test("identifier provenance is preserved while its follow-up search is deduplica
   const aliasEdges = graph.edges.filter((edge) => edge.relation === "corroborated_identifier" && edge.to.toLowerCase() === "sharedalias");
   assert.ok(aliasEdges.some((edge) => edge.from === "https://facebook.com/one"));
   assert.ok(aliasEdges.some((edge) => edge.from === "https://instagram.com/two"));
-  assert.equal(queries.filter((query) => query.includes("SharedAlias")).length, 2);
+  const aliasQueries = queries.filter((query) => query.includes("SharedAlias"));
+  assert.ok(aliasQueries.length >= 2);
+  assert.equal(new Set(aliasQueries).size, aliasQueries.length);
 });
 
 test("an aborted late search returns the partial graph", async () => {
