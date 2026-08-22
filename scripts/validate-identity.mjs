@@ -16,16 +16,39 @@ assert.ok(seedOnly.limitations.some((item) => item.includes("seeds are intention
 const domainLinked = resolveBusinessIdentity("fixture-alpha.example", { registryEvidence: discoveredRegistryEvidence, observedAt });
 assert.ok(CANONICAL_IDENTITY_TYPES.includes("LegalEntity"));
 assert.ok(VERIFIED_RELATIONSHIP_TYPES.includes("USES_DOMAIN"));
-assert.equal(domainLinked.identityResolutionStatus, "unresolved");
-assert.equal(domainLinked.reviewStatus, "REVIEW");
-assert.ok(domainLinked.missingEvidence.some((item) => /two independent evidence sources/i.test(item)));
+assert.equal(domainLinked.identityResolutionStatus, "resolved");
+assert.equal(domainLinked.reviewStatus, "PASS");
+assert.equal(domainLinked.canonicalOrganization?.label, "Fixture Alpha LLC");
+assert.equal(domainLinked.canonicalIdentity.hasAuthoritativeSource, true);
+assert.deepEqual(domainLinked.missingEvidence, []);
+assert.ok(domainLinked.canonicalIdentityGraph.relationships.some((relationship) =>
+  relationship.type === "USES_DOMAIN"
+  && relationship.source === "official_business_registry"
+  && relationship.verificationStatus === "verified"
+  && relationship.attributes.evidenceCategory === "public_registry"
+  && relationship.evidenceRefs.includes("registry-alpha")
+));
+
+const unverifiedRegistryEvidence = resolveBusinessIdentity("fixture-alpha.example", {
+  registryEvidence: discoveredRegistryEvidence.map((evidence) => ({ ...evidence, verified: false })),
+  observedAt,
+});
+assert.equal(unverifiedRegistryEvidence.identityResolutionStatus, "unresolved");
+assert.equal(unverifiedRegistryEvidence.reviewStatus, "REVIEW");
+assert.ok(unverifiedRegistryEvidence.missingEvidence.some((item) => /verified\/corroborated identity relationships/i.test(item)));
 
 const brandDifferentLegal = resolveBusinessIdentity("Alpha Outlet", {
   relationshipEvidence: [{ id: "brand-owner", brandName: "Alpha Outlet", legalName: "Different Fixture Ltd", verified: true, source: "official_business_registry", observedAt }],
   observedAt,
 });
-assert.equal(brandDifferentLegal.identityResolutionStatus, "unresolved");
-assert.ok(brandDifferentLegal.canonicalIdentityGraph.relationships.some((rel) => rel.type === "REPRESENTS"));
+assert.equal(brandDifferentLegal.identityResolutionStatus, "resolved");
+assert.equal(brandDifferentLegal.reviewStatus, "PASS");
+assert.ok(brandDifferentLegal.canonicalIdentityGraph.relationships.some((relationship) =>
+  relationship.type === "REPRESENTS"
+  && relationship.source === "official_business_registry"
+  && relationship.verificationStatus === "verified"
+  && relationship.attributes.evidenceCategory === "public_registry"
+));
 
 const regulated = resolveBusinessIdentity("secure-bank.example", {
   providerEvidence: [{ id: "bank-license", domain: "secure-bank.example", legalName: "Secure Bank NA", licenseNumber: "BANK-123", regulatorName: "Bank Regulator", licenseCategory: "bank financial services", ticker: "SBNK", exchange: "NYSE", verified: true, source: "bank_regulator", observedAt }],
