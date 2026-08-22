@@ -229,13 +229,13 @@ function observedIdentifiers(hit: SearchResult, originals: Set<string>) {
 async function braveSearch(query: string, apiKey: string, signal: AbortSignal, limit: number): Promise<SearchResult[]> { const url = new URL(SEARCH_ENDPOINT); url.searchParams.set("q", query); url.searchParams.set("count", String(limit)); url.searchParams.set("safesearch", "strict"); const response = await fetch(url, { signal, headers: { accept: "application/json", "x-subscription-token": apiKey } }); if (!response.ok) throw new Error(`Public search returned HTTP ${response.status}.`); const payload = await response.json() as { web?: { results?: Array<{ title?: string; url?: string; description?: string }> } }; return (payload.web?.results || []).filter((item): item is SearchResult => Boolean(item.title && item.url)).slice(0, limit); }
 
 type QueueItem = { id: string; label: string; hop: number; path: string[]; query: string; method: string; intent: SearchIntent; identifierStrength?: "discovery_lead" | "corroborated_identifier"; qualityScore: number; priority: number; clueType: EntityClueType };
-type PendingIdentifier = Omit<QueueItem, "query" | "method"> & { exactSource: boolean; order: number; derivation: DiscoveryPivot["derivation"]; adjacentLabels: string[] };
+type PendingIdentifier = Omit<QueueItem, "query" | "method" | "intent"> & { exactSource: boolean; order: number; derivation: DiscoveryPivot["derivation"]; adjacentLabels: string[] };
 
 function contextualQueries(pivot: PendingIdentifier, localPart: string) {
   const value = pivot.label.replace(/["\\]/g, " ").trim();
   const graphNeighbors = [...pivot.adjacentLabels].reverse().filter((item) => !item.includes("@") && normalizeIdentifier(item) !== normalizeIdentifier(value));
   const neighbors = [...new Set([...graphNeighbors, localPart])].slice(0, 3);
-  const queries = [
+  const queries: Array<{ query: string; method: string; intent: SearchIntent }> = [
     ...neighbors.slice(0, 1).map((neighbor) => ({ query: `"${value}" "${neighbor.replace(/["\\]/g, " ")}"`, method: `${pivot.identifierStrength}_graph_neighbor`, intent: "graph_neighbor_expansion" as const })),
     { query: `"${value}"`, method: `${pivot.identifierStrength}_open_web_exact`, intent: "open_web_identity" as const },
     { query: `site:instagram.com OR site:tiktok.com OR site:linkedin.com "${value}"`, method: `${pivot.identifierStrength}_social_context`, intent: "social_profile_discovery" as const },
