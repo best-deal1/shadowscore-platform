@@ -300,13 +300,44 @@ test("COMPANY open-web pages bridge legal company, director, and domain graph no
 
 test("PERSON open-web pages bridge a public name to company and domain graph nodes", async () => {
   const graph = await investigateEntityClues({ type: "person_name", value: "Avery Rowan" }, async (_query, clue) => {
-    if (clue.displayValue === "Avery Rowan") return [{ title: "Avery Rowan biography", url: "https://publication.example/article/avery-rowan", description: "Company: Rowan Signal Studio | Website: rowan-signal.example" }];
+    if (clue.displayValue === "Avery Rowan") return [{ title: "Avery Rowan biography", url: "https://publication.example/article/avery-rowan", description: "Company: Rowan Signal Studio. Alice leads product development. Website: rowan-signal.example. More details follow." }];
     return [];
   }, { maxHops: 3, maxIdentifiers: 8, maxSearches: 6 });
   assert.ok(graph.clues.some((clue) => clue.type === "company_name" && clue.displayValue === "Rowan Signal Studio"));
   assert.ok(graph.clues.some((clue) => clue.type === "domain" && clue.displayValue === "rowan-signal.example"));
+  assert.equal(graph.clues.some((clue) => clue.displayValue.includes("Alice leads") || clue.displayValue.includes("More details")), false);
   assert.ok(graph.relationships.every((edge) => edge.discoveryPath[0] === "Avery Rowan"));
   assert.equal(graph.diagnostics[0].searchIntent, "graph_neighbor_expansion");
+});
+
+test("labeled open-web context stays available without becoming standalone identity searches", async () => {
+  const queries = [];
+  const graph = await discoverExternalIdentityGraph("context.person@example.com", "key", new AbortController().signal, {
+    search: async (query) => {
+      queries.push(query);
+      if (query === '"context.person@example.com"') return [{
+        title: "Alice Morgan profile",
+        url: "https://directory.example/people/alice-morgan",
+        description: "Company: Acme Inc. Alice leads product development. Person: Alice Morgan. She founded the team. Domain: acme.example. Location: London. Role: CEO. Further details follow.",
+      }];
+      return [];
+    },
+    limits: { maxSearches: 10, maxIdentifiers: 12 },
+  });
+
+  assert.ok(graph.clues.some((clue) => clue.type === "company_name" && clue.displayValue === "Acme Inc"));
+  assert.ok(graph.clues.some((clue) => clue.type === "person_name" && clue.displayValue === "Alice Morgan"));
+  assert.ok(graph.clues.some((clue) => clue.type === "domain" && clue.displayValue === "acme.example"));
+  for (const [type, value] of [["location", "London"], ["role_title", "CEO"]]) {
+    const clue = graph.clues.find((item) => item.type === type && item.displayValue === value);
+    assert.ok(clue);
+    assert.equal(clue.enqueueDecision, "rejected");
+    assert.equal(clue.rejectionReason, "context_only");
+    assert.deepEqual(clue.queriesPlanned, []);
+    assert.deepEqual(clue.queriesExecuted, []);
+  }
+  assert.equal(queries.some((query) => query.includes('"London"') || query.includes('"CEO"')), false);
+  assert.equal(graph.clues.some((clue) => /Alice leads|She founded|Further details/.test(clue.displayValue)), false);
 });
 
 test("unrelated person names and handles outrank noisy social title copy", async () => {

@@ -52,10 +52,10 @@ export async function investigateEntityClues(seed: EntityInvestigationSeed, sear
   const queue: EntityClue[] = [{ id: seedId, type: seed.type, normalizedValue: normalizeIdentifier(seedValue), displayValue: seedValue, source: "submitted-target", discoveryPath: [seedValue], hop: 0, derivation: "submitted", evidenceStrength: "strong", attributionState: "verified", adjacentClueIds: [], observedBy: ["submitted-target"], ...schedulingFields({ type: seed.type, value: seedValue, derivation: "submitted" }) }];
   clues.set(seedId, queue[0]); let searchCount = 0;
   const patterns: Array<{ type: EntityClueType; relationship: EntityRelationship["relationship"]; derivation: EntityClue["derivation"]; expression: RegExp }> = [
-    { type: "company_name", relationship: "resolved_as", derivation: "company", expression: /(?:legal company|company)\s*:\s*([^|;]+)/gi },
-    { type: "person_name", relationship: "director", derivation: "director", expression: /director\s*:\s*([^|;]+)/gi },
+    { type: "company_name", relationship: "resolved_as", derivation: "company", expression: /(?:legal company|company)\s*:\s*([^|;.!?]+?)(?=[.!?](?:\s+\p{Lu}|\s*$)|[|;]|$)/giu },
+    { type: "person_name", relationship: "director", derivation: "director", expression: /(?:director|person)\s*:\s*([^|;.!?]+?)(?=[.!?](?:\s+\p{Lu}|\s*$)|[|;]|$)/giu },
     { type: "domain", relationship: "domain", derivation: "domain", expression: /(?:domain|website)\s*:\s*((?:[\p{L}\p{N}-]+\.)+[\p{L}\p{N}-]+)/giu },
-    { type: "company_name", relationship: "related_entity", derivation: "company", expression: /related (?:company|entity)\s*:\s*([^|;]+)/gi },
+    { type: "company_name", relationship: "related_entity", derivation: "company", expression: /related (?:company|entity)\s*:\s*([^|;.!?]+?)(?=[.!?](?:\s+\p{Lu}|\s*$)|[|;]|$)/giu },
   ];
   while (queue.length && searchCount < limits.maxSearches && clues.size < limits.maxIdentifiers) {
     queue.sort((a, b) => b.searchPriority - a.searchPriority || a.hop - b.hop);
@@ -137,6 +137,9 @@ function clueQuality(input: { type: EntityClueType; value: string; derivation: E
 }
 function schedulingFields(input: { type: EntityClueType; value: string; derivation: EntityClue["derivation"]; observations?: number; adjacency?: number; originalOverlap?: boolean }) {
   const quality = clueQuality(input);
+  if (input.type === "location" || input.type === "role_title") {
+    return { qualityScore: quality.score, searchPriority: 0, enqueueDecision: "rejected" as const, rejectionReason: "context_only", queriesPlanned: [] as string[], queriesExecuted: [] as string[], queriesSkipped: [] as string[] };
+  }
   return { qualityScore: quality.score, searchPriority: quality.priority, enqueueDecision: quality.decision, rejectionReason: quality.rejection, queriesPlanned: [] as string[], queriesExecuted: [] as string[], queriesSkipped: [] as string[] };
 }
 function socialUrlHandle(url: string) { try {
@@ -201,10 +204,11 @@ function observedIdentifiers(hit: SearchResult, originals: Set<string>) {
   const linkedHandles = [...text.matchAll(/\b(?:instagram|tiktok|twitter|x|github)\.com\/(?:@)?([\p{L}\p{N}][\p{L}\p{N}_.-]{2,39})\b/giu)].map((match) => match[1]);
   const typedEntities: DiscoveryPivot[] = [];
   const entityPatterns: Array<{ type: EntityClueType; expression: RegExp }> = [
-    { type: "company_name", expression: /\b(?:company|organisation|organization|employer)\s*:\s*([^|;]{3,60})/giu },
+    { type: "company_name", expression: /\b(?:company|organisation|organization|employer)\s*:\s*([^|;.!?]{3,60}?)(?=[.!?](?:\s+\p{Lu}|\s*$)|[|;]|$)/giu },
+    { type: "person_name", expression: /\b(?:person|director)\s*:\s*([^|;.!?]{3,60}?)(?=[.!?](?:\s+\p{Lu}|\s*$)|[|;]|$)/giu },
     { type: "domain", expression: /\b(?:website|domain)\s*:\s*((?:[\p{L}\p{N}-]+\.)+[\p{L}\p{N}-]+)/giu },
-    { type: "location", expression: /\b(?:location|based in)\s*:\s*([^|;]{3,50})/giu },
-    { type: "role_title", expression: /\b(?:role|title|position)\s*:\s*([^|;]{3,50})/giu },
+    { type: "location", expression: /\b(?:location|based in)\s*:\s*([^|;.!?]{3,50}?)(?=[.!?](?:\s+\p{Lu}|\s*$)|[|;]|$)/giu },
+    { type: "role_title", expression: /\b(?:role|title|position)\s*:\s*([^|;.!?]{3,50}?)(?=[.!?](?:\s+\p{Lu}|\s*$)|[|;]|$)/giu },
   ];
   for (const pattern of entityPatterns) for (const match of text.matchAll(pattern.expression)) typedEntities.push({ value: match[1].trim().replace(/[.,]$/, ""), type: pattern.type, relation: "discovery_lead", derivation: "page_entity" });
   const urlHandle = socialUrlHandle(hit.url);
@@ -222,7 +226,8 @@ function observedIdentifiers(hit: SearchResult, originals: Set<string>) {
   const seen = new Set<string>();
   return pivots.filter((pivot) => {
     const id = normalizeIdentifier(pivot.value);
-    if (!usefulIdentifier(pivot.value, originals) || seen.has(id)) return false;
+    const useful = pivot.type === "domain" ? !rejectionReason(pivot.value) && !originals.has(id) : usefulIdentifier(pivot.value, originals);
+    if (!useful || seen.has(id)) return false;
     seen.add(id); return true;
   }).slice(0, 5);
 }
