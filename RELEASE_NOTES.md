@@ -152,3 +152,7 @@ This file records customer-visible improvements in each ShadowScore release.
 - Identity discovery now uses unused expansion capacity for remaining seed searches and recognizes names with lowercase particles and writing systems without letter case.
 - Open-web identity enrichment now follows strong person, username, company, and domain clues across editorial, company, registry, directory, and social sources. Labeled fields stop at sentence boundaries, while locations and role titles remain graph context instead of consuming the search budget. Search diagnostics identify intent, source class, extracted clues, and ranking rationale while third-party handles remain candidates.
 - Restored bounded first-hop identity discovery for targeted searches. Structured profile and company leads can now enter a quarantined investigation queue, while strict evidence admission continues to control attribution and confidence.
+# Social identity signal ranking
+
+- Social discovery now cleans search-result title decoration before extracting display names, aliases, and handles.
+- The bounded discovery beam prioritizes results that contribute person, company, domain, and handle clues. Administrator diagnostics show the extracted preview signals and beam decision.
