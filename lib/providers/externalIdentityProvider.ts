@@ -49,7 +49,11 @@ export type ResultAdmissionDiagnostic = {
   discoveryAdmissionReason: string; evidenceAdmissionReason: string; queryProvenanceContribution: number;
   extractedDiscoveryClues: string[]; extractedEvidenceClues: string[];
   branchPriority: number; siblingRank: number; remainingBudget: number;
+  canonicalDisplayName?: string; canonicalHandle?: string; previewIdentitySignals: PreviewIdentitySignal[];
+  identityInformationValue: number; beamRank: number;
+  beamDecision: "ADMITTED" | "OUTSIDE_BEAM" | "NOT_ELIGIBLE"; beamDecisionReason: string;
 };
+export type PreviewIdentitySignal = { type: "person_name" | "alias" | "handle" | "company_name" | "domain" | "director"; value: string };
 type SearchResult = { title: string; url: string; description?: string };
 type SearchFn = (query: string, apiKey: string, signal: AbortSignal, limit: number) => Promise<SearchResult[]>;
 export type EntityInvestigationSeed = { type: EntityClueType; value: string };
@@ -99,7 +103,8 @@ function discoveryAdmissionForResult(result: SearchResult, evidence: ReturnType<
 function admissionDiagnostic(result: SearchResult, active: EntityClue, original: string, neighbors: string[], context: { hop: number; intent: SearchIntent; query: string }, branchPriority: number, siblingRank: number, remainingBudget: number): ResultAdmissionDiagnostic {
   const evidence = evidenceAdmissionForResult(result, active, original, neighbors);
   const discovery = discoveryAdmissionForResult(result, evidence, context);
-  return { url: result.url, title: result.title, admissionScore: evidence.score, admissionDecision: evidence.admitted ? "admitted" : "rejected", admissionReason: evidence.reason, matchedAnchors: evidence.anchors, extractedClues: [], discoveryAdmissionScore: discovery.score, discoveryAdmissionDecision: discovery.admitted ? "DISCOVERY_ADMITTED" : "REJECTED", evidenceAdmissionScore: evidence.score, evidenceAdmissionDecision: evidence.admitted ? "EVIDENCE_ADMITTED" : "REJECTED", discoveryAdmissionReason: discovery.reason, evidenceAdmissionReason: evidence.reason, queryProvenanceContribution: discovery.provenance, extractedDiscoveryClues: [], extractedEvidenceClues: [], branchPriority, siblingRank, remainingBudget };
+  const identity = extractPreviewIdentitySignals(result);
+  return { url: result.url, title: result.title, admissionScore: evidence.score, admissionDecision: evidence.admitted ? "admitted" : "rejected", admissionReason: evidence.reason, matchedAnchors: evidence.anchors, extractedClues: [], discoveryAdmissionScore: discovery.score, discoveryAdmissionDecision: discovery.admitted ? "DISCOVERY_ADMITTED" : "REJECTED", evidenceAdmissionScore: evidence.score, evidenceAdmissionDecision: evidence.admitted ? "EVIDENCE_ADMITTED" : "REJECTED", discoveryAdmissionReason: discovery.reason, evidenceAdmissionReason: evidence.reason, queryProvenanceContribution: discovery.provenance, extractedDiscoveryClues: [], extractedEvidenceClues: [], branchPriority, siblingRank, remainingBudget, ...identity, beamRank: 0, beamDecision: discovery.admitted ? "ADMITTED" : "NOT_ELIGIBLE", beamDecisionReason: discovery.admitted ? "Admitted without discovery beam competition." : "Result was not eligible for the discovery beam." };
 }
 
 /** Generic bounded loop used for non-email entity investigations and provider adapters. */
@@ -123,7 +128,7 @@ export async function investigateEntityClues(seed: EntityInvestigationSeed, sear
     const results = await search(query, clue); searchCount += 1; const produced: string[] = [];
     const resultDiagnostics: ResultAdmissionDiagnostic[] = [];
     const assessedResults = results.map((result, siblingIndex) => ({ result, siblingIndex, diagnostic: admissionDiagnostic(result, clue, seedValue, neighbors, { hop: clue.hop, intent: "open_web_identity", query }, clue.searchPriority, siblingIndex + 1, limits.maxSearches - searchCount) }));
-    const discoveryBeam = new Set(assessedResults.filter(({ diagnostic }) => diagnostic.discoveryAdmissionDecision === "DISCOVERY_ADMITTED" && diagnostic.evidenceAdmissionDecision === "REJECTED").sort((a, b) => b.diagnostic.discoveryAdmissionScore - a.diagnostic.discoveryAdmissionScore || a.siblingIndex - b.siblingIndex).slice(0, 3).map(({ siblingIndex }) => siblingIndex));
+    const discoveryBeam = applyDiscoveryBeam(assessedResults, (item) => item.siblingIndex);
     for (const { result, siblingIndex, diagnostic: resultDiagnostic } of assessedResults) {
       if (resultDiagnostic.discoveryAdmissionDecision === "DISCOVERY_ADMITTED" && resultDiagnostic.evidenceAdmissionDecision === "REJECTED" && !discoveryBeam.has(siblingIndex)) {
         resultDiagnostic.discoveryAdmissionDecision = "REJECTED";
@@ -230,10 +235,17 @@ function identityProfileUrl(url: string) { try {
 } catch { return undefined; } }
 function titleLead(title: string) {
   return title
-    .replace(/\s*[|·\-–:]\s*(?:Facebook|Instagram|LinkedIn|TikTok|Twitter|X|GitHub|YouTube)(?:\s*(?:profile|account))?\s*$/i, "")
+    .replace(/[\s|·•/\-–:]+(?:Instagram\s+photos\s+and\s+videos|Posts\s*\/\s*X|TikTok\s+(?:profile|videos?)|Facebook\s+(?:profile|posts?)|LinkedIn\s+(?:profile|posts?))\s*$/giu, "")
+    .replace(/[\s|·•/\-–:]+(?:\d[\d,.]*[KMB]?\s*)?(?:followers?|following|likes?|posts?|photos?|videos?|content)\s*$/giu, "")
+    .replace(/\s*[|·•\-–:]\s*(?:Facebook|Instagram|LinkedIn|TikTok|Twitter|X|GitHub|YouTube)(?:\s*(?:profile|account))?\s*$/i, "")
     .replace(/\s*[|·\-–:]\s*(?:profile|public profile|official site)\s*$/i, "")
     .replace(/^(?:profile|public profile)(?:\s+(?:for|of))?\s*[:\-]?\s*/i, "")
+    .replace(/^(?:Facebook|Instagram|LinkedIn|TikTok|Twitter|X|GitHub|YouTube)\s*[|·•:\-]\s*/i, "")
     .trim();
+}
+function stripDecorations(value: string) {
+  // Preserve letters, combining marks, name punctuation, and internal spacing.
+  return value.replace(/^[^\p{L}\p{N}@]+|[^\p{L}\p{N})'’_.-]+$/gu, "").trim();
 }
 const LOWERCASE_NAME_PARTICLES = new Set(["al", "bin", "da", "de", "del", "della", "den", "der", "di", "dos", "du", "el", "la", "le", "van", "von", "y"]);
 function plausiblePersonName(value: string) {
@@ -252,14 +264,58 @@ function titleAliases(title: string) {
   // Identity information normally precedes descriptive title copy. Parse those
   // segments instead of promoting every word in a result title to an identifier.
   const identityRegion = cleaned.split(/\s+[–—-]\s+/)[0];
-  const segments = identityRegion.split(/\s*[|·:]\s*/).map((part) => part.trim()).filter(Boolean);
+  const segments = identityRegion.split(/\s*[|·•:]\s*/).map((part) => stripDecorations(part)).filter(Boolean);
   return [...new Set(segments.flatMap((segment) => {
-    const withoutHandle = segment.replace(/\s*\(@[\p{L}\p{N}_.-]+\)\s*/gu, "").trim();
+    const withoutHandle = stripDecorations(segment.replace(/\s*\(@[\p{L}\p{N}_.-]+\)\s*/gu, ""));
     if (!withoutHandle || rejectionReason(withoutHandle)) return [];
     if (/^[\p{L}\p{N}_.@-]{3,30}$/u.test(withoutHandle) && (/[_.@-]|\d|^\p{Lu}/u.test(withoutHandle))) return [withoutHandle];
     if (plausiblePersonName(withoutHandle)) return [withoutHandle];
     return [];
   }))].slice(0, 3);
+}
+
+function extractPreviewIdentitySignals(result: SearchResult) {
+  const canonicalHandle = socialUrlHandle(result.url);
+  const explicitHandles = [...`${result.title} ${result.description || ""}`.matchAll(/(?:^|[^\p{L}\p{N}_.])@([\p{L}\p{N}][\p{L}\p{N}_.-]{2,39})\b/giu)].map((match) => match[1]);
+  const aliases = titleAliases(result.title);
+  const labelledCompanies = [...`${result.title} ${result.description || ""}`.matchAll(/\b(?:company|organisation|organization)\s*:\s*([^|;.!?]{3,60})/giu)].map((match) => match[1].trim());
+  const domains = [...`${result.title} ${result.description || ""}`.matchAll(/\b(?:domain|website)\s*:\s*((?:[\p{L}\p{N}-]+\.)+[\p{L}\p{N}-]+)/giu)].map((match) => match[1]);
+  const directors = [...`${result.title} ${result.description || ""}`.matchAll(/\bdirector\s*:\s*([^|;.!?]{3,60})/giu)].map((match) => match[1].trim());
+  const signals: PreviewIdentitySignal[] = [
+    ...(canonicalHandle ? [{ type: "handle" as const, value: canonicalHandle }] : []),
+    ...explicitHandles.map((value) => ({ type: "handle" as const, value })),
+    ...aliases.map((value) => ({ type: plausiblePersonName(value) || /^\p{Lu}[\p{L}\p{M}'’-]{2,}$/u.test(value) ? "person_name" as const : "alias" as const, value })),
+    ...labelledCompanies.map((value) => ({ type: "company_name" as const, value })),
+    ...domains.map((value) => ({ type: "domain" as const, value })),
+    ...directors.map((value) => ({ type: "director" as const, value })),
+  ].filter((signal, index, all) => all.findIndex((candidate) => candidate.type === signal.type && normalizeIdentifier(candidate.value) === normalizeIdentifier(signal.value)) === index);
+  const distinctAliases = signals.filter((signal) => signal.type === "alias" || signal.type === "person_name").filter((signal) => normalizeIdentifier(signal.value) !== normalizeIdentifier(canonicalHandle || ""));
+  const families = new Set(signals.map((signal) => signal.type === "director" ? "person_name" : signal.type));
+  const profileQuality = platformFor(result.url) ? 10 : ["registry", "company_site", "editorial"].includes(sourceClassFor(result.url)) ? 8 : 3;
+  const titleConsistency = canonicalHandle && containsIdentifier(result.title, canonicalHandle) ? 8 : 0;
+  const identityInformationValue = Math.min(100, profileQuality + (canonicalHandle ? 14 : 0) + (explicitHandles.length ? 10 : 0) + (signals.some((signal) => signal.type === "person_name") ? 30 : 0) + (signals.some((signal) => signal.type === "company_name") ? 22 : 0) + (signals.some((signal) => signal.type === "domain") ? 20 : 0) + (signals.some((signal) => signal.type === "director") ? 24 : 0) + Math.min(20, distinctAliases.length * 10) + (families.size > 1 ? (families.size - 1) * 8 : 0) + titleConsistency);
+  const canonicalDisplayName = aliases.find((alias) => normalizeIdentifier(alias) !== normalizeIdentifier(canonicalHandle || ""));
+  return { canonicalDisplayName, canonicalHandle, previewIdentitySignals: signals, identityInformationValue };
+}
+
+function applyDiscoveryBeam<T extends { diagnostic: ResultAdmissionDiagnostic }>(results: T[], indexFor: (item: T) => number) {
+  const eligible = results.filter(({ diagnostic }) => diagnostic.discoveryAdmissionDecision === "DISCOVERY_ADMITTED" && diagnostic.evidenceAdmissionDecision === "REJECTED");
+  const selected: T[] = []; const families = new Set<string>();
+  while (selected.length < 3 && selected.length < eligible.length) {
+    const remaining = eligible.filter((item) => !selected.includes(item));
+    remaining.sort((a, b) => {
+      const familyBonus = (item: T) => [...new Set(item.diagnostic.previewIdentitySignals.map((signal) => signal.type === "director" ? "person_name" : signal.type))].filter((family) => !families.has(family)).length * 12;
+      const av = a.diagnostic.identityInformationValue + familyBonus(a); const bv = b.diagnostic.identityInformationValue + familyBonus(b);
+      return bv - av || b.diagnostic.discoveryAdmissionScore - a.diagnostic.discoveryAdmissionScore || b.diagnostic.queryProvenanceContribution - a.diagnostic.queryProvenanceContribution || indexFor(a) - indexFor(b);
+    });
+    const chosen = remaining[0]; selected.push(chosen);
+    chosen.diagnostic.previewIdentitySignals.forEach((signal) => families.add(signal.type === "director" ? "person_name" : signal.type));
+  }
+  const beam = new Set(selected.map(indexFor));
+  eligible.filter((item) => !beam.has(indexFor(item))).sort((a, b) => b.diagnostic.identityInformationValue - a.diagnostic.identityInformationValue || indexFor(a) - indexFor(b)).forEach((item, index) => { item.diagnostic.beamRank = selected.length + index + 1; });
+  selected.forEach((item, index) => { item.diagnostic.beamRank = index + 1; item.diagnostic.beamDecision = "ADMITTED"; item.diagnostic.beamDecisionReason = "Selected by identity information value, clue diversity, source quality, and admission strength."; });
+  for (const item of eligible) if (!beam.has(indexFor(item))) { item.diagnostic.beamDecision = "OUTSIDE_BEAM"; item.diagnostic.beamDecisionReason = "A higher-information or more diverse result filled the bounded discovery beam."; }
+  return beam;
 }
 function observedIdentifiers(hit: SearchResult, originals: Set<string>) {
   const text = `${hit.title} ${hit.description || ""}`;
@@ -398,7 +454,7 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
     const activeClue = clues.get(`${item.clueType}:${normalizeIdentifier(item.label)}`) || clues.get(`email:${normalized}`)!;
     const graphNeighbors = [...new Set([localPart, ...item.path, ...(activeClue.adjacentClueIds.map((id) => clues.get(id)?.displayValue).filter(Boolean) as string[])])];
     const assessedResults = results.map((hit, resultIndex) => ({ hit, resultIndex, diagnostic: admissionDiagnostic(hit, activeClue, normalized, graphNeighbors, { hop: item.hop, intent: item.intent, query: item.query }, item.priority, item.siblingRank || resultIndex + 1, limits.maxSearches - searchCount) }));
-    const seedDiscoveryBeam = new Set(assessedResults.filter(({ diagnostic }) => diagnostic.discoveryAdmissionDecision === "DISCOVERY_ADMITTED" && diagnostic.evidenceAdmissionDecision === "REJECTED").sort((a, b) => b.diagnostic.discoveryAdmissionScore - a.diagnostic.discoveryAdmissionScore || a.resultIndex - b.resultIndex).slice(0, 3).map(({ resultIndex }) => resultIndex));
+    const seedDiscoveryBeam = applyDiscoveryBeam(assessedResults, (entry) => entry.resultIndex);
     for (const { resultIndex, hit, diagnostic: resultDiagnostic } of assessedResults) {
       const sourceClass = sourceClassFor(hit.url);
       const platform = platformFor(hit.url);
@@ -446,7 +502,7 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
       const path = [...item.path, `${platform} ${hit.title}`];
       candidates.set(profileUrl, {
         platform, profileUrl,
-        observedDisplayName: prior?.observedDisplayName || (hit.title && !containsExactEmailToken(hit.title, normalized) ? hit.title.trim() : undefined),
+        observedDisplayName: prior?.observedDisplayName || (!containsExactEmailToken(hit.title, normalized) ? resultDiagnostic.canonicalDisplayName || hit.title.trim() : undefined),
         matchedIdentifiers: identifiers,
         matchType: exact ? "exact_email" : item.hop ? "alias" : "username",
         status: "Candidate", matchLevel: exact ? "exact_match" : "unverified_candidate", confidence,

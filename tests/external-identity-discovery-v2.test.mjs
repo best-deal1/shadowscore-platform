@@ -179,9 +179,10 @@ test("missing search credentials is explicit technical unavailability and does n
 test("production-realistic Anastasia results require contextual expansion to discover kuki_nesti_ch", async () => {
   const queries = [];
   const noisyFirstHop = [
-    { title: "nastik707 | Instagram", url: "https://instagram.com/nastik707", description: "nastikmastik358 profile" },
-    { title: "thenastikedit | Instagram", url: "https://instagram.com/thenastikedit", description: "nastikmastik358 public profile" },
-    { title: "NASTIK | Anastasia - A Bunch of Color and Coolness", url: "https://www.tiktok.com/@nastikss/video/741111", description: "nastikmastik358 creator" },
+    { title: "nastik707 | Instagram", url: "https://instagram.com/nastik707", description: "Public profile" },
+    { title: "thenastikedit | Instagram", url: "https://instagram.com/thenastikedit", description: "Creator profile" },
+    { title: "c_nastik • TikTok profile", url: "https://www.tiktok.com/@c_nastik", description: "Creator videos" },
+    { title: "🧡 NASTIK | Anastasia - A Bunch of Color and Coolness", url: "https://www.tiktok.com/@nastikss/video/741111", description: "Creator profile" },
     { title: "CMMS pharaon and more social results", url: "https://example.com/search-result", description: "Generic title boilerplate" },
     { title: "nastik on TikTok", url: "https://www.tiktok.com/discover/nastik", description: "Discover popular videos" },
   ];
@@ -207,16 +208,65 @@ test("production-realistic Anastasia results require contextual expansion to dis
   const rejectedNoise = ["and", "open", "cmms", "short", "video", "with", "100k", "pharaon"];
   assert.equal(queries.some((query) => rejectedNoise.some((noise) => query === `"${noise}" "nastikmastik358"`)), false);
   const anastasiaClue = graph.clues.find((clue) => clue.normalizedValue === "anastasia");
-  const profileClue = graph.clues.find((clue) => clue.normalizedValue === "thenastikedit");
   assert.equal(anastasiaClue.type, "person_name");
   assert.ok(anastasiaClue.qualityScore >= 80);
-  assert.ok(profileClue.qualityScore >= 80);
+  assert.ok(graph.clues.some((clue) => clue.type === "username" && clue.qualityScore >= 80));
   assert.ok(anastasiaClue.queriesExecuted.includes(anastasiaNastikQuery));
   assert.equal(graph.clues.some((clue) => rejectedNoise.includes(clue.normalizedValue)), false);
   assert.equal(queries.some((query, index) => index < 4 && query.includes("kuki_nesti_ch")), false);
   assert.equal(graph.allCandidates.some((candidate) => candidate.profileUrl.includes("/discover/")), false);
   assert.ok(graph.searches.every((entry) => entry.query && Number.isInteger(entry.hop) && entry.pivot && entry.originalTargetContext.localPart === "nastikmastik358" && typeof entry.resultCount === "number" && typeof entry.producedNewIdentifiers === "boolean" && typeof entry.clueQualityScore === "number" && typeof entry.remainingBudget === "number"));
   assert.ok(graph.metrics.searchCount <= 12);
+  const rankedSeed = graph.searches.find((entry) => entry.results.some((result) => result.url.includes("nastikss"))).results;
+  const rich = rankedSeed.find((result) => result.url.includes("nastikss"));
+  const weakResults = rankedSeed.filter((result) => /nastik707|thenastikedit|c_nastik/.test(result.url));
+  const displaced = weakResults.find((result) => result.beamDecision === "OUTSIDE_BEAM");
+  assert.ok(displaced);
+  assert.equal(rich.canonicalDisplayName, "NASTIK");
+  assert.ok(rich.previewIdentitySignals.some((signal) => signal.type === "person_name" && signal.value === "Anastasia"));
+  assert.ok(rich.identityInformationValue > displaced.identityInformationValue);
+  assert.ok(rich.beamRank <= 3);
+  assert.equal(rich.beamDecision, "ADMITTED");
+  assert.ok(rich.beamDecisionReason);
+});
+
+test("social title canonicalization tolerates platform boilerplate, emoji, bullets, particles, and non-Latin names", async () => {
+  const graph = await discoverExternalIdentityGraph("signal.person@example.com", "key", new AbortController().signal, {
+    search: async (query) => query.includes("signal.person") ? [
+      { title: "💡 Jane Doe (@jane_d) / Posts / X", url: "https://x.com/jane_d", description: "signal.person profile" },
+      { title: "Nastik🧡 (@example_handle) • Instagram photos and videos", url: "https://instagram.com/example_handle", description: "signal.person profile" },
+      { title: "Ludwig van Beethoven (@ludwig_vb) • TikTok profile", url: "https://tiktok.com/@ludwig_vb", description: "signal.person profile" },
+      { title: "山田 太郎 (@taro_y) • Instagram photos and videos", url: "https://instagram.com/taro_y", description: "signal.person profile" },
+    ] : [],
+    limits: { maxSearches: 4, maxIdentifiers: 10 },
+  });
+  const results = graph.searches[0].results;
+  for (const [handle, name] of [["jane_d", "Jane Doe"], ["example_handle", "Nastik"], ["ludwig_vb", "Ludwig van Beethoven"], ["taro_y", "山田 太郎"]]) {
+    const result = results.find((item) => item.canonicalHandle === handle);
+    assert.equal(result.canonicalDisplayName, name);
+    assert.ok(result.previewIdentitySignals.some((signal) => signal.value === name));
+    assert.ok(Number.isFinite(result.identityInformationValue));
+    assert.ok(Number.isInteger(result.beamRank));
+    assert.ok(result.beamDecisionReason);
+  }
+});
+
+test("company identity value displaces name-only directory siblings", async () => {
+  const graph = await investigateEntityClues({ type: "unknown", value: "merchant-9021" }, async (_query, clue) => clue.hop === 0 ? [
+    { title: "Northstar Works", url: "https://directory.example/company/northstar-1", description: "Company: Northstar Works" },
+    { title: "Northstar Workshop", url: "https://directory.example/company/northstar-2", description: "Company: Northstar Workshop" },
+    { title: "Northstar Work Ltd", url: "https://directory.example/company/northstar-3", description: "Company: Northstar Work Ltd" },
+    { title: "Northstar Signal Ltd company profile", url: "https://registry.example/northstar-signal", description: "Company: Northstar Signal Ltd | Domain: northstar-signal.example | Director: Mira Vale" },
+  ] : [], { maxHops: 2, maxIdentifiers: 10, maxSearches: 2 });
+  const results = graph.diagnostics[0].results;
+  const rich = results.at(-1);
+  assert.ok(rich.previewIdentitySignals.some((signal) => signal.type === "company_name"));
+  assert.ok(rich.previewIdentitySignals.some((signal) => signal.type === "domain"));
+  assert.ok(rich.previewIdentitySignals.some((signal) => signal.type === "director"));
+  assert.ok(rich.beamRank <= 3);
+  assert.equal(rich.beamDecision, "ADMITTED");
+  assert.ok(results.slice(0, 3).some((result) => result.beamDecision === "OUTSIDE_BEAM"));
+  assert.ok(graph.clues.some((clue) => clue.type === "company_name" && clue.displayValue === "Northstar Signal Ltd"));
 });
 
 test("production exact result admission rejects noise and reserves a diverse beam for identity clues", async () => {
