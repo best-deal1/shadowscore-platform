@@ -26,6 +26,8 @@ This file records customer-visible improvements in each ShadowScore release.
 
 ### Improved
 
+- Entity investigations now enrich person, username, profile, email, domain, and company clues through bounded graph-neighbor searches. Administrator reports include the query trace and budget outcome.
+
 - Identity discovery now follows bounded social handles and useful profile names across three hops. URL and title leads retain their full evidence path and remain candidate-only until independent evidence supports attribution.
 
 - Investigation Workspace now lets customers select or clear every investigation shown by the current search and filter before bulk deletion.
