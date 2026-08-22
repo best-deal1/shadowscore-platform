@@ -201,12 +201,30 @@ test("production-realistic Anastasia results require contextual expansion to dis
   assert.equal(instagram.status, "Candidate");
   assert.equal(instagram.confidence, 25);
   assert.deepEqual(instagram.matchedIdentifiers, []);
-  assert.match(instagram.discoveryPath.join(" -> "), /Anastasia.*Kuki Nesti/s);
+  assert.deepEqual(instagram.discoveryPath, [EMAIL, "NASTIK", "Anastasia", "Instagram Kuki Nesti (@kuki_nesti_ch) | Instagram"]);
   assert.ok(queries.includes(`"Anastasia" "nastikmastik358"`));
   assert.equal(queries.some((query, index) => index < 4 && query.includes("kuki_nesti_ch")), false);
   assert.equal(graph.allCandidates.some((candidate) => candidate.profileUrl.includes("/discover/")), false);
   assert.ok(graph.searches.every((entry) => entry.query && Number.isInteger(entry.hop) && entry.pivot && entry.originalTargetContext.localPart === "nastikmastik358" && typeof entry.resultCount === "number" && typeof entry.producedNewIdentifiers === "boolean"));
   assert.ok(graph.metrics.searchCount <= 12);
+});
+
+test("company identifiers expand through legal company, director, and domain neighbors", async () => {
+  const { investigateEntityClues } = await import("../lib/providers/externalIdentityProvider.ts");
+  const queries = [];
+  const graph = await investigateEntityClues({ type: "unknown", value: "VAT-ZZ-1042" }, async (query, clue) => {
+    queries.push(query);
+    if (clue.displayValue === "VAT-ZZ-1042") return [{ title: "Legal company: Northstar Lantern Labs Ltd", url: "https://registry.example/ZZ-1042", description: "Director: Mira Vale | Domain: northstar-lantern.example" }];
+    if (clue.displayValue === "Mira Vale" && query.includes("VAT-ZZ-1042")) return [{ title: "Related entity: Vale Signal Works Ltd", url: "https://directory.example/mira-vale", description: "Director: Mira Vale" }];
+    return [];
+  }, { maxHops: 3, maxIdentifiers: 10, maxSearches: 10 });
+  assert.ok(graph.clues.some((clue) => clue.type === "company_name" && clue.displayValue === "Northstar Lantern Labs Ltd"));
+  assert.ok(graph.clues.some((clue) => clue.type === "person_name" && clue.displayValue === "Mira Vale"));
+  assert.ok(graph.clues.some((clue) => clue.type === "domain" && clue.displayValue === "northstar-lantern.example"));
+  assert.ok(graph.clues.some((clue) => clue.displayValue === "Vale Signal Works Ltd"));
+  assert.deepEqual(graph.relationships.find((edge) => edge.to === "company_name:vale signal works ltd")?.discoveryPath, ["VAT-ZZ-1042", "Mira Vale", "Vale Signal Works Ltd"]);
+  assert.ok(queries.some((query) => query.includes('"Mira Vale"') && query.includes('"VAT-ZZ-1042"')));
+  assert.equal(graph.metrics.budgetExhaustionReason, "closure_reached");
 });
 
 test("submitted email echoes cannot create credibility support", () => {

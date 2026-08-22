@@ -107,6 +107,7 @@ export async function buildReadyReport(input: {
   const correlationSummary = correlateEvidence({ evidenceItems, targetType: investigationType });
   const externalIdentityMetadata = providerResults.find((result) => result.providerId === "external-identity")?.metadata as Record<string, unknown> | undefined;
   const publicIdentityCandidates = (externalIdentityMetadata?.externalIdentityCandidates || []) as ExternalIdentityCandidate[];
+  const discoveryDiagnostics = externalIdentityMetadata ? { searches: (externalIdentityMetadata.identityDiscoverySearches || []) as import("./providers/externalIdentityProvider").IdentityDiscoverySearchDiagnostic[], budgetExhaustionReason: String((externalIdentityMetadata.identityDiscoveryMetrics as { budgetExhaustionReason?: string } | undefined)?.budgetExhaustionReason || "not_recorded") } : undefined;
   const providerCategories = Object.fromEntries(providerManager.listProviders().map((provider) => [provider.id, provider.category]));
   const canonicalEvidenceSummary = summarizeEvidence(evidenceItems, providerCategories);
   executionRecords
@@ -275,6 +276,7 @@ export async function buildReadyReport(input: {
       investigationType: emailInvestigation ? "EMAIL" : intake.scanMode.toUpperCase(),
       mailboxProviderDomain: emailInvestigation && resolution ? resolution.domain : undefined,
       publicIdentityCandidates,
+      discoveryDiagnostics,
     },
     riskScore: undefined,
     confidenceScore: undefined,

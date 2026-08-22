@@ -93,3 +93,10 @@ test("saved identity candidates use backward-compatible rendering fallbacks", ()
   assert.match(component, /candidate\.discoveryPath \|\| \[candidate\.profileUrl\]/);
   assert.match(component, /candidate\.supportingEvidence\?\.length \|\| 0/);
 });
+
+test("discovery diagnostics are restricted to administrator reports", () => {
+  const component = readFileSync(new URL("../components/report/ExecutiveIntelligenceReport.tsx", import.meta.url), "utf8");
+  assert.match(component, /report\.accessType === "administrator" && discoveryDiagnostics/);
+  assert.match(component, /Discovery Diagnostics/);
+  assert.match(component, /entry\.newIdentifiers/);
+});
