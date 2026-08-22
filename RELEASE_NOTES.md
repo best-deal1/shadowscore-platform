@@ -26,6 +26,8 @@ This file records customer-visible improvements in each ShadowScore release.
 
 ### Improved
 
+- Discovered names and other identity clues now retain a bounded social profile search, so site-restricted profiles remain reachable without increasing each clue's search allowance.
+
 - Open-web identity results now pass a subject relevance check before they can add clues or investigation branches. Search capacity is reserved for a small, diverse set of strong person, company, domain, and profile leads.
 
 - Entity discovery now prioritizes person, company, domain, and canonical profile clues. It rejects generic result-title noise and reserves search capacity for graph-neighbor investigation.

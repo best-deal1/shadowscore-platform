@@ -277,6 +277,13 @@ function contextualQueries(pivot: PendingIdentifier, localPart: string) {
   return queries;
 }
 
+function budgetedContextualQueries(pivot: PendingIdentifier, localPart: string) {
+  const variants = contextualQueries(pivot, localPart);
+  if (pivot.derivation === "explicit_handle") return variants.slice(0, 2);
+  const socialVariant = variants.find((variant) => variant.intent === "social_profile_discovery");
+  return socialVariant ? [variants[0], socialVariant].filter((variant, index, selected) => selected.indexOf(variant) === index) : variants.slice(0, 2);
+}
+
 export async function discoverExternalIdentityGraph(email: string, apiKey: string, signal: AbortSignal, options: { limits?: Partial<IdentityDiscoveryLimits>; search?: SearchFn } = {}) {
   const limits = { ...DEFAULT_IDENTITY_DISCOVERY_LIMITS, ...options.limits };
   const search = options.search || braveSearch;
@@ -322,7 +329,7 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
       if (accepted.length >= 3 || (selectedFamilies.has(family) && family === "social_handle")) { deferred.push(item); continue; }
       selectedFamilies.add(family);
       queuedIdentifiers.add(id); identifierCount += 1;
-      const variants = contextualQueries(item, localPart); accepted.push({ item, variants });
+      const variants = budgetedContextualQueries(item, localPart); accepted.push({ item, variants });
       const clue = clues.get(`${item.clueType}:${id}`); if (clue) clue.queriesPlanned = variants.map((variant) => variant.query);
     }
     pendingIdentifiers.push(...deferred);

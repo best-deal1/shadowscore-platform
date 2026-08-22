@@ -246,6 +246,29 @@ test("production exact result admission rejects noise and reserves a diverse bea
   assert.ok(graph.searches.flatMap((search) => search.results).every((result) => Number.isFinite(result.admissionScore) && result.admissionReason && Array.isArray(result.matchedAnchors) && Number.isInteger(result.siblingRank)));
 });
 
+test("a discovered person name retains a budgeted site-restricted social search", async () => {
+  const queries = [];
+  const socialQuery = 'site:instagram.com OR site:tiktok.com OR site:linkedin.com "Mira Vale"';
+  const graph = await discoverExternalIdentityGraph("quiet.person@example.com", "key", new AbortController().signal, {
+    search: async (query) => {
+      queries.push(query);
+      if (query === '"quiet.person@example.com"') return [{ title: "Quiet Person directory", url: "https://directory.example/quiet-person", description: "quiet.person@example.com. Person: Mira Vale." }];
+      if (query === socialQuery) return [{ title: "Mira Vale | Instagram", url: "https://instagram.com/mira_v_public", description: "Mira Vale profile" }];
+      return [];
+    },
+    limits: { maxSearches: 6, maxIdentifiers: 8, reservedExpansionSearches: 2 },
+  });
+
+  const person = graph.clues.find((clue) => clue.type === "person_name" && clue.displayValue === "Mira Vale");
+  assert.ok(person);
+  assert.deepEqual(person.queriesPlanned, ['"Mira Vale" "quiet.person"', socialQuery]);
+  assert.deepEqual(person.queriesExecuted, ['"Mira Vale" "quiet.person"', socialQuery]);
+  assert.ok(queries.includes(socialQuery));
+  assert.ok(graph.allCandidates.some((candidate) => candidate.profileUrl === "https://instagram.com/mira_v_public"));
+  assert.equal(graph.metrics.searchCount, queries.length);
+  assert.ok(graph.metrics.searchCount <= 6);
+});
+
 test("PERSON and COMPANY result admission blocks similarly named unanchored pages", async () => {
   for (const seed of [{ type: "person_name", value: "Avery Rowan" }, { type: "company_name", value: "Northstar Labs" }]) {
     const graph = await investigateEntityClues(seed, async () => [
