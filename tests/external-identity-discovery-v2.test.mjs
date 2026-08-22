@@ -49,8 +49,7 @@ test("a longer different email token cannot become an exact submitted-email matc
   globalThis.fetch = async () => Response.json({ web: { results: [{ title: "Different person", url: "https://facebook.com/notalice", description: "Contact notalice@example.com" }] } });
   try {
     const candidates = await discoverExternalIdentityCandidates("alice@example.com", "test-key", new AbortController().signal);
-    assert.ok(candidates.length > 0);
-    assert.ok(candidates.every((candidate) => candidate.matchLevel === "unverified_candidate"));
+    assert.equal(candidates.length, 0);
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -180,9 +179,9 @@ test("missing search credentials is explicit technical unavailability and does n
 test("production-realistic Anastasia results require contextual expansion to discover kuki_nesti_ch", async () => {
   const queries = [];
   const noisyFirstHop = [
-    { title: "nastik707 | Instagram", url: "https://instagram.com/nastik707", description: "Photos and videos" },
-    { title: "thenastikedit | Instagram", url: "https://instagram.com/thenastikedit", description: "Public profile" },
-    { title: "NASTIK | Anastasia - A Bunch of Color and Coolness", url: "https://www.tiktok.com/@nastikss/video/741111", description: "Open short video with 100k views" },
+    { title: "nastik707 | Instagram", url: "https://instagram.com/nastik707", description: "nastikmastik358 profile" },
+    { title: "thenastikedit | Instagram", url: "https://instagram.com/thenastikedit", description: "nastikmastik358 public profile" },
+    { title: "NASTIK | Anastasia - A Bunch of Color and Coolness", url: "https://www.tiktok.com/@nastikss/video/741111", description: "nastikmastik358 creator" },
     { title: "CMMS pharaon and more social results", url: "https://example.com/search-result", description: "Generic title boilerplate" },
     { title: "nastik on TikTok", url: "https://www.tiktok.com/discover/nastik", description: "Discover popular videos" },
   ];
@@ -220,6 +219,45 @@ test("production-realistic Anastasia results require contextual expansion to dis
   assert.ok(graph.metrics.searchCount <= 12);
 });
 
+test("production exact result admission rejects noise and reserves a diverse beam for identity clues", async () => {
+  const queries = [];
+  const graph = await discoverExternalIdentityGraph(EMAIL, "key", new AbortController().signal, {
+    search: async (query) => {
+      queries.push(query);
+      if (query === `"${EMAIL}"`) return [
+        { title: "Footprints outdoors", url: "https://unrelated.example/footprints", description: "Edited version of the address and unrelated accounts @nnikass._ @c_nastik" },
+        { title: "NASTIK | Anastasia", url: "https://profiles.example/nastik", description: `${EMAIL}. Person: Anastasia. Username: thenastikedit` },
+        { title: "nastikss478", url: "https://instagram.com/nastikss478", description: "Unrelated public profile" },
+      ];
+      if (query.toLowerCase().includes('"anastasia"')) return [{ title: "Anastasia Cherevko profile", url: "https://journal.example/people/anastasia", description: "Anastasia. Instagram: kuki_nesti_ch" }];
+      if (query.includes("kuki_nesti_ch")) return [{ title: "Anastasia (@kuki_nesti_ch) | Instagram", url: "https://instagram.com/kuki_nesti_ch", description: "Anastasia profile" }];
+      return [];
+    },
+    limits: { maxSearches: 10, maxIdentifiers: 12 },
+  });
+  assert.equal(graph.clues.some((clue) => /footprints|edited version|nnikass|c_nastik|nastikss478/i.test(clue.displayValue)), false);
+  assert.ok(graph.clues.some((clue) => clue.normalizedValue === "anastasia" && clue.type === "person_name"));
+  assert.ok(queries.some((query) => query.toLowerCase().includes('"anastasia"')));
+  assert.ok(graph.allCandidates.some((candidate) => candidate.profileUrl === "https://instagram.com/kuki_nesti_ch" && candidate.status === "Candidate"));
+  assert.ok(graph.metrics.searchCount <= 10);
+  const rejected = graph.searches.flatMap((search) => search.results).find((result) => result.url.includes("footprints"));
+  assert.equal(rejected.admissionDecision, "rejected");
+  assert.equal(rejected.extractedClues.length, 0);
+  assert.ok(graph.searches.flatMap((search) => search.results).every((result) => Number.isFinite(result.admissionScore) && result.admissionReason && Array.isArray(result.matchedAnchors) && Number.isInteger(result.siblingRank)));
+});
+
+test("PERSON and COMPANY result admission blocks similarly named unanchored pages", async () => {
+  for (const seed of [{ type: "person_name", value: "Avery Rowan" }, { type: "company_name", value: "Northstar Labs" }]) {
+    const graph = await investigateEntityClues(seed, async () => [
+      { title: "Similar listing", url: "https://unrelated.example/listing", description: "Company: Footprint Holdings. Director: Robin Else" },
+      { title: `${seed.value} record`, url: "https://registry.example/record", description: seed.type === "person_name" ? "Company: Rowan Signal Studio" : "Domain: northstar.example. Director: Mira Vale" },
+    ], { maxHops: 2, maxIdentifiers: 8, maxSearches: 4 });
+    assert.equal(graph.clues.some((clue) => /footprint holdings|robin else/i.test(clue.displayValue)), false);
+    assert.ok(graph.diagnostics[0].results.some((result) => result.admissionDecision === "rejected" && result.extractedClues.length === 0));
+    assert.ok(graph.diagnostics[0].results.some((result) => result.admissionDecision === "admitted"));
+  }
+});
+
 test("unused expansion capacity falls back to omitted seed queries", async () => {
   const queries = [];
   const graph = await discoverExternalIdentityGraph("quiet.person@example.com", "key", new AbortController().signal, {
@@ -240,7 +278,7 @@ test("open-web editorial evidence bridges an alias to a fuller name, handle, and
   const graph = await discoverExternalIdentityGraph("fieldnote77@example.com", "key", new AbortController().signal, {
     search: async (query) => {
       queries.push(query);
-      if (query === '"fieldnote77" profile') return [{ title: "Nora Vale | contributor", url: "https://writers.example/people/nora", description: "Alias: Fieldnote" }];
+      if (query === '"fieldnote77" profile') return [{ title: "Nora Vale | contributor", url: "https://writers.example/people/nora", description: "fieldnote77, Alias: Fieldnote" }];
       if (query.includes('\"Nora Vale\"') && (query.includes('\"fieldnote77\"') || query.includes('\"Fieldnote\"'))) return [{ title: "Nora Elise Vale | Interview", url: "https://journal.example/article/nora-vale", description: "Nora Vale, Instagram: vale_field_notes" }];
       if (query.includes("vale_field_notes") && query.includes("site:instagram.com")) return [{ title: "Nora Elise Vale (@vale_field_notes) | Instagram", url: "https://instagram.com/vale_field_notes", description: "Public profile" }];
       return [];
@@ -265,7 +303,7 @@ test("title names accept lowercase particles and scripts without case while reje
       queries.push(query);
       if (query === '"composer@example.com"') return [
         { title: "Ludwig van Beethoven | Facebook", url: "https://facebook.com/beethoven", description: "Composer profile" },
-        { title: "山田 太郎 | Instagram", url: "https://instagram.com/yamada", description: "Artist profile" },
+        { title: "山田 太郎 | Instagram", url: "https://instagram.com/yamada", description: "composer profile" },
         { title: "Open popular videos | TikTok", url: "https://tiktok.com/@noise/video/1", description: "composer" },
       ];
       return [];
@@ -283,7 +321,7 @@ test("COMPANY open-web pages bridge legal company, director, and domain graph no
   const queries = [];
   const graph = await investigateEntityClues({ type: "unknown", value: "VAT-ZZ-1042" }, async (query, clue) => {
     queries.push(query);
-    if (clue.displayValue === "VAT-ZZ-1042") return [{ title: "Legal company: Northstar Lantern Labs Ltd", url: "https://registry.example/ZZ-1042", description: "Director: Mira Vale | Domain: northstar-lantern.example | Open short video with 100k views" }];
+    if (clue.displayValue === "VAT-ZZ-1042") return [{ title: "VAT-ZZ-1042 | Legal company: Northstar Lantern Labs Ltd", url: "https://registry.example/ZZ-1042", description: "Director: Mira Vale | Domain: northstar-lantern.example | Open short video with 100k views" }];
     if (clue.displayValue === "Mira Vale" && query.includes("VAT-ZZ-1042")) return [{ title: "Related entity: Vale Signal Works Ltd", url: "https://directory.example/mira-vale", description: "Director: Mira Vale" }];
     return [];
   }, { maxHops: 3, maxIdentifiers: 10, maxSearches: 10 });
@@ -318,7 +356,7 @@ test("labeled open-web context stays available without becoming standalone ident
       if (query === '"context.person@example.com"') return [{
         title: "Alice Morgan profile",
         url: "https://directory.example/people/alice-morgan",
-        description: "Company: Acme Inc. Alice leads product development. Person: Alice Morgan. She founded the team. Domain: acme.example. Location: London. Role: CEO. Further details follow.",
+        description: "context.person@example.com. Company: Acme Inc. Alice leads product development. Person: Alice Morgan. She founded the team. Domain: acme.example. Location: London. Role: CEO. Further details follow.",
       }];
       return [];
     },
@@ -374,7 +412,7 @@ test("URL and title handles are discovery leads, not corroborated or verified id
   const graph = await discoverExternalIdentityGraph("john.smith@example.com", "key", new AbortController().signal, {
     search: async (query) => {
       queries.push(query);
-      if (query.includes("john.smith")) return [{ title: "John Smith - Facebook", url: "https://facebook.com/johnsmith", description: "Public profile" }];
+      if (query.includes("john.smith")) return [{ title: "John Smith - Facebook", url: "https://facebook.com/johnsmith", description: "john.smith public profile" }];
       return [{ title: "Unrelated profile", url: "https://instagram.com/unrelated", description: "John Smith" }];
     },
   });
@@ -447,7 +485,7 @@ test("identifier provenance is preserved while its follow-up search is deduplica
     limits: { maxSearches: 8, maxIdentifiers: 4 },
   });
   const aliasEdges = graph.edges.filter((edge) => edge.relation === "corroborated_identifier" && edge.to.toLowerCase() === "sharedalias");
-  assert.ok(aliasEdges.some((edge) => edge.from === "https://facebook.com/one"));
+  assert.equal(aliasEdges.some((edge) => edge.from === "https://facebook.com/one"), false);
   assert.ok(aliasEdges.some((edge) => edge.from === "https://instagram.com/two"));
   const aliasQueries = queries.filter((query) => query.includes("SharedAlias"));
   assert.ok(aliasQueries.length >= 2);
