@@ -145,3 +145,4 @@ This file records customer-visible improvements in each ShadowScore release.
 
 - Identity discovery now keeps the submitted target in contextual follow-up searches, extracts useful name tokens, rejects social discovery pages and generic titles, and ranks relevant multi-hop profile leads ahead of noisy first-hop results.
 - Investigation metadata now records each identity search, its pivot and hop, original target context, result count, and whether it produced a new identifier.
+- Identity discovery now uses unused expansion capacity for remaining seed searches and recognizes names with lowercase particles and writing systems without letter case.

@@ -220,6 +220,41 @@ test("production-realistic Anastasia results require contextual expansion to dis
   assert.ok(graph.metrics.searchCount <= 12);
 });
 
+test("unused expansion capacity falls back to omitted seed queries", async () => {
+  const queries = [];
+  const graph = await discoverExternalIdentityGraph("quiet.person@example.com", "key", new AbortController().signal, {
+    search: async (query) => { queries.push(query); return []; },
+    limits: { maxSearches: 4 },
+  });
+  assert.equal(graph.metrics.searchCount, 4);
+  assert.deepEqual(queries, [
+    '"quiet.person@example.com"',
+    '"quiet.person@example.com" profile OR social',
+    '"quiet.person" profile',
+    '"quiet.person" site:facebook.com OR site:instagram.com OR site:linkedin.com OR site:x.com OR site:tiktok.com',
+  ]);
+});
+
+test("title names accept lowercase particles and scripts without case while rejecting noise", async () => {
+  const queries = [];
+  const graph = await discoverExternalIdentityGraph("composer@example.com", "key", new AbortController().signal, {
+    search: async (query) => {
+      queries.push(query);
+      if (query === '"composer@example.com"') return [
+        { title: "Ludwig van Beethoven | Facebook", url: "https://facebook.com/beethoven", description: "Composer profile" },
+        { title: "山田 太郎 | Instagram", url: "https://instagram.com/yamada", description: "Artist profile" },
+        { title: "Open popular videos | TikTok", url: "https://tiktok.com/@noise/video/1", description: "composer" },
+      ];
+      return [];
+    },
+  });
+  assert.ok(graph.clues.some((clue) => clue.type === "person_name" && clue.displayValue === "Ludwig van Beethoven"));
+  assert.ok(graph.clues.some((clue) => clue.type === "person_name" && clue.displayValue === "山田 太郎"));
+  assert.ok(queries.some((query) => query.includes('"Ludwig van Beethoven"')));
+  assert.ok(queries.some((query) => query.includes('"山田 太郎"')));
+  assert.equal(graph.clues.some((clue) => clue.normalizedValue === "open popular videos"), false);
+});
+
 test("company identifiers expand through legal company, director, and domain neighbors", async () => {
   const { investigateEntityClues } = await import("../lib/providers/externalIdentityProvider.ts");
   const queries = [];

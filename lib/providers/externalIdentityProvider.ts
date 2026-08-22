@@ -98,14 +98,14 @@ function rejectionReason(value: string) {
   if (normalized.length > 60) return "too_long";
   if (NOISE_IDENTIFIERS.has(normalized)) return "generic_lexical_noise";
   if (/^#|^\d+[km]?$/i.test(normalized)) return "hashtag_or_counter";
-  if (/^[\W_]+$/u.test(normalized)) return "non_identifier";
+  if (/^[^\p{L}\p{N}]+$/u.test(normalized)) return "non_identifier";
   return undefined;
 }
 function usefulIdentifier(value: string, original: Set<string>) {
   const normalized = normalizeIdentifier(value);
   return !rejectionReason(value) && !original.has(normalized)
     && !/^(?:www\.)?[\p{L}\p{N}-]+(?:\.[\p{L}\p{N}-]+)+(?:\/.*)?$/iu.test(normalized)
-    && !/^https?:|^[\W_]+$/iu.test(normalized)
+    && !/^https?:|^[^\p{L}\p{N}]+$/iu.test(normalized)
     && !/^(?:(?:facebook|instagram|linkedin|tiktok|twitter|github|youtube)\s+)?(?:public\s+)?profile(?:\s+[a-z])?$|^unrelated(?:\s+(?:user|account|profile))?$/i.test(normalized)
     && !/^(?:log\s*in|sign\s*(?:in|up)|search results?|click here|learn more)$/i.test(normalized);
 }
@@ -153,6 +153,18 @@ function titleLead(title: string) {
     .replace(/^(?:profile|public profile)(?:\s+(?:for|of))?\s*[:\-]?\s*/i, "")
     .trim();
 }
+const LOWERCASE_NAME_PARTICLES = new Set(["al", "bin", "da", "de", "del", "della", "den", "der", "di", "dos", "du", "el", "la", "le", "van", "von", "y"]);
+function plausiblePersonName(value: string) {
+  const words = value.split(/\s+/u);
+  if (words.length < 2 || words.length > 4) return false;
+  if (words.some((word) => !/^[\p{L}\p{M}'’-]+$/u.test(word) || NOISE_IDENTIFIERS.has(normalizeIdentifier(word)))) return false;
+  const hasCasedLetters = words.some((word) => /[\p{Lu}\p{Ll}]/u.test(word));
+  if (!hasCasedLetters) return true;
+  return words.every((word, index) => {
+    if (/^\p{Lu}/u.test(word)) return true;
+    return index > 0 && index < words.length - 1 && LOWERCASE_NAME_PARTICLES.has(normalizeIdentifier(word));
+  });
+}
 function titleAliases(title: string) {
   const cleaned = titleLead(title).trim();
   // Identity information normally precedes descriptive title copy. Parse those
@@ -163,7 +175,7 @@ function titleAliases(title: string) {
     const withoutHandle = segment.replace(/\s*\(@[\p{L}\p{N}_.-]+\)\s*/gu, "").trim();
     if (!withoutHandle || rejectionReason(withoutHandle)) return [];
     if (/^[\p{L}\p{N}_.@-]{3,30}$/u.test(withoutHandle)) return [withoutHandle];
-    if (/^(?:[\p{Lu}][\p{L}'-]+)(?:\s+[\p{Lu}][\p{L}'-]+){1,3}$/u.test(withoutHandle)) return [withoutHandle];
+    if (plausiblePersonName(withoutHandle)) return [withoutHandle];
     return [];
   }))].slice(0, 3);
 }
@@ -219,6 +231,7 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
   // graph-neighbor expansion, and convergence attempts.
   const seedSearchLimit = Math.max(1, limits.maxSearches - Math.min(limits.reservedExpansionSearches, limits.maxSearches - 1));
   const queue: QueueItem[] = seedQueue.slice(0, seedSearchLimit);
+  const omittedSeeds = seedQueue.slice(seedSearchLimit);
   const searched = new Set<string>(); const queuedIdentifiers = new Set<string>(); const candidates = new Map<string, ExternalIdentityCandidate>();
   const clues = new Map<string, EntityClue>();
   const edges: IdentityDiscoveryEdge[] = []; const pendingIdentifiers: PendingIdentifier[] = [];
@@ -332,6 +345,9 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
       seedSearchesRemaining -= 1;
       if (seedSearchesRemaining === 0 || !queue.some((queued) => queued.hop === 0)) enqueuePending();
     } else enqueuePending();
+    // A reserve protects expansion work when clues exist. Once the expansion
+    // queue reaches closure, return unused capacity to the omitted seed plan.
+    if (queue.length === 0 && omittedSeeds.length > 0) queue.push(...omittedSeeds.splice(0));
   }
   for (const skipped of queue) { const clue = clues.get(`${skipped.clueType}:${normalizeIdentifier(skipped.label)}`); if (clue) clue.queriesSkipped.push(skipped.query); }
   const convergences: EntityConvergence[] = [...clues.values()].filter((clue) => clue.observedBy.length > 1).map((clue) => ({ clueId: clue.id, convergingPaths: [clue.discoveryPath], sharedIdentifiers: [clue.normalizedValue], loopStrength: Math.min(100, clue.observedBy.length * 20) }));
