@@ -26,6 +26,8 @@ This file records customer-visible improvements in each ShadowScore release.
 
 ### Improved
 
+- Identity discovery now follows bounded social handles and useful profile names across three hops. URL and title leads retain their full evidence path and remain candidate-only until independent evidence supports attribution.
+
 - Investigation Workspace now lets customers select or clear every investigation shown by the current search and filter before bulk deletion.
 
 - The Free Quick Check now presents the submitted target, truthful identity status, preliminary assessment, representative evidence and sources, material findings, and unresolved evidence gaps before explaining the Full Investigation.
