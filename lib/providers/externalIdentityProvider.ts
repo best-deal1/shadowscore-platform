@@ -6,8 +6,11 @@ const SEARCH_ENDPOINT = "https://api.search.brave.com/res/v1/web/search";
 const SOCIAL_HOSTS: Record<string, string> = { "facebook.com": "Facebook", "instagram.com": "Instagram", "linkedin.com": "LinkedIn", "x.com": "X", "twitter.com": "X", "tiktok.com": "TikTok", "github.com": "GitHub", "youtube.com": "YouTube" };
 
 export type IdentityDiscoveryLimits = { maxHops: number; maxIdentifiers: number; maxSearches: number; maxResultsPerSearch: number; maxVisibleCandidates: number };
-export const DEFAULT_IDENTITY_DISCOVERY_LIMITS: IdentityDiscoveryLimits = { maxHops: 2, maxIdentifiers: 12, maxSearches: 12, maxResultsPerSearch: 10, maxVisibleCandidates: 8 };
-export type IdentityDiscoveryEdge = { from: string; to: string; relation: "search_result" | "observed_identifier"; hop: number; evidence: { query: string; url: string; snippet: string; provider: "Brave Search" } };
+export const DEFAULT_IDENTITY_DISCOVERY_LIMITS: IdentityDiscoveryLimits = { maxHops: 3, maxIdentifiers: 12, maxSearches: 12, maxResultsPerSearch: 10, maxVisibleCandidates: 8 };
+export type IdentityDiscoveryEdge = {
+  from: string; to: string; relation: "search_result" | "discovery_lead" | "corroborated_identifier" | "verified_identifier"; hop: number;
+  evidence: { query: string; url: string; snippet: string; provider: "Brave Search"; derivation?: "explicit_assertion" | "social_url" | "explicit_handle" | "display_name" | "title" };
+};
 export type ExternalIdentityCandidate = {
   platform: string; profileUrl: string; observedDisplayName?: string; matchedIdentifiers: string[];
   matchType: "exact_email" | "username" | "alias"; status: "Candidate" | "Corroborated" | "Verified";
@@ -29,26 +32,58 @@ function platformFor(url: string) { try {
 function canonicalUrl(url: string) { try { const parsed = new URL(url); parsed.hash = ""; for (const key of [...parsed.searchParams.keys()]) if (/^(utm_|fbclid|gclid)/i.test(key)) parsed.searchParams.delete(key); return parsed.toString().replace(/\/$/, ""); } catch { return url; } }
 function publicSearchEvidenceUrl(query: string) { const url = new URL("https://search.brave.com/search"); url.searchParams.set("q", query); return url.toString(); }
 function normalizeIdentifier(value: string) { return value.trim().replace(/^@/, "").replace(/\s+/g, " ").toLowerCase(); }
+const NOISE_IDENTIFIERS = new Set(["about", "account", "accounts", "author", "contact", "directory", "explore", "facebook", "github", "home", "instagram", "linkedin", "login", "member", "people", "profile", "public profile", "search", "signin", "signup", "social", "tiktok", "twitter", "user", "username", "youtube"]);
 function usefulIdentifier(value: string, original: Set<string>) {
   const normalized = normalizeIdentifier(value);
   return normalized.length >= 3 && normalized.length <= 60 && !original.has(normalized)
-    && !/^(public profile|profile|home|instagram|facebook|linkedin|user|account)$/i.test(normalized)
-    && !/^https?:/i.test(normalized);
+    && !NOISE_IDENTIFIERS.has(normalized)
+    && !/^(?:www\.)?[\p{L}\p{N}-]+(?:\.[\p{L}\p{N}-]+)+(?:\/.*)?$/iu.test(normalized)
+    && !/^https?:|^[\W_]+$/iu.test(normalized)
+    && !/^(?:(?:facebook|instagram|linkedin|tiktok|twitter|github|youtube)\s+)?(?:public\s+)?profile(?:\s+[a-z])?$|^unrelated(?:\s+(?:user|account|profile))?$/i.test(normalized)
+    && !/^(?:log\s*in|sign\s*(?:in|up)|search results?|click here|learn more)$/i.test(normalized);
 }
 function containsIdentifier(text: string, identifier: string) {
   const escaped = identifier.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   return new RegExp(`(^|[^\\p{L}\\p{N}_.-])@?${escaped}($|[^\\p{L}\\p{N}_.-])`, "iu").test(text);
 }
+type DiscoveryPivot = { value: string; relation: "discovery_lead" | "corroborated_identifier"; derivation: "explicit_assertion" | "social_url" | "explicit_handle" | "display_name" | "title" };
+function socialUrlHandle(url: string) { try {
+  const parsed = new URL(url); const host = parsed.hostname.toLowerCase().replace(/^www\./, "");
+  if (!Object.keys(SOCIAL_HOSTS).some((domain) => host === domain || host.endsWith(`.${domain}`))) return undefined;
+  const parts = parsed.pathname.split("/").filter(Boolean).map(decodeURIComponent);
+  if (!parts.length) return undefined;
+  const first = parts[0].replace(/^@/, "");
+  if (/^(?:accounts?|login|signin|signup|search|explore|directory|people|posts?|reels?|watch|hashtag|share)$/i.test(first)) return undefined;
+  if (host === "youtube.com" && /^(?:channel|c|user)$/i.test(first)) return parts[1]?.replace(/^@/, "");
+  return first;
+} catch { return undefined; } }
+function titleLead(title: string) {
+  return title
+    .replace(/\s*[|·\-–:]\s*(?:Facebook|Instagram|LinkedIn|TikTok|Twitter|X|GitHub|YouTube)(?:\s*(?:profile|account))?\s*$/i, "")
+    .replace(/\s*[|·\-–:]\s*(?:profile|public profile|official site)\s*$/i, "")
+    .replace(/^(?:profile|public profile)(?:\s+(?:for|of))?\s*[:\-]?\s*/i, "")
+    .trim();
+}
 function observedIdentifiers(hit: SearchResult, originals: Set<string>) {
   const text = `${hit.title} ${hit.description || ""}`;
   const explicit = [...text.matchAll(/\b(?:alias|aka|handle|username|known as)\s*[:\-]?\s*["']?(@?[\p{L}\p{N}_. -]{3,40})["']?/giu)]
     .map((match) => match[1].trim().replace(/[.,;:]$/, ""));
-  // Search-result titles and URL handles are discovery metadata, not alias assertions.
-  return [...new Set(explicit.filter((value) => usefulIdentifier(value, originals)))].slice(0, 3);
+  const handles = [...text.matchAll(/(^|[^\p{L}\p{N}_.])@([\p{L}\p{N}][\p{L}\p{N}_.-]{2,39})\b/giu)].map((match) => match[2]);
+  const leads = [socialUrlHandle(hit.url), ...handles, titleLead(hit.title)];
+  const pivots: DiscoveryPivot[] = [
+    ...explicit.map((value) => ({ value, relation: "corroborated_identifier" as const, derivation: "explicit_assertion" as const })),
+    ...leads.map((value, index) => ({ value: value || "", relation: "discovery_lead" as const, derivation: index === 0 ? "social_url" as const : index <= handles.length ? "explicit_handle" as const : "title" as const })),
+  ];
+  const seen = new Set<string>();
+  return pivots.filter((pivot) => {
+    const id = normalizeIdentifier(pivot.value);
+    if (!usefulIdentifier(pivot.value, originals) || seen.has(id)) return false;
+    seen.add(id); return true;
+  }).slice(0, 4);
 }
 async function braveSearch(query: string, apiKey: string, signal: AbortSignal, limit: number): Promise<SearchResult[]> { const url = new URL(SEARCH_ENDPOINT); url.searchParams.set("q", query); url.searchParams.set("count", String(limit)); url.searchParams.set("safesearch", "strict"); const response = await fetch(url, { signal, headers: { accept: "application/json", "x-subscription-token": apiKey } }); if (!response.ok) throw new Error(`Public search returned HTTP ${response.status}.`); const payload = await response.json() as { web?: { results?: Array<{ title?: string; url?: string; description?: string }> } }; return (payload.web?.results || []).filter((item): item is SearchResult => Boolean(item.title && item.url)).slice(0, limit); }
 
-type QueueItem = { id: string; label: string; hop: number; path: string[]; query: string; method: string };
+type QueueItem = { id: string; label: string; hop: number; path: string[]; query: string; method: string; identifierStrength?: "discovery_lead" | "corroborated_identifier" };
 type PendingIdentifier = QueueItem & { exactSource: boolean; order: number };
 
 export async function discoverExternalIdentityGraph(email: string, apiKey: string, signal: AbortSignal, options: { limits?: Partial<IdentityDiscoveryLimits>; search?: SearchFn } = {}) {
@@ -99,7 +134,7 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
       const supportingEvidence = [...(prior?.supportingEvidence || []), observation];
       const observedMatches = [...(prior?.matchedIdentifiers || [])];
       if (currentExact) observedMatches.push(normalized);
-      else if (item.hop > 0 && containsIdentifier(snippet, item.label)) observedMatches.push(normalizeIdentifier(item.label));
+      else if (item.hop > 0 && item.identifierStrength === "corroborated_identifier" && containsIdentifier(snippet, item.label)) observedMatches.push(normalizeIdentifier(item.label));
       const identifiers = [...new Set(observedMatches)];
       const confidence = exact ? 75 : item.hop > 0 ? 25 : 30;
       const selectedCurrent = currentExact || !prior || (prior.matchLevel !== "exact_match" && confidence > prior.confidence);
@@ -125,25 +160,25 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
       });
       edges.push({ from: item.id, to: profileUrl, relation: "search_result", hop: item.hop, evidence: { query: item.query, url: observation.url, snippet, provider: "Brave Search" } });
       if (item.hop >= limits.maxHops - 1) continue;
-      for (const identifier of observedIdentifiers(hit, originals)) {
-        const id = normalizeIdentifier(identifier);
-        const evidence = { query: item.query, url: observation.url, snippet, provider: "Brave Search" as const };
+      for (const pivot of observedIdentifiers(hit, originals)) {
+        const id = normalizeIdentifier(pivot.value);
+        const evidence = { query: item.query, url: observation.url, snippet, provider: "Brave Search" as const, derivation: pivot.derivation };
         // Preserve every observation edge. Search execution is deduplicated separately.
-        edges.push({ from: profileUrl, to: id, relation: "observed_identifier", hop: item.hop + 1, evidence });
-        pendingIdentifiers.push({ id, label: identifier, hop: item.hop + 1, path: [...path, `alias “${identifier}”`], query: `"${identifier}" profile OR social`, method: "discovered_identifier", exactSource: exact, order: observationOrder++ });
+        edges.push({ from: profileUrl, to: id, relation: pivot.relation, hop: item.hop + 1, evidence });
+        pendingIdentifiers.push({ id, label: pivot.value, hop: item.hop + 1, path: [...path, `${pivot.relation} “${pivot.value}”`], query: `"${pivot.value}" profile OR social`, method: pivot.relation, identifierStrength: pivot.relation, exactSource: exact, order: observationOrder++ });
       }
     }
     if (item.hop === 0) {
       seedSearchesRemaining -= 1;
       if (seedSearchesRemaining === 0 || !queue.some((queued) => queued.hop === 0)) enqueuePending();
-    }
+    } else enqueuePending();
   }
   const ranked = [...candidates.values()].sort((a, b) => b.confidence - a.confidence || b.supportingEvidence.length - a.supportingEvidence.length || a.profileUrl.localeCompare(b.profileUrl));
-  const pathUrls = new Set(edges.filter((edge) => edge.relation === "observed_identifier").map((edge) => edge.from));
+  const pathUrls = new Set(edges.filter((edge) => edge.relation !== "search_result").map((edge) => edge.from));
   const visible = ranked.filter((candidate, index) => candidate.confidence >= 45 || pathUrls.has(candidate.profileUrl) || index < 3).slice(0, limits.maxVisibleCandidates);
   return { candidates: visible, allCandidates: ranked, edges, metrics: { searchCount, identifierCount, maxHopReached: edges.reduce((max, edge) => Math.max(max, edge.hop), 0), partial: signal.aborted } };
 }
 export async function discoverExternalIdentityCandidates(email: string, apiKey: string, signal: AbortSignal) { return (await discoverExternalIdentityGraph(email, apiKey, signal)).candidates; }
 
 export class EmailIntelligenceProvider extends BaseProvider { readonly id = "email-intelligence"; readonly name = "Email Intelligence"; readonly version = "1.1.0"; readonly category = "business_profile" as const; protected async collect(context: ProviderExecutionContext): Promise<Pick<ProviderResult, "findings" | "evidence" | "metadata">> { const email = emailFromContext(context); if (!email) throw new Error("Email intelligence requires an email target."); const domain = email.split("@")[1]; const publicMailbox = isPublicMailboxDomain(domain); return { findings: [], evidence: [{ id: "email-target-classification", type: "placeholder", label: "Mailbox classification", value: publicMailbox ? "Public mailbox provider" : "Corporate/custom domain candidate", source: "submitted-target", investigationId: context.investigationId || context.intakeId, canonicalTarget: email, providerName: this.name, collectedAt: new Date().toISOString() }], metadata: { lookupPerformed: true, submittedEmail: email, emailDomain: domain, publicMailbox, evidenceIndependence: "submitted_input_only" } }; } }
-export class ExternalIdentityProvider extends BaseProvider { readonly id = "external-identity"; readonly name = "External Identity Discovery"; readonly version = "2.0.0"; readonly category = "business_profile" as const; failureReason(error: unknown): ProviderFailureReason { if (error instanceof Error && /BRAVE_SEARCH_API_KEY|credential|not configured|provider unavailable/i.test(error.message)) return "Unavailable"; return super.failureReason(error); } protected async collect(context: ProviderExecutionContext): Promise<Pick<ProviderResult, "findings" | "evidence" | "metadata">> { const email = emailFromContext(context); if (!email) throw new Error("External identity discovery requires an email target."); const apiKey = process.env.BRAVE_SEARCH_API_KEY; if (!apiKey) throw new Error("External identity provider unavailable: BRAVE_SEARCH_API_KEY is not configured."); const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 8_000); try { const graph = await discoverExternalIdentityGraph(email, apiKey, controller.signal); const evidence: ProviderEvidence[] = graph.candidates.map((candidate, index) => ({ id: `external-identity-${index + 1}`, type: "search_result", label: candidate.matchLevel === "unverified_candidate" ? "Potential public identity candidate" : "Public identity exact-email match", value: `${candidate.platform} | profile ${candidate.profileUrl} | status ${candidate.status} | matched ${candidate.matchedIdentifiers.join(", ")} | confidence ${candidate.confidence}% | path ${candidate.discoveryPath.join(" -> ")} | ${candidate.matchBasis}`, source: candidate.evidenceUrl, investigationId: context.investigationId || context.intakeId, canonicalTarget: email, providerName: this.name, collectedAt: new Date().toISOString() })); return { findings: [], evidence, metadata: { lookupPerformed: true, submittedEmail: email, candidateCount: graph.candidates.length, externalIdentityCandidates: graph.candidates, identityDiscoveryEdges: graph.edges, identityDiscoveryMetrics: graph.metrics, evidencePolicy: "Submitted input is not independent corroboration. Candidate status requires external evidence. Verification requires independent primary evidence." } }; } finally { clearTimeout(timeout); } } }
+export class ExternalIdentityProvider extends BaseProvider { readonly id = "external-identity"; readonly name = "External Identity Discovery"; readonly version = "3.0.0"; readonly category = "business_profile" as const; failureReason(error: unknown): ProviderFailureReason { if (error instanceof Error && /BRAVE_SEARCH_API_KEY|credential|not configured|provider unavailable/i.test(error.message)) return "Unavailable"; return super.failureReason(error); } protected async collect(context: ProviderExecutionContext): Promise<Pick<ProviderResult, "findings" | "evidence" | "metadata">> { const email = emailFromContext(context); if (!email) throw new Error("External identity discovery requires an email target."); const apiKey = process.env.BRAVE_SEARCH_API_KEY; if (!apiKey) throw new Error("External identity provider unavailable: BRAVE_SEARCH_API_KEY is not configured."); const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 8_000); try { const graph = await discoverExternalIdentityGraph(email, apiKey, controller.signal); const evidence: ProviderEvidence[] = graph.candidates.map((candidate, index) => ({ id: `external-identity-${index + 1}`, type: "search_result", label: candidate.matchLevel === "unverified_candidate" ? "Potential public identity candidate" : "Public identity exact-email match", value: `${candidate.platform} | profile ${candidate.profileUrl} | status ${candidate.status} | matched ${candidate.matchedIdentifiers.join(", ")} | confidence ${candidate.confidence}% | path ${candidate.discoveryPath.join(" -> ")} | ${candidate.matchBasis}`, source: candidate.evidenceUrl, investigationId: context.investigationId || context.intakeId, canonicalTarget: email, providerName: this.name, collectedAt: new Date().toISOString() })); return { findings: [], evidence, metadata: { lookupPerformed: true, submittedEmail: email, candidateCount: graph.candidates.length, externalIdentityCandidates: graph.candidates, identityDiscoveryEdges: graph.edges, identityDiscoveryMetrics: graph.metrics, evidencePolicy: "Submitted input is not independent corroboration. Discovery leads cannot establish identity facts. Candidate status requires external evidence. Verification requires independent primary evidence." } }; } finally { clearTimeout(timeout); } } }

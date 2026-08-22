@@ -177,26 +177,32 @@ test("missing search credentials is explicit technical unavailability and does n
   }
 });
 
-test("bounded identity graph discovers a different-handle Instagram profile only through a preserved alias path", async () => {
+test("Anastasia golden path discovers kuki_nesti_ch without increasing attribution confidence", async () => {
   const queries = [];
   const search = async (query) => {
     queries.push(query);
-    if (query.includes("Nastik") && !query.includes("nastikmastik358")) return [{ title: "kuki_nesti_ch", url: "https://www.instagram.com/kuki_nesti_ch/", description: "Public profile for Nastik" }];
+    if (query.includes("kuki_nesti_ch")) return [{ title: "@kuki_nesti_ch • Instagram", url: "https://www.instagram.com/kuki_nesti_ch/", description: "kuki_nesti_ch profile" }];
+    if (query.includes("Nastik") && !query.includes("nastikmastik358")) return [{ title: "Kuki Nesti | Instagram", url: "https://www.instagram.com/kuki_nesti_ch/", description: "Public profile for Nastik" }];
     if (query.includes("nastikmastik358")) return [{ title: "Facebook profile A", url: "https://www.facebook.com/nastikmastik", description: "Alias: Nastik" }];
     return [];
   };
   const { discoverExternalIdentityGraph } = await import("../lib/providers/externalIdentityProvider.ts");
-  const graph = await discoverExternalIdentityGraph(EMAIL, "test-key", new AbortController().signal, { search, limits: { maxHops: 2, maxSearches: 8, maxIdentifiers: 6 } });
+  const graph = await discoverExternalIdentityGraph(EMAIL, "test-key", new AbortController().signal, { search, limits: { maxSearches: 10, maxIdentifiers: 8 } });
   const instagram = graph.allCandidates.find((candidate) => candidate.profileUrl === "https://www.instagram.com/kuki_nesti_ch");
   assert.ok(instagram);
   assert.equal(instagram.matchType, "alias");
   assert.notEqual(instagram.status, "Verified");
   assert.equal(instagram.confidence, 25);
+  assert.deepEqual(instagram.matchedIdentifiers, ["nastik"]);
   assert.match(instagram.discoveryPath.join(" -> "), /Facebook profile A.*Nastik.*Instagram/s);
-  assert.equal(queries.slice(0, 5).some((query) => query.includes("kuki_nesti_ch")), false);
+  assert.equal(queries.some((query) => query.includes("kuki_nesti_ch")), true);
+  const handleEdge = graph.edges.find((edge) => edge.to === "kuki_nesti_ch" && edge.evidence.derivation === "social_url");
+  assert.ok(handleEdge);
+  assert.equal(handleEdge.relation, "discovery_lead");
+  assert.match(handleEdge.evidence.snippet, /Kuki Nesti/);
   assert.ok(graph.edges.every((edge) => edge.evidence.query && edge.evidence.url && edge.evidence.snippet));
-  assert.ok(graph.metrics.searchCount <= 8);
-  assert.ok(graph.metrics.maxHopReached <= 2);
+  assert.ok(graph.metrics.searchCount <= 10);
+  assert.ok(graph.metrics.maxHopReached <= 3);
 });
 
 test("submitted email echoes cannot create credibility support", () => {
@@ -207,7 +213,7 @@ test("submitted email echoes cannot create credibility support", () => {
 });
 
 
-test("generic result titles and URL handles never become expansion aliases", async () => {
+test("URL and title handles are discovery leads, not corroborated or verified identity evidence", async () => {
   const queries = [];
   const { discoverExternalIdentityGraph } = await import("../lib/providers/externalIdentityProvider.ts");
   const graph = await discoverExternalIdentityGraph("john.smith@example.com", "key", new AbortController().signal, {
@@ -217,9 +223,13 @@ test("generic result titles and URL handles never become expansion aliases", asy
       return [{ title: "Unrelated profile", url: "https://instagram.com/unrelated", description: "John Smith" }];
     },
   });
-  assert.equal(queries.some((query) => /"John Smith"|"johnsmith"/.test(query)), false);
-  assert.equal(graph.edges.some((edge) => edge.relation === "observed_identifier"), false);
+  assert.equal(queries.some((query) => /"John Smith"|"johnsmith"/i.test(query)), true);
+  const leadEdges = graph.edges.filter((edge) => edge.relation === "discovery_lead");
+  assert.ok(leadEdges.some((edge) => edge.to === "johnsmith" && edge.evidence.derivation === "social_url"));
+  assert.equal(graph.edges.some((edge) => edge.relation === "verified_identifier"), false);
+  assert.equal(graph.edges.some((edge) => edge.to === "johnsmith" && edge.relation === "corroborated_identifier"), false);
   assert.ok(graph.allCandidates.every((candidate) => candidate.matchedIdentifiers.length === 0));
+  assert.ok(graph.allCandidates.every((candidate) => candidate.status === "Candidate" && candidate.confidence <= 30));
 });
 
 test("Brave query variants do not corroborate or inflate the same candidate", async () => {
@@ -261,7 +271,7 @@ test("identifier provenance is preserved while its follow-up search is deduplica
     },
     limits: { maxSearches: 8, maxIdentifiers: 4 },
   });
-  const aliasEdges = graph.edges.filter((edge) => edge.relation === "observed_identifier" && edge.to.toLowerCase() === "sharedalias");
+  const aliasEdges = graph.edges.filter((edge) => edge.relation === "corroborated_identifier" && edge.to.toLowerCase() === "sharedalias");
   assert.ok(aliasEdges.some((edge) => edge.from === "https://facebook.com/one"));
   assert.ok(aliasEdges.some((edge) => edge.from === "https://instagram.com/two"));
   assert.equal(queries.filter((query) => query.includes("SharedAlias")).length, 1);
