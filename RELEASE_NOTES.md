@@ -26,6 +26,8 @@ This file records customer-visible improvements in each ShadowScore release.
 
 ### Improved
 
+- Executive Reports now separate search observations, discovery candidates, corroborated evidence, and verified facts. Decisions remain neutral when subject evidence is unavailable, claims cite admitted evidence, and next steps stay within the submitted target and established relationships.
+
 - Discovered names and other identity clues now retain a bounded social profile search, so site-restricted profiles remain reachable without increasing each clue's search allowance.
 
 - Open-web identity results now pass a subject relevance check before they can add clues or investigation branches. Search capacity is reserved for a small, diverse set of strong person, company, domain, and profile leads.

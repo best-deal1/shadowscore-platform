@@ -57,6 +57,7 @@ export default function ExecutiveIntelligenceReport({ report }: { report: Shadow
   const materialGaps = materialEvidenceGaps(report);
   const execution = report.reportSummary?.execution;
   const intelligence = report.reportSummary?.investigationIntelligence;
+  const lifecycleCounts = intelligence?.evidenceLifecycle?.counts;
   const resolved = report.reportSummary?.resolvedEntities;
   const graphSummary = report.reportSummary?.knowledgeGraph?.graphSummary;
   const riskScore = report.riskScore;
@@ -137,7 +138,10 @@ export default function ExecutiveIntelligenceReport({ report }: { report: Shadow
               ["Investigation Type", investigationType],
               ["Investigation Status", "Completed"],
               ["Evidence Sources Reviewed", sourceCount],
-              ["Evidence Items Collected", execution?.evidenceCollected ?? evidence.length],
+              ["Search Observations", lifecycleCounts?.observations ?? 0],
+              ["Discovery Candidates", Math.max(lifecycleCounts?.discoveryCandidates ?? 0, publicIdentityCandidates.length)],
+              ["Corroborated Evidence", lifecycleCounts?.corroboratedEvidence ?? 0],
+              ["Verified Facts", lifecycleCounts?.verifiedFacts ?? evidence.length],
               ["Confidence", confidence],
               ["Decision", recommendation.label],
             ].map(([label, value]) => <div key={label} className="border-b border-slate-200 p-5 sm:border-r sm:[&:nth-child(2n)]:border-r-0 lg:[&:nth-child(2n)]:border-r lg:[&:nth-child(3n)]:border-r-0"><dt className="text-xs font-bold uppercase tracking-wider text-slate-500">{label}</dt><dd className="mt-2 font-semibold text-slate-950">{value}</dd></div>)}
@@ -177,7 +181,7 @@ export default function ExecutiveIntelligenceReport({ report }: { report: Shadow
             <BriefPanel title="Missing Evidence"><div className="space-y-4">{materialGaps.length ? materialGaps.map((gap) => <div key={gap.id}><p className="font-medium text-slate-950">{gap.missingEvidence}</p><p className="mt-1 text-sm text-slate-600">Confidence impact: {gap.confidenceImpact}</p></div>) : <p>No material evidence gaps currently affect confidence.</p>}</div></BriefPanel>
           </div>
 
-          <div className="mt-6 border border-slate-300 bg-slate-50 p-5"><h3 className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Investigation Timeline</h3><dl className="mt-4 grid grid-cols-2 gap-x-5 gap-y-4 sm:grid-cols-3 lg:grid-cols-6">{[["Evidence collected", execution?.evidenceCollected ?? evidence.length], ["Providers executed", execution?.providersExecuted ?? sources.length], ["Contradictions found", intelligence?.contradictions.length ?? 0], ["Relationships discovered", intelligence?.relationships.length ?? graphSummary?.relationshipCount ?? 0], ["Confidence", confidence], ["Generation time", execution ? `${execution.completedInSeconds}s` : "Not recorded"]].map(([label, value]) => <div key={label}><dt className="text-xs text-slate-500">{label}</dt><dd className="mt-1 text-lg font-semibold text-slate-950">{value}</dd></div>)}</dl></div>
+          <div className="mt-6 border border-slate-300 bg-slate-50 p-5"><h3 className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Investigation Timeline</h3><dl className="mt-4 grid grid-cols-2 gap-x-5 gap-y-4 sm:grid-cols-3 lg:grid-cols-6">{[["Verified facts", lifecycleCounts?.verifiedFacts ?? evidence.length], ["Providers executed", execution?.providersExecuted ?? sources.length], ["Contradictions found", intelligence?.contradictions.length ?? 0], ["Relationships discovered", intelligence?.relationships.length ?? graphSummary?.relationshipCount ?? 0], ["Confidence", confidence], ["Generation time", execution ? `${execution.completedInSeconds}s` : "Not recorded"]].map(([label, value]) => <div key={label}><dt className="text-xs text-slate-500">{label}</dt><dd className="mt-1 text-lg font-semibold text-slate-950">{value}</dd></div>)}</dl></div>
         </section>
 
         <section id="identity" aria-labelledby="identity-title" className="mt-12 border-t border-slate-300 pt-10"><p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-800">02 / Entity profile</p><h2 id="identity-title" className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{isEmailInvestigation ? "Email Identity" : "Business Identity"}</h2><dl className="mt-6 grid border-y border-slate-300 bg-white sm:grid-cols-2 lg:grid-cols-4">{[[isEmailInvestigation ? "Submitted email" : "Legal or trading name", isEmailInvestigation ? report.target || report.entity : narrative?.businessName || report.entity], ["Reviewed target", report.target || report.entity], ["Investigation type", investigationType], ["Identity confidence", levelLabel(scorecard.find((item) => item.dimension === "Identity Confidence")?.level)]].map(([label, value]) => <div key={label} className="border-b border-slate-200 p-5 last:border-b-0 sm:border-r sm:[&:nth-child(2n)]:border-r-0 lg:border-b-0 lg:[&:nth-child(2n)]:border-r lg:last:border-r-0"><dt className="text-xs font-bold uppercase tracking-wider text-slate-500">{label}</dt><dd className="mt-2 font-semibold text-slate-950">{value}</dd></div>)}</dl>

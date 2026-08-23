@@ -19,7 +19,9 @@ test("explains contradictions, risks, impact, evidence, and exact gap remediatio
   const missingOwner = evidence({ id: "owner-gap", category: "Missing", status: "missing", confidence: 65, title: "Beneficial owner record", description: "Ownership record was not returned." });
   const adverse = evidence({ id: "adverse", category: "Negative", status: "negative", confidence: 95, title: "Regulatory enforcement", description: "An authoritative enforcement record was matched.", businessImpact: "The enforcement event may create legal and counterparty exposure." });
   const contradiction = { id: "contradiction:name", relationship: "company_name_consistency", title: "Company name differs across providers", classification: "Contradiction", severity: "critical", explanation: "Registry and marketplace names differ.", evidence: [{ role: "registry", value: "Northstar LLC", evidenceId: "registry-name", source: "registry" }, { role: "seller", value: "Other Trading Ltd", evidenceId: "seller-name", source: "marketplace" }] };
-  const result = buildInvestigationIntelligence({ evidenceItems: [missingOwner, adverse], correlationSummary: { ...correlations, contradictions: [contradiction], counts: { ...correlations.counts, Contradiction: 1 } }, businessFindings: [], knowledgeGraph: graph });
+  const registryName = evidence({ id: "registry-name-item", evidenceRefs: [{ id: "registry-name", type: "document", label: "Registry name", source: "registry" }] });
+  const sellerName = evidence({ id: "seller-name-item", evidenceRefs: [{ id: "seller-name", type: "document", label: "Seller name", source: "marketplace" }] });
+  const result = buildInvestigationIntelligence({ evidenceItems: [missingOwner, adverse, registryName, sellerName], correlationSummary: { ...correlations, contradictions: [contradiction], counts: { ...correlations.counts, Contradiction: 1 } }, businessFindings: [], knowledgeGraph: graph });
   assert.equal(result.decisionSupport.outcome, "Do Not Proceed");
   assert.match(result.contradictions[0].whyItMatters, /commercial decision/i);
   assert.equal(result.risks[0].supportingEvidence[0].id, "ref");
@@ -28,10 +30,10 @@ test("explains contradictions, risks, impact, evidence, and exact gap remediatio
   assert.deepEqual(result.decisionSupport.conditions, [result.evidenceGaps[0].recommendation]);
 });
 
-test("routes technical provider failures to further investigation instead of do not proceed", () => {
+test("routes a standalone technical provider failure to neutral verification instead of do not proceed", () => {
   const failedCollection = evidence({ id: "provider-failure", category: "Negative", status: "negative", confidence: 99, title: "DNS provider unavailable", description: "Technical collection failure: request timed out.", businessImpact: "Provider collection failed." });
   const result = buildInvestigationIntelligence({ evidenceItems: [failedCollection], correlationSummary: correlations, businessFindings: [], knowledgeGraph: graph });
-  assert.equal(result.decisionSupport.outcome, "Further Investigation Required");
+  assert.equal(result.decisionSupport.outcome, "Verification Required");
   assert.equal(result.risks.length, 0);
-  assert.match(result.decisionSupport.justification, /not adverse business evidence/i);
+  assert.match(result.decisionSupport.justification, /uncertainty, not a positive or adverse finding/i);
 });

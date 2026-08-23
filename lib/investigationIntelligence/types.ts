@@ -3,7 +3,7 @@ import type { CorrelationSummary } from "../correlation";
 import type { EvidenceItem } from "../evidence";
 import type { KnowledgeGraphSnapshot } from "../knowledgeGraph/types";
 
-export type DecisionSupportOutcome = "Proceed" | "Proceed with Conditions" | "Further Investigation Required" | "Do Not Proceed";
+export type DecisionSupportOutcome = "Proceed" | "Proceed with Conditions" | "Verification Required" | "Further Investigation Required" | "Do Not Proceed";
 export type EvidenceQuality = "High" | "Medium" | "Low";
 
 export type IntelligenceContradiction = {
@@ -43,6 +43,20 @@ export type SectionConfidence = {
 
 export type EvidenceGap = { id: string; missingEvidence: string; recommendation: string; confidenceImpact: string };
 
+export type EvidenceLifecycle = {
+  observations: string[];
+  discoveryCandidates: string[];
+  corroboratedEvidence: string[];
+  verifiedSubjectEvidence: string[];
+  coverageGaps: string[];
+  providerFailures: string[];
+  contradictions: string[];
+  adverseFindings: string[];
+  counts: { observations: number; discoveryCandidates: number; corroboratedEvidence: number; verifiedFacts: number };
+};
+
+export type ExecutiveClaim = { id: string; statement: string; status: "supported" | "unresolved" | "coverage_gap"; evidenceIds: string[] };
+
 export type InvestigationIntelligence = {
   engineVersion: string;
   generatedAt: string;
@@ -52,6 +66,8 @@ export type InvestigationIntelligence = {
   sectionConfidence: SectionConfidence[];
   executiveInsight: string;
   evidenceGaps: EvidenceGap[];
+  evidenceLifecycle: EvidenceLifecycle;
+  executiveClaims: ExecutiveClaim[];
   decisionSupport: { outcome: DecisionSupportOutcome; justification: string; conditions: string[] };
 };
 

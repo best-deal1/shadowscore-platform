@@ -66,6 +66,11 @@ export function executiveRecommendation(report: ShadowScoreReport) {
   }
   const narrative = report.reportSummary?.businessNarrative;
   const intelligence = report.reportSummary?.investigationIntelligence;
+  const confidenceNone = narrative?.confidence?.toLowerCase() === "none";
+  const admittedCount = (intelligence?.evidenceLifecycle?.counts.corroboratedEvidence || 0) + (intelligence?.evidenceLifecycle?.counts.verifiedFacts || 0) + (intelligence?.evidenceLifecycle?.adverseFindings.length || 0);
+  if (confidenceNone || (intelligence?.evidenceLifecycle && admittedCount === 0)) {
+    return { label: "Verification Required", explanation: "No corroborated or verified evidence was attributable to the investigated subject. The result is unresolved. Obtain identity-specific corroboration before making a decision." };
+  }
   const decision = report.reportSummary?.decision?.canonicalDecision || narrative?.decisionMode;
   const label = intelligence?.decisionSupport.outcome || (decision?.decisionOutcome === "PROCEED" ? "Proceed" : decision?.decisionOutcome === "DO_NOT_PROCEED" ? "Do Not Proceed" : "Proceed with Conditions");
   const summary = intelligence?.executiveInsight
@@ -116,8 +121,10 @@ function findingGuidance(context: string, direction: ExecutiveFindingStory["dire
 
 export function executiveFindingStories(report: ShadowScoreReport): ExecutiveFindingStory[] {
   const findings = report.reportSummary?.businessIntelligence?.findings || [];
+  const claims = report.reportSummary?.investigationIntelligence?.executiveClaims;
+  const supportedFindingIds = claims ? new Set(claims.filter((claim) => claim.status === "supported" && claim.evidenceIds.length > 0).map((claim) => claim.id.replace(/^claim:/, ""))) : undefined;
   const risks = report.reportSummary?.investigationIntelligence?.risks || [];
-  return findings.map((finding) => {
+  return findings.filter((finding) => !supportedFindingIds || supportedFindingIds.has(finding.id)).map((finding) => {
     const guidance = findingGuidance(`${finding.category} ${finding.title} ${finding.statement}`, finding.direction);
     const matchingRisk = risks.find((risk) => risk.id === `risk:${finding.id}` || risk.title === finding.title);
     const sources = Array.from(new Set(finding.evidence.map((item) => item.source).filter(Boolean)));
@@ -144,19 +151,19 @@ export function recommendedActions(report: ShadowScoreReport) {
     ? ["Corroborate public profile ownership.", "Verify a second independent identifier.", "Review linked public profiles and collect stronger first-party evidence."]
     : ["Verify business ownership and registration details.", "Use documented payment terms for the first transaction.", "Review material evidence gaps before proceeding."];
   if (isEmailIdentity) {
-    const businessOnly = /domain-based business email|dns|tls|contract|invoice|registry|business ownership/i;
-    return [...clean.filter((item) => !businessOnly.test(item)), ...fallbacks].filter((item, index, all) => all.indexOf(item) === index).slice(0, 3);
+    const hasMarketplaceSignal = Boolean(report.reportSummary?.businessIntelligence?.findings.some((finding) => /marketplace|seller/i.test(`${finding.category} ${finding.title} ${finding.statement}`) && finding.evidence.length));
+    const businessOnly = /domain-based business email|dns|tls|whois|domain registration|contract|invoice|registry|business ownership/i;
+    const applicable = clean.filter((item) => !businessOnly.test(item) && (hasMarketplaceSignal || !/marketplace|seller/i.test(item)));
+    return [...applicable, ...fallbacks].filter((item, index, all) => all.indexOf(item) === index).slice(0, 3);
   }
   return [...clean, ...fallbacks.filter((item) => !clean.includes(item))].slice(0, 3);
 }
 
 export function executiveDecisionReasons(report: ShadowScoreReport) {
+  const claims = report.reportSummary?.investigationIntelligence?.executiveClaims;
+  if (claims) return claims.slice(0, 5).map((claim) => ({ id: claim.id, statement: claim.statement, evidence: claim.status === "supported" ? claim.evidenceIds.join(", ") : claim.status === "coverage_gap" ? "Coverage gap" : "Unresolved" }));
   const findings = report.reportSummary?.businessIntelligence?.findings || [];
-  return findings.slice(0, 5).map((finding) => ({
-    id: finding.id,
-    statement: finding.statement,
-    evidence: Array.from(new Set(finding.evidence.map((item) => item.source))).join(", ") || "Evidence record",
-  }));
+  return findings.filter((finding) => finding.evidence.length > 0).slice(0, 5).map((finding) => ({ id: finding.id, statement: finding.statement, evidence: finding.evidence.map((item) => item.id).join(", ") }));
 }
 
 export function executiveBusinessImpacts(report: ShadowScoreReport) {

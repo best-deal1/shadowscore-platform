@@ -9,8 +9,46 @@ import { buildBusinessIntelligence } from "../lib/businessIntelligence/index.ts"
 import { correlateEvidence } from "../lib/correlation/index.ts";
 import { buildInvestigationIntelligence } from "../lib/investigationIntelligence/index.ts";
 import { readFile } from "node:fs/promises";
+import { executiveDecisionReasons, executiveRecommendation, recommendedActions } from "../lib/executiveReport.ts";
 
 const EMAIL = "nastikmastik358@gmail.com";
+
+const emptyCorrelation = { contradictions: [], verifiedRelationships: [], unresolvedRelationships: [], summary: "" };
+const emptyGraph = { entities: [], relationships: [] };
+
+test("decision integrity keeps a personal-email discovery lead neutral and target-isolated", () => {
+  const candidate = { id: "search:candidate", source: "Brave Search", provider: "external-identity", category: "Verified", status: "observed", confidence: 30, title: "Public identity candidate", description: "Unverified discovery candidate for a Gmail address", businessImpact: "Lead only", evidenceRefs: [{ id: "candidate-1", type: "search_result", label: "Search result", source: "Brave Search" }] };
+  const intelligence = buildInvestigationIntelligence({ evidenceItems: [candidate], correlationSummary: emptyCorrelation, businessFindings: [], knowledgeGraph: emptyGraph });
+  const report = { target: EMAIL, entity: EMAIL, reportSummary: { investigationType: "EMAIL", mailboxProviderDomain: "gmail.com", investigationIntelligence: intelligence, businessNarrative: { confidence: "None", sections: [{ id: "recommendedNextSteps", body: ["Run WHOIS and DNS checks for gmail.com.", "Verify the marketplace seller profile."] }] }, businessIntelligence: { findings: [] } } };
+  assert.equal(intelligence.decisionSupport.outcome, "Verification Required");
+  assert.deepEqual(intelligence.evidenceLifecycle.discoveryCandidates, [candidate.id]);
+  assert.equal(intelligence.evidenceLifecycle.verifiedSubjectEvidence.length, 0);
+  assert.doesNotMatch(intelligence.executiveInsight, /supports the business profile/i);
+  assert.equal(executiveRecommendation(report).label, "Verification Required");
+  const actions = recommendedActions(report);
+  assert.equal(actions.some((action) => /marketplace|whois|dns|gmail\.com/i.test(action)), false);
+  assert.ok(actions.some((action) => /corroborate|identifier|identity/i.test(action)));
+});
+
+test("verified company evidence enables traceable company decision support", () => {
+  const registry = { id: "registry:item", source: "Companies Registry", provider: "company-registry", category: "Verified", status: "observed", confidence: 95, title: "Company registration", description: "Northstar Ltd is active", businessImpact: "Supports legal identity", evidenceRefs: [{ id: "registry-record-1", type: "registry_record", label: "Registry record", source: "Companies Registry" }] };
+  const finding = { id: "active-company", category: "registration", title: "Active company", statement: "The company is active in the registry.", direction: "supports_credibility", evidence: [{ id: "registry-record-1", label: "Registry record", source: "Companies Registry" }] };
+  const intelligence = buildInvestigationIntelligence({ evidenceItems: [registry], correlationSummary: emptyCorrelation, businessFindings: [finding], knowledgeGraph: emptyGraph });
+  const report = { target: "northstar.example", entity: "Northstar Ltd", reportSummary: { investigationIntelligence: intelligence, businessIntelligence: { findings: [finding] } } };
+  assert.equal(intelligence.decisionSupport.outcome, "Proceed");
+  assert.equal(intelligence.evidenceLifecycle.counts.verifiedFacts, 1);
+  assert.deepEqual(executiveDecisionReasons(report)[0].evidence, "registry-record-1");
+  assert.notEqual(executiveRecommendation(report).label, "Verification Required");
+});
+
+test("provider failure is a coverage gap and cannot independently condemn a subject", () => {
+  const failure = { id: "registry:timeout", source: "request timed out", provider: "company-registry", category: "Unavailable", status: "unavailable", confidence: 0, title: "Company Registry provider unavailable", description: "Request timed out", businessImpact: "Coverage unavailable", evidenceRefs: [{ id: "company-registry", type: "provider", label: "failed", source: "company-registry" }] };
+  const intelligence = buildInvestigationIntelligence({ evidenceItems: [failure], correlationSummary: emptyCorrelation, businessFindings: [], knowledgeGraph: emptyGraph });
+  assert.equal(intelligence.decisionSupport.outcome, "Verification Required");
+  assert.deepEqual(intelligence.evidenceLifecycle.providerFailures, [failure.id]);
+  assert.deepEqual(intelligence.evidenceLifecycle.adverseFindings, []);
+  assert.deepEqual(intelligence.risks, []);
+});
 
 function responseFor(query) {
   if (query.includes(`\"${EMAIL}\"`)) return [{ title: "Public profile", url: "https://www.facebook.com/nastikmastik", description: `Contact ${EMAIL}` }];
