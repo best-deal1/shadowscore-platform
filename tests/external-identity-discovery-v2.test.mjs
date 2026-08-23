@@ -175,6 +175,39 @@ test("stem-derived siblings receive a first follow-up before noisy recursive han
   assert.ok(graph.allCandidates.filter((candidate) => /nastik707|nnikass|thenastikedit/.test(candidate.profileUrl)).every((candidate) => candidate.status === "Candidate" && candidate.identityAttributionConfidence === null));
 });
 
+test("descendant first passes do not preempt a stronger sibling's pending second variant", async () => {
+  const queries = [];
+  const graph = await discoverExternalIdentityGraph(EMAIL, "test-key", new AbortController().signal, {
+    search: async (query) => {
+      queries.push(query);
+      if (query === `"${EMAIL}"`) return [{
+        title: "Nastikmastik identity directory",
+        url: "https://profiles.example/nastikmastik",
+        description: `${EMAIL}. Person: Anastasia Cherevko. Company: Nesti Archive Collective.`,
+      }];
+      if (query.includes('"Nesti Archive Collective"') && !query.includes("site:instagram.com")) return [{
+        title: "Nesti Archive Collective directory",
+        url: "https://profiles.example/nesti-archive",
+        description: "Nesti Archive Collective. Company: Small Leaf Studio.",
+      }];
+      if (query.includes('"Anastasia Cherevko"') && query.includes("site:instagram.com")) return [{
+        title: "Anastasia Cherevko (@important_profile) | Instagram",
+        url: "https://instagram.com/important_profile",
+        description: "Anastasia Cherevko public profile.",
+      }];
+      return [];
+    },
+    limits: { maxSearches: 10, maxIdentifiers: 12 },
+  });
+
+  const strongSecondVariant = queries.findIndex((query) => query.includes('"Anastasia Cherevko"') && query.includes("site:instagram.com"));
+  const descendantFirstVariant = queries.findIndex((query) => query.includes("Small Leaf Studio"));
+  assert.ok(strongSecondVariant >= 0, "the strong person pivot retains its important social-profile query");
+  assert.ok(descendantFirstVariant === -1 || strongSecondVariant < descendantFirstVariant, "a later descendant generation cannot claim global first-pass precedence");
+  assert.ok(graph.allCandidates.some((candidate) => candidate.profileUrl === "https://instagram.com/important_profile"));
+  assert.equal(graph.metrics.searchCount, 10);
+});
+
 test("unverified candidates stay out of verified evidence and identity social facts", async () => {
   const originalFetch = globalThis.fetch;
   const originalKey = process.env.BRAVE_SEARCH_API_KEY;
