@@ -24,6 +24,33 @@ export type ExecutiveFindingStory = {
   nextStep: string;
 };
 
+const CUSTOMER_SOURCE_NAMES: Record<string, string> = {
+  "business-profile": "Business profile records",
+  "canonical-identity-resolution": "Identity resolution records",
+  "correlation-intelligence": "Correlated source records",
+  "decision-engine": "Decision evidence",
+  "external-identity": "Public identity sources",
+  "reputation": "Public reputation records",
+};
+
+function customerSourceName(source: string) {
+  const clean = source.trim();
+  if (!clean) return "Investigation record";
+  try {
+    const url = new URL(clean);
+    return url.hostname.replace(/^www\./, "");
+  } catch {
+    return CUSTOMER_SOURCE_NAMES[clean.toLowerCase()]
+      || clean.replace(/^provider:/i, "").replace(/[_-]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+  }
+}
+
+function evidenceCitation(item: { label: string; source: string }) {
+  const label = item.label.trim() || "Supporting record";
+  const source = customerSourceName(item.source);
+  return label.toLowerCase() === source.toLowerCase() ? label : `${label} (${source})`;
+}
+
 const categoryMatchers: Array<[EvidenceCategory, RegExp]> = [
   ["Business Registration", /registr|incorpor|company|sec|legal name|filing/i],
   ["Email", /email|dmarc|spf|mail/i],
@@ -67,7 +94,11 @@ export function executiveRecommendation(report: ShadowScoreReport) {
   const narrative = report.reportSummary?.businessNarrative;
   const intelligence = report.reportSummary?.investigationIntelligence;
   const decision = report.reportSummary?.decision?.canonicalDecision || narrative?.decisionMode;
-  const label = intelligence?.decisionSupport.outcome || (decision?.decisionOutcome === "PROCEED" ? "Proceed" : decision?.decisionOutcome === "DO_NOT_PROCEED" ? "Do Not Proceed" : "Proceed with Conditions");
+  // A confirmed adverse decision remains controlling even when sparse evidence
+  // leaves narrative confidence at None.
+  const label = decision?.decisionOutcome === "DO_NOT_PROCEED"
+    ? "Do Not Proceed"
+    : intelligence?.decisionSupport.outcome || (decision?.decisionOutcome === "PROCEED" ? "Proceed" : "Proceed with Conditions");
   const summary = intelligence?.executiveInsight
     || decision?.userMeaning
     || report.reportSummary?.decision?.whatThisMeans
@@ -120,7 +151,7 @@ export function executiveFindingStories(report: ShadowScoreReport): ExecutiveFin
   return findings.map((finding) => {
     const guidance = findingGuidance(`${finding.category} ${finding.title} ${finding.statement}`, finding.direction);
     const matchingRisk = risks.find((risk) => risk.id === `risk:${finding.id}` || risk.title === finding.title);
-    const sources = Array.from(new Set(finding.evidence.map((item) => item.source).filter(Boolean)));
+    const citations = Array.from(new Set(finding.evidence.map(evidenceCitation)));
     return {
       id: finding.id,
       title: finding.title,
@@ -128,7 +159,7 @@ export function executiveFindingStories(report: ShadowScoreReport): ExecutiveFin
       observation: finding.statement,
       whyItMatters: guidance.whyItMatters,
       commercialRisk: matchingRisk?.businessImpact || guidance.commercialRisk,
-      evidence: sources.length ? sources.join(", ") : "The available investigation record",
+      evidence: citations.length ? citations.join(", ") : "The available investigation record",
       nextStep: guidance.nextStep,
     };
   });
@@ -155,7 +186,7 @@ export function executiveDecisionReasons(report: ShadowScoreReport) {
   return findings.slice(0, 5).map((finding) => ({
     id: finding.id,
     statement: finding.statement,
-    evidence: Array.from(new Set(finding.evidence.map((item) => item.source))).join(", ") || "Evidence record",
+    evidence: Array.from(new Set(finding.evidence.map(evidenceCitation))).join(", ") || "Evidence record",
   }));
 }
 

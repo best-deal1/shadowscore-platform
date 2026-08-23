@@ -26,7 +26,7 @@ test("case file cover precedes the unchanged executive decision brief", () => {
 });
 
 test("decision brief uses evidence-backed reasons and exactly three actions", () => {
-  assert.deepEqual(executiveDecisionReasons(report()), [{ id: "f1", statement: "The identity records align.", evidence: "Registry" }]);
+  assert.deepEqual(executiveDecisionReasons(report()), [{ id: "f1", statement: "The identity records align.", evidence: "Legal name (Registry)" }]);
   assert.equal(recommendedActions(report()).length, 3);
 });
 
@@ -38,10 +38,32 @@ test("important findings explain the observation, consequence, evidence, and nex
     observation: "The identity records align.",
     whyItMatters: "It helps confirm that the business receiving the commitment is the business that was reviewed.",
     commercialRisk: "The risk of contracting with or paying the wrong legal entity is reduced.",
-    evidence: "Registry",
+    evidence: "Legal name (Registry)",
     nextStep: "Match the final contract, invoice, and payment account to the verified business name before sending funds.",
   }]);
-  assert.match(executiveRecommendation(report()).explanation, /key finding.*identity records align.*supported by Registry.*risk of contracting.*Required response/s);
+  assert.match(executiveRecommendation(report()).explanation, /key finding.*identity records align.*supported by Legal name \(Registry\).*risk of contracting.*Required response/s);
+});
+
+test("confirmed adverse outcomes remain controlling when narrative confidence is None", () => {
+  const adverse = report({ reportSummary: {
+    ...report().reportSummary,
+    businessNarrative: { confidence: "None", decisionMode: { decisionOutcome: "DO_NOT_PROCEED" }, sections: [] },
+    investigationIntelligence: { decisionSupport: { outcome: "Proceed with Conditions" }, risks: [], contradictions: [], evidenceGaps: [] },
+  } });
+  assert.equal(executiveRecommendation(adverse).label, "Do Not Proceed");
+});
+
+test("evidence citations replace internal provider IDs with customer-readable records", () => {
+  const withInternalSource = report();
+  withInternalSource.reportSummary.businessIntelligence.findings[0].evidence = [{ id: "e3", providerId: "business-profile", label: "Legal name", value: "Acme Ltd", source: "business-profile", field: "legal_name" }];
+  assert.equal(executiveDecisionReasons(withInternalSource)[0].evidence, "Legal name (Business profile records)");
+  assert.equal(executiveFindingStories(withInternalSource)[0].evidence, "Legal name (Business profile records)");
+});
+
+test("investigation lifecycle metrics describe customer-visible report facts", () => {
+  const component = readFileSync(new URL("../components/report/ExecutiveIntelligenceReport.tsx", import.meta.url), "utf8");
+  for (const label of ["Evidence items recorded", "Source checks completed", "Evidence conflicts", "Evidence relationships", "Decision confidence", "Report preparation"]) assert.match(component, new RegExp(label));
+  for (const oldLabel of ["Providers executed", "Contradictions found", "Relationships discovered", "Generation time"]) assert.doesNotMatch(component, new RegExp(oldLabel));
 });
 
 test("report presents each part of the finding story in plain business language", () => {
