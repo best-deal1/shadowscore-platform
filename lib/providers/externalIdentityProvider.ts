@@ -371,7 +371,7 @@ function observedIdentifiers(hit: SearchResult, originals: Set<string>) {
 }
 async function braveSearch(query: string, apiKey: string, signal: AbortSignal, limit: number): Promise<SearchResult[]> { const url = new URL(SEARCH_ENDPOINT); url.searchParams.set("q", query); url.searchParams.set("count", String(limit)); url.searchParams.set("safesearch", "strict"); const response = await fetch(url, { signal, headers: { accept: "application/json", "x-subscription-token": apiKey } }); if (!response.ok) throw new Error(`Public search returned HTTP ${response.status}.`); const payload = await response.json() as { web?: { results?: Array<{ title?: string; url?: string; description?: string }> } }; return (payload.web?.results || []).filter((item): item is SearchResult => Boolean(item.title && item.url)).slice(0, limit); }
 
-type QueueItem = { id: string; label: string; hop: number; path: string[]; query: string; method: string; intent: SearchIntent; identifierStrength?: "discovery_lead" | "corroborated_identifier"; qualityScore: number; priority: number; clueType: EntityClueType; siblingRank?: number };
+type QueueItem = { id: string; label: string; hop: number; path: string[]; query: string; method: string; intent: SearchIntent; identifierStrength?: "discovery_lead" | "corroborated_identifier"; qualityScore: number; priority: number; clueType: EntityClueType; siblingRank?: number; requiredResultIdentifier?: string };
 type PendingIdentifier = Omit<QueueItem, "query" | "method" | "intent"> & { exactSource: boolean; order: number; derivation: DiscoveryPivot["derivation"]; adjacentLabels: string[] };
 
 function contextualQueries(pivot: PendingIdentifier, localPart: string) {
@@ -395,16 +395,25 @@ function budgetedContextualQueries(pivot: PendingIdentifier, localPart: string) 
   return socialVariant ? [variants[0], socialVariant].filter((variant, index, selected) => selected.indexOf(variant) === index) : variants.slice(0, 2);
 }
 
+function numericFreeUsernameStem(localPart: string) {
+  if (!/\d/u.test(localPart)) return undefined;
+  const stem = localPart.replace(/\d+/gu, "").replace(/[._+-]{2,}/gu, (separator) => separator[0]).replace(/^[._+-]+|[._+-]+$/gu, "");
+  return stem.length >= 4 && stem.length <= 40 && /\p{L}/u.test(stem) ? stem : undefined;
+}
+
 export async function discoverExternalIdentityGraph(email: string, apiKey: string, signal: AbortSignal, options: { limits?: Partial<IdentityDiscoveryLimits>; search?: SearchFn } = {}) {
   const limits = { ...DEFAULT_IDENTITY_DISCOVERY_LIMITS, ...options.limits };
   const search = options.search || braveSearch;
-  const normalized = email.trim().toLowerCase(); const localPart = normalized.split("@")[0]; const domain = normalized.split("@")[1];
-  const originals = new Set([normalized, normalizeIdentifier(localPart), normalizeIdentifier(domain)]);
+  const normalized = email.trim().toLowerCase(); const localPart = normalized.split("@")[0]; const domain = normalized.split("@")[1]; const usernameStem = numericFreeUsernameStem(localPart);
+  const originals = new Set([normalized, normalizeIdentifier(localPart), normalizeIdentifier(domain), ...(usernameStem ? [normalizeIdentifier(usernameStem)] : [])]);
   const seedQueue: QueueItem[] = [
     { id: normalized, label: normalized, hop: 0, path: [normalized], query: `"${normalized}"`, method: "exact_email", intent: "open_web_identity", qualityScore: 96, priority: 96, clueType: "email" },
     { id: normalized, label: normalized, hop: 0, path: [normalized], query: `"${normalized}" profile OR social`, method: "exact_email_profile", intent: "social_profile_discovery", qualityScore: 96, priority: 95, clueType: "email" },
     { id: localPart, label: localPart, hop: 0, path: [normalized], query: `"${localPart}" profile`, method: "username_open_web", intent: "open_web_identity", qualityScore: 83, priority: 84, clueType: "username" },
     { id: localPart, label: localPart, hop: 0, path: [normalized], query: `"${localPart}" site:facebook.com OR site:instagram.com OR site:linkedin.com OR site:x.com OR site:tiktok.com`, method: "social_profile", intent: "social_profile_discovery", qualityScore: 83, priority: 82, clueType: "username" },
+    ...(usernameStem ? [
+      { id: usernameStem, label: usernameStem, hop: 0, path: [normalized, usernameStem], query: `"${usernameStem}" profile`, method: "numeric_free_username_stem_open_web", intent: "open_web_identity" as const, qualityScore: 76, priority: 79, clueType: "username" as const, requiredResultIdentifier: usernameStem },
+    ] : []),
   ];
   // Seed collection cannot consume the searches reserved for high-value clues,
   // graph-neighbor expansion, and convergence attempts.
@@ -415,7 +424,7 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
   const clues = new Map<string, EntityClue>();
   const edges: IdentityDiscoveryEdge[] = []; const pendingIdentifiers: PendingIdentifier[] = [];
   const searches: IdentityDiscoverySearchDiagnostic[] = [];
-  let searchCount = 0; let identifierCount = 2; let observationOrder = 0; let seedSearchesRemaining = queue.length;
+  let searchCount = 0; let identifierCount = usernameStem ? 3 : 2; let observationOrder = 0; let seedSearchesRemaining = queue.length;
   const addClue = (clue: EntityClue) => {
     const prior = clues.get(clue.id);
     if (!prior) { clues.set(clue.id, clue); return; }
@@ -440,6 +449,7 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
   };
   addClue({ id: `email:${normalized}`, type: "email", normalizedValue: normalized, displayValue: normalized, source: "submitted-target", discoveryPath: [normalized], hop: 0, derivation: "submitted", evidenceStrength: "strong", attributionState: "verified", adjacentClueIds: [`username:${localPart}`, `domain:${domain}`], observedBy: ["submitted-target"], ...schedulingFields({ type: "email", value: normalized, derivation: "submitted" }) });
   addClue({ id: `username:${localPart}`, type: "username", normalizedValue: normalizeIdentifier(localPart), displayValue: localPart, source: "submitted-target", discoveryPath: [normalized, localPart], hop: 0, derivation: "submitted", evidenceStrength: "observed", attributionState: "discovery", adjacentClueIds: [`email:${normalized}`], observedBy: ["submitted-target"], ...schedulingFields({ type: "username", value: localPart, derivation: "submitted", originalOverlap: true }) });
+  if (usernameStem) addClue({ id: `username:${usernameStem}`, type: "username", normalizedValue: normalizeIdentifier(usernameStem), displayValue: usernameStem, source: "submitted-target", discoveryPath: [normalized, usernameStem], hop: 0, derivation: "submitted", evidenceStrength: "lead", attributionState: "discovery", adjacentClueIds: [`email:${normalized}`, `username:${localPart}`], observedBy: ["submitted-target"], ...schedulingFields({ type: "username", value: usernameStem, derivation: "submitted", originalOverlap: true }) });
   addClue({ id: `domain:${domain}`, type: "domain", normalizedValue: domain, displayValue: domain, source: "submitted-target", discoveryPath: [normalized, domain], hop: 0, derivation: "submitted", evidenceStrength: "observed", attributionState: "discovery", adjacentClueIds: [`email:${normalized}`], observedBy: ["submitted-target"], ...schedulingFields({ type: "domain", value: domain, derivation: "submitted", originalOverlap: true }) });
 
   const enqueuePending = () => {
@@ -484,6 +494,12 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
     const activeClue = clues.get(`${item.clueType}:${normalizeIdentifier(item.label)}`) || clues.get(`email:${normalized}`)!;
     const graphNeighbors = [...new Set([localPart, ...item.path, ...(activeClue.adjacentClueIds.map((id) => clues.get(id)?.displayValue).filter(Boolean) as string[])])];
     const assessedResults = results.map((hit, resultIndex) => ({ hit, resultIndex, diagnostic: admissionDiagnostic(hit, activeClue, normalized, graphNeighbors, { hop: item.hop, intent: item.intent, query: item.query }, item.priority, item.siblingRank || resultIndex + 1, limits.maxSearches - searchCount) }));
+    if (item.requiredResultIdentifier) for (const { hit, diagnostic } of assessedResults) {
+      const resultText = `${hit.title} ${hit.description || ""} ${hit.url}`;
+      if (containsIdentifier(resultText, item.requiredResultIdentifier)) continue;
+      diagnostic.admissionDecision = "rejected"; diagnostic.evidenceAdmissionDecision = "REJECTED"; diagnostic.admissionReason = "The numeric-free username stem does not appear in the result."; diagnostic.evidenceAdmissionReason = diagnostic.admissionReason;
+      diagnostic.discoveryAdmissionDecision = "REJECTED"; diagnostic.discoveryAdmissionReason = diagnostic.admissionReason; diagnostic.beamDecision = "NOT_ELIGIBLE"; diagnostic.beamDecisionReason = diagnostic.admissionReason;
+    }
     const seedDiscoveryBeam = applyDiscoveryBeam(assessedResults, (entry) => entry.resultIndex);
     for (const { resultIndex, hit, diagnostic: resultDiagnostic } of assessedResults) {
       const sourceClass = sourceClassFor(hit.url);

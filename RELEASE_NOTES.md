@@ -172,3 +172,5 @@ This file records customer-visible improvements in each ShadowScore release.
 - The homepage and public navigation now explain entity investigations across companies, people, emails, domains, sellers, and other identifiers.
 - Public pages include unique metadata, canonical URLs, social previews, breadcrumbs, structured data, and connected paths to relevant product information.
 - Private investigation, report, workspace, and account routes remain excluded from search indexing.
+
+- Email identity discovery now searches a bounded numeric-free username stem. The stem must appear in a result before aliases or handles can expand, and weak person names remain non-recursive leads.
