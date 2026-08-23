@@ -112,6 +112,28 @@ test("repeated username searches do not upgrade an unverified candidate", async 
   }
 });
 
+test("numeric-free username stem searches independently and gates identity expansion", async () => {
+  const queries = [];
+  const graph = await discoverExternalIdentityGraph(EMAIL, "test-key", new AbortController().signal, {
+    search: async (query) => {
+      queries.push(query);
+      if (query.includes('"nastikmastik"') && !query.includes("nastikmastik358")) return [
+        { title: "Nastik Mastik (@nastik)", url: "https://instagram.com/nastik", description: "nastikmastik public profile" },
+        { title: "Anastasia (@unrelated)", url: "https://instagram.com/unrelated", description: "Public profile" },
+      ];
+      return [];
+    },
+    limits: { maxSearches: 8 },
+  });
+
+  assert.ok(queries.some((query) => query.includes('"nastikmastik"') && !query.includes("nastikmastik358")));
+  assert.ok(graph.allCandidates.some((candidate) => candidate.profileUrl === "https://instagram.com/nastik"));
+  assert.equal(graph.allCandidates.some((candidate) => candidate.profileUrl === "https://instagram.com/unrelated"), false);
+  const stemSearch = graph.searches.find((search) => search.query.includes('"nastikmastik"') && !search.query.includes("nastikmastik358"));
+  assert.ok(stemSearch);
+  assert.equal(stemSearch.results.find((result) => result.url.includes("/unrelated")).discoveryAdmissionDecision, "REJECTED");
+});
+
 test("unverified candidates stay out of verified evidence and identity social facts", async () => {
   const originalFetch = globalThis.fetch;
   const originalKey = process.env.BRAVE_SEARCH_API_KEY;
