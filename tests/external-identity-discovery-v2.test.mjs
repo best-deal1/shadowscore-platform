@@ -134,6 +134,80 @@ test("numeric-free username stem searches independently and gates identity expan
   assert.equal(stemSearch.results.find((result) => result.url.includes("/unrelated")).discoveryAdmissionDecision, "REJECTED");
 });
 
+test("stem-derived siblings receive a first follow-up before noisy recursive handles exhaust the search budget", async () => {
+  const queries = [];
+  const graph = await discoverExternalIdentityGraph(EMAIL, "test-key", new AbortController().signal, {
+    search: async (query) => {
+      queries.push(query);
+      if (query === '"nastikmastik" profile') return [
+        { title: "nastik707 (@nastik707)", url: "https://instagram.com/nastik707", description: "nastikmastik profile" },
+        { title: "nnikass._ (@nnikass._)", url: "https://instagram.com/nnikass._", description: "nastikmastik profile" },
+        { title: "thenastikedit (@thenastikedit)", url: "https://instagram.com/thenastikedit", description: "nastikmastik profile" },
+        { title: "Nesti archive (@nesti_archive)", url: "https://instagram.com/nesti_archive", description: "nastikmastik profile. Handle: nesti_bridge" },
+      ];
+      if (query.includes('"nesti_archive"')) return [
+        { title: "Kuki Nesti (@kuki_nesti_ch) | Instagram", url: "https://www.instagram.com/kuki_nesti_ch/", description: "Profile relationship: nesti_archive" },
+      ];
+      if (query.includes('"kuki_nesti_ch"') && query.includes("site:instagram.com")) return [
+        { title: "Kuki Nesti (@kuki_nesti_ch) | Instagram", url: "https://www.instagram.com/kuki_nesti_ch/", description: "Public profile" },
+      ];
+      if (/nastik707|nnikass\._|thenastikedit/.test(query)) return [
+        { title: "Anastasia fan index", url: "https://profiles.example/unrelated", description: "Person: Anastasia. Handle: noisy_child_handle" },
+      ];
+      return [];
+    },
+    limits: { maxSearches: 12, maxIdentifiers: 12 },
+  });
+
+  const stemSearch = graph.searches.find((search) => search.query === '"nastikmastik" profile');
+  assert.deepEqual(stemSearch.results.map((result) => result.discoveryAdmissionDecision), ["DISCOVERY_ADMITTED", "DISCOVERY_ADMITTED", "DISCOVERY_ADMITTED", "DISCOVERY_ADMITTED"]);
+  assert.ok(stemSearch.results.at(-1).extractedDiscoveryClues.includes("nesti_bridge"));
+  const noisyChildSearch = queries.findIndex((query) => query.includes("noisy_child_handle"));
+  assert.ok(noisyChildSearch === -1 || queries.indexOf('"nesti_archive" "nastikmastik"') < noisyChildSearch);
+  const target = graph.allCandidates.find((candidate) => candidate.profileUrl === "https://www.instagram.com/kuki_nesti_ch");
+  assert.ok(target, "the evidence-bearing stem branch reaches the ground-truth public profile");
+  assert.equal(target.status, "Candidate");
+  assert.equal(target.matchLevel, "unverified_candidate");
+  assert.equal(target.identityAttributionConfidence, null);
+  assert.equal(target.confidence, 0);
+  assert.ok(graph.metrics.searchCount <= 12);
+  assert.ok(graph.clues.filter((clue) => /anastasia/i.test(clue.displayValue)).every((clue) => clue.pivotAdmissionDecision === "lead_only" && clue.queriesExecuted.length === 0));
+  assert.ok(graph.allCandidates.filter((candidate) => /nastik707|nnikass|thenastikedit/.test(candidate.profileUrl)).every((candidate) => candidate.status === "Candidate" && candidate.identityAttributionConfidence === null));
+});
+
+test("descendant first passes do not preempt a stronger sibling's pending second variant", async () => {
+  const queries = [];
+  const graph = await discoverExternalIdentityGraph(EMAIL, "test-key", new AbortController().signal, {
+    search: async (query) => {
+      queries.push(query);
+      if (query === `"${EMAIL}"`) return [{
+        title: "Nastikmastik identity directory",
+        url: "https://profiles.example/nastikmastik",
+        description: `${EMAIL}. Person: Anastasia Cherevko. Company: Nesti Archive Collective.`,
+      }];
+      if (query.includes('"Nesti Archive Collective"') && !query.includes("site:instagram.com")) return [{
+        title: "Nesti Archive Collective directory",
+        url: "https://profiles.example/nesti-archive",
+        description: "Nesti Archive Collective. Company: Small Leaf Studio.",
+      }];
+      if (query.includes('"Anastasia Cherevko"') && query.includes("site:instagram.com")) return [{
+        title: "Anastasia Cherevko (@important_profile) | Instagram",
+        url: "https://instagram.com/important_profile",
+        description: "Anastasia Cherevko public profile.",
+      }];
+      return [];
+    },
+    limits: { maxSearches: 10, maxIdentifiers: 12 },
+  });
+
+  const strongSecondVariant = queries.findIndex((query) => query.includes('"Anastasia Cherevko"') && query.includes("site:instagram.com"));
+  const descendantFirstVariant = queries.findIndex((query) => query.includes("Small Leaf Studio"));
+  assert.ok(strongSecondVariant >= 0, "the strong person pivot retains its important social-profile query");
+  assert.ok(descendantFirstVariant === -1 || strongSecondVariant < descendantFirstVariant, "a later descendant generation cannot claim global first-pass precedence");
+  assert.ok(graph.allCandidates.some((candidate) => candidate.profileUrl === "https://instagram.com/important_profile"));
+  assert.equal(graph.metrics.searchCount, 10);
+});
+
 test("unverified candidates stay out of verified evidence and identity social facts", async () => {
   const originalFetch = globalThis.fetch;
   const originalKey = process.env.BRAVE_SEARCH_API_KEY;

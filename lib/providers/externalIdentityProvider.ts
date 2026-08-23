@@ -371,7 +371,7 @@ function observedIdentifiers(hit: SearchResult, originals: Set<string>) {
 }
 async function braveSearch(query: string, apiKey: string, signal: AbortSignal, limit: number): Promise<SearchResult[]> { const url = new URL(SEARCH_ENDPOINT); url.searchParams.set("q", query); url.searchParams.set("count", String(limit)); url.searchParams.set("safesearch", "strict"); const response = await fetch(url, { signal, headers: { accept: "application/json", "x-subscription-token": apiKey } }); if (!response.ok) throw new Error(`Public search returned HTTP ${response.status}.`); const payload = await response.json() as { web?: { results?: Array<{ title?: string; url?: string; description?: string }> } }; return (payload.web?.results || []).filter((item): item is SearchResult => Boolean(item.title && item.url)).slice(0, limit); }
 
-type QueueItem = { id: string; label: string; hop: number; path: string[]; query: string; method: string; intent: SearchIntent; identifierStrength?: "discovery_lead" | "corroborated_identifier"; qualityScore: number; priority: number; clueType: EntityClueType; siblingRank?: number; requiredResultIdentifier?: string };
+type QueueItem = { id: string; label: string; hop: number; path: string[]; query: string; method: string; intent: SearchIntent; identifierStrength?: "discovery_lead" | "corroborated_identifier"; qualityScore: number; priority: number; clueType: EntityClueType; siblingRank?: number; queryPass?: number; schedulingGeneration?: number; branchPriority?: number; firstPassProducedIdentifiers?: boolean; requiredResultIdentifier?: string };
 type PendingIdentifier = Omit<QueueItem, "query" | "method" | "intent"> & { exactSource: boolean; order: number; derivation: DiscoveryPivot["derivation"]; adjacentLabels: string[] };
 
 function contextualQueries(pivot: PendingIdentifier, localPart: string) {
@@ -424,7 +424,7 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
   const clues = new Map<string, EntityClue>();
   const edges: IdentityDiscoveryEdge[] = []; const pendingIdentifiers: PendingIdentifier[] = [];
   const searches: IdentityDiscoverySearchDiagnostic[] = [];
-  let searchCount = 0; let identifierCount = usernameStem ? 3 : 2; let observationOrder = 0; let seedSearchesRemaining = queue.length;
+  let searchCount = 0; let identifierCount = usernameStem ? 3 : 2; let observationOrder = 0; let seedSearchesRemaining = queue.length; let schedulingGeneration = 0;
   const addClue = (clue: EntityClue) => {
     const prior = clues.get(clue.id);
     if (!prior) { clues.set(clue.id, clue); return; }
@@ -469,13 +469,29 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
       const clue = clues.get(`${item.clueType}:${id}`); if (clue) clue.queriesPlanned = variants.map((variant) => variant.query);
     }
     pendingIdentifiers.push(...deferred);
+    if (accepted.length === 0) return;
+    const generation = schedulingGeneration++;
     for (let variantIndex = 0; variantIndex < 2; variantIndex += 1) for (const [siblingIndex, { item, variants }] of accepted.entries()) {
-      const variant = variants[variantIndex]; if (variant) queue.push({ ...item, ...variant, siblingRank: siblingIndex + 1, priority: item.priority - variantIndex * 30 });
+      const variant = variants[variantIndex]; if (variant) queue.push({ ...item, ...variant, siblingRank: siblingIndex + 1, queryPass: variantIndex, schedulingGeneration: generation, branchPriority: item.priority, priority: item.priority - variantIndex * 30 });
     }
   };
 
   while (queue.length && searchCount < limits.maxSearches) {
-    queue.sort((a, b) => b.priority - a.priority || a.hop - b.hop);
+    // Expand each admitted sibling cohort in rounds. Descendants enter a new
+    // generation, while stronger unresolved social variants retain priority.
+    queue.sort((a, b) => {
+      if (a.schedulingGeneration !== undefined && a.schedulingGeneration === b.schedulingGeneration) {
+        return (a.queryPass || 0) - (b.queryPass || 0) || a.hop - b.hop || b.priority - a.priority;
+      }
+      const protectsImportantSecondVariant = (candidate: QueueItem, competitor: QueueItem) => candidate.queryPass === 1
+        && candidate.firstPassProducedIdentifiers === false
+        && candidate.intent === "social_profile_discovery"
+        && ["person_name", "company_name", "domain"].includes(candidate.clueType)
+        && (candidate.branchPriority || candidate.priority) > (competitor.branchPriority || competitor.priority);
+      const protectA = protectsImportantSecondVariant(a, b); const protectB = protectsImportantSecondVariant(b, a);
+      if (protectA !== protectB) return protectA ? -1 : 1;
+      return (a.queryPass || 0) - (b.queryPass || 0) || b.priority - a.priority || a.hop - b.hop || (a.schedulingGeneration || 0) - (b.schedulingGeneration || 0);
+    });
     const item = queue.shift()!;
     const expansionKey = `${item.hop}:${normalizeIdentifier(item.query)}`;
     if (searched.has(expansionKey)) continue;
@@ -600,6 +616,9 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
     }
     const identifiersAfter = new Set(edges.filter((edge) => edge.relation !== "search_result").map((edge) => edge.to));
     const newIdentifiers = [...identifiersAfter].filter((id) => !identifiersBefore.has(id));
+    if (item.queryPass === 0 && item.schedulingGeneration !== undefined) for (const queued of queue) {
+      if (queued.id === item.id && queued.schedulingGeneration === item.schedulingGeneration) queued.firstPassProducedIdentifiers = newIdentifiers.length > 0;
+    }
     const sourceClasses = [...new Set(results.map((result) => sourceClassFor(result.url)))];
     searches.push({ query: item.query, hop: item.hop, pivot: item.label, originalTargetContext: { email: normalized, localPart, domain }, resultCount: results.length, producedNewIdentifiers: newIdentifiers.length > 0, newIdentifiers, clueType: item.clueType, clueQualityScore: item.qualityScore, searchPriority: item.priority, remainingBudget: limits.maxSearches - searchCount, informationGain: newIdentifiers.length, searchIntent: item.intent, sourceClasses, extractedEntityClues: newIdentifiers, prioritizationReason: item.hop === 0 ? "Reserved seed search for a strong submitted identifier." : `Corroborated ${item.clueType} pivot. Sibling rank ${item.siblingRank || 1}.`, pivotStrength: activeClue.pivotStrength, pivotAdmissionDecision: activeClue.pivotAdmissionDecision, pivotAdmissionReason: activeClue.pivotAdmissionReason, distanceFromRoot: activeClue.distanceFromRoot, independentAnchorCount: activeClue.independentAnchorCount, results: resultDiagnostics });
     if (newIdentifiers.length === 0 && item.hop > 0) for (const queued of queue) if (queued.id === item.id) queued.priority -= 20;

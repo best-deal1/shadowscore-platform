@@ -174,3 +174,4 @@ This file records customer-visible improvements in each ShadowScore release.
 - Private investigation, report, workspace, and account routes remain excluded from search indexing.
 
 - Email identity discovery now searches a bounded numeric-free username stem. The stem must appear in a result before aliases or handles can expand, and weak person names remain non-recursive leads.
+- External identity discovery now gives each admitted stem-derived sibling cohort one follow-up round. Later descendants cannot displace an important social-profile variant from a stronger pivot that still needs evidence. Useful public identity paths remain reachable within the existing search limit, and unrelated profiles remain unverified leads.
