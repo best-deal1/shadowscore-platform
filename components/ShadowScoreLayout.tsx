@@ -19,11 +19,11 @@ import { getAuthenticatedUser, getCurrentUser, logoutUser, type ShadowScoreUser 
 import { CANONICAL_LOGO_PATH } from "../lib/brand";
 
 const primaryNav = [
-  { href: "/business-due-diligence", label: "Platform" },
-  { href: "/sample-report", label: "Sample report" },
-  { href: "/methodology", label: "Methodology" },
+  { href: "/platform", label: "Platform" },
+  { href: "/solutions", label: "Solutions" },
+  { href: "/data", label: "Data" },
+  { href: "/resources", label: "Resources" },
   { href: "/pricing", label: "Pricing" },
-  { href: "/security", label: "Security" },
 ];
 
 const workspaceNav = [
@@ -45,7 +45,7 @@ const routeLabels: Record<string, string> = {
 };
 
 const mobilePublicNav = [
-  { href: "/about", label: "About" },
+  { href: "/company", label: "Company" },
   { href: "/privacy", label: "Privacy" },
   { href: "/terms", label: "Terms" },
   { href: "/contact", label: "Contact" },
@@ -113,9 +113,10 @@ export default function ShadowScoreLayout({
       title: t.footer.product,
       links: [
         { href: "/intake", label: t.footer.start },
-        { href: "/sample-report", label: t.footer.example },
-        { href: "/pricing", label: t.nav.plans },
-        { href: "/methodology", label: t.footer.methodology },
+        { href: "/platform", label: "Platform" },
+        { href: "/solutions", label: "Solutions" },
+        { href: "/product/executive-reports", label: "Executive Reports" },
+        { href: "/product/monitoring", label: "Monitoring" },
       ],
     },
     {
