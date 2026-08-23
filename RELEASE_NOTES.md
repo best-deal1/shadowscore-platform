@@ -26,6 +26,8 @@ This file records customer-visible improvements in each ShadowScore release.
 
 ### Improved
 
+- External identity discovery now keeps weak person-name matches as unverified leads. It expands them only after a strong identifier or independent source families connect them to the submitted target. Reports separate lead quality from identity attribution.
+
 - Executive Reports now separate search observations, discovery candidates, corroborated evidence, and verified facts. Decisions remain neutral when subject evidence is unavailable, claims cite admitted evidence, and next steps stay within the submitted target and established relationships.
 
 - Discovered names and other identity clues now retain a bounded social profile search, so site-restricted profiles remain reachable without increasing each clue's search allowance.
