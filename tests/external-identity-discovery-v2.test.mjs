@@ -102,7 +102,9 @@ test("repeated username searches do not upgrade an unverified candidate", async 
   try {
     const candidates = await discoverExternalIdentityCandidates(EMAIL, "test-key", new AbortController().signal);
     assert.equal(candidates[0].matchLevel, "unverified_candidate");
-    assert.equal(candidates[0].confidence, 30);
+    assert.equal(candidates[0].confidence, 0);
+    assert.equal(candidates[0].identityAttributionConfidence, null);
+    assert.ok(candidates[0].candidateDiscoveryConfidence > 0);
     assert.match(candidates[0].matchBasis, /candidate only/i);
     assert.ok(candidates[0].methods.length >= 1);
   } finally {
@@ -214,58 +216,39 @@ test("missing search credentials is explicit technical unavailability and does n
   }
 });
 
-test("production-realistic Anastasia results require contextual expansion to discover kuki_nesti_ch", async () => {
+test("production regression preserves weak names as leads without recursively expanding them", async () => {
   const queries = [];
   const noisyFirstHop = [
     { title: "nastik707 | Instagram", url: "https://instagram.com/nastik707", description: "Public profile" },
     { title: "thenastikedit | Instagram", url: "https://instagram.com/thenastikedit", description: "Creator profile" },
     { title: "c_nastik • TikTok profile", url: "https://www.tiktok.com/@c_nastik", description: "Creator videos" },
     { title: "🧡 NASTIK | Anastasia - A Bunch of Color and Coolness", url: "https://www.tiktok.com/@nastikss/video/741111", description: "Creator profile" },
-    { title: "CMMS pharaon and more social results", url: "https://example.com/search-result", description: "Generic title boilerplate" },
-    { title: "nastik on TikTok", url: "https://www.tiktok.com/discover/nastik", description: "Discover popular videos" },
   ];
-  const search = async (query) => {
-    queries.push(query);
-    if (query.toLowerCase() === `"anastasia" "nastik"`) {
-      return [{ title: "Kuki Nesti (@kuki_nesti_ch) | Instagram", url: "https://www.instagram.com/kuki_nesti_ch/", description: "Anastasia, known as Nastik" }];
-    }
-    if (query.includes("nastikmastik358")) return noisyFirstHop;
-    return [];
-  };
-  const { discoverExternalIdentityGraph } = await import("../lib/providers/externalIdentityProvider.ts");
-  const graph = await discoverExternalIdentityGraph(EMAIL, "test-key", new AbortController().signal, { search, limits: { maxSearches: 12, maxIdentifiers: 10 } });
-  const instagram = graph.allCandidates.find((candidate) => candidate.profileUrl === "https://www.instagram.com/kuki_nesti_ch");
-  assert.ok(instagram);
-  assert.equal(instagram.matchType, "alias");
-  assert.equal(instagram.status, "Candidate");
-  assert.equal(instagram.confidence, 25);
-  assert.deepEqual(instagram.matchedIdentifiers, []);
-  assert.deepEqual(instagram.discoveryPath, [EMAIL, "NASTIK", "Anastasia", "Instagram Kuki Nesti (@kuki_nesti_ch) | Instagram"]);
-  const anastasiaNastikQuery = queries.find((query) => query.toLowerCase() === `"anastasia" "nastik"`);
-  assert.ok(anastasiaNastikQuery);
-  const rejectedNoise = ["and", "open", "cmms", "short", "video", "with", "100k", "pharaon"];
-  assert.equal(queries.some((query) => rejectedNoise.some((noise) => query === `"${noise}" "nastikmastik358"`)), false);
-  const anastasiaClue = graph.clues.find((clue) => clue.normalizedValue === "anastasia");
-  assert.equal(anastasiaClue.type, "person_name");
-  assert.ok(anastasiaClue.qualityScore >= 80);
-  assert.ok(graph.clues.some((clue) => clue.type === "username" && clue.qualityScore >= 80));
-  assert.ok(anastasiaClue.queriesExecuted.includes(anastasiaNastikQuery));
-  assert.equal(graph.clues.some((clue) => rejectedNoise.includes(clue.normalizedValue)), false);
-  assert.equal(queries.some((query, index) => index < 4 && query.includes("kuki_nesti_ch")), false);
-  assert.equal(graph.allCandidates.some((candidate) => candidate.profileUrl.includes("/discover/")), false);
-  assert.ok(graph.searches.every((entry) => entry.query && Number.isInteger(entry.hop) && entry.pivot && entry.originalTargetContext.localPart === "nastikmastik358" && typeof entry.resultCount === "number" && typeof entry.producedNewIdentifiers === "boolean" && typeof entry.clueQualityScore === "number" && typeof entry.remainingBudget === "number"));
-  assert.ok(graph.metrics.searchCount <= 12);
-  const rankedSeed = graph.searches.find((entry) => entry.results.some((result) => result.url.includes("nastikss"))).results;
-  const rich = rankedSeed.find((result) => result.url.includes("nastikss"));
-  const weakResults = rankedSeed.filter((result) => /nastik707|thenastikedit|c_nastik/.test(result.url));
-  const displaced = weakResults.find((result) => result.beamDecision === "OUTSIDE_BEAM");
-  assert.ok(displaced);
-  assert.equal(rich.canonicalDisplayName, "NASTIK");
-  assert.ok(rich.previewIdentitySignals.some((signal) => signal.type === "person_name" && signal.value === "Anastasia"));
-  assert.ok(rich.identityInformationValue > displaced.identityInformationValue);
-  assert.ok(rich.beamRank <= 3);
-  assert.equal(rich.beamDecision, "ADMITTED");
-  assert.ok(rich.beamDecisionReason);
+  const graph = await discoverExternalIdentityGraph(EMAIL, "test-key", new AbortController().signal, {
+    search: async (query) => {
+      queries.push(query);
+      if (query.includes("nastikmastik358")) return noisyFirstHop;
+      if (query.toLowerCase().includes('"anastasia"')) return Array.from({ length: 10 }, (_, index) => ({ title: `Anastasia Person ${index}`, url: `https://instagram.com/unrelated_anastasia_${index}`, description: "Unrelated profile" }));
+      return [];
+    },
+    limits: { maxSearches: 12, maxIdentifiers: 10 },
+  });
+
+  const nastik = graph.clues.find((clue) => clue.normalizedValue === "nastik");
+  const anastasia = graph.clues.find((clue) => clue.normalizedValue === "anastasia");
+  assert.ok(nastik && anastasia);
+  assert.equal(anastasia.attributionState, "discovery");
+  assert.equal(anastasia.pivotAdmissionDecision, "lead_only");
+  assert.equal(anastasia.independentAnchorCount, 0);
+  assert.ok(anastasia.distanceFromRoot > 0);
+  assert.equal(anastasia.queriesExecuted.length, 0);
+  assert.equal(queries.some((query) => query.toLowerCase().includes('"anastasia"')), false);
+  assert.equal(graph.allCandidates.some((candidate) => candidate.profileUrl.includes("unrelated_anastasia")), false);
+  assert.ok(graph.allCandidates.every((candidate) => candidate.status === "Candidate" && candidate.identityAttributionConfidence === null && candidate.confidence === 0));
+  assert.ok(graph.allCandidates.every((candidate) => candidate.matchedIdentifiers.length === 0));
+  assert.equal(graph.clues.filter((clue) => clue.attributionState !== "discovery" && clue.source !== "submitted-target").length, 0);
+  assert.ok(graph.searches.every((entry) => typeof entry.pivotStrength === "number" && entry.pivotAdmissionDecision && entry.pivotAdmissionReason && Number.isInteger(entry.distanceFromRoot) && Number.isInteger(entry.independentAnchorCount)));
+  assert.ok(graph.metrics.searchCount < 12);
 });
 
 test("social title canonicalization tolerates platform boilerplate, emoji, bullets, particles, and non-Latin names", async () => {
@@ -385,6 +368,30 @@ test("production seed discovery quarantines a structured first hop before later 
   assert.ok(graph.searches.some((search) => search.hop > 0 && search.searchIntent === "social_profile_discovery"));
   assert.ok(graph.allCandidates.some((candidate) => candidate.profileUrl === "https://instagram.com/nastik707" && candidate.status === "Candidate"));
   assert.ok(graph.clues.filter((clue) => /anastasia|thenastikedit/i.test(clue.displayValue)).every((clue) => clue.attributionState === "discovery"));
+});
+
+test("repeated person clues persist upgraded corroboration metadata before expansion", async () => {
+  const graph = await discoverExternalIdentityGraph("fieldnote77@example.com", "key", new AbortController().signal, {
+    search: async (query) => {
+      if (query.includes("fieldnote77@example.com") && query.includes("profile OR social")) return [
+        { title: "Mira Vale record", url: "https://directory.example/records/mira-vale", description: "Person: Mira Vale" },
+      ];
+      if (query === '"fieldnote77" profile') return [
+        { title: "Mira Vale interview", url: "https://journal.example/interview/mira-vale", description: "Person: Mira Vale. Handle: fieldnote77" },
+      ];
+      return [];
+    },
+    limits: { maxSearches: 8, maxIdentifiers: 8, reservedExpansionSearches: 2 },
+  });
+
+  const person = graph.clues.find((clue) => clue.type === "person_name" && clue.normalizedValue === "mira vale");
+  assert.ok(person);
+  assert.equal(person.pivotAdmissionDecision, "admitted");
+  assert.equal(person.independentAnchorCount, 1);
+  assert.ok(person.pivotStrength > 0);
+  assert.equal(person.enqueueDecision, "enqueued");
+  assert.ok(person.queriesExecuted.length > 0);
+  assert.ok(graph.searches.some((entry) => entry.pivot === "Mira Vale" && entry.pivotAdmissionDecision === "admitted" && entry.independentAnchorCount === 1 && entry.pivotStrength === person.pivotStrength));
 });
 
 test("PERSON seed discovery stays unattributed until graph-neighbor evidence", async () => {

@@ -17,6 +17,8 @@ export type EntityClue = {
   adjacentClueIds: string[]; observedBy: string[];
   qualityScore: number; searchPriority: number; enqueueDecision: "enqueued" | "rejected";
   rejectionReason?: string; queriesPlanned: string[]; queriesExecuted: string[]; queriesSkipped: string[];
+  pivotStrength: number; pivotAdmissionDecision: "admitted" | "lead_only" | "rejected";
+  pivotAdmissionReason: string; distanceFromRoot: number; independentAnchorCount: number;
 };
 export type EntityConvergence = { clueId: string; convergingPaths: string[][]; sharedIdentifiers: string[]; loopStrength: number; sourceClasses: SourceClass[] };
 export type IdentityDiscoveryEdge = {
@@ -31,6 +33,7 @@ export type ExternalIdentityCandidate = {
   sourceProvider: "Brave Search"; evidenceReference: string; discoveryPath: string[];
   supportingEvidence: Array<{ query: string; snippet: string; url: string; hop: number }>;
   discoveryScore?: number;
+  candidateDiscoveryConfidence: number; identityAttributionConfidence: number | null;
   convergingPaths?: string[][]; sharedIdentifiers?: string[]; loopStrength?: number;
 };
 export type IdentityDiscoverySearchDiagnostic = {
@@ -39,6 +42,8 @@ export type IdentityDiscoverySearchDiagnostic = {
   clueType: EntityClueType; clueQualityScore: number; searchPriority: number;
   remainingBudget: number; informationGain: number;
   searchIntent: SearchIntent; sourceClasses: SourceClass[]; extractedEntityClues: string[]; prioritizationReason: string;
+  pivotStrength: number; pivotAdmissionDecision: "admitted" | "lead_only" | "rejected";
+  pivotAdmissionReason: string; distanceFromRoot: number; independentAnchorCount: number;
   results: ResultAdmissionDiagnostic[];
 };
 export type ResultAdmissionDiagnostic = {
@@ -142,11 +147,11 @@ export async function investigateEntityClues(seed: EntityInvestigationSeed, sear
         relationships.push({ from: clue.id, to: id, relationship: pattern.relationship, discoveryPath: path });
         const prior = clues.get(id);
         if (prior) { prior.observedBy = [...new Set([...prior.observedBy, `${query}|${result.url}`])]; prior.adjacentClueIds = [...new Set([...prior.adjacentClueIds, clue.id])]; continue; }
-        const next: EntityClue = { id, type: pattern.type, normalizedValue: normalizeIdentifier(value), displayValue: value, source: result.url, discoveryPath: path, hop: clue.hop + 1, derivation: pattern.derivation, evidenceStrength: "observed", attributionState: "discovery", adjacentClueIds: [clue.id, ...clue.adjacentClueIds], observedBy: [`${query}|${result.url}`], ...schedulingFields({ type: pattern.type, value, derivation: pattern.derivation, adjacency: clue.adjacentClueIds.length + 1 }) };
+        const next: EntityClue = { id, type: pattern.type, normalizedValue: normalizeIdentifier(value), displayValue: value, source: result.url, discoveryPath: path, hop: clue.hop + 1, derivation: pattern.derivation, evidenceStrength: "observed", attributionState: "discovery", adjacentClueIds: [clue.id, ...clue.adjacentClueIds], observedBy: [`${query}|${result.url}`], ...schedulingFields({ type: pattern.type, value, derivation: pattern.derivation, adjacency: clue.adjacentClueIds.length + 1, distanceFromRoot: clue.hop + 1, independentAnchorCount: resultDiagnostic.evidenceAdmissionDecision === "EVIDENCE_ADMITTED" ? 1 : 0, strongAnchor: resultDiagnostic.evidenceAdmissionDecision === "EVIDENCE_ADMITTED" }) };
         clues.set(id, next); produced.push(value); resultDiagnostic.extractedClues.push(value); resultDiagnostic.extractedDiscoveryClues.push(value); if (resultDiagnostic.evidenceAdmissionDecision === "EVIDENCE_ADMITTED") resultDiagnostic.extractedEvidenceClues.push(value); if (next.hop < limits.maxHops && next.enqueueDecision === "enqueued") queue.push(next);
       }
     }
-    diagnostics.push({ query, hop: clue.hop, pivot: clue.displayValue, resultCount: results.length, producedNewIdentifiers: produced.length > 0, newIdentifiers: produced, clueType: clue.type, clueQualityScore: clue.qualityScore, searchPriority: clue.searchPriority, remainingBudget: limits.maxSearches - searchCount, informationGain: produced.length, searchIntent: "graph_neighbor_expansion", sourceClasses: [...new Set(results.map((result) => sourceClassFor(result.url)))], extractedEntityClues: produced, prioritizationReason: "Highest-quality typed clue with adjacent graph context.", results: resultDiagnostics });
+    diagnostics.push({ query, hop: clue.hop, pivot: clue.displayValue, resultCount: results.length, producedNewIdentifiers: produced.length > 0, newIdentifiers: produced, clueType: clue.type, clueQualityScore: clue.qualityScore, searchPriority: clue.searchPriority, remainingBudget: limits.maxSearches - searchCount, informationGain: produced.length, searchIntent: "graph_neighbor_expansion", sourceClasses: [...new Set(results.map((result) => sourceClassFor(result.url)))], extractedEntityClues: produced, prioritizationReason: "Highest-quality typed clue with adjacent graph context.", pivotStrength: clue.pivotStrength, pivotAdmissionDecision: clue.pivotAdmissionDecision, pivotAdmissionReason: clue.pivotAdmissionReason, distanceFromRoot: clue.distanceFromRoot, independentAnchorCount: clue.independentAnchorCount, results: resultDiagnostics });
   }
   const convergences = [...clues.values()].filter((clue) => clue.observedBy.length > 1).map((clue) => ({ clueId: clue.id, convergingPaths: relationships.filter((edge) => edge.to === clue.id).map((edge) => edge.discoveryPath), sharedIdentifiers: [clue.normalizedValue], loopStrength: Math.min(100, clue.observedBy.length * 20), sourceClasses: [...new Set(clue.observedBy.map((observation) => sourceClassFor(observation.split("|").at(-1) || "")))] }));
   const anyAdmissible = diagnostics.some((entry) => entry.results.some((result) => result.discoveryAdmissionDecision === "DISCOVERY_ADMITTED"));
@@ -207,12 +212,22 @@ function clueQuality(input: { type: EntityClueType; value: string; derivation: E
   const score = Math.max(0, Math.min(100, typeScore[input.type] + derivationScore[input.derivation] + specificity + Math.min(8, ((input.observations || 1) - 1) * 4) + Math.min(6, input.adjacency || 0) - (input.originalOverlap ? 8 : 0)));
   return { score, priority: Math.max(0, score - (input.originalOverlap ? 5 : 0)), decision: score >= 55 ? "enqueued" as const : "rejected" as const, rejection: score >= 55 ? undefined : "low_quality" };
 }
-function schedulingFields(input: { type: EntityClueType; value: string; derivation: EntityClue["derivation"]; observations?: number; adjacency?: number; originalOverlap?: boolean }) {
+function schedulingFields(input: { type: EntityClueType; value: string; derivation: EntityClue["derivation"]; observations?: number; adjacency?: number; originalOverlap?: boolean; distanceFromRoot?: number; independentAnchorCount?: number; strongAnchor?: boolean }) {
   const quality = clueQuality(input);
+  const distanceFromRoot = input.distanceFromRoot || 0;
+  const independentAnchorCount = input.independentAnchorCount || 0;
+  const distancePenalty = Math.max(0, distanceFromRoot - independentAnchorCount) * 12;
+  const pivotStrength = Math.max(0, Math.min(100, quality.score + independentAnchorCount * 18 + (input.strongAnchor ? 18 : 0) - distancePenalty));
+  const personNeedsAnchor = input.type === "person_name" && input.derivation !== "submitted";
+  const pivotAdmissionDecision = personNeedsAnchor && !input.strongAnchor && independentAnchorCount < 2 ? "lead_only" as const : quality.decision === "enqueued" ? "admitted" as const : "rejected" as const;
+  const pivotAdmissionReason = pivotAdmissionDecision === "lead_only"
+    ? "Person-name lead retained, but expansion requires a strong root anchor or two independent source families."
+    : pivotAdmissionDecision === "admitted" ? "Pivot has sufficient identifier quality and corroboration for bounded expansion." : `Pivot rejected: ${quality.rejection || "low quality"}.`;
+  const corroboration = { pivotStrength, pivotAdmissionDecision, pivotAdmissionReason, distanceFromRoot, independentAnchorCount };
   if (input.type === "location" || input.type === "role_title") {
-    return { qualityScore: quality.score, searchPriority: 0, enqueueDecision: "rejected" as const, rejectionReason: "context_only", queriesPlanned: [] as string[], queriesExecuted: [] as string[], queriesSkipped: [] as string[] };
+    return { qualityScore: quality.score, searchPriority: 0, enqueueDecision: "rejected" as const, rejectionReason: "context_only", queriesPlanned: [] as string[], queriesExecuted: [] as string[], queriesSkipped: [] as string[], ...corroboration, pivotAdmissionDecision: "rejected" as const, pivotAdmissionReason: "Context-only clues cannot become expansion pivots." };
   }
-  return { qualityScore: quality.score, searchPriority: quality.priority, enqueueDecision: quality.decision, rejectionReason: quality.rejection, queriesPlanned: [] as string[], queriesExecuted: [] as string[], queriesSkipped: [] as string[] };
+  return { qualityScore: quality.score, searchPriority: pivotAdmissionDecision === "admitted" ? Math.max(0, quality.priority - distancePenalty) : 0, enqueueDecision: pivotAdmissionDecision === "admitted" ? quality.decision : "rejected" as const, rejectionReason: pivotAdmissionDecision === "lead_only" ? "insufficient_corroboration" : quality.rejection, queriesPlanned: [] as string[], queriesExecuted: [] as string[], queriesSkipped: [] as string[], ...corroboration };
 }
 function socialUrlHandle(url: string) { try {
   const parsed = new URL(url); const host = parsed.hostname.toLowerCase().replace(/^www\./, "");
@@ -406,6 +421,21 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
     if (!prior) { clues.set(clue.id, clue); return; }
     prior.observedBy = [...new Set([...prior.observedBy, ...clue.observedBy])];
     prior.adjacentClueIds = [...new Set([...prior.adjacentClueIds, ...clue.adjacentClueIds])];
+    const admissionRank = { rejected: 0, lead_only: 1, admitted: 2 } as const;
+    const priorAdmissionRank = admissionRank[prior.pivotAdmissionDecision];
+    const nextAdmissionRank = admissionRank[clue.pivotAdmissionDecision];
+    if (nextAdmissionRank > priorAdmissionRank
+      || (nextAdmissionRank === priorAdmissionRank && (clue.independentAnchorCount > prior.independentAnchorCount || clue.pivotStrength > prior.pivotStrength))) {
+      prior.qualityScore = clue.qualityScore;
+      prior.searchPriority = clue.searchPriority;
+      prior.enqueueDecision = clue.enqueueDecision;
+      prior.rejectionReason = clue.rejectionReason;
+      prior.pivotStrength = clue.pivotStrength;
+      prior.pivotAdmissionDecision = clue.pivotAdmissionDecision;
+      prior.pivotAdmissionReason = clue.pivotAdmissionReason;
+      prior.distanceFromRoot = clue.distanceFromRoot;
+      prior.independentAnchorCount = clue.independentAnchorCount;
+    }
     if (!prior.discoveryPath.some((step, index) => step !== clue.discoveryPath[index])) return;
   };
   addClue({ id: `email:${normalized}`, type: "email", normalizedValue: normalized, displayValue: normalized, source: "submitted-target", discoveryPath: [normalized], hop: 0, derivation: "submitted", evidenceStrength: "strong", attributionState: "verified", adjacentClueIds: [`username:${localPart}`, `domain:${domain}`], observedBy: ["submitted-target"], ...schedulingFields({ type: "email", value: normalized, derivation: "submitted" }) });
@@ -476,7 +506,10 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
           const relation = clueType === "username" && relatedPerson ? "uses_handle_candidate" : evidenceAdmitted ? pivot.relation : "discovery_lead";
           edges.push({ from: relatedPerson ? normalizeIdentifier(relatedPerson.value) : hit.url, to: id, relation, hop: item.hop + 1, evidence: { query: item.query, url: hit.url, snippet, provider: "Brave Search", sourceClass, searchIntent: item.intent, derivation: pivot.derivation } });
           const adjacentLabels = [...new Set([item.label, ...(relatedPerson ? [relatedPerson.value] : [])])];
-          const scheduling = schedulingFields({ type: clueType, value: pivot.value, derivation: pivot.derivation, adjacency: adjacentLabels.length, originalOverlap: originals.has(id) });
+          const priorClue = clues.get(`${clueType}:${id}`);
+          const sourceFamilies = new Set([...(priorClue?.observedBy || []).map((entry) => sourceClassFor(entry.split("|").at(-1) || "")), sourceClass]);
+          const strongAnchor = resultDiagnostic.matchedAnchors.some((anchor) => anchor === "original_target" || anchor === "original_local_part");
+          const scheduling = schedulingFields({ type: clueType, value: pivot.value, derivation: pivot.derivation, adjacency: adjacentLabels.length, originalOverlap: originals.has(id), distanceFromRoot: item.hop + 1, independentAnchorCount: strongAnchor ? 1 : sourceFamilies.size >= 2 ? sourceFamilies.size : 0, strongAnchor });
           addClue({ id: `${clueType}:${id}`, type: clueType, normalizedValue: id, displayValue: pivot.value, source: hit.url, discoveryPath: path, hop: item.hop + 1, derivation: pivot.derivation, evidenceStrength: "observed", attributionState: "discovery", adjacentClueIds: [item.id], observedBy: [`${item.query}|${hit.url}`], ...scheduling });
           resultDiagnostic.extractedClues.push(pivot.value); resultDiagnostic.extractedDiscoveryClues.push(pivot.value); if (resultDiagnostic.evidenceAdmissionDecision === "EVIDENCE_ADMITTED") resultDiagnostic.extractedEvidenceClues.push(pivot.value);
           if (item.hop < limits.maxHops - 1 && scheduling.enqueueDecision === "enqueued") pendingIdentifiers.push({ id, label: pivot.value, hop: item.hop + 1, path, identifierStrength: "discovery_lead", exactSource: false, order: observationOrder++, derivation: pivot.derivation, clueType, adjacentLabels, qualityScore: scheduling.qualityScore, priority: scheduling.searchPriority + (pivot.derivation === "explicit_handle" ? 14 : clueType === "person_name" ? 8 : 0) });
@@ -496,8 +529,13 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
       const contextOverlap = Number(containsIdentifier(snippet, localPart)) + Number(containsIdentifier(snippet, item.label));
       const profileQuality = socialUrlHandle(profileUrl) ? 2 : 1;
       const pathRelevance = Math.max(0, 3 - item.hop);
-      const discoveryScore = (exact ? 100 : 0) + contextOverlap * 12 + profileQuality * 5 + pathRelevance * 3;
-      const confidence = Math.max(prior?.confidence || 0, exact ? 75 : item.hop > 0 ? 25 : 30);
+      const distancePenalty = item.hop * 12;
+      const discoveryScore = Math.max(0, (exact ? 100 : 0) + contextOverlap * 12 + profileQuality * 5 + pathRelevance * 3 - distancePenalty);
+      const candidateDiscoveryConfidence = Math.max(prior?.candidateDiscoveryConfidence || 0, Math.min(100, discoveryScore));
+      const identityAttributionConfidence = exact ? 75 : null;
+      // `confidence` is retained for report compatibility, but now represents
+      // attribution only. Unverified leads have no percentage attribution.
+      const confidence = Math.max(prior?.confidence || 0, identityAttributionConfidence || 0);
       const selectedCurrent = currentExact || !prior || (prior.matchLevel !== "exact_match" && confidence > prior.confidence);
       const path = [...item.path, `${platform} ${hit.title}`];
       candidates.set(profileUrl, {
@@ -514,6 +552,8 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
         discoveryPath: selectedCurrent ? path : prior!.discoveryPath,
         supportingEvidence,
         discoveryScore: Math.max(prior?.discoveryScore || 0, discoveryScore),
+        candidateDiscoveryConfidence,
+        identityAttributionConfidence: prior?.identityAttributionConfidence ?? identityAttributionConfidence,
         matchBasis: exact
           ? "The exact submitted email appears in public search evidence for this profile. The result remains a candidate until an independent source corroborates it."
           : item.hop
@@ -532,7 +572,10 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
         const clueType = pivot.type || "unknown"; const clueId = `${clueType}:${id}`;
         const adjacentLabels = [...new Set([item.label, ...item.path.filter((step) => !/^https?:/i.test(step)).map((step) => step.replace(/^.*“|”$/g, ""))])].slice(-4);
         const cluePath = clueType === "person_name" ? [...item.path, ...precedingPersonClues, pivot.value] : [...path, pivot.value];
-        const scheduling = schedulingFields({ type: clueType, value: pivot.value, derivation: pivot.derivation, adjacency: adjacentLabels.length, originalOverlap: originals.has(id) });
+        const priorClue = clues.get(clueId);
+        const sourceFamilies = new Set([...(priorClue?.observedBy || []).map((entry) => sourceClassFor(entry.split("|").at(-1) || "")), sourceClass]);
+        const strongAnchor = currentExact || resultDiagnostic.matchedAnchors.some((anchor) => anchor === "original_target" || anchor === "original_local_part");
+        const scheduling = schedulingFields({ type: clueType, value: pivot.value, derivation: pivot.derivation, adjacency: adjacentLabels.length, originalOverlap: originals.has(id), distanceFromRoot: item.hop + 1, independentAnchorCount: strongAnchor ? 1 : sourceFamilies.size >= 2 ? sourceFamilies.size : 0, strongAnchor });
         addClue({ id: clueId, type: clueType, normalizedValue: id, displayValue: pivot.value, source: profileUrl, discoveryPath: cluePath, hop: item.hop + 1, derivation: pivot.derivation, evidenceStrength: admittedRelation === "corroborated_identifier" ? "strong" : "observed", attributionState: admittedRelation === "corroborated_identifier" ? "corroborated" : "discovery", adjacentClueIds: [item.id], observedBy: [`${item.query}|${profileUrl}`], ...scheduling });
         resultDiagnostic.extractedClues.push(pivot.value); resultDiagnostic.extractedDiscoveryClues.push(pivot.value); if (resultDiagnostic.evidenceAdmissionDecision === "EVIDENCE_ADMITTED") resultDiagnostic.extractedEvidenceClues.push(pivot.value);
         if (scheduling.enqueueDecision === "enqueued") pendingIdentifiers.push({ id, label: pivot.value, hop: item.hop + 1, path: cluePath, identifierStrength: admittedRelation, exactSource: exact, order: observationOrder++, derivation: pivot.derivation, clueType, adjacentLabels: [...adjacentLabels, ...precedingPersonClues], qualityScore: scheduling.qualityScore, priority: scheduling.searchPriority });
@@ -542,7 +585,7 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
     const identifiersAfter = new Set(edges.filter((edge) => edge.relation !== "search_result").map((edge) => edge.to));
     const newIdentifiers = [...identifiersAfter].filter((id) => !identifiersBefore.has(id));
     const sourceClasses = [...new Set(results.map((result) => sourceClassFor(result.url)))];
-    searches.push({ query: item.query, hop: item.hop, pivot: item.label, originalTargetContext: { email: normalized, localPart, domain }, resultCount: results.length, producedNewIdentifiers: newIdentifiers.length > 0, newIdentifiers, clueType: item.clueType, clueQualityScore: item.qualityScore, searchPriority: item.priority, remainingBudget: limits.maxSearches - searchCount, informationGain: newIdentifiers.length, searchIntent: item.intent, sourceClasses, extractedEntityClues: newIdentifiers, prioritizationReason: item.hop === 0 ? "Reserved seed search for a strong submitted identifier." : `High-quality ${item.clueType} clue with graph-neighbor relevance. Sibling rank ${item.siblingRank || 1}.`, results: resultDiagnostics });
+    searches.push({ query: item.query, hop: item.hop, pivot: item.label, originalTargetContext: { email: normalized, localPart, domain }, resultCount: results.length, producedNewIdentifiers: newIdentifiers.length > 0, newIdentifiers, clueType: item.clueType, clueQualityScore: item.qualityScore, searchPriority: item.priority, remainingBudget: limits.maxSearches - searchCount, informationGain: newIdentifiers.length, searchIntent: item.intent, sourceClasses, extractedEntityClues: newIdentifiers, prioritizationReason: item.hop === 0 ? "Reserved seed search for a strong submitted identifier." : `Corroborated ${item.clueType} pivot. Sibling rank ${item.siblingRank || 1}.`, pivotStrength: activeClue.pivotStrength, pivotAdmissionDecision: activeClue.pivotAdmissionDecision, pivotAdmissionReason: activeClue.pivotAdmissionReason, distanceFromRoot: activeClue.distanceFromRoot, independentAnchorCount: activeClue.independentAnchorCount, results: resultDiagnostics });
     if (newIdentifiers.length === 0 && item.hop > 0) for (const queued of queue) if (queued.id === item.id) queued.priority -= 20;
     if (item.hop === 0) {
       seedSearchesRemaining -= 1;
@@ -565,4 +608,4 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
 export async function discoverExternalIdentityCandidates(email: string, apiKey: string, signal: AbortSignal) { return (await discoverExternalIdentityGraph(email, apiKey, signal)).candidates; }
 
 export class EmailIntelligenceProvider extends BaseProvider { readonly id = "email-intelligence"; readonly name = "Email Intelligence"; readonly version = "1.1.0"; readonly category = "business_profile" as const; protected async collect(context: ProviderExecutionContext): Promise<Pick<ProviderResult, "findings" | "evidence" | "metadata">> { const email = emailFromContext(context); if (!email) throw new Error("Email intelligence requires an email target."); const domain = email.split("@")[1]; const publicMailbox = isPublicMailboxDomain(domain); return { findings: [], evidence: [{ id: "email-target-classification", type: "placeholder", label: "Mailbox classification", value: publicMailbox ? "Public mailbox provider" : "Corporate/custom domain candidate", source: "submitted-target", investigationId: context.investigationId || context.intakeId, canonicalTarget: email, providerName: this.name, collectedAt: new Date().toISOString() }], metadata: { lookupPerformed: true, submittedEmail: email, emailDomain: domain, publicMailbox, evidenceIndependence: "submitted_input_only" } }; } }
-export class ExternalIdentityProvider extends BaseProvider { readonly id = "external-identity"; readonly name = "External Identity Discovery"; readonly version = "4.0.0"; readonly category = "business_profile" as const; failureReason(error: unknown): ProviderFailureReason { if (error instanceof Error && /BRAVE_SEARCH_API_KEY|credential|not configured|provider unavailable/i.test(error.message)) return "Unavailable"; return super.failureReason(error); } protected async collect(context: ProviderExecutionContext): Promise<Pick<ProviderResult, "findings" | "evidence" | "metadata">> { const email = emailFromContext(context); if (!email) throw new Error("External identity discovery requires an email target."); const apiKey = process.env.BRAVE_SEARCH_API_KEY; if (!apiKey) throw new Error("External identity provider unavailable: BRAVE_SEARCH_API_KEY is not configured."); const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 8_000); try { const graph = await discoverExternalIdentityGraph(email, apiKey, controller.signal); const evidence: ProviderEvidence[] = graph.candidates.map((candidate, index) => ({ id: `external-identity-${index + 1}`, type: "search_result", label: candidate.matchLevel === "unverified_candidate" ? "Potential public identity candidate" : "Public identity exact-email match", value: `${candidate.platform} | profile ${candidate.profileUrl} | status ${candidate.status} | matched ${candidate.matchedIdentifiers.join(", ")} | confidence ${candidate.confidence}% | path ${candidate.discoveryPath.join(" -> ")} | ${candidate.matchBasis}`, source: candidate.evidenceUrl, investigationId: context.investigationId || context.intakeId, canonicalTarget: email, providerName: this.name, collectedAt: new Date().toISOString() })); return { findings: [], evidence, metadata: { lookupPerformed: true, submittedEmail: email, candidateCount: graph.candidates.length, externalIdentityCandidates: graph.candidates, entityClues: graph.clues, entityConvergences: graph.convergences, identityDiscoveryEdges: graph.edges, identityDiscoverySearches: graph.searches, identityDiscoveryMetrics: graph.metrics, evidencePolicy: "Submitted input is not independent corroboration. Discovery leads cannot establish identity facts. Candidate status requires external evidence. Verification requires independent primary evidence." } }; } finally { clearTimeout(timeout); } } }
+export class ExternalIdentityProvider extends BaseProvider { readonly id = "external-identity"; readonly name = "External Identity Discovery"; readonly version = "4.1.0"; readonly category = "business_profile" as const; failureReason(error: unknown): ProviderFailureReason { if (error instanceof Error && /BRAVE_SEARCH_API_KEY|credential|not configured|provider unavailable/i.test(error.message)) return "Unavailable"; return super.failureReason(error); } protected async collect(context: ProviderExecutionContext): Promise<Pick<ProviderResult, "findings" | "evidence" | "metadata">> { const email = emailFromContext(context); if (!email) throw new Error("External identity discovery requires an email target."); const apiKey = process.env.BRAVE_SEARCH_API_KEY; if (!apiKey) throw new Error("External identity provider unavailable: BRAVE_SEARCH_API_KEY is not configured."); const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 8_000); try { const graph = await discoverExternalIdentityGraph(email, apiKey, controller.signal); const evidence: ProviderEvidence[] = graph.candidates.map((candidate, index) => ({ id: `external-identity-${index + 1}`, type: "search_result", label: candidate.matchLevel === "unverified_candidate" ? "Potential public identity candidate" : "Public identity exact-email match", value: `${candidate.platform} | profile ${candidate.profileUrl} | status ${candidate.status} | matched ${candidate.matchedIdentifiers.join(", ")} | identity attribution ${candidate.identityAttributionConfidence === null ? "Unverified" : `${candidate.identityAttributionConfidence}%`} | candidate score ${candidate.candidateDiscoveryConfidence}% | path ${candidate.discoveryPath.join(" -> ")} | ${candidate.matchBasis}`, source: candidate.evidenceUrl, investigationId: context.investigationId || context.intakeId, canonicalTarget: email, providerName: this.name, collectedAt: new Date().toISOString() })); return { findings: [], evidence, metadata: { lookupPerformed: true, submittedEmail: email, candidateCount: graph.candidates.length, externalIdentityCandidates: graph.candidates, entityClues: graph.clues, entityConvergences: graph.convergences, identityDiscoveryEdges: graph.edges, identityDiscoverySearches: graph.searches, identityDiscoveryMetrics: graph.metrics, evidencePolicy: "Submitted input is not independent corroboration. Discovery leads cannot establish identity facts. Candidate status requires external evidence. Verification requires independent primary evidence." } }; } finally { clearTimeout(timeout); } } }
