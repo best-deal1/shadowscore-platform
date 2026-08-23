@@ -116,6 +116,10 @@ test("saved identity candidates use backward-compatible rendering fallbacks", ()
   const component = readFileSync(new URL("../components/report/ExecutiveIntelligenceReport.tsx", import.meta.url), "utf8");
   assert.match(component, /candidate\.discoveryPath \|\| \[candidate\.profileUrl\]/);
   assert.match(component, /candidate\.supportingEvidence\?\.length \|\| 0/);
+  assert.match(component, /candidate\.identityAttributionConfidence === null \? "Unverified"/);
+  assert.match(component, /candidate\.identityAttributionConfidence \?\? candidate\.confidence/);
+  assert.match(component, /candidate\.candidateDiscoveryConfidence/);
+  assert.doesNotMatch(component, />Confidence<\/dt><dd className="mt-1">\{candidate\.confidence\}%/);
 });
 
 test("discovery diagnostics are restricted to administrator reports", () => {

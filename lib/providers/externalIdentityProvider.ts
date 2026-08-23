@@ -421,6 +421,21 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
     if (!prior) { clues.set(clue.id, clue); return; }
     prior.observedBy = [...new Set([...prior.observedBy, ...clue.observedBy])];
     prior.adjacentClueIds = [...new Set([...prior.adjacentClueIds, ...clue.adjacentClueIds])];
+    const admissionRank = { rejected: 0, lead_only: 1, admitted: 2 } as const;
+    const priorAdmissionRank = admissionRank[prior.pivotAdmissionDecision];
+    const nextAdmissionRank = admissionRank[clue.pivotAdmissionDecision];
+    if (nextAdmissionRank > priorAdmissionRank
+      || (nextAdmissionRank === priorAdmissionRank && (clue.independentAnchorCount > prior.independentAnchorCount || clue.pivotStrength > prior.pivotStrength))) {
+      prior.qualityScore = clue.qualityScore;
+      prior.searchPriority = clue.searchPriority;
+      prior.enqueueDecision = clue.enqueueDecision;
+      prior.rejectionReason = clue.rejectionReason;
+      prior.pivotStrength = clue.pivotStrength;
+      prior.pivotAdmissionDecision = clue.pivotAdmissionDecision;
+      prior.pivotAdmissionReason = clue.pivotAdmissionReason;
+      prior.distanceFromRoot = clue.distanceFromRoot;
+      prior.independentAnchorCount = clue.independentAnchorCount;
+    }
     if (!prior.discoveryPath.some((step, index) => step !== clue.discoveryPath[index])) return;
   };
   addClue({ id: `email:${normalized}`, type: "email", normalizedValue: normalized, displayValue: normalized, source: "submitted-target", discoveryPath: [normalized], hop: 0, derivation: "submitted", evidenceStrength: "strong", attributionState: "verified", adjacentClueIds: [`username:${localPart}`, `domain:${domain}`], observedBy: ["submitted-target"], ...schedulingFields({ type: "email", value: normalized, derivation: "submitted" }) });

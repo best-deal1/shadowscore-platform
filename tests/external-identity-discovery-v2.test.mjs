@@ -370,6 +370,30 @@ test("production seed discovery quarantines a structured first hop before later 
   assert.ok(graph.clues.filter((clue) => /anastasia|thenastikedit/i.test(clue.displayValue)).every((clue) => clue.attributionState === "discovery"));
 });
 
+test("repeated person clues persist upgraded corroboration metadata before expansion", async () => {
+  const graph = await discoverExternalIdentityGraph("fieldnote77@example.com", "key", new AbortController().signal, {
+    search: async (query) => {
+      if (query.includes("fieldnote77@example.com") && query.includes("profile OR social")) return [
+        { title: "Mira Vale record", url: "https://directory.example/records/mira-vale", description: "Person: Mira Vale" },
+      ];
+      if (query === '"fieldnote77" profile') return [
+        { title: "Mira Vale interview", url: "https://journal.example/interview/mira-vale", description: "Person: Mira Vale. Handle: fieldnote77" },
+      ];
+      return [];
+    },
+    limits: { maxSearches: 8, maxIdentifiers: 8, reservedExpansionSearches: 2 },
+  });
+
+  const person = graph.clues.find((clue) => clue.type === "person_name" && clue.normalizedValue === "mira vale");
+  assert.ok(person);
+  assert.equal(person.pivotAdmissionDecision, "admitted");
+  assert.equal(person.independentAnchorCount, 1);
+  assert.ok(person.pivotStrength > 0);
+  assert.equal(person.enqueueDecision, "enqueued");
+  assert.ok(person.queriesExecuted.length > 0);
+  assert.ok(graph.searches.some((entry) => entry.pivot === "Mira Vale" && entry.pivotAdmissionDecision === "admitted" && entry.independentAnchorCount === 1 && entry.pivotStrength === person.pivotStrength));
+});
+
 test("PERSON seed discovery stays unattributed until graph-neighbor evidence", async () => {
   const graph = await investigateEntityClues({ type: "username", value: "signal_1042" }, async (_query, clue) => {
     if (clue.displayValue === "signal_1042") return [

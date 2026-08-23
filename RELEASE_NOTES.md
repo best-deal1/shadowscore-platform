@@ -164,3 +164,4 @@ This file records customer-visible improvements in each ShadowScore release.
 # 2026-08-23
 
 - Executive Reports preserve confirmed Do Not Proceed decisions, cite evidence with readable source names, and describe investigation metrics in customer-facing language.
+- Executive Reports now label unverified public identity attribution clearly and show candidate discovery scores separately. Repeated identity clues retain stronger corroboration metadata when independent sources upgrade their search eligibility.
