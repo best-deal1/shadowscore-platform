@@ -165,3 +165,10 @@ This file records customer-visible improvements in each ShadowScore release.
 
 - Executive Reports preserve confirmed Do Not Proceed decisions, cite evidence with readable source names, and describe investigation metrics in customer-facing language.
 - Executive Reports now label unverified public identity attribution clearly and show candidate discovery scores separately. Repeated identity clues retain stronger corroboration metadata when independent sources upgrade their search eligibility.
+
+## Public site architecture and SEO V1
+
+- ShadowScore now presents a complete public information architecture for the platform, solutions, data, product capabilities, resources, company, security, and contact paths.
+- The homepage and public navigation now explain entity investigations across companies, people, emails, domains, sellers, and other identifiers.
+- Public pages include unique metadata, canonical URLs, social previews, breadcrumbs, structured data, and connected paths to relevant product information.
+- Private investigation, report, workspace, and account routes remain excluded from search indexing.
