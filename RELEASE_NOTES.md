@@ -2,6 +2,8 @@
 
 ## Live intelligence collection and orchestration
 
+- Executive Reports now preserve adverse recommendations when narrative confidence is unavailable. Public identity evidence uses readable source citations, and investigation metrics use customer-facing labels.
+
 - The customer journey now keeps the Free Quick Check separate from the $9.90 Business Investigation. Intake preserves the Quick Check, confirms the paid scope and customer, and sets the Executive Report expectation after payment and processing.
 
 - Quick Check now queries the production-safe provider inventory for domain registration, DNS, TLS, threat reputation, website identity, payment, policy, and contact evidence. It reports all ten decision categories, keeps missing categories marked as not verified, and limits the score when source coverage or identity evidence is weak.

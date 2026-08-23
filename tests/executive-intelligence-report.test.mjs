@@ -20,7 +20,7 @@ test("executive report renders the decision brief and report sections", () => {
 
 test("case file cover precedes the unchanged executive decision brief", () => {
   const component = readFileSync(new URL("../components/report/ExecutiveIntelligenceReport.tsx", import.meta.url), "utf8");
-  for (const field of ["Case Reference", "Investigation Date", "Business Under Review", "Investigation Type", "Investigation Status", "Evidence Sources Reviewed", "Evidence Items Collected", "Confidence", "Decision", "Case Objective", "Investigation Scope", "Investigation Methodology"]) assert.match(component, new RegExp(field));
+  for (const field of ["Case Reference", "Investigation Date", "Business Under Review", "Investigation Type", "Investigation Status", "Evidence Sources Reviewed", "Evidence Items Reviewed", "Confidence", "Decision", "Case Objective", "Investigation Scope", "Investigation Methodology"]) assert.match(component, new RegExp(field));
   assert.ok(component.indexOf('id="case-summary"') < component.indexOf('id="decision-brief"'));
   assert.doesNotMatch(component, /\bAI\b|artificial intelligence/i);
 });
@@ -61,6 +61,17 @@ test("executive summary and recommendation always have fallbacks", () => {
   assert.equal(recommendedActions(report({ reportSummary: undefined })).length, 3);
 });
 
+test("an adverse narrative outcome remains adverse when confidence is None", () => {
+  const adverse = report({ reportSummary: { message: "An adverse outcome was recorded.", businessNarrative: { confidence: "None", decisionMode: { proceed: "NO" }, sections: [] } } });
+  assert.equal(executiveRecommendation(adverse).label, "Do Not Proceed");
+});
+
+test("lifecycle metrics use the customer-facing report contract", () => {
+  const component = readFileSync(new URL("../components/report/ExecutiveIntelligenceReport.tsx", import.meta.url), "utf8");
+  for (const label of ["Evidence reviewed", "Sources reviewed", "Report prepared in"]) assert.match(component, new RegExp(label));
+  for (const internalLabel of ["Evidence collected", "Providers executed", "Generation time"]) assert.doesNotMatch(component, new RegExp(internalLabel));
+});
+
 test("evidence is grouped by business category and deduplicated", () => {
   const groups = groupExecutiveEvidence(report());
   assert.equal(groups.length, 1);
@@ -91,7 +102,13 @@ test("personal email actions focus on identity while corporate email actions ret
 test("saved identity candidates use backward-compatible rendering fallbacks", () => {
   const component = readFileSync(new URL("../components/report/ExecutiveIntelligenceReport.tsx", import.meta.url), "utf8");
   assert.match(component, /candidate\.discoveryPath \|\| \[candidate\.profileUrl\]/);
-  assert.match(component, /candidate\.supportingEvidence\?\.length \|\| 0/);
+  assert.match(component, /candidate\.supportingEvidence\?\.length/);
+});
+
+test("identity candidate evidence uses customer-readable citations", () => {
+  const component = readFileSync(new URL("../components/report/ExecutiveIntelligenceReport.tsx", import.meta.url), "utf8");
+  assert.match(component, /Evidence \{index \+ 1\}: \{evidenceHost\(item\.url\)\}/);
+  assert.match(component, /candidate\.sourceProvider\} result on/);
 });
 
 test("discovery diagnostics are restricted to administrator reports", () => {

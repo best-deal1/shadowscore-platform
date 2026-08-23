@@ -67,7 +67,8 @@ export function executiveRecommendation(report: ShadowScoreReport) {
   const narrative = report.reportSummary?.businessNarrative;
   const intelligence = report.reportSummary?.investigationIntelligence;
   const decision = report.reportSummary?.decision?.canonicalDecision || narrative?.decisionMode;
-  const label = intelligence?.decisionSupport.outcome || (decision?.decisionOutcome === "PROCEED" ? "Proceed" : decision?.decisionOutcome === "DO_NOT_PROCEED" ? "Do Not Proceed" : "Proceed with Conditions");
+  const narrativeOutcome = decision && "proceed" in decision ? decision.proceed : undefined;
+  const label = intelligence?.decisionSupport.outcome || (decision?.decisionOutcome === "PROCEED" || narrativeOutcome === "YES" ? "Proceed" : decision?.decisionOutcome === "DO_NOT_PROCEED" || narrativeOutcome === "NO" ? "Do Not Proceed" : "Proceed with Conditions");
   const summary = intelligence?.executiveInsight
     || decision?.userMeaning
     || report.reportSummary?.decision?.whatThisMeans
