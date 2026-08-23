@@ -11,6 +11,10 @@ function isSearchResultEvidence(item: EvidenceItem) {
   return item.evidenceRefs.some((ref) => ref.type === "search_result");
 }
 
+function isDiscoveryCandidate(item: EvidenceItem) {
+  return isSearchResultEvidence(item) || /candidate|lead/i.test(`${item.title} ${item.description}`);
+}
+
 function gapRecommendation(item: EvidenceItem) {
   const text = `${item.title} ${item.description} ${item.provider}`.toLowerCase();
   if (/owner|registrant|company|registr/.test(text)) return "Obtain a current registry extract and beneficial ownership record, then match both to the contracting entity.";
@@ -38,7 +42,10 @@ function isTechnicalCollectionFailure(item: EvidenceItem) {
 export function buildInvestigationIntelligence(input: InvestigationIntelligenceInput): InvestigationIntelligence {
   const { evidenceItems, correlationSummary, businessFindings, knowledgeGraph } = input;
   const factualEvidenceItems = evidenceItems.filter((item) => !isSearchResultEvidence(item));
-  const contradictions = correlationSummary.contradictions.map((item) => ({
+  const technicalFailures = factualEvidenceItems.filter(isTechnicalCollectionFailure);
+  const verifiedSubjectEvidence = factualEvidenceItems.filter((item) => item.category === "Verified" && !isTechnicalCollectionFailure(item));
+  const verifiedReferenceIds = new Set(verifiedSubjectEvidence.flatMap((item) => [item.id, ...item.evidenceRefs.map((ref) => ref.id)]));
+  const contradictions = correlationSummary.contradictions.filter((item) => item.evidence.length >= 2 && item.evidence.every((evidence) => verifiedReferenceIds.has(evidence.evidenceId))).map((item) => ({
     id: item.id,
     title: item.title,
     severity: item.severity,
@@ -52,12 +59,14 @@ export function buildInvestigationIntelligence(input: InvestigationIntelligenceI
     ...knowledgeGraph.relationships.map((item) => ({ id: item.id, type: item.type, from: knowledgeGraph.entities.find((entity) => entity.id === item.from)?.label || item.from, to: knowledgeGraph.entities.find((entity) => entity.id === item.to)?.label || item.to, confidence: 75, evidenceIds: item.sourceScanIds, explanation: item.context || `Observed ${item.type.toLowerCase().replace(/_/g, " ")} relationship.` })),
   ].filter((item, index, all) => all.findIndex((candidate) => candidate.id === item.id) === index);
 
-  const technicalFailures = factualEvidenceItems.filter(isTechnicalCollectionFailure);
   const negativeEvidence = factualEvidenceItems.filter((item) => item.category === "Negative" && !isTechnicalCollectionFailure(item));
+  const supportedFindings = businessFindings.filter((finding) => finding.evidence.some((evidence) => verifiedReferenceIds.has(evidence.id)));
   const risks = [
     ...negativeEvidence.map((item) => ({ id: `risk:${item.id}`, title: item.title, severity: (item.confidence >= 95 ? "critical" : item.confidence >= 85 ? "high" : "medium") as "critical" | "high" | "medium", whyDetected: item.description, supportingEvidence: item.evidenceRefs.map((evidence) => ({ id: evidence.id, label: evidence.label, source: evidence.source })), businessImpact: item.businessImpact })),
-    ...businessFindings.filter((item) => item.direction !== "supports_credibility").map((item) => ({ id: `risk:${item.id}`, title: item.title, severity: (item.direction === "weakens_credibility" ? "high" : "medium") as "high" | "medium", whyDetected: item.statement, supportingEvidence: item.evidence.map((evidence) => ({ id: evidence.id, label: evidence.label, source: evidence.source })), businessImpact: item.direction === "weakens_credibility" ? "The inconsistency raises the chance of contracting with, paying, or relying on the wrong business entity." : "The finding requires resolution before the related commercial control can be treated as reliable." })),
+    ...supportedFindings.filter((item) => item.direction !== "supports_credibility").map((item) => ({ id: `risk:${item.id}`, title: item.title, severity: (item.direction === "weakens_credibility" ? "high" : "medium") as "high" | "medium", whyDetected: item.statement, supportingEvidence: item.evidence.filter((evidence) => verifiedReferenceIds.has(evidence.id)).map((evidence) => ({ id: evidence.id, label: evidence.label, source: evidence.source })), businessImpact: item.direction === "weakens_credibility" ? "The inconsistency raises the chance of contracting with, paying, or relying on the wrong business entity." : "The finding requires resolution before the related commercial control can be treated as reliable." })),
   ];
+
+  const corroboratedEvidence = verifiedSubjectEvidence.filter((item) => item.evidenceRefs.length > 1 || relationships.some((relationship) => relationship.evidenceIds.some((id) => id === item.id || item.evidenceRefs.some((ref) => ref.id === id))));
 
   const gaps = factualEvidenceItems.filter((item) => ["Missing", "Unavailable", "Not Checked"].includes(item.category) || isTechnicalCollectionFailure(item));
   const evidenceGaps = gaps.map((item) => ({ id: `gap:${item.id}`, missingEvidence: item.title, recommendation: gapRecommendation(item), confidenceImpact: `Resolving this gap would improve ${/owner|company|registr|identity/i.test(item.title) ? "identity" : /domain|dns|ssl|website/i.test(item.title) ? "relationship" : "decision"} confidence.` }));
@@ -75,9 +84,24 @@ export function buildInvestigationIntelligence(input: InvestigationIntelligenceI
   const critical = risks.some((item) => item.severity === "critical") || contradictions.some((item) => item.severity === "critical");
   const high = risks.some((item) => item.severity === "high") || contradictions.some((item) => item.severity === "high");
   const hasTechnicalFailure = technicalFailures.length > 0;
-  const outcome = critical ? "Do Not Proceed" : high || hasTechnicalFailure ? "Further Investigation Required" : gaps.length || risks.length ? "Proceed with Conditions" : "Proceed";
-  const executiveInsight = critical ? "The investigation identified evidence conflicts or adverse findings that create material commercial risk. Current evidence supports stopping the transaction until the findings are resolved." : high ? "The business shows some credible attributes, but material inconsistencies increase commercial risk. Resolve the identified conflicts before making a commitment." : hasTechnicalFailure ? "Evidence collection was incomplete because one or more providers failed or were unavailable. Further investigation is required before making a commitment." : gaps.length ? "The available evidence supports the business profile, but specific verification gaps limit confidence. Proceed only with the listed controls and evidence requests." : "The investigation found no significant warning signals. Current evidence supports proceeding with normal commercial precautions.";
-  const justification = critical ? "Critical evidence conflicts or adverse findings can change the identity or risk assessment." : high ? "Material inconsistencies remain unresolved and could affect the counterparty decision." : hasTechnicalFailure ? "Provider availability limited the evidence collected. The technical failure is not adverse business evidence." : gaps.length ? "No blocking signal was identified, but missing verification requires targeted commercial controls." : "Independent evidence is consistent and no material warning signal was identified.";
+  const hasAdmittedEvidence = verifiedSubjectEvidence.length > 0 || corroboratedEvidence.length > 0 || negativeEvidence.length > 0;
+  const outcome = !hasAdmittedEvidence ? "Verification Required" : critical ? "Do Not Proceed" : high || hasTechnicalFailure ? "Further Investigation Required" : gaps.length || risks.length ? "Proceed with Conditions" : "Proceed";
+  const executiveInsight = !hasAdmittedEvidence ? "The subject could not be assessed from corroborated or verified evidence. Discovery results remain unresolved leads and require identity-specific corroboration." : critical ? "The investigation identified evidence conflicts or adverse findings that create material commercial risk. Current evidence supports stopping the transaction until the findings are resolved." : high ? "Verified evidence contains material inconsistencies that increase commercial risk. Resolve the identified conflicts before making a commitment." : hasTechnicalFailure ? "Evidence collection was incomplete because one or more providers failed or were unavailable. Further investigation is required before making a commitment." : gaps.length ? "Verified subject evidence supports the stated findings, but specific coverage gaps limit confidence. Proceed only with the listed controls and evidence requests." : "Verified subject evidence supports the stated findings, with no significant warning signals in the admitted evidence. Proceed with normal commercial precautions.";
+  const justification = !hasAdmittedEvidence ? "No corroborated or verified evidence was attributable to the investigated subject. Absence of evidence is uncertainty, not a positive or adverse finding." : critical ? "Critical evidence conflicts or adverse findings can change the identity or risk assessment." : high ? "Material inconsistencies remain unresolved and could affect the counterparty decision." : hasTechnicalFailure ? "Provider availability limited the evidence collected. The technical failure is a coverage gap, not adverse evidence." : gaps.length ? "Admitted evidence supports the findings, but missing verification requires targeted controls." : "Independent admitted evidence supports the decision and no material warning signal was identified.";
 
-  return { engineVersion: INVESTIGATION_INTELLIGENCE_VERSION, generatedAt: input.generatedAt || new Date().toISOString(), contradictions, relationships, risks, sectionConfidence, executiveInsight, evidenceGaps, decisionSupport: { outcome, justification, conditions: evidenceGaps.slice(0, 3).map((gap) => gap.recommendation) } };
+  const observations = evidenceItems.filter(isSearchResultEvidence);
+  const candidates = evidenceItems.filter(isDiscoveryCandidate);
+  const evidenceLifecycle = {
+    observations: observations.map((item) => item.id), discoveryCandidates: candidates.map((item) => item.id),
+    corroboratedEvidence: corroboratedEvidence.map((item) => item.id), verifiedSubjectEvidence: verifiedSubjectEvidence.map((item) => item.id),
+    coverageGaps: gaps.map((item) => item.id), providerFailures: technicalFailures.map((item) => item.id), contradictions: contradictions.map((item) => item.id), adverseFindings: negativeEvidence.map((item) => item.id),
+    counts: { observations: observations.length, discoveryCandidates: candidates.length, corroboratedEvidence: corroboratedEvidence.length, verifiedFacts: verifiedSubjectEvidence.length },
+  };
+  const executiveClaims = [
+    ...supportedFindings.map((finding) => ({ id: `claim:${finding.id}`, statement: finding.statement, status: "supported" as const, evidenceIds: finding.evidence.map((item) => item.id).filter((id) => verifiedReferenceIds.has(id)) })),
+    ...negativeEvidence.map((item) => ({ id: `claim:${item.id}`, statement: item.description, status: "supported" as const, evidenceIds: item.evidenceRefs.map((ref) => ref.id) })),
+    ...evidenceGaps.map((gap) => ({ id: `claim:${gap.id}`, statement: gap.missingEvidence, status: "coverage_gap" as const, evidenceIds: [] })),
+  ];
+
+  return { engineVersion: INVESTIGATION_INTELLIGENCE_VERSION, generatedAt: input.generatedAt || new Date().toISOString(), contradictions, relationships, risks, sectionConfidence, executiveInsight, evidenceGaps, evidenceLifecycle, executiveClaims, decisionSupport: { outcome, justification, conditions: evidenceGaps.slice(0, 3).map((gap) => gap.recommendation) } };
 }
