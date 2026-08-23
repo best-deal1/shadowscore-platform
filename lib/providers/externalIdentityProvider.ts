@@ -371,7 +371,7 @@ function observedIdentifiers(hit: SearchResult, originals: Set<string>) {
 }
 async function braveSearch(query: string, apiKey: string, signal: AbortSignal, limit: number): Promise<SearchResult[]> { const url = new URL(SEARCH_ENDPOINT); url.searchParams.set("q", query); url.searchParams.set("count", String(limit)); url.searchParams.set("safesearch", "strict"); const response = await fetch(url, { signal, headers: { accept: "application/json", "x-subscription-token": apiKey } }); if (!response.ok) throw new Error(`Public search returned HTTP ${response.status}.`); const payload = await response.json() as { web?: { results?: Array<{ title?: string; url?: string; description?: string }> } }; return (payload.web?.results || []).filter((item): item is SearchResult => Boolean(item.title && item.url)).slice(0, limit); }
 
-type QueueItem = { id: string; label: string; hop: number; path: string[]; query: string; method: string; intent: SearchIntent; identifierStrength?: "discovery_lead" | "corroborated_identifier"; qualityScore: number; priority: number; clueType: EntityClueType; siblingRank?: number; requiredResultIdentifier?: string };
+type QueueItem = { id: string; label: string; hop: number; path: string[]; query: string; method: string; intent: SearchIntent; identifierStrength?: "discovery_lead" | "corroborated_identifier"; qualityScore: number; priority: number; clueType: EntityClueType; siblingRank?: number; queryPass?: number; requiredResultIdentifier?: string };
 type PendingIdentifier = Omit<QueueItem, "query" | "method" | "intent"> & { exactSource: boolean; order: number; derivation: DiscoveryPivot["derivation"]; adjacentLabels: string[] };
 
 function contextualQueries(pivot: PendingIdentifier, localPart: string) {
@@ -470,12 +470,15 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
     }
     pendingIdentifiers.push(...deferred);
     for (let variantIndex = 0; variantIndex < 2; variantIndex += 1) for (const [siblingIndex, { item, variants }] of accepted.entries()) {
-      const variant = variants[variantIndex]; if (variant) queue.push({ ...item, ...variant, siblingRank: siblingIndex + 1, priority: item.priority - variantIndex * 30 });
+      const variant = variants[variantIndex]; if (variant) queue.push({ ...item, ...variant, siblingRank: siblingIndex + 1, queryPass: variantIndex, priority: item.priority - variantIndex * 30 });
     }
   };
 
   while (queue.length && searchCount < limits.maxSearches) {
-    queue.sort((a, b) => b.priority - a.priority || a.hop - b.hop);
+    // Expand the discovery graph in rounds. Every admitted sibling receives its
+    // first bounded query before a result can spend the budget on descendants or
+    // a second query variant. Quality still orders clues within the same round.
+    queue.sort((a, b) => (a.queryPass || 0) - (b.queryPass || 0) || a.hop - b.hop || b.priority - a.priority);
     const item = queue.shift()!;
     const expansionKey = `${item.hop}:${normalizeIdentifier(item.query)}`;
     if (searched.has(expansionKey)) continue;
