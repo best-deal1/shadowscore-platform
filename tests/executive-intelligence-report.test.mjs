@@ -20,7 +20,7 @@ test("executive report renders the decision brief and report sections", () => {
 
 test("case file cover precedes the unchanged executive decision brief", () => {
   const component = readFileSync(new URL("../components/report/ExecutiveIntelligenceReport.tsx", import.meta.url), "utf8");
-  for (const field of ["Case Reference", "Investigation Date", "Business Under Review", "Investigation Type", "Investigation Status", "Evidence Sources Reviewed", "Evidence Items Collected", "Confidence", "Decision", "Case Objective", "Investigation Scope", "Investigation Methodology"]) assert.match(component, new RegExp(field));
+  for (const field of ["Case Reference", "Investigation Date", "Business Under Review", "Investigation Type", "Investigation Status", "Evidence Sources Reviewed", "Search results reviewed", "Potential identity matches", "Independently corroborated records", "Verified subject facts", "Confidence", "Decision", "Case Objective", "Investigation Scope", "Investigation Methodology"]) assert.match(component, new RegExp(field));
   assert.ok(component.indexOf('id="case-summary"') < component.indexOf('id="decision-brief"'));
   assert.doesNotMatch(component, /\bAI\b|artificial intelligence/i);
 });
@@ -59,6 +59,30 @@ test("decision brief uses material intelligence impacts and gaps", () => {
 test("executive summary and recommendation always have fallbacks", () => {
   assert.deepEqual(executiveRecommendation(report({ reportSummary: undefined })), { label: "Proceed with Conditions", explanation: "Review the available evidence and resolve material gaps before making a commitment." });
   assert.equal(recommendedActions(report({ reportSummary: undefined })).length, 3);
+});
+
+test("confirmed adverse decisions survive an unavailable narrative confidence", () => {
+  const intelligence = {
+    decisionSupport: { outcome: "Do Not Proceed", justification: "A critical conflict was confirmed.", conditions: [] },
+    executiveInsight: "Verified evidence contains a critical identity conflict.",
+    evidenceLifecycle: { counts: { observations: 0, discoveryCandidates: 0, corroboratedEvidence: 0, verifiedFacts: 0 }, adverseFindings: ["adverse-1"] },
+    executiveClaims: [], risks: [], contradictions: [], evidenceGaps: [],
+  };
+  const adverse = report({ reportSummary: { ...report().reportSummary, businessNarrative: { confidence: "None", sections: [] }, investigationIntelligence: intelligence } });
+  assert.equal(executiveRecommendation(adverse).label, "Do Not Proceed");
+});
+
+test("decision reasons cite readable source names instead of internal evidence IDs", () => {
+  const intelligence = { executiveClaims: [{ id: "claim:f1", statement: "The identity records align.", status: "supported", evidenceIds: ["e1"] }] };
+  const reasons = executiveDecisionReasons(report({ reportSummary: { ...report().reportSummary, investigationIntelligence: intelligence } }));
+  assert.equal(reasons[0].evidence, "Registry");
+  assert.doesNotMatch(reasons[0].evidence, /\be1\b/);
+});
+
+test("report uses customer-facing evidence lifecycle labels", () => {
+  const component = readFileSync(new URL("../components/report/ExecutiveIntelligenceReport.tsx", import.meta.url), "utf8");
+  for (const label of ["Search results reviewed", "Potential identity matches", "Independently corroborated records", "Verified subject facts", "Sources reviewed", "Material conflicts", "Relevant relationships", "Review time"]) assert.match(component, new RegExp(label));
+  for (const internalLabel of ["Search Observations", "Discovery Candidates", "Providers executed", "Contradictions found", "Generation time"]) assert.doesNotMatch(component, new RegExp(internalLabel));
 });
 
 test("evidence is grouped by business category and deduplicated", () => {

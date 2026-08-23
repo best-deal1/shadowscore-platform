@@ -37,7 +37,7 @@ test("verified company evidence enables traceable company decision support", () 
   const report = { target: "northstar.example", entity: "Northstar Ltd", reportSummary: { investigationIntelligence: intelligence, businessIntelligence: { findings: [finding] } } };
   assert.equal(intelligence.decisionSupport.outcome, "Proceed");
   assert.equal(intelligence.evidenceLifecycle.counts.verifiedFacts, 1);
-  assert.deepEqual(executiveDecisionReasons(report)[0].evidence, "registry-record-1");
+  assert.deepEqual(executiveDecisionReasons(report)[0].evidence, "Companies Registry");
   assert.notEqual(executiveRecommendation(report).label, "Verification Required");
 });
 

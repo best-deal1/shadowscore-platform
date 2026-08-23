@@ -67,8 +67,9 @@ export function executiveRecommendation(report: ShadowScoreReport) {
   const narrative = report.reportSummary?.businessNarrative;
   const intelligence = report.reportSummary?.investigationIntelligence;
   const confidenceNone = narrative?.confidence?.toLowerCase() === "none";
+  const confirmedDoNotProceed = intelligence?.decisionSupport.outcome === "Do Not Proceed";
   const admittedCount = (intelligence?.evidenceLifecycle?.counts.corroboratedEvidence || 0) + (intelligence?.evidenceLifecycle?.counts.verifiedFacts || 0) + (intelligence?.evidenceLifecycle?.adverseFindings.length || 0);
-  if (confidenceNone || (intelligence?.evidenceLifecycle && admittedCount === 0)) {
+  if (!confirmedDoNotProceed && (confidenceNone || (intelligence?.evidenceLifecycle && admittedCount === 0))) {
     return { label: "Verification Required", explanation: "No corroborated or verified evidence was attributable to the investigated subject. The result is unresolved. Obtain identity-specific corroboration before making a decision." };
   }
   const decision = report.reportSummary?.decision?.canonicalDecision || narrative?.decisionMode;
@@ -161,9 +162,15 @@ export function recommendedActions(report: ShadowScoreReport) {
 
 export function executiveDecisionReasons(report: ShadowScoreReport) {
   const claims = report.reportSummary?.investigationIntelligence?.executiveClaims;
-  if (claims) return claims.slice(0, 5).map((claim) => ({ id: claim.id, statement: claim.statement, evidence: claim.status === "supported" ? claim.evidenceIds.join(", ") : claim.status === "coverage_gap" ? "Coverage gap" : "Unresolved" }));
   const findings = report.reportSummary?.businessIntelligence?.findings || [];
-  return findings.filter((finding) => finding.evidence.length > 0).slice(0, 5).map((finding) => ({ id: finding.id, statement: finding.statement, evidence: finding.evidence.map((item) => item.id).join(", ") }));
+  if (claims) {
+    const citationByEvidenceId = new Map(findings.flatMap((finding) => finding.evidence.map((item) => [item.id, item.source] as const)));
+    return claims.slice(0, 5).map((claim) => {
+      const citations = Array.from(new Set(claim.evidenceIds.map((id) => citationByEvidenceId.get(id)).filter((source): source is string => Boolean(source))));
+      return { id: claim.id, statement: claim.statement, evidence: claim.status === "supported" ? citations.join(", ") || "Supporting evidence in this report" : claim.status === "coverage_gap" ? "Coverage gap" : "Unresolved" };
+    });
+  }
+  return findings.filter((finding) => finding.evidence.length > 0).slice(0, 5).map((finding) => ({ id: finding.id, statement: finding.statement, evidence: Array.from(new Set(finding.evidence.map((item) => item.source).filter(Boolean))).join(", ") }));
 }
 
 export function executiveBusinessImpacts(report: ShadowScoreReport) {

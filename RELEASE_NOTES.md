@@ -158,3 +158,7 @@ This file records customer-visible improvements in each ShadowScore release.
 
 - Social discovery now cleans search-result title decoration before extracting display names, aliases, and handles.
 - The bounded discovery beam prioritizes results that contribute person, company, domain, and handle clues. Administrator diagnostics show the extracted preview signals and beam decision.
+
+# 2026-08-23
+
+- Executive Reports preserve confirmed Do Not Proceed decisions, cite evidence with readable source names, and describe investigation metrics in customer-facing language.
