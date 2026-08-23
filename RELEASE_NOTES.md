@@ -165,3 +165,4 @@ This file records customer-visible improvements in each ShadowScore release.
 
 - Executive Reports preserve confirmed Do Not Proceed decisions, cite evidence with readable source names, and describe investigation metrics in customer-facing language.
 - Executive Reports now label unverified public identity attribution clearly and show candidate discovery scores separately. Repeated identity clues retain stronger corroboration metadata when independent sources upgrade their search eligibility.
+- Email identity discovery now searches a bounded numeric-free username stem. The stem must appear in a result before aliases or handles can expand, and weak person names remain non-recursive leads.

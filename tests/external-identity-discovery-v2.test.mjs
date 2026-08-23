@@ -251,6 +251,61 @@ test("production regression preserves weak names as leads without recursively ex
   assert.ok(graph.metrics.searchCount < 12);
 });
 
+test("real-world identity recall follows an evidence-backed username stem and handle pivot", async () => {
+  const queries = [];
+  const graph = await discoverExternalIdentityGraph(EMAIL, "test-key", new AbortController().signal, {
+    search: async (query) => {
+      queries.push(query);
+      if (query === `"nastikmastik" "nastikmastik358"`) return [{
+        title: "Identity index for nastikmastik",
+        url: "https://profiles.example/identity/nastikmastik",
+        description: "Known as: Kuki | Username: nesti",
+      }];
+      if (query.includes('"nesti"')) return [{
+        title: "Kuki Nesti Cherevko (@kuki_nesti_ch) • Instagram photos and videos",
+        url: "https://www.instagram.com/kuki_nesti_ch/",
+        description: "Nesti public profile",
+      }];
+      return [];
+    },
+  });
+
+  const candidate = graph.allCandidates.find((item) => item.profileUrl === "https://www.instagram.com/kuki_nesti_ch");
+  assert.ok(candidate);
+  assert.deepEqual(candidate.discoveryPath.slice(0, 4), [EMAIL, "nastikmastik358", "nastikmastik", "nesti"]);
+  assert.equal(candidate.status, "Candidate");
+  assert.equal(candidate.matchLevel, "unverified_candidate");
+  assert.equal(candidate.identityAttributionConfidence, null);
+  assert.equal(candidate.confidence, 0);
+  assert.ok(candidate.candidateDiscoveryConfidence > 0);
+  assert.ok(queries.includes(`"nastikmastik" "nastikmastik358"`));
+  assert.ok(graph.searches.some((search) => search.pivot === "nastikmastik" && search.newIdentifiers.includes("nesti")));
+  assert.ok(graph.edges.some((edge) => edge.to === "nesti" && edge.evidence.derivation === "explicit_handle"));
+  const displayName = graph.clues.find((clue) => clue.normalizedValue === "kuki nesti cherevko");
+  assert.equal(displayName?.pivotAdmissionDecision, "lead_only");
+  assert.equal(displayName?.queriesExecuted.length, 0);
+});
+
+test("username stems reject unrelated Anastasia results and do not create recursive name searches", async () => {
+  const queries = [];
+  const graph = await discoverExternalIdentityGraph(EMAIL, "test-key", new AbortController().signal, {
+    search: async (query) => {
+      queries.push(query);
+      if (query === `"nastikmastik" "nastikmastik358"`) return [
+        { title: "Anastasia Popular Creator", url: "https://instagram.com/unrelated_anastasia", description: "Lifestyle profile" },
+        { title: "Person directory", url: "https://profiles.example/anastasia", description: "Person: Anastasia Petrova" },
+      ];
+      return [];
+    },
+  });
+
+  const stemSearch = graph.searches.find((search) => search.pivot === "nastikmastik");
+  assert.ok(stemSearch);
+  assert.ok(stemSearch.results.every((result) => result.discoveryAdmissionDecision === "REJECTED"));
+  assert.equal(graph.allCandidates.some((candidate) => candidate.profileUrl.includes("unrelated_anastasia")), false);
+  assert.equal(queries.some((query) => /anastasia|petrova/i.test(query)), false);
+});
+
 test("social title canonicalization tolerates platform boilerplate, emoji, bullets, particles, and non-Latin names", async () => {
   const graph = await discoverExternalIdentityGraph("signal.person@example.com", "key", new AbortController().signal, {
     search: async (query) => query.includes("signal.person") ? [

@@ -12,7 +12,7 @@ export type SearchIntent = "social_profile_discovery" | "open_web_identity" | "c
 export type SourceClass = "social_profile" | "editorial" | "company_site" | "registry" | "directory" | "other_open_web";
 export type EntityClue = {
   id: string; type: EntityClueType; normalizedValue: string; displayValue: string; source: string;
-  discoveryPath: string[]; hop: number; derivation: "submitted" | DiscoveryPivot["derivation"] | "director" | "domain" | "company";
+  discoveryPath: string[]; hop: number; derivation: "submitted" | "username_stem" | DiscoveryPivot["derivation"] | "director" | "domain" | "company";
   evidenceStrength: "lead" | "observed" | "strong"; attributionState: "discovery" | "corroborated" | "verified";
   adjacentClueIds: string[]; observedBy: string[];
   qualityScore: number; searchPriority: number; enqueueDecision: "enqueued" | "rejected";
@@ -108,6 +108,10 @@ function discoveryAdmissionForResult(result: SearchResult, evidence: ReturnType<
 function admissionDiagnostic(result: SearchResult, active: EntityClue, original: string, neighbors: string[], context: { hop: number; intent: SearchIntent; query: string }, branchPriority: number, siblingRank: number, remainingBudget: number): ResultAdmissionDiagnostic {
   const evidence = evidenceAdmissionForResult(result, active, original, neighbors);
   const discovery = discoveryAdmissionForResult(result, evidence, context);
+  if (active.derivation === "username_stem" && !evidence.admitted) {
+    discovery.admitted = false;
+    discovery.reason = "A syntactic username stem can expand only when the result contains the stem or another subject-local anchor.";
+  }
   const identity = extractPreviewIdentitySignals(result);
   return { url: result.url, title: result.title, admissionScore: evidence.score, admissionDecision: evidence.admitted ? "admitted" : "rejected", admissionReason: evidence.reason, matchedAnchors: evidence.anchors, extractedClues: [], discoveryAdmissionScore: discovery.score, discoveryAdmissionDecision: discovery.admitted ? "DISCOVERY_ADMITTED" : "REJECTED", evidenceAdmissionScore: evidence.score, evidenceAdmissionDecision: evidence.admitted ? "EVIDENCE_ADMITTED" : "REJECTED", discoveryAdmissionReason: discovery.reason, evidenceAdmissionReason: evidence.reason, queryProvenanceContribution: discovery.provenance, extractedDiscoveryClues: [], extractedEvidenceClues: [], branchPriority, siblingRank, remainingBudget, ...identity, beamRank: 0, beamDecision: discovery.admitted ? "ADMITTED" : "NOT_ELIGIBLE", beamDecisionReason: discovery.admitted ? "Admitted without discovery beam competition." : "Result was not eligible for the discovery beam." };
 }
@@ -205,7 +209,7 @@ function containsIdentifier(text: string, identifier: string) {
 type DiscoveryPivot = { value: string; type?: EntityClueType; relation: "discovery_lead" | "corroborated_identifier"; derivation: "explicit_assertion" | "social_url" | "explicit_handle" | "display_name" | "title" | "page_entity" };
 function clueQuality(input: { type: EntityClueType; value: string; derivation: EntityClue["derivation"]; observations?: number; adjacency?: number; originalOverlap?: boolean }) {
   const typeScore: Record<EntityClueType, number> = { person_name: 82, social_profile: 84, username: 76, company_name: 84, domain: 80, email: 86, location: 68, role_title: 68, unknown: 45 };
-  const derivationScore: Record<EntityClue["derivation"], number> = { submitted: 10, explicit_assertion: 12, social_url: 10, explicit_handle: 10, display_name: 6, title: -22, page_entity: 8, director: 12, domain: 12, company: 12 };
+  const derivationScore: Record<EntityClue["derivation"], number> = { submitted: 10, username_stem: 4, explicit_assertion: 12, social_url: 10, explicit_handle: 10, display_name: 6, title: -22, page_entity: 8, director: 12, domain: 12, company: 12 };
   const value = normalizeIdentifier(input.value); const rejection = rejectionReason(value);
   if (rejection) return { score: 0, priority: 0, decision: "rejected" as const, rejection };
   const specificity = /[_.-]|\d/.test(value) ? 5 : value.includes(" ") ? 7 : 2;
@@ -374,6 +378,13 @@ async function braveSearch(query: string, apiKey: string, signal: AbortSignal, l
 type QueueItem = { id: string; label: string; hop: number; path: string[]; query: string; method: string; intent: SearchIntent; identifierStrength?: "discovery_lead" | "corroborated_identifier"; qualityScore: number; priority: number; clueType: EntityClueType; siblingRank?: number };
 type PendingIdentifier = Omit<QueueItem, "query" | "method" | "intent"> & { exactSource: boolean; order: number; derivation: DiscoveryPivot["derivation"]; adjacentLabels: string[] };
 
+function evidenceSearchableUsernameStems(localPart: string) {
+  const stems = new Set<string>();
+  const withoutNumericSuffix = localPart.replace(/\d{2,}$/, "");
+  if (withoutNumericSuffix !== localPart && withoutNumericSuffix.length >= 5) stems.add(withoutNumericSuffix);
+  return [...stems];
+}
+
 function contextualQueries(pivot: PendingIdentifier, localPart: string) {
   const value = pivot.label.replace(/["\\]/g, " ").trim();
   const graphNeighbors = [...pivot.adjacentLabels].reverse().filter((item) => !item.includes("@") && normalizeIdentifier(item) !== normalizeIdentifier(value));
@@ -399,12 +410,14 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
   const limits = { ...DEFAULT_IDENTITY_DISCOVERY_LIMITS, ...options.limits };
   const search = options.search || braveSearch;
   const normalized = email.trim().toLowerCase(); const localPart = normalized.split("@")[0]; const domain = normalized.split("@")[1];
+  const usernameStems = evidenceSearchableUsernameStems(localPart);
   const originals = new Set([normalized, normalizeIdentifier(localPart), normalizeIdentifier(domain)]);
   const seedQueue: QueueItem[] = [
     { id: normalized, label: normalized, hop: 0, path: [normalized], query: `"${normalized}"`, method: "exact_email", intent: "open_web_identity", qualityScore: 96, priority: 96, clueType: "email" },
     { id: normalized, label: normalized, hop: 0, path: [normalized], query: `"${normalized}" profile OR social`, method: "exact_email_profile", intent: "social_profile_discovery", qualityScore: 96, priority: 95, clueType: "email" },
     { id: localPart, label: localPart, hop: 0, path: [normalized], query: `"${localPart}" profile`, method: "username_open_web", intent: "open_web_identity", qualityScore: 83, priority: 84, clueType: "username" },
     { id: localPart, label: localPart, hop: 0, path: [normalized], query: `"${localPart}" site:facebook.com OR site:instagram.com OR site:linkedin.com OR site:x.com OR site:tiktok.com`, method: "social_profile", intent: "social_profile_discovery", qualityScore: 83, priority: 82, clueType: "username" },
+    ...usernameStems.map((stem) => ({ id: stem, label: stem, hop: 0, path: [normalized, localPart, stem], query: `"${stem}" "${localPart}"`, method: "username_stem_context", intent: "open_web_identity" as const, qualityScore: 78, priority: 81, clueType: "username" as const })),
   ];
   // Seed collection cannot consume the searches reserved for high-value clues,
   // graph-neighbor expansion, and convergence attempts.
@@ -440,6 +453,7 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
   };
   addClue({ id: `email:${normalized}`, type: "email", normalizedValue: normalized, displayValue: normalized, source: "submitted-target", discoveryPath: [normalized], hop: 0, derivation: "submitted", evidenceStrength: "strong", attributionState: "verified", adjacentClueIds: [`username:${localPart}`, `domain:${domain}`], observedBy: ["submitted-target"], ...schedulingFields({ type: "email", value: normalized, derivation: "submitted" }) });
   addClue({ id: `username:${localPart}`, type: "username", normalizedValue: normalizeIdentifier(localPart), displayValue: localPart, source: "submitted-target", discoveryPath: [normalized, localPart], hop: 0, derivation: "submitted", evidenceStrength: "observed", attributionState: "discovery", adjacentClueIds: [`email:${normalized}`], observedBy: ["submitted-target"], ...schedulingFields({ type: "username", value: localPart, derivation: "submitted", originalOverlap: true }) });
+  for (const stem of usernameStems) addClue({ id: `username:${stem}`, type: "username", normalizedValue: normalizeIdentifier(stem), displayValue: stem, source: "submitted-target:syntactic-stem", discoveryPath: [normalized, localPart, stem], hop: 0, derivation: "username_stem", evidenceStrength: "lead", attributionState: "discovery", adjacentClueIds: [`username:${localPart}`], observedBy: ["submitted-target:syntactic-stem"], ...schedulingFields({ type: "username", value: stem, derivation: "username_stem", originalOverlap: true }) });
   addClue({ id: `domain:${domain}`, type: "domain", normalizedValue: domain, displayValue: domain, source: "submitted-target", discoveryPath: [normalized, domain], hop: 0, derivation: "submitted", evidenceStrength: "observed", attributionState: "discovery", adjacentClueIds: [`email:${normalized}`], observedBy: ["submitted-target"], ...schedulingFields({ type: "domain", value: domain, derivation: "submitted", originalOverlap: true }) });
 
   const enqueuePending = () => {
