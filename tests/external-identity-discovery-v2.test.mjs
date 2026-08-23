@@ -256,7 +256,7 @@ test("real-world identity recall follows an evidence-backed username stem and ha
   const graph = await discoverExternalIdentityGraph(EMAIL, "test-key", new AbortController().signal, {
     search: async (query) => {
       queries.push(query);
-      if (query === `"nastikmastik" "nastikmastik358"`) return [{
+      if (query === `"nastikmastik"`) return [{
         title: "Identity index for nastikmastik",
         url: "https://profiles.example/identity/nastikmastik",
         description: "Known as: Kuki | Username: nesti",
@@ -278,7 +278,8 @@ test("real-world identity recall follows an evidence-backed username stem and ha
   assert.equal(candidate.identityAttributionConfidence, null);
   assert.equal(candidate.confidence, 0);
   assert.ok(candidate.candidateDiscoveryConfidence > 0);
-  assert.ok(queries.includes(`"nastikmastik" "nastikmastik358"`));
+  assert.ok(queries.includes(`"nastikmastik"`));
+  assert.equal(queries.some((query) => query.includes('"nastikmastik" "nastikmastik358"')), false);
   assert.ok(graph.searches.some((search) => search.pivot === "nastikmastik" && search.newIdentifiers.includes("nesti")));
   assert.ok(graph.edges.some((edge) => edge.to === "nesti" && edge.evidence.derivation === "explicit_handle"));
   const displayName = graph.clues.find((clue) => clue.normalizedValue === "kuki nesti cherevko");
@@ -291,7 +292,7 @@ test("username stems reject unrelated Anastasia results and do not create recurs
   const graph = await discoverExternalIdentityGraph(EMAIL, "test-key", new AbortController().signal, {
     search: async (query) => {
       queries.push(query);
-      if (query === `"nastikmastik" "nastikmastik358"`) return [
+      if (query === `"nastikmastik"`) return [
         { title: "Anastasia Popular Creator", url: "https://instagram.com/unrelated_anastasia", description: "Lifestyle profile" },
         { title: "Person directory", url: "https://profiles.example/anastasia", description: "Person: Anastasia Petrova" },
       ];

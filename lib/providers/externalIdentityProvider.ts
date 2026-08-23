@@ -417,7 +417,7 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
     { id: normalized, label: normalized, hop: 0, path: [normalized], query: `"${normalized}" profile OR social`, method: "exact_email_profile", intent: "social_profile_discovery", qualityScore: 96, priority: 95, clueType: "email" },
     { id: localPart, label: localPart, hop: 0, path: [normalized], query: `"${localPart}" profile`, method: "username_open_web", intent: "open_web_identity", qualityScore: 83, priority: 84, clueType: "username" },
     { id: localPart, label: localPart, hop: 0, path: [normalized], query: `"${localPart}" site:facebook.com OR site:instagram.com OR site:linkedin.com OR site:x.com OR site:tiktok.com`, method: "social_profile", intent: "social_profile_discovery", qualityScore: 83, priority: 82, clueType: "username" },
-    ...usernameStems.map((stem) => ({ id: stem, label: stem, hop: 0, path: [normalized, localPart, stem], query: `"${stem}" "${localPart}"`, method: "username_stem_context", intent: "open_web_identity" as const, qualityScore: 78, priority: 81, clueType: "username" as const })),
+    ...usernameStems.map((stem) => ({ id: stem, label: stem, hop: 0, path: [normalized, localPart, stem], query: `"${stem}"`, method: "username_stem_context", intent: "open_web_identity" as const, qualityScore: 78, priority: 81, clueType: "username" as const })),
   ];
   // Seed collection cannot consume the searches reserved for high-value clues,
   // graph-neighbor expansion, and convergence attempts.
