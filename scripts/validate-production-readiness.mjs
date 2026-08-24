@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { assertProductionConfiguration, paymentProviderConfigurations, productionConfigurationIssues, productionRequirements } from "../lib/productionReadiness.ts";
+import { identityReadinessIssues } from "../lib/personalIdentity.ts";
 
 assert.equal(productionRequirements.length, 6);
 assert.deepEqual(paymentProviderConfigurations.map(({ id }) => id), ["paypal"]);
@@ -23,6 +24,8 @@ const fixture = {
 
 assert.deepEqual(productionConfigurationIssues(fixture), []);
 assert.throws(() => assertProductionConfiguration({ ...fixture, PAYMENT_CALLBACK_SECRET: "short" }), /PAYMENT_CALLBACK_SECRET/);
+assert.equal(identityReadinessIssues({}).length, 5);
+assert.deepEqual(identityReadinessIssues({ NEXT_PUBLIC_PERSONAL_IDENTITY_ENABLED: "true", PERSONAL_IDENTITY_ENABLED: "true", IDENTITY_MIGRATION_APPLIED: "true", IDENTITY_EVIDENCE_BUCKET_READY: "true", IDENTITY_STORAGE_POLICIES_VERIFIED: "true" }), []);
 
 if (process.argv.includes("--environment")) assertProductionConfiguration(process.env);
 console.log(process.argv.includes("--environment") ? "Production environment validated." : "Production readiness contract validated.");
