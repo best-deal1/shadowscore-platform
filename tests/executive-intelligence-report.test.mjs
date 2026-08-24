@@ -123,7 +123,7 @@ test("saved identity candidates use backward-compatible rendering fallbacks", ()
   assert.match(component, /\.map\(normalizeIdentityCandidate\)/);
   assert.match(component, /candidate\.matchedIdentifiers \|\| \[\]/);
   assert.match(component, /typeof candidate\.candidateDiscoveryConfidence === "number"/);
-  assert.match(component, /resolutionRank: index \+ 1/);
+  assert.match(component, /resolutionRank: candidate\.resolutionRank \|\| index \+ 1/);
   assert.match(component, /Rank \{candidate\.resolutionRank\}/);
 });
 
@@ -132,4 +132,16 @@ test("discovery diagnostics are restricted to administrator reports", () => {
   assert.match(component, /report\.accessType === "administrator" && discoveryDiagnostics/);
   assert.match(component, /Discovery Diagnostics/);
   assert.match(component, /entry\.newIdentifiers/);
+});
+
+test("personal identity production output is presented with resolver evidence and identity checkout copy", () => {
+  const report = readFileSync(new URL("../components/report/ExecutiveIntelligenceReport.tsx", import.meta.url), "utf8");
+  const checkout = readFileSync(new URL("../app/reports/[reportId]/ReportFlow.tsx", import.meta.url), "utf8");
+  const route = readFileSync(new URL("../app/api/checkout/intent/route.ts", import.meta.url), "utf8");
+  for (const label of ["Discovery relevance", "Resolver-backed identity evidence", "Matched signals", "Conflicting signals", "Source provenance"]) assert.match(report, new RegExp(label));
+  assert.match(report, /resolutionOutcome/);
+  assert.match(report, /independentSourceFamilyCount/);
+  assert.match(checkout, /Personal Identity Investigation/);
+  assert.match(checkout, /Person or identifier/);
+  assert.match(route, /Personal Identity Investigation/);
 });

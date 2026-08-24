@@ -841,3 +841,32 @@ test("equal-score abstaining identity candidates receive deterministic sequentia
   const ranked = rankExternalIdentityCandidates("subject@example.com", [candidate("https://example.com/zulu"), candidate("https://example.com/alpha")]);
   assert.deepEqual(ranked.map((item) => [item.profileUrl, item.resolutionRank, item.resolutionEvidenceScore]), [["https://example.com/alpha", 1, 0], ["https://example.com/zulu", 2, 0]]);
 });
+
+test("production provider sends submitted and observed contact signals through the hardened resolver", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalKey = process.env.BRAVE_SEARCH_API_KEY;
+  process.env.BRAVE_SEARCH_API_KEY = "test-key";
+  globalThis.fetch = async (input) => {
+    const query = new URL(String(input)).searchParams.get("q") || "";
+    return Response.json({ web: { results: query.includes("signal.person@example.com") ? [{
+      title: "Signal Person (@signalperson) | LinkedIn",
+      url: "https://linkedin.com/in/signalperson",
+      description: "Signal Person. signal.person@example.com. Contact +1 202 555 0199.",
+    }] : [] } });
+  };
+  try {
+    const result = await new ExternalIdentityProvider().execute({ intakeId: "production-person", scanMode: "website", target: "signal.person@example.com", requestedTarget: "signal.person@example.com", platform: "website", fileNames: [], visibleSignalCategories: [], resolvedEntity: { entityId: "person", entityType: "person", displayName: "Signal Person", canonicalName: "Signal Person", resolutionStatus: "resolved", provenance: [], createdAt: "2026-08-24T00:00:00.000Z", updatedAt: "2026-08-24T00:00:00.000Z", resolverVersion: "test", schemaVersion: "test", metadata: { username: "signalperson", phone: "+1 202 555 0100" } } });
+    const candidate = result.metadata.externalIdentityCandidates[0];
+    assert.equal(result.status, "completed");
+    assert.ok(candidate.observedEmails.includes("signal.person@example.com"));
+    assert.ok(candidate.observedPhoneNumbers.includes("+1 202 555 0199"));
+    assert.equal(candidate.resolutionOutcome, "MATCH");
+    assert.ok(candidate.resolverMatchedSignals.some((signal) => signal.attribute === "email"));
+    assert.ok(candidate.resolverConflictingSignals.some((signal) => signal.attribute === "phone"));
+    assert.equal(candidate.independentSourceFamilyCount, 1);
+    assert.equal(candidate.sourceProvenance[0].family, "linkedin.com");
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalKey === undefined) delete process.env.BRAVE_SEARCH_API_KEY; else process.env.BRAVE_SEARCH_API_KEY = originalKey;
+  }
+});
