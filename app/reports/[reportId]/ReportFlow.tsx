@@ -14,7 +14,7 @@ import { REPORT_PRODUCT, type PaymentIntent, type ShadowScoreReport } from "../.
 type Mode = "unlock" | "processing" | "report";
 
 function paypalUrl(intent: PaymentIntent, reportId: string) {
-  const query = new URLSearchParams({ cmd: "_xclick", business: PAYPAL_BUSINESS_EMAIL, item_name: REPORT_PRODUCT.name, amount: REPORT_PRODUCT.amount, currency_code: "USD", invoice: intent.id, custom: reportId, rm: "2", return: `${window.location.origin}/reports/${reportId}/processing` });
+  const query = new URLSearchParams({ cmd: "_xclick", business: PAYPAL_BUSINESS_EMAIL, item_name: intent.planName, amount: REPORT_PRODUCT.amount, currency_code: "USD", invoice: intent.id, custom: reportId, rm: "2", return: `${window.location.origin}/reports/${reportId}/processing` });
   return `https://www.paypal.com/cgi-bin/webscr?${query}`;
 }
 
