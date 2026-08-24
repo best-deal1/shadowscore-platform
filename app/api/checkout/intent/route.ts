@@ -10,6 +10,7 @@ export async function POST(request: Request) {
     if (typeof body?.intakeId !== "string" || !body.intakeId.trim()) {
       return NextResponse.json({ error: "A saved investigation is required." }, { status: 400 });
     }
+    const intakeId = body.intakeId.trim();
     const session: WorkspaceSession = {
       userId: authenticated.user.id,
       accessToken: authenticated.accessToken,
@@ -17,15 +18,19 @@ export async function POST(request: Request) {
       email: "",
       startedAt: new Date().toISOString(),
     };
+    const workspace = await getWorkspace(session);
+    const intake = workspace.intakes.find((item) => item.intakeId === intakeId);
+    if (!intake) return NextResponse.json({ error: "The saved investigation could not be found." }, { status: 404 });
+    const personalIdentity = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(intake.target.trim());
     const intent = await createCheckoutIntent(session, {
-      planName: REPORT_PRODUCT.name,
+      planName: personalIdentity ? "Personal Identity Investigation" : REPORT_PRODUCT.name,
       price: REPORT_PRODUCT.price,
       method: "PayPal",
       intakeId: body.intakeId,
     });
     const reportId = reportIdForPayment(intent.id);
-    const workspace = await getWorkspace(session);
-    if (!workspace.reports.some((report) => report.reportId === reportId)) {
+    const updatedWorkspace = await getWorkspace(session);
+    if (!updatedWorkspace.reports.some((report) => report.reportId === reportId)) {
       throw new Error("Checkout did not create the locked report.");
     }
     const response = NextResponse.json({ intent, reportId }, { status: 201 });
