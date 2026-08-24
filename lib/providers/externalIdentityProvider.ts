@@ -292,6 +292,7 @@ function titleAliases(title: string) {
 function extractPreviewIdentitySignals(result: SearchResult) {
   const canonicalHandle = socialUrlHandle(result.url);
   const explicitHandles = [...`${result.title} ${result.description || ""}`.matchAll(/(?:^|[^\p{L}\p{N}_.])@([\p{L}\p{N}][\p{L}\p{N}_.-]{2,39})\b/giu)].map((match) => match[1]);
+  const relationshipHandles = socialRelationshipHandles(result);
   const aliases = titleAliases(result.title);
   const labelledCompanies = [...`${result.title} ${result.description || ""}`.matchAll(/\b(?:company|organisation|organization)\s*:\s*([^|;.!?]{3,60})/giu)].map((match) => match[1].trim());
   const domains = [...`${result.title} ${result.description || ""}`.matchAll(/\b(?:domain|website)\s*:\s*((?:[\p{L}\p{N}-]+\.)+[\p{L}\p{N}-]+)/giu)].map((match) => match[1]);
@@ -299,6 +300,7 @@ function extractPreviewIdentitySignals(result: SearchResult) {
   const signals: PreviewIdentitySignal[] = [
     ...(canonicalHandle ? [{ type: "handle" as const, value: canonicalHandle }] : []),
     ...explicitHandles.map((value) => ({ type: "handle" as const, value })),
+    ...relationshipHandles.map((value) => ({ type: "handle" as const, value })),
     ...aliases.map((value) => ({ type: plausiblePersonName(value) || /^\p{Lu}[\p{L}\p{M}'’-]{2,}$/u.test(value) ? "person_name" as const : "alias" as const, value })),
     ...labelledCompanies.map((value) => ({ type: "company_name" as const, value })),
     ...domains.map((value) => ({ type: "domain" as const, value })),
@@ -308,9 +310,22 @@ function extractPreviewIdentitySignals(result: SearchResult) {
   const families = new Set(signals.map((signal) => signal.type === "director" ? "person_name" : signal.type));
   const profileQuality = platformFor(result.url) ? 10 : ["registry", "company_site", "editorial"].includes(sourceClassFor(result.url)) ? 8 : 3;
   const titleConsistency = canonicalHandle && containsIdentifier(result.title, canonicalHandle) ? 8 : 0;
-  const identityInformationValue = Math.min(100, profileQuality + (canonicalHandle ? 14 : 0) + (explicitHandles.length ? 10 : 0) + (signals.some((signal) => signal.type === "person_name") ? 30 : 0) + (signals.some((signal) => signal.type === "company_name") ? 22 : 0) + (signals.some((signal) => signal.type === "domain") ? 20 : 0) + (signals.some((signal) => signal.type === "director") ? 24 : 0) + Math.min(20, distinctAliases.length * 10) + (families.size > 1 ? (families.size - 1) * 8 : 0) + titleConsistency);
+  const identityInformationValue = Math.min(100, profileQuality + (canonicalHandle ? 14 : 0) + (explicitHandles.length ? 10 : 0) + (relationshipHandles.length ? 18 : 0) + (signals.some((signal) => signal.type === "person_name") ? 30 : 0) + (signals.some((signal) => signal.type === "company_name") ? 22 : 0) + (signals.some((signal) => signal.type === "domain") ? 20 : 0) + (signals.some((signal) => signal.type === "director") ? 24 : 0) + Math.min(20, distinctAliases.length * 10) + (families.size > 1 ? (families.size - 1) * 8 : 0) + titleConsistency);
   const canonicalDisplayName = aliases.find((alias) => normalizeIdentifier(alias) !== normalizeIdentifier(canonicalHandle || ""));
   return { canonicalDisplayName, canonicalHandle, previewIdentitySignals: signals, identityInformationValue };
+}
+
+function socialRelationshipHandles(hit: SearchResult) {
+  const text = `${hit.title} ${hit.description || ""}`;
+  // Search previews commonly omit @ from handles in relationship copy. Keep
+  // extraction bounded to explicit social relations instead of treating every
+  // underscore-bearing token in prose as an identity pivot.
+  const expressions = [
+    /\b(?:followed by|following|followers? include|friends? with|connected (?:to|with)|featuring|with)\s+@?([\p{L}\p{N}][\p{L}\p{N}_.-]{2,39})\b/giu,
+    /\b(?:and|,)\s+@?([\p{L}\p{N}][\p{L}\p{N}_.-]{2,39})\s+(?:follow|follows|are following)\b/giu,
+  ];
+  return [...new Set(expressions.flatMap((expression) => [...text.matchAll(expression)].map((match) => match[1])))]
+    .filter((value) => /[_.\d]/u.test(value) && !rejectionReason(value));
 }
 
 function applyDiscoveryBeam<T extends { diagnostic: ResultAdmissionDiagnostic }>(results: T[], indexFor: (item: T) => number) {
@@ -340,6 +355,7 @@ function observedIdentifiers(hit: SearchResult, originals: Set<string>) {
   const handles = [...text.matchAll(/(^|[^\p{L}\p{N}_.])@([\p{L}\p{N}][\p{L}\p{N}_.-]{2,39})\b/giu)].map((match) => match[2]);
   const labelledHandles = [...text.matchAll(/\b(?:Instagram|TikTok|Twitter|LinkedIn|GitHub)\s*(?::|@)\s*@?([\p{L}\p{N}][\p{L}\p{N}_.-]{2,39})\b/giu)].map((match) => match[1]);
   const linkedHandles = [...text.matchAll(/\b(?:instagram|tiktok|twitter|x|github)\.com\/(?:@)?([\p{L}\p{N}][\p{L}\p{N}_.-]{2,39})\b/giu)].map((match) => match[1]);
+  const relationshipHandles = socialRelationshipHandles(hit);
   const typedEntities: DiscoveryPivot[] = [];
   const entityPatterns: Array<{ type: EntityClueType; expression: RegExp }> = [
     { type: "company_name", expression: /\b(?:company|organisation|organization|employer)\s*:\s*([^|;.!?]{3,60}?)(?=[.!?](?:\s+\p{Lu}|\s*$)|[|;]|$)/giu },
@@ -358,6 +374,7 @@ function observedIdentifiers(hit: SearchResult, originals: Set<string>) {
     ...namedHandles.map((value) => ({ value, type: "username" as const, relation: "discovery_lead" as const, derivation: "explicit_handle" as const })),
     ...labelledHandles.map((value) => ({ value, type: "username" as const, relation: "discovery_lead" as const, derivation: "explicit_handle" as const })),
     ...linkedHandles.map((value) => ({ value, type: "username" as const, relation: "discovery_lead" as const, derivation: "explicit_handle" as const })),
+    ...relationshipHandles.map((value) => ({ value, type: "username" as const, relation: "discovery_lead" as const, derivation: "explicit_handle" as const })),
     ...typedEntities,
     ...aliases.map((value) => ({ value, type: "person_name" as const, relation: "discovery_lead" as const, derivation: "display_name" as const })),
   ];
