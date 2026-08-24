@@ -41,6 +41,34 @@ export function normalizeIdentitySignals(value: unknown): IdentitySignals {
   };
 }
 
+const hasSubmittedIdentitySignal = (signals: IdentitySignals) =>
+  [signals.emails, signals.phones, signals.names, signals.usernames, signals.referenceImages].some((items) => items.length > 0);
+
+/**
+ * Normalize the canonical identity payload and recover older personal intakes
+ * that stored the investigated subject only in target or email. Structured
+ * signals remain authoritative when at least one was submitted.
+ */
+export function normalizeIntakeIdentitySignals(value: unknown, legacy: { target?: unknown; email?: unknown } = {}): IdentitySignals {
+  const structured = normalizeIdentitySignals(value);
+  if (hasSubmittedIdentitySignal(structured)) return structured;
+
+  const targetValues = [legacy.target]
+    .filter((item): item is string => typeof item === "string")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  const fallbackEmail = typeof legacy.email === "string" ? legacy.email.trim() : "";
+  const legacyValues = targetValues.length ? targetValues : [fallbackEmail].filter(Boolean);
+  const emails = legacyValues.filter((item) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(item));
+  const phones = legacyValues.filter((item) => /^\+?[\d\s().-]{7,}$/.test(item));
+  return normalizeIdentitySignals({
+    emails,
+    phones,
+    usernames: legacyValues.filter((item) => /^@?[a-z0-9_.-]{2,}$/i.test(item) && !emails.includes(item) && !phones.includes(item)),
+    names: legacyValues.filter((item) => /\s/.test(item) && !emails.includes(item) && !phones.includes(item)),
+  });
+}
+
 export function identityObjective(signals: IdentitySignals) {
   const labels = [
     signals.emails.length && "email address",

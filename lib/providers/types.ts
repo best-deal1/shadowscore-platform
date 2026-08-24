@@ -1,4 +1,5 @@
 import type { ResolvedEntity } from "../entityResolution";
+import type { IdentitySignals } from "../personalIdentity";
 
 export type ProviderCategory =
   | "ssl"
@@ -55,6 +56,7 @@ export type ProviderExecutionContext = {
   platform: string;
   caseType?: string;
   email?: string;
+  identitySignals?: IdentitySignals;
   fileNames: string[];
   visibleSignalCategories: string[];
   paymentIntentId?: string;

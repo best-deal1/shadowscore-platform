@@ -7,9 +7,12 @@ import {
   identityReadinessIssues,
   independentSourceCount,
   normalizeIdentitySignals,
+  normalizeIntakeIdentitySignals,
   preserveContradictoryContacts,
   scoreIdentityCandidate,
 } from "../lib/personalIdentity.ts";
+import { createIntake } from "../lib/workspace.ts";
+import { ExternalIdentityProvider } from "../lib/providers/externalIdentityProvider.ts";
 
 const signals = (input) => normalizeIdentitySignals(input);
 
@@ -24,6 +27,44 @@ test("combined investigation retains every normalized signal", () => {
   const result = signals({ emails: ["A@Example.com"], phones: ["+1 212-555-0100"], names: ["Ada Lovelace"], usernames: ["@Ada"] });
   assert.deepEqual(result, { emails: ["a@example.com"], phones: ["+12125550100"], names: ["Ada Lovelace"], usernames: ["ada"], referenceImages: [] });
   assert.match(identityObjective(result), /same person/);
+});
+
+test("legacy personal targets recover identity signals only when structured signals are absent", () => {
+  assert.deepEqual(normalizeIntakeIdentitySignals(undefined, { target: "Sivan.Efrat.Brandes@gmail.com", email: "customer@example.com" }).emails, ["sivan.efrat.brandes@gmail.com"]);
+  assert.deepEqual(normalizeIntakeIdentitySignals({ usernames: ["@submitted"] }, { target: "legacy@example.com" }), { emails: [], phones: [], names: [], usernames: ["submitted"], referenceImages: [] });
+});
+
+test("email-only intake persists signals and completes discovery, resolver, and report presentation", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalKey = process.env.BRAVE_SEARCH_API_KEY;
+  process.env.BRAVE_SEARCH_API_KEY = "fixture-key";
+  globalThis.fetch = async (input) => {
+    const query = new URL(String(input)).searchParams.get("q") || "";
+    return Response.json({ web: { results: query.includes("sivan.efrat.brandes@gmail.com") ? [{
+      title: "Sivan Efrat Brandes | LinkedIn",
+      url: "https://linkedin.com/in/sivan-efrat-brandes",
+      description: "Sivan Efrat Brandes. Contact sivan.efrat.brandes@gmail.com.",
+    }] : [] } });
+  };
+  try {
+    const intake = await createIntake({ userId: "identity-e2e", email: "buyer@example.com", name: "Buyer", startedAt: "2026-08-24T00:00:00.000Z" }, {
+      scanMode: "personal", target: "sivan.efrat.brandes@gmail.com", platform: "Personal Identity", email: "buyer@example.com",
+      identitySignals: undefined, fileNames: [], visibleSignalCategories: [],
+    });
+    assert.deepEqual(intake.identitySignals?.emails, ["sivan.efrat.brandes@gmail.com"]);
+
+    const external = await new ExternalIdentityProvider().execute({ intakeId: intake.intakeId, scanMode: intake.scanMode, target: intake.target, requestedTarget: intake.target, email: intake.identitySignals?.emails[0], identitySignals: intake.identitySignals, platform: intake.platform, fileNames: [], visibleSignalCategories: [] });
+    const candidate = external.metadata.externalIdentityCandidates[0];
+    assert.equal(external.metadata.submittedEmail, "sivan.efrat.brandes@gmail.com");
+    assert.ok(Number(external.metadata.identityDiscoverySearches.length) > 0);
+    assert.equal(candidate?.profileUrl, "https://linkedin.com/in/sivan-efrat-brandes");
+    assert.equal(candidate?.resolutionOutcome, "MATCH");
+    assert.ok(candidate?.resolverMatchedSignals?.some((signal) => signal.attribute === "email"));
+    assert.equal(candidate?.sourceProvenance?.[0].family, "linkedin.com");
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalKey === undefined) delete process.env.BRAVE_SEARCH_API_KEY; else process.env.BRAVE_SEARCH_API_KEY = originalKey;
+  }
 });
 
 test("contradictory email and phone identifiers are preserved", () => {
