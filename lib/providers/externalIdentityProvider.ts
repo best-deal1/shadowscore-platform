@@ -1,6 +1,8 @@
 import { BaseProvider } from "./BaseProvider";
 import type { ProviderEvidence, ProviderExecutionContext, ProviderFailureReason, ProviderResult } from "./types";
 import { isPublicMailboxDomain } from "../emailDomains";
+import { createObservation, rankResolutionCandidates, resolveEntities } from "../entityIntelligence/resolver";
+import type { Entity, Observation, ObservationAttribute } from "../entityIntelligence/types";
 
 const SEARCH_ENDPOINT = "https://api.search.brave.com/res/v1/web/search";
 const SOCIAL_HOSTS: Record<string, string> = { "facebook.com": "Facebook", "instagram.com": "Instagram", "linkedin.com": "LinkedIn", "x.com": "X", "twitter.com": "X", "tiktok.com": "TikTok", "github.com": "GitHub", "youtube.com": "YouTube" };
@@ -34,8 +36,50 @@ export type ExternalIdentityCandidate = {
   supportingEvidence: Array<{ query: string; snippet: string; url: string; hop: number }>;
   discoveryScore?: number;
   candidateDiscoveryConfidence: number; identityAttributionConfidence: number | null;
+  resolutionRank?: number; resolutionEvidenceScore?: number;
   convergingPaths?: string[][]; sharedIdentifiers?: string[]; loopStrength?: number;
 };
+
+const resolverEntity = (entityId: string): Entity => ({ entityId, workspaceId: "external-identity", entityType: "person", canonicalName: "", aliases: [], domains: [], addresses: [], phoneNumbers: [], emailAddresses: [], registrationIdentifiers: [], peopleAndDirectors: [], relationships: [], status: "unknown", jurisdiction: null, observationIds: [] });
+
+function observedIdentityAttribute(value: string): ObservationAttribute {
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return "email";
+  if (/^\+?[\d\s().-]{7,}$/.test(value)) return "phone";
+  return "name";
+}
+
+/** Convert discovery output into the resolver model without promoting discovery relevance to identity evidence. */
+export function rankExternalIdentityCandidates(email: string, candidates: ExternalIdentityCandidate[]): ExternalIdentityCandidate[] {
+  const subject = resolverEntity("investigated-subject");
+  const localPart = email.split("@")[0];
+  const observations: Observation[] = [];
+  const observe = (entity: Entity, attribute: ObservationAttribute, value: string, evidenceReference: string, reliability: number) => {
+    const observedValue = value.trim();
+    if (!observedValue) return;
+    if (attribute === "email") entity.emailAddresses.push(observedValue);
+    else if (attribute === "phone") entity.phoneNumbers.push(observedValue);
+    else entity.aliases.push(observedValue);
+    const observationId = `resolver-observation-${observations.length + 1}`;
+    entity.observationIds.push(observationId);
+    observations.push(createObservation({ observationId, workspaceId: entity.workspaceId, source: "Brave Search", sourceRecordId: entity.entityId, attribute, observedValue, observedAt: "1970-01-01T00:00:00.000Z", jurisdiction: null, evidenceReference, reliability }));
+  };
+  observe(subject, "email", email, "submitted-target", 0);
+  if (localPart) observe(subject, "name", localPart, "submitted-target", 0);
+  const entities = candidates.map((candidate) => {
+    const entity = resolverEntity(candidate.profileUrl);
+    const handle = socialUrlHandle(candidate.profileUrl);
+    if (handle) observe(entity, "name", handle, candidate.evidenceReference, .7);
+    if (candidate.observedDisplayName) observe(entity, "name", candidate.observedDisplayName, candidate.evidenceReference, .7);
+    for (const identifier of candidate.matchedIdentifiers) observe(entity, observedIdentityAttribute(identifier), identifier, candidate.evidenceReference, .85);
+    return entity;
+  });
+  const decisions = entities.map((entity) => resolveEntities(subject, entity, observations, { now: "1970-01-01T00:00:00.000Z" }));
+  const ranked = rankResolutionCandidates(subject.entityId, decisions);
+  const resolverRank = new Map(ranked.map((item) => [item.entityId, item]));
+  return candidates.map((candidate, index) => ({ ...candidate, resolutionRank: resolverRank.get(entities[index].entityId)?.rank, resolutionEvidenceScore: resolverRank.get(entities[index].entityId)?.combinedEvidenceScore }))
+    .sort((a, b) => (a.resolutionRank || Number.MAX_SAFE_INTEGER) - (b.resolutionRank || Number.MAX_SAFE_INTEGER) || a.profileUrl.localeCompare(b.profileUrl))
+    .map((candidate, index) => ({ ...candidate, resolutionRank: index + 1 }));
+}
 export type IdentityDiscoverySearchDiagnostic = {
   query: string; hop: number; pivot: string; originalTargetContext: { email: string; localPart: string; domain: string };
   resultCount: number; producedNewIdentifiers: boolean; newIdentifiers: string[];
@@ -650,9 +694,9 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
   for (const skipped of queue) { const clue = clues.get(`${skipped.clueType}:${normalizeIdentifier(skipped.label)}`); if (clue) clue.queriesSkipped.push(skipped.query); }
   const convergences: EntityConvergence[] = [...clues.values()].filter((clue) => clue.observedBy.length > 1).map((clue) => ({ clueId: clue.id, convergingPaths: [clue.discoveryPath], sharedIdentifiers: [clue.normalizedValue], loopStrength: Math.min(100, clue.observedBy.length * 20), sourceClasses: [...new Set(clue.observedBy.map((observation) => sourceClassFor(observation.split("|").at(-1) || "")))] }));
   for (const candidate of candidates.values()) { const handle = socialUrlHandle(candidate.profileUrl); const convergence = convergences.find((item) => item.sharedIdentifiers.includes(normalizeIdentifier(handle || ""))); if (convergence) Object.assign(candidate, convergence, { discoveryScore: (candidate.discoveryScore || 0) + convergence.loopStrength }); }
-  const ranked = [...candidates.values()].sort((a, b) => Number(b.matchLevel === "exact_match") - Number(a.matchLevel === "exact_match") || (b.discoveryScore || 0) - (a.discoveryScore || 0) || b.confidence - a.confidence || a.profileUrl.localeCompare(b.profileUrl));
+  const ranked = rankExternalIdentityCandidates(normalized, [...candidates.values()]);
   const pathUrls = new Set(edges.filter((edge) => edge.relation !== "search_result").map((edge) => edge.from));
-  const visible = ranked.filter((candidate, index) => candidate.confidence >= 45 || pathUrls.has(candidate.profileUrl) || index < 3).slice(0, limits.maxVisibleCandidates);
+  const visible = ranked.filter((candidate, index) => candidate.confidence >= 45 || pathUrls.has(candidate.profileUrl) || index < 3).slice(0, limits.maxVisibleCandidates).map((candidate, index) => ({ ...candidate, resolutionRank: index + 1 }));
   const anyAdmissible = searches.some((entry) => entry.results.some((result) => result.discoveryAdmissionDecision === "DISCOVERY_ADMITTED"));
   const budgetExhaustionReason = signal.aborted ? "timeout" : searchCount >= limits.maxSearches && queue.length ? "max_searches" : identifierCount >= limits.maxIdentifiers && pendingIdentifiers.length ? "max_identifiers" : !anyAdmissible && searches.some((entry) => entry.resultCount > 0) ? "no_admissible_leads" : "closure_reached";
   return { candidates: visible, allCandidates: ranked, clues: [...clues.values()], convergences, edges, searches, metrics: { searchCount, identifierCount, maxHopReached: edges.reduce((max, edge) => Math.max(max, edge.hop), 0), partial: signal.aborted, budgetExhaustionReason, reservedExpansionSearches: limits.reservedExpansionSearches, seedSearchCount: seedQueue.length - Math.max(0, seedQueue.length - seedSearchLimit) } };
