@@ -120,6 +120,9 @@ test("saved identity candidates use backward-compatible rendering fallbacks", ()
   assert.match(component, /candidate\.identityAttributionConfidence \?\? candidate\.confidence/);
   assert.match(component, /candidate\.candidateDiscoveryConfidence/);
   assert.doesNotMatch(component, />Confidence<\/dt><dd className="mt-1">\{candidate\.confidence\}%/);
+  assert.match(component, /\.map\(normalizeIdentityCandidate\)/);
+  assert.match(component, /candidate\.matchedIdentifiers \|\| \[\]/);
+  assert.match(component, /typeof candidate\.candidateDiscoveryConfidence === "number"/);
 });
 
 test("discovery diagnostics are restricted to administrator reports", () => {

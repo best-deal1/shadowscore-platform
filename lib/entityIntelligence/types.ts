@@ -66,6 +66,13 @@ export type ResolutionDecision = {
   review: { status: "pending" | "approved" | "rejected" | "split" | "deferred"; actorId: string | null; reason: string | null; reviewedAt: string | null };
 };
 
+export type RankedResolutionCandidate = {
+  entityId: string;
+  rank: number;
+  combinedEvidenceScore: number;
+  decisions: ResolutionDecision[];
+};
+
 export type ResolverPolicy = {
   version: string;
   matchThreshold: number;

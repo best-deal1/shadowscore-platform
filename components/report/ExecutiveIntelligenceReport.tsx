@@ -22,6 +22,17 @@ function levelLabel(level?: string) {
   return level.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
+function normalizeIdentityCandidate(candidate: NonNullable<ShadowScoreReport["reportSummary"]>["publicIdentityCandidates"] extends (infer Item)[] | undefined ? Item : never) {
+  return {
+    ...candidate,
+    matchedIdentifiers: candidate.matchedIdentifiers || [],
+    discoveryPath: candidate.discoveryPath?.length ? candidate.discoveryPath : [candidate.profileUrl],
+    supportingEvidence: candidate.supportingEvidence || [],
+    candidateDiscoveryConfidence: typeof candidate.candidateDiscoveryConfidence === "number" ? candidate.candidateDiscoveryConfidence : undefined,
+    identityAttributionConfidence: typeof candidate.identityAttributionConfidence === "number" ? candidate.identityAttributionConfidence : null,
+  };
+}
+
 function caseObjective(report: ShadowScoreReport) {
   if (report.reportSummary?.investigationType === "EMAIL") return "Investigate the submitted email as a person or identity identifier and assess public evidence without attributing the mailbox provider's infrastructure to the subject.";
   const type = `${report.scanMode || ""} ${report.platform || ""}`.toLowerCase();
@@ -69,7 +80,7 @@ export default function ExecutiveIntelligenceReport({ report }: { report: Shadow
   const ownershipFindings = findingStories.filter((item) => /owner|domain|registrant/i.test(`${item.title} ${item.observation}`));
   const caseReference = report.intakeId || report.reportId;
   const investigationType = levelLabel(report.reportSummary?.investigationType || report.scanMode || report.platform);
-  const publicIdentityCandidates = report.reportSummary?.publicIdentityCandidates || [];
+  const publicIdentityCandidates = (report.reportSummary?.publicIdentityCandidates || []).map(normalizeIdentityCandidate);
   const discoveryDiagnostics = report.reportSummary?.discoveryDiagnostics;
   const isEmailInvestigation = report.reportSummary?.investigationType === "EMAIL";
   const sourceCount = new Set([...sources.map((source) => source.label), ...evidence.map((item) => item.source)].filter(Boolean)).size;
