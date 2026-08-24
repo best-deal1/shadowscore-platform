@@ -821,3 +821,23 @@ test("an aborted late search returns the partial graph", async () => {
   assert.equal(graph.allCandidates.length, 1);
   assert.equal(graph.metrics.partial, true);
 });
+
+test("resolver ranking uses observed identity evidence and assigns final sequential ranks", async () => {
+  const { rankExternalIdentityCandidates } = await import("../lib/providers/externalIdentityProvider.ts");
+  const candidate = (profileUrl, matchedIdentifiers = [], discoveryScore = 0) => ({ platform: "Public profile", profileUrl, matchedIdentifiers, matchType: "username", status: "Candidate", matchLevel: "unverified_candidate", matchBasis: "Discovery lead", confidence: 0, evidenceUrl: profileUrl, evidenceQuery: "query", evidenceSnippet: "snippet", methods: ["search"], sourceProvider: "Brave Search", evidenceReference: profileUrl, discoveryPath: [profileUrl], supportingEvidence: [], discoveryScore, candidateDiscoveryConfidence: discoveryScore, identityAttributionConfidence: null });
+  const ranked = rankExternalIdentityCandidates("signal.person@example.com", [
+    candidate("https://instagram.com/weak", [], 100),
+    candidate("https://instagram.com/signal.person", ["signal.person@example.com"], 1),
+  ]);
+  assert.equal(ranked[0].profileUrl, "https://instagram.com/signal.person");
+  assert.ok(ranked[0].resolutionEvidenceScore > 0);
+  assert.equal(ranked[1].resolutionEvidenceScore, 0);
+  assert.deepEqual(ranked.map((item) => item.resolutionRank), [1, 2]);
+});
+
+test("equal-score abstaining identity candidates receive deterministic sequential ranks", async () => {
+  const { rankExternalIdentityCandidates } = await import("../lib/providers/externalIdentityProvider.ts");
+  const candidate = (profileUrl) => ({ platform: "Public profile", profileUrl, matchedIdentifiers: [], matchType: "username", status: "Candidate", matchLevel: "unverified_candidate", matchBasis: "Discovery lead", confidence: 0, evidenceUrl: profileUrl, evidenceQuery: "query", evidenceSnippet: "snippet", methods: ["search"], sourceProvider: "Brave Search", evidenceReference: profileUrl, discoveryPath: [profileUrl], supportingEvidence: [], discoveryScore: 99, candidateDiscoveryConfidence: 99, identityAttributionConfidence: null });
+  const ranked = rankExternalIdentityCandidates("subject@example.com", [candidate("https://example.com/zulu"), candidate("https://example.com/alpha")]);
+  assert.deepEqual(ranked.map((item) => [item.profileUrl, item.resolutionRank, item.resolutionEvidenceScore]), [["https://example.com/alpha", 1, 0], ["https://example.com/zulu", 2, 0]]);
+});

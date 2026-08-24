@@ -123,6 +123,8 @@ test("saved identity candidates use backward-compatible rendering fallbacks", ()
   assert.match(component, /\.map\(normalizeIdentityCandidate\)/);
   assert.match(component, /candidate\.matchedIdentifiers \|\| \[\]/);
   assert.match(component, /typeof candidate\.candidateDiscoveryConfidence === "number"/);
+  assert.match(component, /resolutionRank: index \+ 1/);
+  assert.match(component, /Rank \{candidate\.resolutionRank\}/);
 });
 
 test("discovery diagnostics are restricted to administrator reports", () => {
