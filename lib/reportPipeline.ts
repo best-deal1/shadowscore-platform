@@ -31,6 +31,7 @@ import { applyCanonicalIdentityToBusinessProfile, applyCanonicalIdentityToIdenti
 import { buildInvestigationIntelligence } from "./investigationIntelligence";
 import { isolateProviderResults } from "./targetIntegrity";
 import { resolveFirstPartyEntities, resolutionTarget } from "./entityResolution/firstParty";
+import { identityObjective, normalizeIdentitySignals } from "./personalIdentity";
 
 export const REPORT_ENGINE_VERSION = "report-pipeline-v22";
 
@@ -60,10 +61,11 @@ export async function buildReadyReport(input: {
   const submittedClassification = classifyTarget(submittedTarget);
   const resolvableTarget = ["Email", "Website"].includes(submittedClassification.targetType);
   const resolution = resolvableTarget ? resolutionTarget(submittedTarget) : undefined;
-  const emailInvestigation = submittedClassification.targetType === "Email";
+  const emailInvestigation = submittedClassification.targetType === "Email" && intake.scanMode !== "personal";
   const providerTarget = intake.scanMode === "website" && resolution && !emailInvestigation ? resolution.domain : submittedTarget;
   const canonicalTarget = submittedTarget;
-  const investigationEmail = emailInvestigation ? submittedTarget : intake.scanMode === "website" ? undefined : intake.email;
+  const personalSignals = intake.scanMode === "personal" ? normalizeIdentitySignals(intake.identitySignals) : undefined;
+  const investigationEmail = emailInvestigation ? submittedTarget : intake.scanMode === "personal" ? personalSignals?.emails[0] : intake.scanMode === "website" ? undefined : intake.email;
   const providerContext: ProviderExecutionContext = {
     intakeId: intake.intakeId,
     scanMode: intake.scanMode,
@@ -214,7 +216,7 @@ export async function buildReadyReport(input: {
     intakeId: intake.intakeId,
     paymentIntentId: paymentIntent.id,
     userId: intake.userId,
-    title: `${emailInvestigation ? "Email" : intake.scanMode === "website" ? "Website" : "Trust"} Intelligence Report`,
+    title: `${intake.scanMode === "personal" ? "Personal Identity" : emailInvestigation ? "Email" : intake.scanMode === "website" ? "Website" : "Trust"} Intelligence Report`,
     entity: canonicalTarget,
     platform: intake.platform,
     scanMode: intake.scanMode,
@@ -233,7 +235,9 @@ export async function buildReadyReport(input: {
       ...canonicalEvidenceSummary,
     },
     reportSummary: {
-      message: "Report generated from paid intake, provider evidence and Insight Engine business-trust analysis.",
+      message: intake.scanMode === "personal" ? "Report generated from the submitted identity signals and source-backed public evidence." : "Report generated from paid intake, provider evidence and Insight Engine business-trust analysis.",
+      objective: personalSignals ? identityObjective(personalSignals) : undefined,
+      identitySignals: personalSignals,
       primaryRiskDomain: riskEnginePreview.primaryRiskDomain,
       findingCount: riskEnginePreview.findings.length,
       insights: insightOutput.insights,
@@ -273,7 +277,7 @@ export async function buildReadyReport(input: {
         .map((provider) => ({ label: provider.providerId.replace(/[-_]/g, " "), completedAt: provider.completedAt })),
       targetResolution,
       resolvedEntities,
-      investigationType: emailInvestigation ? "EMAIL" : intake.scanMode.toUpperCase(),
+      investigationType: emailInvestigation ? "EMAIL" : intake.scanMode === "personal" ? "PERSONAL_IDENTITY" : intake.scanMode.toUpperCase(),
       mailboxProviderDomain: emailInvestigation && resolution ? resolution.domain : undefined,
       publicIdentityCandidates,
       discoveryDiagnostics,

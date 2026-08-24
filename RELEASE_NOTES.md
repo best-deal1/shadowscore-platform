@@ -1,5 +1,11 @@
 # Release Notes
 
+## Personal identity intake, staged for activation
+
+- Added a personal identity intake for email, phone, name, username, and authorized reference images. Account and billing email stays separate from investigated-person signals.
+- Added person-specific objectives, structured signal persistence, contradictory-contact preservation, independent-source scoring, and identity checkout labels.
+- Added the private `identity-evidence` storage contract and fail-closed deployment checks. The feature remains disabled until migration and storage readiness are verified.
+
 ## Live intelligence collection and orchestration
 
 - The customer journey now keeps the Free Quick Check separate from the $9.90 Business Investigation. Intake preserves the Quick Check, confirms the paid scope and customer, and sets the Executive Report expectation after payment and processing.
