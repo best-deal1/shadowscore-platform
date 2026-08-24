@@ -321,7 +321,7 @@ function socialRelationshipHandles(hit: SearchResult) {
   // extraction bounded to explicit social relations instead of treating every
   // underscore-bearing token in prose as an identity pivot.
   const expressions = [
-    /\b(?:followed by|following|followers? include|friends? with|connected (?:to|with)|featuring|with)\s+@?([\p{L}\p{N}][\p{L}\p{N}_.-]{2,39})\b/giu,
+    /\b(?:followed by|following|followers? include|friends? with|connected (?:to|with)|featuring)\s+@?([\p{L}\p{N}][\p{L}\p{N}_.-]{2,39})\b/giu,
     /\b(?:and|,)\s+@?([\p{L}\p{N}][\p{L}\p{N}_.-]{2,39})\s+(?:follow|follows|are following)\b/giu,
   ];
   return [...new Set(expressions.flatMap((expression) => [...text.matchAll(expression)].map((match) => match[1])))]

@@ -210,11 +210,11 @@ test("a stem result can pivot through a handle stated in social relationship cop
 test("underscore tokens in ordinary or unrelated prose do not become social pivots", async () => {
   const graph = await discoverExternalIdentityGraph("samplehandle42@example.com", "test-key", new AbortController().signal, {
     search: async (query) => query === '"samplehandle" profile' ? [
-      { title: "Sample Handle (@samplehandle) | Instagram", url: "https://instagram.com/samplehandle", description: "samplehandle uses photo_category and profile_settings. Unrelated to noisy_person_7." },
+      { title: "Sample Handle (@samplehandle) | Instagram", url: "https://instagram.com/samplehandle", description: "samplehandle was built with react_19 and made with vue_3. It uses photo_category and profile_settings. Unrelated to noisy_person_7." },
     ] : [],
   });
 
-  assert.equal(graph.clues.some((clue) => /photo_category|profile_settings|noisy_person_7/.test(clue.displayValue)), false);
+  assert.equal(graph.clues.some((clue) => /react_19|vue_3|photo_category|profile_settings|noisy_person_7/.test(clue.displayValue)), false);
   assert.ok(graph.allCandidates.every((candidate) => candidate.identityAttributionConfidence === null));
 });
 
