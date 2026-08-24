@@ -56,7 +56,9 @@ export function groupExecutiveEvidence(report: ShadowScoreReport) {
     }
   }
 
-  return EVIDENCE_CATEGORIES.flatMap((category) => grouped.has(category) ? [{ category, items: grouped.get(category)! }] : []);
+  const personal = ["EMAIL", "PERSONAL_IDENTITY"].includes(report.reportSummary?.investigationType || "");
+  const categories = personal ? EVIDENCE_CATEGORIES.filter((category) => !["Business Registration", "Website", "DNS", "Security", "Payment"].includes(category)) : EVIDENCE_CATEGORIES;
+  return categories.flatMap((category) => grouped.has(category) ? [{ category, items: grouped.get(category)! }] : []);
 }
 
 export function executiveRecommendation(report: ShadowScoreReport) {
@@ -147,7 +149,7 @@ export function recommendedActions(report: ShadowScoreReport) {
   const gapActions = report.reportSummary?.investigationIntelligence?.evidenceGaps.map((gap) => gap.recommendation) || [];
   const clean = Array.from(new Set([...gapActions, ...items].map((item) => item.trim()).filter(Boolean)));
   const targetDomain = (report.target || report.entity || "").match(/@([^\s@]+)$/)?.[1];
-  const isEmailIdentity = report.reportSummary?.investigationType === "EMAIL" && Boolean(targetDomain && isPublicMailboxDomain(targetDomain));
+  const isEmailIdentity = report.reportSummary?.investigationType === "PERSONAL_IDENTITY" || report.reportSummary?.investigationType === "EMAIL" && Boolean(targetDomain && isPublicMailboxDomain(targetDomain));
   const fallbacks = isEmailIdentity
     ? ["Corroborate public profile ownership.", "Verify a second independent identifier.", "Review linked public profiles and collect stronger first-party evidence."]
     : ["Verify business ownership and registration details.", "Use documented payment terms for the first transaction.", "Review material evidence gaps before proceeding."];
@@ -183,5 +185,6 @@ export function executiveBusinessImpacts(report: ShadowScoreReport) {
 }
 
 export function materialEvidenceGaps(report: ShadowScoreReport) {
+  if (["EMAIL", "PERSONAL_IDENTITY"].includes(report.reportSummary?.investigationType || "")) return (report.reportSummary?.personalIdentityGaps || []).slice(0, 3).map((gap, index) => ({ id: `personal-identity-gap-${index + 1}`, missingEvidence: gap, confidenceImpact: "Identity attribution remains unresolved until this signal is independently corroborated." }));
   return (report.reportSummary?.investigationIntelligence?.evidenceGaps || []).slice(0, 3);
 }

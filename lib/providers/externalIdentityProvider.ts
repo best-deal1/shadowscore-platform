@@ -3,6 +3,7 @@ import type { ProviderEvidence, ProviderExecutionContext, ProviderFailureReason,
 import { isPublicMailboxDomain } from "../emailDomains";
 import { createObservation, rankResolutionCandidates, resolveEntities } from "../entityIntelligence/resolver";
 import type { Entity, Observation, ObservationAttribute } from "../entityIntelligence/types";
+import type { PersonalIdentitySignals } from "../personalIdentity";
 
 const SEARCH_ENDPOINT = "https://api.search.brave.com/res/v1/web/search";
 const SOCIAL_HOSTS: Record<string, string> = { "facebook.com": "Facebook", "instagram.com": "Instagram", "linkedin.com": "LinkedIn", "x.com": "X", "twitter.com": "X", "tiktok.com": "TikTok", "github.com": "GitHub", "youtube.com": "YouTube" };
@@ -37,6 +38,7 @@ export type ExternalIdentityCandidate = {
   discoveryScore?: number;
   candidateDiscoveryConfidence: number; identityAttributionConfidence: number | null;
   resolutionRank?: number; resolutionEvidenceScore?: number;
+  exactMatchingSignals?: string[]; conflictingSignals?: string[]; resolverOutcome?: string;
   convergingPaths?: string[][]; sharedIdentifiers?: string[]; loopStrength?: number;
 };
 
@@ -49,9 +51,9 @@ function observedIdentityAttribute(value: string): ObservationAttribute {
 }
 
 /** Convert discovery output into the resolver model without promoting discovery relevance to identity evidence. */
-export function rankExternalIdentityCandidates(email: string, candidates: ExternalIdentityCandidate[]): ExternalIdentityCandidate[] {
+export function rankExternalIdentityCandidates(input: string | PersonalIdentitySignals, candidates: ExternalIdentityCandidate[]): ExternalIdentityCandidate[] {
+  const signals: PersonalIdentitySignals = typeof input === "string" ? { email: { value: input, provenance: "user_submitted_email", evidenceStatus: "submitted_reference" } } : input;
   const subject = resolverEntity("investigated-subject");
-  const localPart = email.split("@")[0];
   const observations: Observation[] = [];
   const observe = (entity: Entity, attribute: ObservationAttribute, value: string, evidenceReference: string, reliability: number) => {
     const observedValue = value.trim();
@@ -63,8 +65,10 @@ export function rankExternalIdentityCandidates(email: string, candidates: Extern
     entity.observationIds.push(observationId);
     observations.push(createObservation({ observationId, workspaceId: entity.workspaceId, source: "Brave Search", sourceRecordId: entity.entityId, attribute, observedValue, observedAt: "1970-01-01T00:00:00.000Z", jurisdiction: null, evidenceReference, reliability }));
   };
-  observe(subject, "email", email, "submitted-target", 0);
-  if (localPart) observe(subject, "name", localPart, "submitted-target", 0);
+  if (signals.email) observe(subject, "email", signals.email.value, signals.email.provenance, 0);
+  if (signals.phone) observe(subject, "phone", signals.phone.value, signals.phone.provenance, 0);
+  if (signals.name) observe(subject, "name", signals.name.value, signals.name.provenance, 0);
+  if (signals.username) observe(subject, "name", signals.username.value, signals.username.provenance, 0);
   const entities = candidates.map((candidate) => {
     const entity = resolverEntity(candidate.profileUrl);
     const handle = socialUrlHandle(candidate.profileUrl);
@@ -73,12 +77,25 @@ export function rankExternalIdentityCandidates(email: string, candidates: Extern
     for (const identifier of candidate.matchedIdentifiers) observe(entity, observedIdentityAttribute(identifier), identifier, candidate.evidenceReference, .85);
     return entity;
   });
-  const decisions = entities.map((entity) => resolveEntities(subject, entity, observations, { now: "1970-01-01T00:00:00.000Z" }));
+  const decisions = entities.map((entity, index) => {
+    const candidate = candidates[index];
+    const exact = candidate.matchedIdentifiers.some((identifier) => [signals.email?.value, signals.phone?.value, signals.username?.value].filter(Boolean).some((value) => normalizeIdentifier(identifier) === normalizeIdentifier(value!)));
+    return resolveEntities(subject, entity, observations, { now: "1970-01-01T00:00:00.000Z", policy: exact ? { ...importedResolverPolicy(), minimumEvidence: 1 } : undefined });
+  });
   const ranked = rankResolutionCandidates(subject.entityId, decisions);
   const resolverRank = new Map(ranked.map((item) => [item.entityId, item]));
-  return candidates.map((candidate, index) => ({ ...candidate, resolutionRank: resolverRank.get(entities[index].entityId)?.rank, resolutionEvidenceScore: resolverRank.get(entities[index].entityId)?.combinedEvidenceScore }))
+  return candidates.map((candidate, index) => {
+    const decision = decisions[index];
+    const exactMatchingSignals = candidate.matchedIdentifiers.filter((identifier) => [signals.email?.value, signals.phone?.value, signals.username?.value, signals.name?.value].filter(Boolean).some((value) => normalizeIdentifier(identifier) === normalizeIdentifier(value!)));
+    const positive = ["MATCH", "POSSIBLE_MATCH"].includes(decision.outcome) && exactMatchingSignals.length > 0;
+    return { ...candidate, resolutionRank: resolverRank.get(entities[index].entityId)?.rank, resolutionEvidenceScore: positive ? resolverRank.get(entities[index].entityId)?.combinedEvidenceScore || 0 : 0, identityAttributionConfidence: positive ? Math.round((resolverRank.get(entities[index].entityId)?.combinedEvidenceScore || 0) * 100) : null, exactMatchingSignals, conflictingSignals: decision.conflictingAttributes.map((feature) => `${feature.attribute}: ${feature.left} conflicts with ${feature.right}`), resolverOutcome: decision.outcome, status: candidate.status };
+  })
     .sort((a, b) => (a.resolutionRank || Number.MAX_SAFE_INTEGER) - (b.resolutionRank || Number.MAX_SAFE_INTEGER) || a.profileUrl.localeCompare(b.profileUrl))
     .map((candidate, index) => ({ ...candidate, resolutionRank: index + 1 }));
+}
+
+function importedResolverPolicy() {
+  return { version: "personal-identity-resolution-policy@1.0.0", matchThreshold: .82, possibleMatchThreshold: .58, noMatchThreshold: .25, minimumEvidence: 2, weights: { registration_id: 1, domain: .9, email: .9, phone: .85, name: .55, address: .45, director: .3, parent: .25, status: .1 } } as const;
 }
 export type IdentityDiscoverySearchDiagnostic = {
   query: string; hop: number; pivot: string; originalTargetContext: { email: string; localPart: string; domain: string };
@@ -703,5 +720,28 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
 }
 export async function discoverExternalIdentityCandidates(email: string, apiKey: string, signal: AbortSignal) { return (await discoverExternalIdentityGraph(email, apiKey, signal)).candidates; }
 
-export class EmailIntelligenceProvider extends BaseProvider { readonly id = "email-intelligence"; readonly name = "Email Intelligence"; readonly version = "1.1.0"; readonly category = "business_profile" as const; protected async collect(context: ProviderExecutionContext): Promise<Pick<ProviderResult, "findings" | "evidence" | "metadata">> { const email = emailFromContext(context); if (!email) throw new Error("Email intelligence requires an email target."); const domain = email.split("@")[1]; const publicMailbox = isPublicMailboxDomain(domain); return { findings: [], evidence: [{ id: "email-target-classification", type: "placeholder", label: "Mailbox classification", value: publicMailbox ? "Public mailbox provider" : "Corporate/custom domain candidate", source: "submitted-target", investigationId: context.investigationId || context.intakeId, canonicalTarget: email, providerName: this.name, collectedAt: new Date().toISOString() }], metadata: { lookupPerformed: true, submittedEmail: email, emailDomain: domain, publicMailbox, evidenceIndependence: "submitted_input_only" } }; } }
-export class ExternalIdentityProvider extends BaseProvider { readonly id = "external-identity"; readonly name = "External Identity Discovery"; readonly version = "4.1.0"; readonly category = "business_profile" as const; failureReason(error: unknown): ProviderFailureReason { if (error instanceof Error && /BRAVE_SEARCH_API_KEY|credential|not configured|provider unavailable/i.test(error.message)) return "Unavailable"; return super.failureReason(error); } protected async collect(context: ProviderExecutionContext): Promise<Pick<ProviderResult, "findings" | "evidence" | "metadata">> { const email = emailFromContext(context); if (!email) throw new Error("External identity discovery requires an email target."); const apiKey = process.env.BRAVE_SEARCH_API_KEY; if (!apiKey) throw new Error("External identity provider unavailable: BRAVE_SEARCH_API_KEY is not configured."); const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 8_000); try { const graph = await discoverExternalIdentityGraph(email, apiKey, controller.signal); const evidence: ProviderEvidence[] = graph.candidates.map((candidate, index) => ({ id: `external-identity-${index + 1}`, type: "search_result", label: candidate.matchLevel === "unverified_candidate" ? "Potential public identity candidate" : "Public identity exact-email match", value: `${candidate.platform} | profile ${candidate.profileUrl} | status ${candidate.status} | matched ${candidate.matchedIdentifiers.join(", ")} | identity attribution ${candidate.identityAttributionConfidence === null ? "Unverified" : `${candidate.identityAttributionConfidence}%`} | candidate score ${candidate.candidateDiscoveryConfidence}% | path ${candidate.discoveryPath.join(" -> ")} | ${candidate.matchBasis}`, source: candidate.evidenceUrl, investigationId: context.investigationId || context.intakeId, canonicalTarget: email, providerName: this.name, collectedAt: new Date().toISOString() })); return { findings: [], evidence, metadata: { lookupPerformed: true, submittedEmail: email, candidateCount: graph.candidates.length, externalIdentityCandidates: graph.candidates, entityClues: graph.clues, entityConvergences: graph.convergences, identityDiscoveryEdges: graph.edges, identityDiscoverySearches: graph.searches, identityDiscoveryMetrics: graph.metrics, evidencePolicy: "Submitted input is not independent corroboration. Discovery leads cannot establish identity facts. Candidate status requires external evidence. Verification requires independent primary evidence." } }; } finally { clearTimeout(timeout); } } }
+export function buildPersonalIdentityQueries(signals: PersonalIdentitySignals) {
+  const quote = (value: string) => `"${value.replace(/["\\]/g, " ")}"`;
+  const email = signals.email?.value; const phone = signals.phone?.value; const name = signals.name?.value; const username = signals.username?.value; const local = email?.split("@")[0];
+  return [...new Set([email && quote(email), phone && name && `${quote(name)} ${quote(phone)}`, name && username && `${quote(name)} ${quote(username)}`, local && name && `${quote(local)} ${quote(name)}`, username && `${quote(username)} site:instagram.com OR site:facebook.com OR site:linkedin.com OR site:x.com OR site:tiktok.com`, phone && name && `${quote(phone)} ${quote(name)}`, phone && !name && quote(phone), name && !phone && !username && `${quote(name)} profile`, username && !name && quote(username)].filter((query): query is string => Boolean(query)))].slice(0, DEFAULT_IDENTITY_DISCOVERY_LIMITS.maxSearches);
+}
+
+export async function discoverPersonalIdentity(signals: PersonalIdentitySignals, apiKey: string, signal: AbortSignal, options: { search?: SearchFn; limits?: Partial<IdentityDiscoveryLimits> } = {}) {
+  const search = options.search || braveSearch; const limits = { ...DEFAULT_IDENTITY_DISCOVERY_LIMITS, ...options.limits }; const queries = buildPersonalIdentityQueries(signals).slice(0, limits.maxSearches); const candidates = new Map<string, ExternalIdentityCandidate>(); const searches: IdentityDiscoverySearchDiagnostic[] = [];
+  for (const query of queries) {
+    const results = await search(query, apiKey, signal, limits.maxResultsPerSearch);
+    for (const result of results) {
+      const platform = platformFor(result.url); const profileUrl = platform && identityProfileUrl(result.url); if (!platform || !profileUrl) continue;
+      const text = `${result.title} ${result.description || ""} ${result.url}`;
+      const exact = [signals.email?.value, signals.phone?.value, signals.username?.value, signals.name?.value].filter((value): value is string => Boolean(value)).filter((value) => containsIdentifier(text, value));
+      const prior = candidates.get(profileUrl); const relevance = Math.min(100, Math.max(prior?.candidateDiscoveryConfidence || 0, 10 + (socialUrlHandle(profileUrl) ? 9 : 0) + exact.length * 24)); const observation = { query, snippet: `${result.title}${result.description ? ` - ${result.description}` : ""}`, url: publicSearchEvidenceUrl(query), hop: 0 };
+      candidates.set(profileUrl, { platform, profileUrl, observedDisplayName: result.title, matchedIdentifiers: [...new Set([...(prior?.matchedIdentifiers || []), ...exact])], matchType: exact.some((item) => item.includes("@")) ? "exact_email" : exact.length ? "alias" : "username", status: "Candidate", matchLevel: exact.length ? "exact_match" : "unverified_candidate", matchBasis: exact.length ? "A submitted identity signal appears exactly in the public result evidence. Resolver scoring determines whether it supports attribution." : "The profile is a discovery lead from a bounded signal query. No submitted identity signal was observed in its evidence.", confidence: 0, evidenceUrl: observation.url, evidenceQuery: query, evidenceSnippet: observation.snippet, methods: ["bounded_multi_signal_search"], sourceProvider: "Brave Search", evidenceReference: observation.url, discoveryPath: [query, profileUrl], supportingEvidence: [...(prior?.supportingEvidence || []), observation], discoveryScore: relevance, candidateDiscoveryConfidence: relevance, identityAttributionConfidence: null });
+    }
+    searches.push({ query, hop: 0, pivot: query, originalTargetContext: { email: signals.email?.value || "", localPart: signals.email?.value.split("@")[0] || signals.username?.value || "", domain: signals.email?.value.split("@")[1] || "" }, resultCount: results.length, producedNewIdentifiers: false, newIdentifiers: [], clueType: "unknown", clueQualityScore: 0, searchPriority: 0, remainingBudget: limits.maxSearches - searches.length - 1, informationGain: 0, searchIntent: "open_web_identity", sourceClasses: [...new Set(results.map((result) => sourceClassFor(result.url)))], extractedEntityClues: [], prioritizationReason: "Bounded combination of user-submitted identity signals.", pivotStrength: 0, pivotAdmissionDecision: "lead_only", pivotAdmissionReason: "Submitted values guide discovery and are not independent evidence.", distanceFromRoot: 0, independentAnchorCount: 0, results: [] });
+  }
+  const ranked = rankExternalIdentityCandidates(signals, [...candidates.values()]);
+  return { candidates: ranked.slice(0, limits.maxVisibleCandidates), clues: [], convergences: [], edges: [], searches, metrics: { searchCount: queries.length, identifierCount: Object.values(signals).filter(Boolean).length, maxHopReached: 0, partial: signal.aborted, budgetExhaustionReason: signal.aborted ? "timeout" : "closure_reached", reservedExpansionSearches: limits.reservedExpansionSearches, seedSearchCount: queries.length } };
+}
+
+export class EmailIntelligenceProvider extends BaseProvider { readonly id = "email-intelligence"; readonly name = "Email Intelligence"; readonly version = "1.1.0"; readonly category = "business_profile" as const; protected async collect(context: ProviderExecutionContext): Promise<Pick<ProviderResult, "findings" | "evidence" | "metadata">> { const email = emailFromContext(context); if (!email) throw new Error("Email intelligence requires an email target."); const domain = email.split("@")[1]; const publicMailbox = isPublicMailboxDomain(domain); return { findings: [], evidence: [{ id: "email-target-classification", type: "placeholder", label: "Mailbox classification", value: publicMailbox ? "Public mailbox provider" : "Corporate/custom domain candidate", source: "submitted-target", investigationId: context.investigationId || context.intakeId, canonicalTarget: email || context.requestedTarget || context.target, providerName: this.name, collectedAt: new Date().toISOString() }], metadata: { lookupPerformed: true, submittedEmail: email, emailDomain: domain, publicMailbox, evidenceIndependence: "submitted_input_only" } }; } }
+export class ExternalIdentityProvider extends BaseProvider { readonly id = "external-identity"; readonly name = "External Identity Discovery"; readonly version = "4.1.0"; readonly category = "business_profile" as const; failureReason(error: unknown): ProviderFailureReason { if (error instanceof Error && /BRAVE_SEARCH_API_KEY|credential|not configured|provider unavailable/i.test(error.message)) return "Unavailable"; return super.failureReason(error); } protected async collect(context: ProviderExecutionContext): Promise<Pick<ProviderResult, "findings" | "evidence" | "metadata">> { const email = emailFromContext(context); const signals = context.identitySignals || (email ? { email: { value: email, provenance: "user_submitted_email" as const, evidenceStatus: "submitted_reference" as const } } : undefined); if (!signals) throw new Error("External identity discovery requires an identity signal."); const apiKey = process.env.BRAVE_SEARCH_API_KEY; if (!apiKey) throw new Error("External identity provider unavailable: BRAVE_SEARCH_API_KEY is not configured."); const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 8_000); try { const graph = context.identitySignals ? await discoverPersonalIdentity(signals, apiKey, controller.signal) : await discoverExternalIdentityGraph(email!, apiKey, controller.signal); const evidence: ProviderEvidence[] = graph.candidates.map((candidate, index) => ({ id: `external-identity-${index + 1}`, type: "search_result", label: candidate.matchLevel === "unverified_candidate" ? "Potential public identity candidate" : "Public identity exact-email match", value: `${candidate.platform} | profile ${candidate.profileUrl} | status ${candidate.status} | matched ${candidate.matchedIdentifiers.join(", ")} | identity attribution ${candidate.identityAttributionConfidence === null ? "Unverified" : `${candidate.identityAttributionConfidence}%`} | candidate score ${candidate.candidateDiscoveryConfidence}% | path ${candidate.discoveryPath.join(" -> ")} | ${candidate.matchBasis}`, source: candidate.evidenceUrl, investigationId: context.investigationId || context.intakeId, canonicalTarget: email || context.requestedTarget || context.target, providerName: this.name, collectedAt: new Date().toISOString() })); return { findings: [], evidence, metadata: { lookupPerformed: true, submittedSignals: signals, submittedEmail: email, candidateCount: graph.candidates.length, externalIdentityCandidates: graph.candidates, entityClues: graph.clues, entityConvergences: graph.convergences, identityDiscoveryEdges: graph.edges, identityDiscoverySearches: graph.searches, identityDiscoveryMetrics: graph.metrics, evidencePolicy: "Submitted input is not independent corroboration. Discovery leads cannot establish identity facts. Candidate status requires external evidence. Verification requires independent primary evidence." } }; } finally { clearTimeout(timeout); } } }

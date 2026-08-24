@@ -178,3 +178,10 @@ This file records customer-visible improvements in each ShadowScore release.
 - Identity discovery now recognizes handles in explicit social relationship preview text, including previews that omit the @ marker. Generic underscore tokens remain excluded, weak display names do not expand, and discovered profiles remain unverified until independently corroborated.
 - Identity candidate ranking now ignores negative and abstained resolver outcomes, filters placeholder identity values, preserves conflicting contact identifiers, and safely renders historical candidate reports.
 - Identity reports now rank public profile candidates with the entity resolver. Real observed identifiers affect order, while weak discovery relevance and negative outcomes add no identity evidence.
+
+## 2026-08-24: Multi-signal personal identity investigations
+
+- Personal identity intake now accepts any combination of email, phone, full name, and username. A reference image can be recorded as user-supplied reference material.
+- Public profile candidates now separate discovery relevance from resolver-backed identity evidence. Unsupported leads receive a 0% identity evidence score.
+- Personal reports use identity-specific scope and evidence gaps. Website infrastructure and business ownership gaps remain limited to business investigations.
+- Automated image comparison is not operational. Reference images do not affect candidate scores.
