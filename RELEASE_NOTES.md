@@ -186,3 +186,8 @@ This file records customer-visible improvements in each ShadowScore release.
 - Identity candidate ranking now ignores negative and abstained resolver outcomes, filters placeholder identity values, preserves conflicting contact identifiers, and safely renders historical candidate reports.
 - Identity reports now rank public profile candidates with the entity resolver. Real observed identifiers affect order, while weak discovery relevance and negative outcomes add no identity evidence.
 - Personal identity investigations now combine submitted email, phone, name, and username signals with observed public contacts in the production resolver. Reports separate discovery relevance from resolver evidence, show conflicts and source families, and use identity-specific checkout wording.
+# Personal identity investigation reports
+
+- Personal scan mode now controls the complete report presentation, including identity candidates, resolver evidence, contradictions, provenance, and person-specific next actions.
+- Personal intake copy now describes identity research at selection, quick check, and checkout.
+- The production intake constraint now accepts personal scan mode while preserving existing modes.

@@ -84,7 +84,13 @@ export async function buildReadyReport(input: {
   const executionFlow: string[] = [];
   const classification = submittedClassification;
   executionFlow.push(`✓ Target classified as ${classification.targetType}`);
-  const executionPlan = planFromClassification(classification);
+  const classifiedPlan = planFromClassification(classification);
+  const executionPlan = intake.scanMode === "personal" ? {
+    ...classifiedPlan,
+    executionPlan: classifiedPlan.executionPlan.filter((step) => ["email-intelligence", "external-identity"].includes(step.engineId)),
+    skippedEngines: [...classifiedPlan.skippedEngines, ...classifiedPlan.executionPlan.filter((step) => !["email-intelligence", "external-identity"].includes(step.engineId)).map((step) => ({ engineId: step.engineId, label: step.label, reason: "Personal identity scope excludes organization and infrastructure checks." }))],
+    reasoning: [...classifiedPlan.reasoning, "Personal scan mode is authoritative. Only person-specific identity providers are eligible."],
+  } : classifiedPlan;
   executionFlow.push("✓ Execution plan created");
   const execution = await providerManager.runExecutionPlan(providerContext, executionPlan.executionPlan, executionPlan.skippedEngines);
   const isolated = intake.scanMode === "website" && resolution?.inputType !== "email" ? isolateProviderResults({ investigationId: intake.intakeId, submittedTarget, providerResults: execution.providerResults }) : undefined;
@@ -185,7 +191,12 @@ export async function buildReadyReport(input: {
   });
   executionFlow.push("✓ Decision generated");
   const scorecard = buildShadowScorecard({ evidenceItems: providerEvidenceItems, websiteEvidence: websiteEvidenceItems });
-  const investigationTimeline = buildInvestigationTimeline({ websiteIntelligence, completedAt: now, identityCompleted: true, correlationCompleted: true, businessCompleted: true, decisionCompleted: true, executiveCompleted: true });
+  const investigationTimeline = intake.scanMode === "personal" ? [
+    { id: "submitted-signals", label: "Submitted identity signals", status: "completed" as const, source: "Personal identity intake", observedAt: now },
+    { id: "public-discovery", label: "Public identity discovery", status: "completed" as const, source: "Identity discovery", observedAt: now },
+    { id: "identity-resolution", label: "Identity matching evidence", status: "completed" as const, source: "Entity resolver", observedAt: now },
+    { id: "provenance-review", label: "Source provenance review", status: "completed" as const, source: "Investigation pipeline", observedAt: now },
+  ] : buildInvestigationTimeline({ websiteIntelligence, completedAt: now, identityCompleted: true, correlationCompleted: true, businessCompleted: true, decisionCompleted: true, executiveCompleted: true });
   const businessMemory = rememberBusinessScan({
     scanId: `report-${intake.intakeId}`,
     identity: {
@@ -238,25 +249,25 @@ export async function buildReadyReport(input: {
       message: intake.scanMode === "personal" ? "Report generated from the submitted identity signals and source-backed public evidence." : "Report generated from paid intake, provider evidence and Insight Engine business-trust analysis.",
       objective: personalSignals ? identityObjective(personalSignals) : undefined,
       identitySignals: personalSignals,
-      primaryRiskDomain: riskEnginePreview.primaryRiskDomain,
-      findingCount: riskEnginePreview.findings.length,
-      insights: insightOutput.insights,
+      primaryRiskDomain: intake.scanMode === "personal" ? undefined : riskEnginePreview.primaryRiskDomain,
+      findingCount: intake.scanMode === "personal" ? undefined : riskEnginePreview.findings.length,
+      insights: intake.scanMode === "personal" ? undefined : insightOutput.insights,
       insightEngineVersion: insightOutput.engineVersion,
-      decision,
-      reasoning,
+      decision: intake.scanMode === "personal" ? undefined : decision,
+      reasoning: intake.scanMode === "personal" ? undefined : reasoning,
       correlationSummary,
       identityProfile,
-      businessNarrative,
-      businessIdentityResolution,
-      businessIdentityIntelligence,
-      businessIntelligence,
-      investigationIntelligence,
+      businessNarrative: intake.scanMode === "personal" ? undefined : businessNarrative,
+      businessIdentityResolution: intake.scanMode === "personal" ? undefined : businessIdentityResolution,
+      businessIdentityIntelligence: intake.scanMode === "personal" ? undefined : businessIdentityIntelligence,
+      businessIntelligence: intake.scanMode === "personal" ? undefined : businessIntelligence,
+      investigationIntelligence: intake.scanMode === "personal" ? undefined : investigationIntelligence,
       websiteIntelligence,
       canonicalWebsiteReport,
       websiteChangeReport: websiteMonitoring?.snapshot.changeReport,
       websiteAlertSummary: websiteMonitoring ? { count: websiteMonitoring.alerts.length, severities: websiteMonitoring.alerts.reduce<Record<string, number>>((summary, alert) => ({ ...summary, [alert.severity]: (summary[alert.severity] || 0) + 1 }), {}) } : undefined,
       websiteChangeTimeline: websiteMonitoring?.history.map((snapshot) => ({ scanId: snapshot.scanId, scannedAt: snapshot.scannedAt, summary: snapshot.changeReport.summary, changeCount: snapshot.changeReport.changes.length, alertIds: websiteMonitoring.alerts.filter((alert) => alert.currentScanId === snapshot.scanId).map((alert) => alert.id) })),
-      scorecard,
+      scorecard: intake.scanMode === "personal" ? undefined : scorecard,
       investigationTimeline,
       execution: {
         completedInSeconds: Number(((Date.now() - startedAt) / 1000).toFixed(2)),
@@ -265,7 +276,7 @@ export async function buildReadyReport(input: {
         decisionConfidence: decisionIntelligence.confidenceLevel,
       },
       executionFlow,
-      knowledgeGraph: knowledgeGraph.snapshot(),
+      knowledgeGraph: intake.scanMode === "personal" ? undefined : knowledgeGraph.snapshot(),
       technicalDetails: {
         executed: executionRecords.filter((record) => record.status === "executed"),
         skipped: executionRecords.filter((record) => record.status === "skipped"),
