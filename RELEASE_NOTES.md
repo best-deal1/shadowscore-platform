@@ -4,6 +4,7 @@
 
 - Added a personal identity intake for email, phone, name, username, and authorized reference images. Account and billing email stays separate from investigated-person signals.
 - Added person-specific objectives, structured signal persistence, contradictory-contact preservation, independent-source scoring, and identity checkout labels.
+- Checkout now preserves the correct investigation name through PayPal for both personal identity and business purchases.
 - Added the private `identity-evidence` storage contract and fail-closed deployment checks. The feature remains disabled until migration and storage readiness are verified.
 
 ## Live intelligence collection and orchestration

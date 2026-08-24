@@ -5,7 +5,16 @@ import { canViewFullReport, nextReportRoute } from "../lib/reportAccess.ts";
 import { createCheckoutIntent, createIntake, getWorkspace, REPORT_PRODUCT, reportIdForPayment } from "../lib/workspace.ts";
 
 const session = { userId: "payment-flow-user", email: "buyer@example.com", name: "Buyer", startedAt: "2026-07-28T00:00:00.000Z" };
-const intakeRecord = { scanMode: "website", target: "example.com", platform: "Website", email: session.email, fileNames: [], visibleSignalCategories: ["Identity", "Infrastructure"] };
+const investigationCases = [
+  {
+    productName: REPORT_PRODUCT.name,
+    intake: { scanMode: "website", target: "example.com", platform: "Website", email: session.email, fileNames: [], visibleSignalCategories: ["Identity", "Infrastructure"] },
+  },
+  {
+    productName: "Personal Identity Investigation",
+    intake: { scanMode: "personal", target: "subject@example.com", platform: "Personal Identity", email: session.email, fileNames: [], visibleSignalCategories: ["Identity"] },
+  },
+];
 const source = (path) => fs.readFileSync(new URL(path, import.meta.url), "utf8");
 
 test("checkout sends the customer to the existing review and payment route", () => {
@@ -13,36 +22,47 @@ test("checkout sends the customer to the existing review and payment route", () 
   assert.match(component, /if \(!body\.intent \|\| !body\.reportId\) throw new Error/);
   assert.match(component, /window\.location\.assign\(`\/reports\/\$\{result\.intent\.reportId\}\/unlock`\)/);
 });
-test("unlock summary states the purchase type, total, contents, and payment provider", () => {
+test("unlock summary uses the intent product and states the total, contents, and payment provider", () => {
   const page = source("../app/reports/[reportId]/ReportFlow.tsx");
-  for (const copy of ["One Business Investigation", "Total", "Executive Report includes", "No subscription", "Payment processed by the selected provider"]) assert.ok(page.includes(copy));
+  for (const copy of ["investigationLabel", "Total", "Executive Report includes", "No subscription", "Payment processed by the selected provider"]) assert.ok(page.includes(copy));
+  assert.match(page, /item_name: intent\.planName/);
   assert.equal(REPORT_PRODUCT.price, "$9.90");
   assert.equal(REPORT_PRODUCT.amount, "9.90");
-  assert.equal(REPORT_PRODUCT.name, "Business Investigation");
 });
-test("checkout initiation creates one report-scoped intent", async () => {
-  const intake = await createIntake(session, intakeRecord);
-  const intent = await createCheckoutIntent(session, { planName: REPORT_PRODUCT.name, price: REPORT_PRODUCT.price, method: "PayPal", intakeId: intake.intakeId });
-  const workspace = await getWorkspace(session);
-  assert.ok(workspace.intakes.some((item) => item.intakeId === intake.intakeId), "saved intake resolves");
-  assert.ok(workspace.paymentIntents.some((item) => item.id === intent.id), "payment intent resolves");
-  assert.ok(workspace.acceptances.some((item) => item.reportId === intent.id), "legal acceptance resolves");
-  assert.ok(workspace.reports.some((item) => item.reportId === reportIdForPayment(intent.id)), "locked report route resolves");
-});
+for (const investigation of investigationCases) {
+  test(`${investigation.productName} checkout creates one correctly named report-scoped intent`, async () => {
+    const intake = await createIntake(session, investigation.intake);
+    const intent = await createCheckoutIntent(session, { planName: investigation.productName, price: REPORT_PRODUCT.price, method: "PayPal", intakeId: intake.intakeId });
+    const workspace = await getWorkspace(session);
+    assert.equal(intent.planName, investigation.productName);
+    assert.ok(workspace.intakes.some((item) => item.intakeId === intake.intakeId), "saved intake resolves");
+    assert.ok(workspace.paymentIntents.some((item) => item.id === intent.id), "payment intent resolves");
+    assert.ok(workspace.acceptances.some((item) => item.reportId === intent.id), "legal acceptance resolves");
+    assert.ok(workspace.reports.some((item) => item.reportId === reportIdForPayment(intent.id)), "locked report route resolves");
+  });
+}
 test("checkout endpoint always returns JSON and verifies the report before redirect", () => {
   const route = source("../app/api/checkout/intent/route.ts");
   assert.match(route, /NextResponse\.json\(\{ intent, reportId \}, \{ status: 201 \}\)/);
-  assert.match(route, /workspace\.reports\.some/);
+  assert.match(route, /\.reports\.some/);
   assert.match(route, /NextResponse\.json\(\{ error: message \}, \{ status: 500 \}\)/);
   const component = source("../components/PaymentButtons.tsx");
   assert.match(component, /const text = await response\.text\(\)/);
   assert.doesNotMatch(component, /response\.json\(\)/);
 });
-test("duplicate checkout initiation reuses the active intent", async () => {
-  const intake = await createIntake(session, { ...intakeRecord, target: "duplicate.example" });
-  const first = await createCheckoutIntent(session, { planName: REPORT_PRODUCT.name, price: REPORT_PRODUCT.price, method: "PayPal", intakeId: intake.intakeId });
-  const second = await createCheckoutIntent(session, { planName: REPORT_PRODUCT.name, price: REPORT_PRODUCT.price, method: "PayPal", intakeId: intake.intakeId });
+test("checkout trims surrounding intake ID whitespace and reuses the active intent", async () => {
+  const intake = await createIntake(session, { ...investigationCases[0].intake, target: "duplicate.example" });
+  const submittedIntakeId = `  ${intake.intakeId}  `;
+  const normalizedIntakeId = submittedIntakeId.trim();
+  const first = await createCheckoutIntent(session, { planName: investigationCases[0].productName, price: REPORT_PRODUCT.price, method: "PayPal", intakeId: normalizedIntakeId });
+  const second = await createCheckoutIntent(session, { planName: investigationCases[0].productName, price: REPORT_PRODUCT.price, method: "PayPal", intakeId: normalizedIntakeId });
+  const workspace = await getWorkspace(session);
+  assert.equal(first.intakeId, intake.intakeId);
   assert.equal(second.id, first.id);
+  assert.equal(workspace.paymentIntents.filter((item) => item.intakeId === intake.intakeId).length, 1);
+  const route = source("../app/api/checkout/intent/route.ts");
+  assert.match(route, /body\.intakeId\.trim\(\)/);
+  assert.doesNotMatch(route, /intakeId: body\.intakeId,/);
 });
 test("payment pending stays on unlock", () => assert.match(nextReportRoute("r", "payment_pending", "payment_pending"), /\/unlock$/));
 test("payment processing uses processing route", () => assert.match(nextReportRoute("r", "processing", "payment_pending"), /\/processing$/));

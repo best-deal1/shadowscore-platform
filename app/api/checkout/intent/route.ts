@@ -26,7 +26,7 @@ export async function POST(request: Request) {
       planName: personalIdentity ? "Personal Identity Investigation" : REPORT_PRODUCT.name,
       price: REPORT_PRODUCT.price,
       method: "PayPal",
-      intakeId: body.intakeId,
+      intakeId,
     });
     const reportId = reportIdForPayment(intent.id);
     const updatedWorkspace = await getWorkspace(session);
