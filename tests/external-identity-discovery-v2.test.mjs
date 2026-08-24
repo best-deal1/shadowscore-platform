@@ -175,6 +175,49 @@ test("stem-derived siblings receive a first follow-up before noisy recursive han
   assert.ok(graph.allCandidates.filter((candidate) => /nastik707|nnikass|thenastikedit/.test(candidate.profileUrl)).every((candidate) => candidate.status === "Candidate" && candidate.identityAttributionConfidence === null));
 });
 
+test("a stem result can pivot through a handle stated in social relationship copy", async () => {
+  const queries = [];
+  const graph = await discoverExternalIdentityGraph(EMAIL, "test-key", new AbortController().signal, {
+    search: async (query) => {
+      queries.push(query);
+      if (query === '"nastikmastik" profile') return [
+        { title: "Viet Toque (@nastikmastik) | Instagram", url: "https://instagram.com/nastikmastik", description: "Public profile. Followed by kuki_nesti_ch and 2 others." },
+        { title: "Anastasia (@unrelated_person) | Instagram", url: "https://instagram.com/unrelated_person", description: "Public profile about Nastikmastik." },
+        { title: "Nastik edits", url: "https://profiles.example/nastik-edits", description: "nastikmastik with photos and videos" },
+        { title: "Nastik archive", url: "https://profiles.example/nastik-archive", description: "nastikmastik, unrelated profile" },
+      ];
+      if (query.includes('"kuki_nesti_ch"')) return [
+        { title: "Kuki Nesti (@kuki_nesti_ch) | Instagram", url: "https://www.instagram.com/kuki_nesti_ch/", description: "Public profile" },
+      ];
+      return [];
+    },
+  });
+
+  const stemResult = graph.searches.find((search) => search.query === '"nastikmastik" profile').results[0];
+  assert.ok(stemResult.previewIdentitySignals.some((signal) => signal.type === "handle" && signal.value === "kuki_nesti_ch"));
+  assert.ok(stemResult.extractedDiscoveryClues.includes("kuki_nesti_ch"));
+  const target = graph.allCandidates.find((candidate) => candidate.profileUrl === "https://www.instagram.com/kuki_nesti_ch");
+  assert.ok(target);
+  assert.deepEqual(target.discoveryPath, [EMAIL, "nastikmastik", "Instagram Viet Toque (@nastikmastik) | Instagram", "kuki_nesti_ch", "Instagram Kuki Nesti (@kuki_nesti_ch) | Instagram"]);
+  assert.equal(target.identityAttributionConfidence, null);
+  assert.equal(target.confidence, 0);
+  assert.ok(queries.length <= 12);
+  assert.equal(graph.clues.find((clue) => clue.displayValue === "Viet Toque").pivotAdmissionDecision, "lead_only");
+  assert.equal(graph.clues.find((clue) => clue.displayValue === "Viet Toque").queriesExecuted.length, 0);
+  assert.equal(graph.allCandidates.some((candidate) => candidate.profileUrl.includes("unrelated_person")), false);
+});
+
+test("underscore tokens in ordinary or unrelated prose do not become social pivots", async () => {
+  const graph = await discoverExternalIdentityGraph("samplehandle42@example.com", "test-key", new AbortController().signal, {
+    search: async (query) => query === '"samplehandle" profile' ? [
+      { title: "Sample Handle (@samplehandle) | Instagram", url: "https://instagram.com/samplehandle", description: "samplehandle was built with react_19 and made with vue_3. It uses photo_category and profile_settings. Unrelated to noisy_person_7." },
+    ] : [],
+  });
+
+  assert.equal(graph.clues.some((clue) => /react_19|vue_3|photo_category|profile_settings|noisy_person_7/.test(clue.displayValue)), false);
+  assert.ok(graph.allCandidates.every((candidate) => candidate.identityAttributionConfidence === null));
+});
+
 test("descendant first passes do not preempt a stronger sibling's pending second variant", async () => {
   const queries = [];
   const graph = await discoverExternalIdentityGraph(EMAIL, "test-key", new AbortController().signal, {
