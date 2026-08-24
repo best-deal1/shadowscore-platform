@@ -176,3 +176,7 @@ This file records customer-visible improvements in each ShadowScore release.
 - Email identity discovery now searches a bounded numeric-free username stem. The stem must appear in a result before aliases or handles can expand, and weak person names remain non-recursive leads.
 - External identity discovery now gives each admitted stem-derived sibling cohort one follow-up round. Later descendants cannot displace an important social-profile variant from a stronger pivot that still needs evidence. Useful public identity paths remain reachable within the existing search limit, and unrelated profiles remain unverified leads.
 - Identity discovery now recognizes handles in explicit social relationship preview text, including previews that omit the @ marker. Generic underscore tokens remain excluded, weak display names do not expand, and discovered profiles remain unverified until independently corroborated.
+
+# 2026-08-24
+
+- Investigation reports now rank public identity candidates with the existing weighted entity resolver. Each candidate shows matching signals, contradictions, source links, a combined evidence score, and a plain-language suggestion reason. Discovery leads remain explicitly unverified until independent evidence supports attribution.
