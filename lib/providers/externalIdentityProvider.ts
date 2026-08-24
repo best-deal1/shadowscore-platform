@@ -1,6 +1,8 @@
 import { BaseProvider } from "./BaseProvider";
 import type { ProviderEvidence, ProviderExecutionContext, ProviderFailureReason, ProviderResult } from "./types";
 import { isPublicMailboxDomain } from "../emailDomains";
+import { rankResolutionCandidates } from "../entityIntelligence/resolver";
+import { RESOLVER_VERSION, type ResolutionDecision } from "../entityIntelligence/types";
 
 const SEARCH_ENDPOINT = "https://api.search.brave.com/res/v1/web/search";
 const SOCIAL_HOSTS: Record<string, string> = { "facebook.com": "Facebook", "instagram.com": "Instagram", "linkedin.com": "LinkedIn", "x.com": "X", "twitter.com": "X", "tiktok.com": "TikTok", "github.com": "GitHub", "youtube.com": "YouTube" };
@@ -35,6 +37,7 @@ export type ExternalIdentityCandidate = {
   discoveryScore?: number;
   candidateDiscoveryConfidence: number; identityAttributionConfidence: number | null;
   convergingPaths?: string[][]; sharedIdentifiers?: string[]; loopStrength?: number;
+  resolutionRank?: number; combinedEvidenceScore?: number;
 };
 export type IdentityDiscoverySearchDiagnostic = {
   query: string; hop: number; pivot: string; originalTargetContext: { email: string; localPart: string; domain: string };
@@ -160,6 +163,23 @@ export async function investigateEntityClues(seed: EntityInvestigationSeed, sear
 }
 
 function emailFromContext(context: ProviderExecutionContext) { const values = [context.requestedTarget, context.target, context.email].filter(Boolean) as string[]; return values.map((value) => value.trim().toLowerCase()).find((value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)); }
+
+function resolverRankCandidates(subject: string, candidates: ExternalIdentityCandidate[]) {
+  const decisions = candidates.map((candidate, index): ResolutionDecision => {
+    const supportsMatch = candidate.matchLevel === "exact_match" && candidate.identityAttributionConfidence !== null;
+    return {
+      decisionId: `external-identity-${index + 1}`, workspaceId: "investigation", leftEntityId: subject, rightEntityId: candidate.profileUrl,
+      outcome: supportsMatch ? "POSSIBLE_MATCH" : "ABSTAIN", confidence: supportsMatch ? candidate.identityAttributionConfidence! / 100 : 0,
+      matchedAttributes: [], conflictingAttributes: [], sourceQuality: supportsMatch ? 1 : 0,
+      method: supportsMatch ? "weighted_similarity" : "insufficient_evidence",
+      reason: supportsMatch ? "The exact submitted email was observed in public search evidence." : "Discovery evidence does not establish identity attribution.",
+      evidenceReferences: candidate.supportingEvidence.map((item) => item.url), decidedAt: "1970-01-01T00:00:00.000Z",
+      resolverVersion: RESOLVER_VERSION, policyVersion: "external-identity-ranking@1.0.0", supersedesDecisionId: null,
+      review: { status: supportsMatch ? "pending" : "deferred", actorId: null, reason: null, reviewedAt: null },
+    };
+  });
+  return new Map(rankResolutionCandidates(subject, decisions).map((candidate) => [candidate.entityId, candidate]));
+}
 function containsExactEmailToken(text: string, email: string) { const escaped = email.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); return new RegExp(`(^|[^A-Z0-9._%+\\-])${escaped}($|[^A-Z0-9._%+\\-])`, "i").test(text); }
 function platformFor(url: string) { try {
   const parsed = new URL(url); const host = parsed.hostname.toLowerCase().replace(/^www\./, "");
@@ -650,7 +670,8 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
   for (const skipped of queue) { const clue = clues.get(`${skipped.clueType}:${normalizeIdentifier(skipped.label)}`); if (clue) clue.queriesSkipped.push(skipped.query); }
   const convergences: EntityConvergence[] = [...clues.values()].filter((clue) => clue.observedBy.length > 1).map((clue) => ({ clueId: clue.id, convergingPaths: [clue.discoveryPath], sharedIdentifiers: [clue.normalizedValue], loopStrength: Math.min(100, clue.observedBy.length * 20), sourceClasses: [...new Set(clue.observedBy.map((observation) => sourceClassFor(observation.split("|").at(-1) || "")))] }));
   for (const candidate of candidates.values()) { const handle = socialUrlHandle(candidate.profileUrl); const convergence = convergences.find((item) => item.sharedIdentifiers.includes(normalizeIdentifier(handle || ""))); if (convergence) Object.assign(candidate, convergence, { discoveryScore: (candidate.discoveryScore || 0) + convergence.loopStrength }); }
-  const ranked = [...candidates.values()].sort((a, b) => Number(b.matchLevel === "exact_match") - Number(a.matchLevel === "exact_match") || (b.discoveryScore || 0) - (a.discoveryScore || 0) || b.confidence - a.confidence || a.profileUrl.localeCompare(b.profileUrl));
+  const resolverRanking = resolverRankCandidates(normalized, [...candidates.values()]);
+  const ranked = [...candidates.values()].map((candidate) => ({ ...candidate, resolutionRank: resolverRanking.get(candidate.profileUrl)?.rank, combinedEvidenceScore: resolverRanking.get(candidate.profileUrl)?.combinedEvidenceScore })).sort((a, b) => (b.combinedEvidenceScore || 0) - (a.combinedEvidenceScore || 0) || Number(b.matchLevel === "exact_match") - Number(a.matchLevel === "exact_match") || (b.discoveryScore || 0) - (a.discoveryScore || 0) || b.confidence - a.confidence || a.profileUrl.localeCompare(b.profileUrl));
   const pathUrls = new Set(edges.filter((edge) => edge.relation !== "search_result").map((edge) => edge.from));
   const visible = ranked.filter((candidate, index) => candidate.confidence >= 45 || pathUrls.has(candidate.profileUrl) || index < 3).slice(0, limits.maxVisibleCandidates);
   const anyAdmissible = searches.some((entry) => entry.results.some((result) => result.discoveryAdmissionDecision === "DISCOVERY_ADMITTED"));

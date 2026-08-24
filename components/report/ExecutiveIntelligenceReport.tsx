@@ -30,6 +30,8 @@ function normalizeIdentityCandidate(candidate: NonNullable<ShadowScoreReport["re
     supportingEvidence: candidate.supportingEvidence || [],
     candidateDiscoveryConfidence: typeof candidate.candidateDiscoveryConfidence === "number" ? candidate.candidateDiscoveryConfidence : undefined,
     identityAttributionConfidence: typeof candidate.identityAttributionConfidence === "number" ? candidate.identityAttributionConfidence : null,
+    resolutionRank: typeof candidate.resolutionRank === "number" ? candidate.resolutionRank : undefined,
+    combinedEvidenceScore: typeof candidate.combinedEvidenceScore === "number" ? candidate.combinedEvidenceScore : undefined,
   };
 }
 
