@@ -105,11 +105,31 @@ test("repeated username searches do not upgrade an unverified candidate", async 
     assert.equal(candidates[0].confidence, 0);
     assert.equal(candidates[0].identityAttributionConfidence, null);
     assert.ok(candidates[0].candidateDiscoveryConfidence > 0);
+    assert.equal(candidates[0].combinedEvidenceScore, 0);
+    assert.equal(candidates[0].resolutionRank, 1);
     assert.match(candidates[0].matchBasis, /candidate only/i);
     assert.ok(candidates[0].methods.length >= 1);
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+test("resolver ranking reaches the candidate output without promoting abstained discovery leads", async () => {
+  const graph = await discoverExternalIdentityGraph(EMAIL, "test-key", new AbortController().signal, {
+    search: async (query) => query.includes(EMAIL) ? [
+      { title: `Exact profile ${EMAIL}`, url: "https://github.com/exact-profile", description: `Email: ${EMAIL}` },
+      { title: "Unknown", url: "https://instagram.com/unknown", description: "Unknown" },
+    ] : [],
+    limits: { maxSearches: 4 },
+  });
+  const exact = graph.allCandidates.find((candidate) => candidate.profileUrl === "https://github.com/exact-profile");
+  const unknown = graph.allCandidates.find((candidate) => candidate.profileUrl === "https://instagram.com/unknown");
+  assert.ok(exact);
+  assert.equal(exact.combinedEvidenceScore, .75);
+  assert.equal(exact.resolutionRank, 1);
+  if (unknown) assert.equal(unknown.combinedEvidenceScore, 0);
+  assert.ok(graph.candidates.length <= 8);
+  assert.ok(graph.metrics.searchCount <= 4);
 });
 
 test("numeric-free username stem searches independently and gates identity expansion", async () => {
