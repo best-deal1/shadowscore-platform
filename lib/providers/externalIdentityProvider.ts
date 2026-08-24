@@ -33,12 +33,38 @@ export type ExternalIdentityCandidate = {
   matchLevel: "exact_match" | "unverified_candidate"; matchBasis: string; confidence: number;
   evidenceUrl: string; evidenceQuery: string; evidenceSnippet: string; methods: string[];
   sourceProvider: "Brave Search"; evidenceReference: string; discoveryPath: string[];
-  supportingEvidence: Array<{ query: string; snippet: string; url: string; hop: number }>;
+  supportingEvidence: Array<{ query: string; snippet: string; url: string; sourceUrl?: string; hop: number }>;
   discoveryScore?: number;
   candidateDiscoveryConfidence: number; identityAttributionConfidence: number | null;
   resolutionRank?: number; resolutionEvidenceScore?: number;
   convergingPaths?: string[][]; sharedIdentifiers?: string[]; loopStrength?: number;
 };
+
+const EMAIL_TOKEN = /[\p{L}\p{N}._%+-]+@[\p{L}\p{N}.-]+\.[\p{L}]{2,}/giu;
+const PHONE_TOKEN = /(?<![\p{L}\p{N}])(?:\+?\d[\d\s().-]{5,}\d)(?![\p{L}\p{N}])/gu;
+
+/** Keep every contact identifier printed by a result, including conflicts. */
+export function observedContactIdentifiers(text: string) {
+  const emails = [...text.matchAll(EMAIL_TOKEN)].map((match) => match[0].toLowerCase());
+  const phones = [...text.matchAll(PHONE_TOKEN)]
+    .map((match) => match[0].trim())
+    .filter((value) => value.replace(/\D/gu, "").length >= 7);
+  return [...new Set([...emails, ...phones])];
+}
+
+/** A search query is discovery provenance. The underlying page is the source. */
+export function independentEvidenceSource(url: string) {
+  try {
+    const parsed = new URL(url);
+    parsed.hash = "";
+    for (const parameter of ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "ref", "source"]) parsed.searchParams.delete(parameter);
+    parsed.hostname = parsed.hostname.toLowerCase().replace(/^www\./u, "");
+    parsed.pathname = parsed.pathname.replace(/\/$/u, "") || "/";
+    return parsed.toString();
+  } catch {
+    return url.trim();
+  }
+}
 
 const resolverEntity = (entityId: string): Entity => ({ entityId, workspaceId: "external-identity", entityType: "person", canonicalName: "", aliases: [], domains: [], addresses: [], phoneNumbers: [], emailAddresses: [], registrationIdentifiers: [], peopleAndDirectors: [], relationships: [], status: "unknown", jurisdiction: null, observationIds: [] });
 
@@ -613,9 +639,12 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
       const snippet = `${hit.title}${hit.description ? ` - ${hit.description}` : ""}`.trim();
       const currentExact = containsExactEmailToken(snippet, normalized);
       const prior = candidates.get(profileUrl); const exact = currentExact || prior?.matchLevel === "exact_match";
-      const observation = { query: item.query, snippet, url: publicSearchEvidenceUrl(item.query), hop: item.hop };
+      const observation = { query: item.query, snippet, url: publicSearchEvidenceUrl(item.query), sourceUrl: independentEvidenceSource(profileUrl), hop: item.hop };
       const supportingEvidence = [...(prior?.supportingEvidence || []), observation];
       const observedMatches = [...(prior?.matchedIdentifiers || [])];
+      // Candidate-side evidence must be complete. A matching name, handle, or
+      // submitted identifier never suppresses a contradictory email or phone.
+      observedMatches.push(...observedContactIdentifiers(snippet));
       if (currentExact) observedMatches.push(normalized);
       else if (item.hop > 0 && item.identifierStrength === "corroborated_identifier" && containsIdentifier(snippet, item.label)) observedMatches.push(normalizeIdentifier(item.label));
       const identifiers = [...new Set(observedMatches)];

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { resolveServerSession, setAuthCookies } from "@/lib/auth-session.server";
 import { createCheckoutIntent, getWorkspace, REPORT_PRODUCT, reportIdForPayment, type WorkspaceSession } from "@/lib/workspace";
+import { productForInvestigation } from "@/lib/identity/investigation";
 
 export async function POST(request: Request) {
   try {
@@ -17,8 +18,12 @@ export async function POST(request: Request) {
       email: "",
       startedAt: new Date().toISOString(),
     };
+    const workspaceBeforeCheckout = await getWorkspace(session);
+    const intake = workspaceBeforeCheckout.intakes.find((item) => item.intakeId === body.intakeId);
+    if (!intake) return NextResponse.json({ error: "The saved investigation was not found." }, { status: 404 });
+    const product = productForInvestigation(intake.scanMode === "identity" ? "personal_identity" : "business");
     const intent = await createCheckoutIntent(session, {
-      planName: REPORT_PRODUCT.name,
+      planName: product.name,
       price: REPORT_PRODUCT.price,
       method: "PayPal",
       intakeId: body.intakeId,

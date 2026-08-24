@@ -31,6 +31,7 @@ import { applyCanonicalIdentityToBusinessProfile, applyCanonicalIdentityToIdenti
 import { buildInvestigationIntelligence } from "./investigationIntelligence";
 import { isolateProviderResults } from "./targetIntegrity";
 import { resolveFirstPartyEntities, resolutionTarget } from "./entityResolution/firstParty";
+import { investigationObjective } from "./identity/investigation";
 
 export const REPORT_ENGINE_VERSION = "report-pipeline-v22";
 
@@ -274,6 +275,7 @@ export async function buildReadyReport(input: {
       targetResolution,
       resolvedEntities,
       investigationType: emailInvestigation ? "EMAIL" : intake.scanMode.toUpperCase(),
+      investigationObjective: intake.scanMode === "identity" ? investigationObjective(intake.identitySignals || {}) : undefined,
       mailboxProviderDomain: emailInvestigation && resolution ? resolution.domain : undefined,
       publicIdentityCandidates,
       discoveryDiagnostics,
