@@ -24,6 +24,7 @@ import { buildReasoning } from "./reasoning";
 import { ProviderManager, createDefaultProviders } from "./providers";
 import type { ProviderExecutionContext } from "./providers/types";
 import type { ExternalIdentityCandidate } from "./providers/externalIdentityProvider";
+import { rankIdentityCandidates } from "./identity/candidateRanking";
 import { analyzeRisk } from "./riskEngine";
 import type { PaymentIntent, ShadowScoreIntake, ShadowScoreReport } from "./workspace";
 import { resolveBusinessIdentity } from "./businessIdentityResolver";
@@ -106,7 +107,8 @@ export async function buildReadyReport(input: {
   const evidenceItems = applicableEvidence([...providerEvidenceItems, ...websiteEvidenceItems], investigationType);
   const correlationSummary = correlateEvidence({ evidenceItems, targetType: investigationType });
   const externalIdentityMetadata = providerResults.find((result) => result.providerId === "external-identity")?.metadata as Record<string, unknown> | undefined;
-  const publicIdentityCandidates = (externalIdentityMetadata?.externalIdentityCandidates || []) as ExternalIdentityCandidate[];
+  const discoveredIdentityCandidates = (externalIdentityMetadata?.externalIdentityCandidates || []) as ExternalIdentityCandidate[];
+  const publicIdentityCandidates = rankIdentityCandidates({ email: investigationEmail }, discoveredIdentityCandidates);
   const discoveryDiagnostics = externalIdentityMetadata ? { searches: (externalIdentityMetadata.identityDiscoverySearches || []) as import("./providers/externalIdentityProvider").IdentityDiscoverySearchDiagnostic[], budgetExhaustionReason: String((externalIdentityMetadata.identityDiscoveryMetrics as { budgetExhaustionReason?: string } | undefined)?.budgetExhaustionReason || "not_recorded") } : undefined;
   const providerCategories = Object.fromEntries(providerManager.listProviders().map((provider) => [provider.id, provider.category]));
   const canonicalEvidenceSummary = summarizeEvidence(evidenceItems, providerCategories);
