@@ -18,7 +18,7 @@ const ENGINE_DEFINITIONS: Record<OrchestratorEngineId, EngineDefinition> = {
   reputation: { engineId: "reputation", label: "Reputation", supportedTargets: ["Marketplace Seller", "Marketplace Store", "Business", "Company", "Brand", "Business Profile"] },
   graph: { engineId: "graph", label: "Graph", supportedTargets: ["Marketplace Seller", "Marketplace Store", "Business", "Company", "Brand", "Business Profile", "Evidence Package"] },
   "email-intelligence": { engineId: "email-intelligence", label: "Email Intelligence", supportedTargets: ["Email"] },
-  "external-identity": { engineId: "external-identity", label: "External Identity Discovery", supportedTargets: ["Email"] },
+  "external-identity": { engineId: "external-identity", label: "External Identity Discovery", supportedTargets: ["Email", "Phone"] },
   domain: { engineId: "domain", label: "Domain", supportedTargets: ["Email"] },
   "evidence-parser": { engineId: "evidence-parser", label: "Evidence Parser", supportedTargets: ["Evidence Package"] },
   "contradiction-engine": { engineId: "contradiction-engine", label: "Contradiction Engine", supportedTargets: ["Evidence Package"] },
@@ -33,7 +33,7 @@ const TARGET_ENGINE_MATRIX: Record<TargetClassificationInput["targetType"], Orch
   Brand: ["business-profile", "reputation", "graph"],
   "Business Profile": ["business-profile", "reputation", "graph"],
   Email: ["email-intelligence", "external-identity", "domain"],
-  Phone: ["business-profile", "reputation"],
+  Phone: ["external-identity"],
   "Evidence Package": ["evidence-parser", "contradiction-engine", "graph"],
   Unknown: [],
 };

@@ -31,6 +31,7 @@ import { applyCanonicalIdentityToBusinessProfile, applyCanonicalIdentityToIdenti
 import { buildInvestigationIntelligence } from "./investigationIntelligence";
 import { isolateProviderResults } from "./targetIntegrity";
 import { resolveFirstPartyEntities, resolutionTarget } from "./entityResolution/firstParty";
+import { personalIdentityGaps } from "./personalIdentity";
 
 export const REPORT_ENGINE_VERSION = "report-pipeline-v22";
 
@@ -57,7 +58,8 @@ export async function buildReadyReport(input: {
   }
 
   const submittedTarget = intake.target.trim();
-  const submittedClassification = classifyTarget(submittedTarget);
+  const personalInvestigation = intake.scanMode === "identity" || Boolean(intake.identitySignals);
+  const submittedClassification = personalInvestigation ? { ...classifyTarget(submittedTarget), targetType: "Phone" as const, reasoning: "The intake explicitly selected personal identity scope." } : classifyTarget(submittedTarget);
   const resolvableTarget = ["Email", "Website"].includes(submittedClassification.targetType);
   const resolution = resolvableTarget ? resolutionTarget(submittedTarget) : undefined;
   const emailInvestigation = submittedClassification.targetType === "Email";
@@ -74,6 +76,7 @@ export async function buildReadyReport(input: {
     platform: intake.platform,
     caseType: intake.caseType,
     email: investigationEmail,
+    identitySignals: intake.identitySignals,
     fileNames: intake.fileNames,
     visibleSignalCategories: intake.visibleSignalCategories,
     paymentIntentId: paymentIntent.id,
@@ -102,7 +105,7 @@ export async function buildReadyReport(input: {
       .filter((record) => record.status === "pending" || record.status === "skipped")
       .map((record) => ({ providerId: record.providerId || record.engineId, reason: record.reason || "Provider was not checked in this execution plan." })),
   });
-  const investigationType = emailInvestigation ? "email" : intake.scanMode;
+  const investigationType = personalInvestigation || emailInvestigation ? "identity" : intake.scanMode;
   const evidenceItems = applicableEvidence([...providerEvidenceItems, ...websiteEvidenceItems], investigationType);
   const correlationSummary = correlateEvidence({ evidenceItems, targetType: investigationType });
   const externalIdentityMetadata = providerResults.find((result) => result.providerId === "external-identity")?.metadata as Record<string, unknown> | undefined;
@@ -214,7 +217,7 @@ export async function buildReadyReport(input: {
     intakeId: intake.intakeId,
     paymentIntentId: paymentIntent.id,
     userId: intake.userId,
-    title: `${emailInvestigation ? "Email" : intake.scanMode === "website" ? "Website" : "Trust"} Intelligence Report`,
+    title: `${personalInvestigation || emailInvestigation ? "Personal Identity" : intake.scanMode === "website" ? "Website" : "Trust"} Intelligence Report`,
     entity: canonicalTarget,
     platform: intake.platform,
     scanMode: intake.scanMode,
@@ -273,10 +276,13 @@ export async function buildReadyReport(input: {
         .map((provider) => ({ label: provider.providerId.replace(/[-_]/g, " "), completedAt: provider.completedAt })),
       targetResolution,
       resolvedEntities,
-      investigationType: emailInvestigation ? "EMAIL" : intake.scanMode.toUpperCase(),
+      investigationType: emailInvestigation ? "EMAIL" : personalInvestigation ? "PERSONAL_IDENTITY" : intake.scanMode.toUpperCase(),
       mailboxProviderDomain: emailInvestigation && resolution ? resolution.domain : undefined,
       publicIdentityCandidates,
       discoveryDiagnostics,
+      identitySignals: intake.identitySignals,
+      personalIdentityGaps: personalInvestigation || emailInvestigation ? personalIdentityGaps(intake.identitySignals || (emailInvestigation ? { email: { value: submittedTarget, provenance: "user_submitted_email", evidenceStatus: "submitted_reference" } } : {}), new Set(publicIdentityCandidates.flatMap((candidate) => candidate.supportingEvidence.map((item) => item.url))).size) : undefined,
+      imageComparisonStatus: intake.identitySignals?.referenceImage ? "not_operational" : "not_supplied",
     },
     riskScore: undefined,
     confidenceScore: undefined,

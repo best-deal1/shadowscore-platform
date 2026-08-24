@@ -15,6 +15,7 @@ import { useLocale } from "../../components/LocaleProvider";
 import { BETA_PRODUCT } from "../../lib/pricing";
 import QuickCheckResult from "../../components/quick-check/QuickCheckResult";
 import type { QuickCheckReport } from "../../lib/quickCheck/report";
+import { createPersonalIdentitySignals, primaryIdentityTarget } from "../../lib/personalIdentity";
 
 type Severity = "Low" | "Medium" | "High" | "Critical";
 type Finding = {
@@ -25,7 +26,7 @@ type Finding = {
   recommendation: string;
 };
 type Requirement = { label: string; hints: string[] };
-type ScanMode = "website" | "marketplace" | "evidence";
+type ScanMode = "website" | "identity" | "marketplace" | "evidence";
 
 type FileIssue = { file: string; issue: string; severity: "Block" | "Warning" };
 type FreeScanResult = { status?: "ready"; message?: string; reportReadyEvent?: { type: "free-preview-ready"; status: "ready"; ready: true; emittedAt: string }; executedAt: string; targetResolution?: { requestedTarget: string; resolvedTarget: string; legalName?: string }; quickCheck?: QuickCheckReport; previewSummary?: { confidence: QuickCheckReport["confidence"]; providersQueried: number; sourcesSuccessfullyQueried: string[]; evidenceCollected: number; findingsDiscovered: number } };
@@ -514,6 +515,7 @@ export default function IntakePage() {
   const { t } = useLocale();
   const scanModes: Array<{ id: ScanMode; label: string; eyebrow: string; description: string }> = [
     { id: "website", label: t.intakeUi.websiteBusiness, eyebrow: t.intakeUi.noUploadRequired, description: t.intakeUi.websiteModeDescription },
+    { id: "identity", label: "Person / Identity", eyebrow: "One field required", description: "Investigate a person from an email, phone number, name, username, or a combination." },
     { id: "marketplace", label: t.intakeUi.marketplaceSeller, eyebrow: t.intakeUi.optionalEvidence, description: t.intakeUi.marketplaceModeDescription },
     { id: "evidence", label: t.intakeUi.evidenceReview, eyebrow: t.intakeUi.uploadRequired, description: t.intakeUi.evidenceModeDescription },
   ];
@@ -525,6 +527,12 @@ export default function IntakePage() {
   const [store, setStore] = useState("");
   const [websiteTarget, setWebsiteTarget] = useState("");
   const [email, setEmail] = useState("");
+  const [identityEmail, setIdentityEmail] = useState("");
+  const [identityPhone, setIdentityPhone] = useState("");
+  const [identityName, setIdentityName] = useState("");
+  const [identityUsername, setIdentityUsername] = useState("");
+  const [referenceImage, setReferenceImage] = useState<File>();
+  const [referenceImageStoragePath, setReferenceImageStoragePath] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [leadSaved, setLeadSaved] = useState(false);
   const [intake, setIntake] = useState<ShadowScoreIntake | null>(null);
@@ -592,7 +600,8 @@ export default function IntakePage() {
     marketplace === "Other"
       ? customMarketplace || "Other marketplace"
       : marketplace;
-  const activeTarget = scanMode === "website" ? websiteTarget : store;
+  const identitySignals = createPersonalIdentitySignals({ email: identityEmail, phone: identityPhone, name: identityName, username: identityUsername, referenceImage: referenceImage ? { fileName: referenceImage.name, mediaType: referenceImage.type, size: referenceImage.size, storagePath: referenceImageStoragePath || undefined } : undefined });
+  const activeTarget = scanMode === "website" ? websiteTarget : scanMode === "identity" ? primaryIdentityTarget(identitySignals) : store;
   const requirements = useMemo(
     () =>
       scanMode === "website"
@@ -795,6 +804,8 @@ export default function IntakePage() {
     }
     if (scanMode === "website" && !websiteTarget.trim())
       errors.push("Enter a website URL, business name or company domain.");
+    if (scanMode === "identity" && !activeTarget) errors.push("Enter at least one identity field.");
+    if (scanMode === "identity" && identityEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identityEmail)) errors.push("Enter a valid identity email address.");
     if (scanMode === "evidence" && files.length === 0)
       errors.push("Upload evidence for case review.");
     return errors;
@@ -805,6 +816,8 @@ export default function IntakePage() {
     caseType,
     store,
     websiteTarget,
+    activeTarget,
+    identityEmail,
     files.length,
   ]);
 
@@ -813,14 +826,15 @@ export default function IntakePage() {
     formErrors.length === 0 &&
     (scanMode !== "evidence" || files.length > 0);
 
-  const intakeRecord = (resolvedEmail = email) => ({
+  const intakeRecord = (resolvedEmail = email, uploadedReferencePath = referenceImageStoragePath) => ({
       scanMode,
-      platform: scanMode === "website" ? "Website / Business" : displayMarketplace,
-      caseType: scanMode === "website" ? "Business trust scan" : caseType,
+      platform: scanMode === "website" ? "Website / Business" : scanMode === "identity" ? "Personal identity" : displayMarketplace,
+      caseType: scanMode === "website" ? "Business trust scan" : scanMode === "identity" ? "Personal identity investigation" : caseType,
       target: activeTarget,
       email: resolvedEmail,
-      fileNames: files.map((file) => file.name),
-      visibleSignalCategories: scanMode === "website" ? WEBSITE_SIGNAL_CATEGORIES : (detectedSignals.length ? detectedSignals.map((item) => item.title) : ["Marketplace identity", t.intakeUi.evidenceReadiness, "Payment or policy categories"]),
+      identitySignals: scanMode === "identity" ? createPersonalIdentitySignals({ email: identityEmail, phone: identityPhone, name: identityName, username: identityUsername, referenceImage: referenceImage ? { fileName: referenceImage.name, mediaType: referenceImage.type, size: referenceImage.size, storagePath: uploadedReferencePath || undefined } : undefined }) : undefined,
+      fileNames: [...files.map((file) => file.name), ...(referenceImage ? [referenceImage.name] : [])],
+      visibleSignalCategories: scanMode === "website" ? WEBSITE_SIGNAL_CATEGORIES : scanMode === "identity" ? ["Public identity discovery", "Identity evidence resolution"] : (detectedSignals.length ? detectedSignals.map((item) => item.title) : ["Marketplace identity", t.intakeUi.evidenceReadiness, "Payment or policy categories"]),
     });
 
   const resetFreeScan = () => {
@@ -877,13 +891,21 @@ export default function IntakePage() {
       throw new Error("Enter a valid customer email to save this investigation.");
     }
     setEmail(cleanEmail);
-    const record = intakeRecord(cleanEmail);
+    if (referenceImage && !session) throw new Error("Sign in before saving a reference image so it can use private authorized storage.");
+    let uploadedReferencePath = referenceImageStoragePath;
+    if (referenceImage && !uploadedReferencePath && session) {
+      const form = new FormData(); form.set("image", referenceImage);
+      const upload = await fetch("/api/intakes/reference-image", { method: "POST", body: form });
+      const payload = await upload.json().catch(() => null) as { referenceImage?: { storagePath: string }; error?: string } | null;
+      if (!upload.ok || !payload?.referenceImage?.storagePath) throw new Error(payload?.error || "The reference image could not be stored.");
+      uploadedReferencePath = payload.referenceImage.storagePath; setReferenceImageStoragePath(uploadedReferencePath);
+    }
+    const record = intakeRecord(cleanEmail, uploadedReferencePath);
     const lead = {
       createdAt: new Date().toISOString(),
       scanMode,
-      marketplace:
-        scanMode === "website" ? "Website / Business" : displayMarketplace,
-      caseType: scanMode === "website" ? "Business trust scan" : caseType,
+      marketplace: scanMode === "website" ? "Website / Business" : scanMode === "identity" ? "Personal identity" : displayMarketplace,
+      caseType: scanMode === "website" ? "Business trust scan" : scanMode === "identity" ? "Personal identity investigation" : caseType,
       store: activeTarget,
       email: cleanEmail,
       files: files.map((file) => ({
@@ -1020,7 +1042,15 @@ export default function IntakePage() {
               </div>
             )}
 
-            {scanMode !== "website" && (
+            {scanMode === "identity" && <fieldset className="mt-6 rounded-2xl border border-white/10 p-5"><legend className="px-2 text-sm font-bold text-white">Identity signals</legend><p className="mb-5 text-sm leading-6 text-zinc-400">Enter any fields you know. Submitted details guide discovery and remain labeled as user-provided reference material.</p><div className="grid gap-5 md:grid-cols-2">
+              <label><span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">Email address</span><input type="email" value={identityEmail} onChange={(event) => setIdentityEmail(event.target.value)} autoComplete="off" className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white" /></label>
+              <label><span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">Phone number</span><input type="tel" value={identityPhone} onChange={(event) => setIdentityPhone(event.target.value)} autoComplete="off" className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white" /></label>
+              <label><span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">Full name</span><input value={identityName} onChange={(event) => setIdentityName(event.target.value)} autoComplete="off" className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white" /></label>
+              <label><span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">Known username</span><div className="flex rounded-2xl border border-white/10 bg-black focus-within:border-red-400/40"><span aria-hidden="true" className="p-4 pr-0 text-zinc-500">@</span><input value={identityUsername} onChange={(event) => setIdentityUsername(event.target.value.replace(/^@/, ""))} autoComplete="off" className="min-w-0 flex-1 bg-transparent p-4 text-white outline-none" /></div></label>
+              <label className="md:col-span-2"><span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">Reference image, optional</span><input type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => { setReferenceImage(event.target.files?.[0]); setReferenceImageStoragePath(""); }} className="block w-full rounded-2xl border border-white/10 bg-black p-4 text-sm text-zinc-300 file:mr-4 file:rounded-lg file:border-0 file:bg-white file:px-3 file:py-2 file:font-bold file:text-black" /><span className="mt-2 block text-xs leading-5 text-amber-200">Automated image comparison is not operational. The selected image is recorded as reference material only.</span></label>
+            </div><p className="mt-5 text-xs text-zinc-500">At least one email, phone number, name, or username is required.</p></fieldset>}
+
+            {scanMode !== "website" && scanMode !== "identity" && (
               <>
                 <div className="mt-6 grid gap-5 md:grid-cols-2">
                   {scanMode === "marketplace" && (
@@ -1136,7 +1166,7 @@ export default function IntakePage() {
               </>
             )}
 
-            {scanMode !== "website" && (
+            {scanMode !== "website" && scanMode !== "identity" && (
               <>
                 <div className="mt-6 rounded-2xl border border-white/10 p-5">
                   <div className="mb-3 flex items-center justify-between">
