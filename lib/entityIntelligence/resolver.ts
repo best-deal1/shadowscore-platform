@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { RESOLVER_VERSION, type Entity, type Observation, type ObservationAttribute, type ResolutionDecision, type ResolutionFeature, type ResolverPolicy } from "./types";
+import { RESOLVER_VERSION, type Entity, type Observation, type ObservationAttribute, type RankedResolutionCandidate, type ResolutionDecision, type ResolutionFeature, type ResolverPolicy } from "./types";
 
 export const DEFAULT_RESOLVER_POLICY: ResolverPolicy = {
   version: "organization-resolution-policy@1.0.0", matchThreshold: .82, possibleMatchThreshold: .58, noMatchThreshold: .25, minimumEvidence: 2,
@@ -8,6 +8,11 @@ export const DEFAULT_RESOLVER_POLICY: ResolverPolicy = {
 
 const LEGAL_SUFFIXES = new Set(["ltd", "limited", "inc", "corp", "corporation", "llc", "plc", "company", "co", "בעמ", "חברה"]);
 const transliteration: Record<string, string> = { א:"a",ב:"b",ג:"g",ד:"d",ה:"h",ו:"v",ז:"z",ח:"h",ט:"t",י:"i",כ:"k",ך:"k",ל:"l",מ:"m",ם:"m",נ:"n",ן:"n",ס:"s",ע:"a",פ:"p",ף:"p",צ:"ts",ץ:"ts",ק:"k",ר:"r",ש:"sh",ת:"t" };
+const SYNTHETIC_PLACEHOLDERS = new Set(["unknown", "not known", "unavailable", "not available", "n a", "none", "null"]);
+
+function isIdentityValue(value: string): boolean {
+  return Boolean(value) && !SYNTHETIC_PLACEHOLDERS.has(value.replace(/[._/-]+/g, " ").replace(/\s+/g, " ").trim());
+}
 
 export function normalizeValue(attribute: ObservationAttribute, value: string): string {
   let normalized = value.trim().toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
@@ -36,7 +41,7 @@ function similarity(left: string, right: string): number {
 function levenshtein(a:string,b:string){const row=Array.from({length:b.length+1},(_,i)=>i);for(let i=1;i<=a.length;i++){let prior=row[0];row[0]=i;for(let j=1;j<=b.length;j++){const current=row[j];row[j]=Math.min(row[j]+1,row[j-1]+1,prior+(a[i-1]===b[j-1]?0:1));prior=current;}}return row[b.length];}
 const id=(...values:string[])=>createHash("sha256").update(values.join("|")).digest("hex").slice(0,24);
 
-function values(entity:Entity, attribute:ObservationAttribute):string[]{const map:Record<ObservationAttribute,string[]>={name:[entity.canonicalName,...entity.aliases],domain:entity.domains,address:entity.addresses,phone:entity.phoneNumbers,email:entity.emailAddresses,registration_id:entity.registrationIdentifiers,director:entity.peopleAndDirectors,parent:entity.relationships.filter(r=>r.type==="parent").map(r=>r.entityId),status:[entity.status]};return map[attribute].map(v=>normalizeValue(attribute,v)).filter(Boolean);}
+function values(entity:Entity, attribute:ObservationAttribute):string[]{const map:Record<ObservationAttribute,string[]>={name:[entity.canonicalName,...entity.aliases],domain:entity.domains,address:entity.addresses,phone:entity.phoneNumbers,email:entity.emailAddresses,registration_id:entity.registrationIdentifiers,director:entity.peopleAndDirectors,parent:entity.relationships.filter(r=>r.type==="parent").map(r=>r.entityId),status:[entity.status]};return [...new Set(map[attribute].map(v=>normalizeValue(attribute,v)).filter(isIdentityValue))];}
 
 export function generateCandidates(subject:Entity, entities:Entity[]):Entity[]{
   const anchors=new Set([...["registration_id","domain","phone","email","name"] as ObservationAttribute[]].flatMap(attribute=>values(subject,attribute).map(value=>`${attribute}:${value}`)));
@@ -44,8 +49,8 @@ export function generateCandidates(subject:Entity, entities:Entity[]):Entity[]{
 }
 
 export function resolveEntities(left:Entity,right:Entity,observations:Observation[],options:{policy?:ResolverPolicy;now?:string;supersedesDecisionId?:string|null}={}):ResolutionDecision{
-  const policy=options.policy??DEFAULT_RESOLVER_POLICY, features:ResolutionFeature[]=[];
-  for(const attribute of Object.keys(policy.weights) as ObservationAttribute[]){let best:{left:string;right:string;score:number}|null=null;for(const a of values(left,attribute))for(const b of values(right,attribute)){const score=similarity(a,b);if(!best||score>best.score)best={left:a,right:b,score};}if(best)features.push({attribute,left:best.left,right:best.right,similarity:best.score,weight:policy.weights[attribute],contribution:best.score*policy.weights[attribute],evidenceReferences:observations.filter(o=>[...left.observationIds,...right.observationIds].includes(o.observationId)&&o.attribute===attribute).map(o=>o.evidenceReference).sort()});}
+  const policy=options.policy??DEFAULT_RESOLVER_POLICY, features:ResolutionFeature[]=[], identifierConflicts:ResolutionFeature[]=[];
+  for(const attribute of Object.keys(policy.weights) as ObservationAttribute[]){let best:{left:string;right:string;score:number}|null=null;const evidenceReferences=observations.filter(o=>[...left.observationIds,...right.observationIds].includes(o.observationId)&&o.attribute===attribute).map(o=>o.evidenceReference).sort();for(const a of values(left,attribute))for(const b of values(right,attribute)){const score=similarity(a,b);if(!best||score>best.score)best={left:a,right:b,score};if((attribute==="email"||attribute==="phone")&&a!==b)identifierConflicts.push({attribute,left:a,right:b,similarity:score,weight:policy.weights[attribute],contribution:score*policy.weights[attribute],evidenceReferences});}if(best)features.push({attribute,left:best.left,right:best.right,similarity:best.score,weight:policy.weights[attribute],contribution:best.score*policy.weights[attribute],evidenceReferences});}
   const verifiedConflict=features.find(feature=>feature.attribute==="registration_id"&&feature.left&&feature.right&&feature.similarity<1);
   const exactIdentifier=features.find(feature=>["registration_id","domain"].includes(feature.attribute)&&feature.similarity===1);
   const meaningful=features.filter(feature=>feature.weight>=.3), denominator=meaningful.reduce((n,f)=>n+f.weight,0), weighted=denominator?meaningful.reduce((n,f)=>n+f.contribution,0)/denominator:0;
@@ -59,5 +64,14 @@ export function resolveEntities(left:Entity,right:Entity,observations:Observatio
   else if(weighted<=policy.noMatchThreshold){outcome="NO_MATCH";method="weighted_similarity";confidence=1-weighted;reason="Identity features remain below the configured match threshold.";}
   else {outcome="REVIEW_REQUIRED";method="weighted_similarity";reason="Signals are ambiguous under the configured policy.";}
   const evidenceReferences=[...new Set(source.map(o=>o.evidenceReference))].sort(), decidedAt=options.now??new Date().toISOString();
-  return {decisionId:id(left.entityId,right.entityId,policy.version,decidedAt,options.supersedesDecisionId??""),workspaceId:left.workspaceId,leftEntityId:left.entityId,rightEntityId:right.entityId,outcome,confidence:Number(confidence.toFixed(4)),matchedAttributes:features.filter(f=>f.similarity>=.7),conflictingAttributes:features.filter(f=>f.similarity<.35||f.attribute==="registration_id"&&f.similarity<1),sourceQuality:Number(sourceQuality.toFixed(4)),method,reason,evidenceReferences,decidedAt,resolverVersion:RESOLVER_VERSION,policyVersion:policy.version,supersedesDecisionId:options.supersedesDecisionId??null,review:{status:["POSSIBLE_MATCH","REVIEW_REQUIRED","CONFLICT"].includes(outcome)?"pending":"deferred",actorId:null,reason:null,reviewedAt:null}};
+  const conflicts=[...features.filter(f=>f.similarity<.35||f.attribute==="registration_id"&&f.similarity<1),...identifierConflicts].filter((feature,index,all)=>all.findIndex(item=>item.attribute===feature.attribute&&item.left===feature.left&&item.right===feature.right)===index);
+  return {decisionId:id(left.entityId,right.entityId,policy.version,decidedAt,options.supersedesDecisionId??""),workspaceId:left.workspaceId,leftEntityId:left.entityId,rightEntityId:right.entityId,outcome,confidence:Number(confidence.toFixed(4)),matchedAttributes:features.filter(f=>f.similarity>=.7),conflictingAttributes:conflicts,sourceQuality:Number(sourceQuality.toFixed(4)),method,reason,evidenceReferences,decidedAt,resolverVersion:RESOLVER_VERSION,policyVersion:policy.version,supersedesDecisionId:options.supersedesDecisionId??null,review:{status:["POSSIBLE_MATCH","REVIEW_REQUIRED","CONFLICT"].includes(outcome)?"pending":"deferred",actorId:null,reason:null,reviewedAt:null}};
+}
+
+const MATCH_SUPPORTING_OUTCOMES = new Set<ResolutionDecision["outcome"]>(["MATCH", "POSSIBLE_MATCH"]);
+
+export function rankResolutionCandidates(subjectEntityId:string, decisions:ResolutionDecision[]):RankedResolutionCandidate[]{
+  const grouped=new Map<string,ResolutionDecision[]>();
+  for(const decision of decisions){const candidateId=decision.leftEntityId===subjectEntityId?decision.rightEntityId:decision.rightEntityId===subjectEntityId?decision.leftEntityId:null;if(!candidateId)continue;grouped.set(candidateId,[...(grouped.get(candidateId)||[]),decision]);}
+  return [...grouped].map(([entityId,candidateDecisions])=>({entityId,rank:0,combinedEvidenceScore:Number(candidateDecisions.reduce((score,decision)=>score+(MATCH_SUPPORTING_OUTCOMES.has(decision.outcome)?decision.confidence*decision.sourceQuality:0),0).toFixed(4)),decisions:candidateDecisions})).sort((a,b)=>b.combinedEvidenceScore-a.combinedEvidenceScore||a.entityId.localeCompare(b.entityId)).map((candidate,index)=>({...candidate,rank:index+1}));
 }
