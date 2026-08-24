@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { resolveServerSession, setAuthCookies } from "@/lib/auth-session.server";
 import { createIntake, type ShadowScoreIntake, type WorkspaceSession } from "@/lib/workspace";
-import { identityReadinessIssues, normalizeIdentitySignals } from "@/lib/personalIdentity";
+import { identityReadinessIssues, normalizeIntakeIdentitySignals } from "@/lib/personalIdentity";
 
 type IntakeInput = Omit<ShadowScoreIntake, "intakeId" | "userId" | "paymentStatus" | "reportStatus" | "createdAt">;
 
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     if (!body || !["website", "marketplace", "evidence", "personal"].includes(String(body.scanMode)) || typeof body.target !== "string" || !body.target.trim() || typeof body.email !== "string" || !body.email.includes("@")) {
       return authenticatedResponse({ error: "A valid investigation target and email are required." }, 400, authenticated.refreshedAuth);
     }
-    const identitySignals = normalizeIdentitySignals(body.identitySignals);
+    const identitySignals = normalizeIntakeIdentitySignals(body.identitySignals, { target: body.target, email: body.email });
     if (body.scanMode === "personal") {
       const readinessIssues = identityReadinessIssues(process.env);
       if (readinessIssues.length) return authenticatedResponse({ error: "Personal identity investigations are not available.", readinessIssues }, 503, authenticated.refreshedAuth);

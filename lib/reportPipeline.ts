@@ -31,7 +31,7 @@ import { applyCanonicalIdentityToBusinessProfile, applyCanonicalIdentityToIdenti
 import { buildInvestigationIntelligence } from "./investigationIntelligence";
 import { isolateProviderResults } from "./targetIntegrity";
 import { resolveFirstPartyEntities, resolutionTarget } from "./entityResolution/firstParty";
-import { identityObjective, normalizeIdentitySignals } from "./personalIdentity";
+import { identityObjective, normalizeIntakeIdentitySignals } from "./personalIdentity";
 
 export const REPORT_ENGINE_VERSION = "report-pipeline-v22";
 
@@ -64,7 +64,7 @@ export async function buildReadyReport(input: {
   const emailInvestigation = submittedClassification.targetType === "Email" && intake.scanMode !== "personal";
   const providerTarget = intake.scanMode === "website" && resolution && !emailInvestigation ? resolution.domain : submittedTarget;
   const canonicalTarget = submittedTarget;
-  const personalSignals = intake.scanMode === "personal" ? normalizeIdentitySignals(intake.identitySignals) : undefined;
+  const personalSignals = intake.scanMode === "personal" ? normalizeIntakeIdentitySignals(intake.identitySignals, { target: intake.target, email: intake.email }) : undefined;
   const investigationEmail = emailInvestigation ? submittedTarget : intake.scanMode === "personal" ? personalSignals?.emails[0] : intake.scanMode === "website" ? undefined : intake.email;
   const providerContext: ProviderExecutionContext = {
     intakeId: intake.intakeId,
@@ -76,6 +76,7 @@ export async function buildReadyReport(input: {
     platform: intake.platform,
     caseType: intake.caseType,
     email: investigationEmail,
+    identitySignals: personalSignals,
     fileNames: intake.fileNames,
     visibleSignalCategories: intake.visibleSignalCategories,
     paymentIntentId: paymentIntent.id,
@@ -115,7 +116,15 @@ export async function buildReadyReport(input: {
   const correlationSummary = correlateEvidence({ evidenceItems, targetType: investigationType });
   const externalIdentityMetadata = providerResults.find((result) => result.providerId === "external-identity")?.metadata as Record<string, unknown> | undefined;
   const publicIdentityCandidates = (externalIdentityMetadata?.externalIdentityCandidates || []) as ExternalIdentityCandidate[];
-  const discoveryDiagnostics = externalIdentityMetadata ? { searches: (externalIdentityMetadata.identityDiscoverySearches || []) as import("./providers/externalIdentityProvider").IdentityDiscoverySearchDiagnostic[], budgetExhaustionReason: String((externalIdentityMetadata.identityDiscoveryMetrics as { budgetExhaustionReason?: string } | undefined)?.budgetExhaustionReason || "not_recorded") } : undefined;
+  const externalIdentityResult = providerResults.find((result) => result.providerId === "external-identity");
+  const searches = (externalIdentityMetadata?.identityDiscoverySearches || []) as import("./providers/externalIdentityProvider").IdentityDiscoverySearchDiagnostic[];
+  const discoveryDiagnostics = intake.scanMode === "personal" ? {
+    searches,
+    budgetExhaustionReason: String((externalIdentityMetadata?.identityDiscoveryMetrics as { budgetExhaustionReason?: string } | undefined)?.budgetExhaustionReason || (externalIdentityResult?.status !== "completed" ? "provider_failed" : searches.length === 0 ? "no_search_executed" : publicIdentityCandidates.length === 0 ? "no_eligible_candidates" : "closure_reached")),
+    providerStatus: externalIdentityResult?.status || "not_scheduled",
+    providerFailure: externalIdentityResult?.errors[0],
+  } : undefined;
+  if (intake.scanMode === "personal") console.info("personal_identity_discovery_execution", { investigationId: intake.intakeId, submittedSignalCounts: Object.fromEntries(Object.entries(personalSignals || {}).map(([key, values]) => [key, values.length])), providerStatus: discoveryDiagnostics?.providerStatus, searchCount: searches.length, candidateCount: publicIdentityCandidates.length, emptyResultReason: discoveryDiagnostics?.budgetExhaustionReason, providerFailure: discoveryDiagnostics?.providerFailure });
   const providerCategories = Object.fromEntries(providerManager.listProviders().map((provider) => [provider.id, provider.category]));
   const canonicalEvidenceSummary = summarizeEvidence(evidenceItems, providerCategories);
   executionRecords

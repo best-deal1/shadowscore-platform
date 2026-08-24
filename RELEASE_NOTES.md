@@ -191,3 +191,9 @@ This file records customer-visible improvements in each ShadowScore release.
 - Personal scan mode now controls the complete report presentation, including identity candidates, resolver evidence, contradictions, provenance, and person-specific next actions.
 - Personal intake copy now describes identity research at selection, quick check, and checkout.
 - The production intake constraint now accepts personal scan mode while preserving existing modes.
+
+## Personal identity investigation reliability
+
+- Personal identity intakes now retain submitted signals throughout persistence, public discovery, resolver evaluation, and executive report rendering.
+- Older personal investigations recover email, phone, name, or username signals from legacy target fields when structured signals are absent.
+- Reports now show discovery execution status, completed search count, provider failures, and empty-result reasons.
