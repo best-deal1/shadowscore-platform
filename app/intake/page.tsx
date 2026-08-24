@@ -549,6 +549,10 @@ export default function IntakePage() {
   }, []);
 
   useEffect(() => {
+    document.title = scanMode === "personal" ? "Personal Identity Investigation | ShadowScore" : "Start an Investigation | ShadowScore";
+  }, [scanMode]);
+
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const target = params.get("target")?.trim();
     const mode = params.get("mode");
@@ -979,10 +983,10 @@ export default function IntakePage() {
       <section className="relative z-10 mx-auto max-w-7xl px-6 py-14">
         <div className="grid gap-10 lg:grid-cols-[.82fr_1.18fr]">
           <div>
-            <div className="text-xs uppercase tracking-[0.35em] text-red-300">{t.intakeUi.investigationEyebrow}</div>
-            <h1 className="mt-6 text-5xl font-extrabold leading-tight">{t.intakeUi.investigationTitle}</h1>
-            <p className="mt-6 max-w-lg text-lg leading-8 text-zinc-400">{t.intakeUi.investigationPrice}</p>
-            <div className="mt-8 rounded-2xl border border-white/10 bg-white/[.035] p-5"><p className="font-bold">{t.intakeUi.investigationTime}</p><ol className="mt-4 space-y-3 text-sm text-zinc-300"><li>1. {t.intakeUi.investigationStepIdentify}</li><li>2. {t.intakeUi.investigationStepReview}</li><li>3. {t.intakeUi.investigationStepReport}</li></ol><p className="mt-4 text-sm text-zinc-400">{t.intakeUi.investigationStartTerms}</p></div>
+            <div className="text-xs uppercase tracking-[0.35em] text-red-300">{scanMode === "personal" ? "Identity investigation" : t.intakeUi.investigationEyebrow}</div>
+            <h1 className="mt-6 text-5xl font-extrabold leading-tight">{scanMode === "personal" ? "Investigate a Personal Identity" : t.intakeUi.investigationTitle}</h1>
+            <p className="mt-6 max-w-lg text-lg leading-8 text-zinc-400">{scanMode === "personal" ? "Submit known identity signals. The report separates public discovery leads from resolver-backed identity evidence." : t.intakeUi.investigationPrice}</p>
+            <div className="mt-8 rounded-2xl border border-white/10 bg-white/[.035] p-5"><p className="font-bold">{scanMode === "personal" ? "What the identity check covers" : t.intakeUi.investigationTime}</p><ol className="mt-4 space-y-3 text-sm text-zinc-300">{scanMode === "personal" ? <><li>1. Review submitted identity signals</li><li>2. Discover eligible public profile candidates</li><li>3. Compare matches, conflicts, and source provenance</li></> : <><li>1. {t.intakeUi.investigationStepIdentify}</li><li>2. {t.intakeUi.investigationStepReview}</li><li>3. {t.intakeUi.investigationStepReport}</li></>}</ol><p className="mt-4 text-sm text-zinc-400">{scanMode === "personal" ? "Purchase includes one private Personal Identity Investigation report after payment." : t.intakeUi.investigationStartTerms}</p></div>
           </div>
 
           <div className="rounded-[32px] border border-white/10 bg-black/55 p-6 shadow-[0_0_60px_rgba(120,0,20,0.16)] backdrop-blur-xl">

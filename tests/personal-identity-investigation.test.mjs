@@ -69,3 +69,31 @@ test("legacy email and business scan modes remain accepted", async () => {
   assert.match(route, /"website", "marketplace", "evidence", "personal"/);
   assert.match(route, /body\.scanMode === "personal"/);
 });
+
+test("production-shaped persisted personal email report uses only identity presentation", async () => {
+  const [presentation, pipeline, migration, intake] = await Promise.all([
+    readFile(new URL("../components/report/PersonalIdentityReport.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../lib/reportPipeline.ts", import.meta.url), "utf8"),
+    readFile(new URL("../supabase/migrations/20260824010000_personal_identity_intake.sql", import.meta.url), "utf8"),
+    readFile(new URL("../app/intake/page.tsx", import.meta.url), "utf8"),
+  ]);
+  for (const label of ["Person Under Review", "Personal Identity Investigation", "Submitted Identity Signals", "Public Identity Candidates", "Identity Matching Evidence", "Contradictory Identifiers", "Source Provenance", "Independent source count", "Identity confidence", "Verification status", "Person-Specific Next Actions", "Unverified Candidate", "Discovery relevance", "Resolver-backed identity evidence score", "Matched signals", "Conflicting signals", "Resolver outcome", "Final ranking", "Evidence sources"]) assert.match(presentation, new RegExp(label, "i"));
+  for (const forbidden of ["commercial trustworthiness", "DNS", "WHOIS", "SSL/TLS", "Hosting", "Domain registration", "Legal business records", "Company ownership", "Marketplace seller verification", "Business Under Review", "Business Identity"]) assert.doesNotMatch(presentation, new RegExp(forbidden, "i"));
+  assert.match(pipeline, /intake\.scanMode === "personal"[\s\S]*email-intelligence[\s\S]*external-identity/);
+  assert.match(pipeline, /Personal scan mode is authoritative/);
+  assert.match(pipeline, /businessNarrative: intake\.scanMode === "personal" \? undefined/);
+  assert.match(pipeline, /decision: intake\.scanMode === "personal" \? undefined/);
+  assert.match(pipeline, /scorecard: intake\.scanMode === "personal" \? undefined/);
+  assert.match(migration, /drop constraint if exists intakes_scan_mode_check/);
+  assert.match(migration, /scan_mode in \('website', 'marketplace', 'evidence', 'personal'\)/);
+  assert.match(migration, /validate constraint intakes_scan_mode_check/);
+  assert.match(intake, /Personal Identity Investigation \| ShadowScore/);
+});
+
+test("candidate presentation cannot promote discovery relevance without resolver matches", async () => {
+  const presentation = await readFile(new URL("../components/report/PersonalIdentityReport.tsx", import.meta.url), "utf8");
+  assert.match(presentation, /const evidenceScore = matched\.length \? candidate\.resolutionEvidenceScore \|\| 0 : 0/);
+  assert.match(presentation, /const verified = candidate\.resolutionOutcome === "MATCH" && matched\.length > 0/);
+  assert.match(presentation, /No positive resolver evidence/);
+  assert.match(presentation, /Not returned by the source/);
+});

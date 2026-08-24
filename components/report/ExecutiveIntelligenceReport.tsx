@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import type { ShadowScoreReport } from "../../lib/workspace";
 import { executiveBusinessImpacts, executiveDecisionReasons, executiveFindingStories, executiveRecommendation, groupExecutiveEvidence, materialEvidenceGaps, recommendedActions } from "../../lib/executiveReport";
+import PersonalIdentityReport from "./PersonalIdentityReport";
 
 function dateTime(value?: string) {
   if (!value) return "Not recorded";
@@ -60,6 +61,7 @@ export default function ExecutiveIntelligenceReport({ report }: { report: Shadow
   const [actionStatus, setActionStatus] = useState("");
   const recommendation = executiveRecommendation(report);
   const isEmailInvestigation = report.reportSummary?.investigationType === "EMAIL";
+  const isPersonalInvestigation = report.scanMode === "personal";
   const personalInfrastructure = /dns|whois|ssl|tls|hosting|nameserver|mail server|infrastructure/i;
   const findingStories = executiveFindingStories(report).filter((item) => !isEmailInvestigation || !personalInfrastructure.test(`${item.title} ${item.observation} ${item.commercialRisk}`));
   const evidenceGroups = groupExecutiveEvidence(report).filter((group) => !isEmailInvestigation || !/DNS|Website|Security|Business Registration/i.test(group.category));
@@ -115,6 +117,8 @@ export default function ExecutiveIntelligenceReport({ report }: { report: Shadow
       setActionStatus("Sharing is unavailable. Copy the secure link instead.");
     }
   }
+
+  if (isPersonalInvestigation) return <PersonalIdentityReport report={report} />;
 
   return <>
     <section aria-labelledby="report-workspace-title" className="mb-6 grid gap-5 border-b border-white/10 pb-6 print:hidden lg:grid-cols-[1fr_auto] lg:items-end">
