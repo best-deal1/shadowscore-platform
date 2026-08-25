@@ -18,7 +18,7 @@ import type { ProviderResult } from "./providers/types";
 import type { InvestigationIntelligence } from "./investigationIntelligence";
 import type { TargetResolution } from "./targetIntegrity";
 import type { FirstPartyResolution } from "./entityResolution/firstParty";
-import type { ExternalIdentityCandidate, IdentityDiscoverySearchDiagnostic } from "./providers/externalIdentityProvider";
+import type { ExternalIdentityCandidate, IdentityDiscoverySearchDiagnostic, IdentitySchedulingDiagnostic } from "./providers/externalIdentityProvider";
 import { supabaseFetch, isSupabaseConfigured, requirePersistentSessionInProduction } from "./supabase";
 import { cloneWorkspace, getMutableMemoryWorkspace } from "./workspaceStore";
 import { BETA_PRODUCT } from "./pricing";
@@ -79,7 +79,7 @@ export type ShadowScoreReport = {
   providerVersions?: Record<string, string>;
   providerResults?: ProviderResult[];
   evidenceSummary?: unknown;
-  reportSummary?: { message: string; objective?: string; identitySignals?: IdentitySignals; primaryRiskDomain?: string; findingCount?: number; insights?: TrustInsight[]; insightEngineVersion?: string; decision?: DecisionOutput; reasoning?: ReasoningOutput; correlationSummary?: CorrelationSummary; identityProfile?: IdentityProfile; businessNarrative?: BusinessNarrative; businessIdentityResolution?: unknown; businessIdentityIntelligence?: BusinessIdentityIntelligenceResult; businessIntelligence?: BusinessIntelligenceResult; investigationIntelligence?: InvestigationIntelligence; websiteIntelligence?: WebsiteIntelligenceReport; canonicalWebsiteReport?: CanonicalWebsiteReport; websiteChangeReport?: WebsiteChangeReport; websiteAlertSummary?: { count: number; severities: Record<string, number> }; websiteChangeTimeline?: Array<{ scanId: string; scannedAt: string; summary: string; changeCount: number; alertIds: string[] }>; scorecard?: ShadowScorecard; investigationTimeline?: InvestigationStage[]; execution?: { completedInSeconds: number; providersExecuted: number; evidenceCollected: number; decisionConfidence?: string }; executionFlow?: string[]; knowledgeGraph?: KnowledgeGraphSnapshot; technicalDetails?: { executed: ProviderExecutionRecord[]; skipped: ProviderExecutionRecord[]; pending: ProviderExecutionRecord[]; failed: ProviderExecutionRecord[] }; sourceProvenance?: Array<{ label: string; completedAt?: string }>; targetResolution?: TargetResolution; resolvedEntities?: FirstPartyResolution; investigationType?: string; mailboxProviderDomain?: string; publicIdentityCandidates?: ExternalIdentityCandidate[]; discoveryDiagnostics?: { searches: IdentityDiscoverySearchDiagnostic[]; budgetExhaustionReason: string; providerStatus: string; providerFailure?: string } };
+  reportSummary?: { message: string; objective?: string; identitySignals?: IdentitySignals; primaryRiskDomain?: string; findingCount?: number; insights?: TrustInsight[]; insightEngineVersion?: string; decision?: DecisionOutput; reasoning?: ReasoningOutput; correlationSummary?: CorrelationSummary; identityProfile?: IdentityProfile; businessNarrative?: BusinessNarrative; businessIdentityResolution?: unknown; businessIdentityIntelligence?: BusinessIdentityIntelligenceResult; businessIntelligence?: BusinessIntelligenceResult; investigationIntelligence?: InvestigationIntelligence; websiteIntelligence?: WebsiteIntelligenceReport; canonicalWebsiteReport?: CanonicalWebsiteReport; websiteChangeReport?: WebsiteChangeReport; websiteAlertSummary?: { count: number; severities: Record<string, number> }; websiteChangeTimeline?: Array<{ scanId: string; scannedAt: string; summary: string; changeCount: number; alertIds: string[] }>; scorecard?: ShadowScorecard; investigationTimeline?: InvestigationStage[]; execution?: { completedInSeconds: number; providersExecuted: number; evidenceCollected: number; decisionConfidence?: string }; executionFlow?: string[]; knowledgeGraph?: KnowledgeGraphSnapshot; technicalDetails?: { executed: ProviderExecutionRecord[]; skipped: ProviderExecutionRecord[]; pending: ProviderExecutionRecord[]; failed: ProviderExecutionRecord[] }; sourceProvenance?: Array<{ label: string; completedAt?: string }>; targetResolution?: TargetResolution; resolvedEntities?: FirstPartyResolution; investigationType?: string; mailboxProviderDomain?: string; publicIdentityCandidates?: ExternalIdentityCandidate[]; discoveryDiagnostics?: { searches: IdentityDiscoverySearchDiagnostic[]; scheduling: IdentitySchedulingDiagnostic[]; budgetExhaustionReason: string; providerStatus: string; providerFailure?: string } };
   topFactors: string[];
 };
 
@@ -147,6 +147,7 @@ export function presentReportForEndUser(report: ShadowScoreReport): ShadowScoreR
   delete reportSummary.executionFlow;
   delete reportSummary.knowledgeGraph;
   delete reportSummary.technicalDetails;
+  if (report.accessType !== "administrator") delete reportSummary.discoveryDiagnostics;
   return { ...report, providerResults: undefined, reportSummary };
 }
 

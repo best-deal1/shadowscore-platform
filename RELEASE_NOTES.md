@@ -197,3 +197,7 @@ This file records customer-visible improvements in each ShadowScore release.
 - Personal identity intakes now retain submitted signals throughout persistence, public discovery, resolver evaluation, and executive report rendering.
 - Older personal investigations recover email, phone, name, or username signals from legacy target fields when structured signals are absent.
 - Reports now show discovery execution status, completed search count, provider failures, and empty-result reasons.
+
+## External identity production diagnostics
+
+- Administrator test reports now preserve every external identity query, provider result preview, extraction decision, pivot admission, scheduling decision, and remaining search budget. Customer reports continue to hide raw discovery diagnostics.
