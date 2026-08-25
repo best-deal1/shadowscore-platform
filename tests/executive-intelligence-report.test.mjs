@@ -132,6 +132,8 @@ test("discovery diagnostics are restricted to administrator reports", () => {
   assert.match(component, /report\.accessType === "administrator" && discoveryDiagnostics/);
   assert.match(component, /Discovery Diagnostics/);
   assert.match(component, /entry\.newIdentifiers/);
+  assert.match(component, /entry\.results/);
+  assert.match(component, /discoveryDiagnostics\.scheduling/);
 });
 
 test("personal identity production output is presented with resolver evidence and identity checkout copy", () => {

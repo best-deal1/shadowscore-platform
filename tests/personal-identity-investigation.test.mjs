@@ -138,3 +138,10 @@ test("candidate presentation cannot promote discovery relevance without resolver
   assert.match(presentation, /No positive resolver evidence/);
   assert.match(presentation, /Not returned by the source/);
 });
+
+test("raw discovery diagnostics are removed from customer reports and retained for administrators", async () => {
+  const { presentReportForEndUser } = await import("../lib/workspace.ts");
+  const base = { reportId: "r", userId: "u", title: "t", entity: "e", platform: "p", createdAt: "2026-01-01", source: "s", reportSummary: { message: "m", discoveryDiagnostics: { searches: [], scheduling: [], budgetExhaustionReason: "closure_reached", providerStatus: "completed" } } };
+  assert.equal(presentReportForEndUser(base).reportSummary.discoveryDiagnostics, undefined);
+  assert.ok(presentReportForEndUser({ ...base, accessType: "administrator" }).reportSummary.discoveryDiagnostics);
+});

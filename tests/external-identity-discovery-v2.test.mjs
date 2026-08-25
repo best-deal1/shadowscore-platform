@@ -870,3 +870,20 @@ test("production provider sends submitted and observed contact signals through t
     if (originalKey === undefined) delete process.env.BRAVE_SEARCH_API_KEY; else process.env.BRAVE_SEARCH_API_KEY = originalKey;
   }
 });
+
+test("administrator diagnostics preserve provider results, extraction decisions, and scheduling decisions", async () => {
+  const graph = await discoverExternalIdentityGraph(EMAIL, "key", new AbortController().signal, {
+    search: async (query) => query === `"${EMAIL}"` ? [
+      { title: "Nastik profile (@nastik707)", url: "https://instagram.com/nastik707", description: "Handle: kuki_nesti_ch. Handle: kuki_nesti_ch. Contact nastikmastik358@gmail.com" },
+    ] : [],
+    limits: { maxSearches: 4, maxIdentifiers: 4, reservedExpansionSearches: 1 },
+  });
+  const first = graph.searches[0];
+  assert.equal(first.schedulingGeneration, -1);
+  assert.equal(first.queryPass, 0);
+  assert.equal(first.results[0].description.includes("kuki_nesti_ch"), true);
+  assert.ok(first.results[0].identifierEvaluations.some((item) => item.identifier === "kuki_nesti_ch" && item.decision === "extracted"));
+  assert.ok(first.results[0].identifierEvaluations.some((item) => item.identifier === "kuki_nesti_ch" && item.decision === "rejected" && item.reason === "duplicate_within_result"));
+  assert.ok(graph.schedulingDiagnostics.some((item) => item.decision === "admitted" && item.reason === "pivot_admitted"));
+  assert.ok(graph.schedulingDiagnostics.every((item) => Number.isInteger(item.remainingSearchBudget)));
+});

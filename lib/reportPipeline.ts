@@ -120,6 +120,7 @@ export async function buildReadyReport(input: {
   const searches = (externalIdentityMetadata?.identityDiscoverySearches || []) as import("./providers/externalIdentityProvider").IdentityDiscoverySearchDiagnostic[];
   const discoveryDiagnostics = intake.scanMode === "personal" ? {
     searches,
+    scheduling: (externalIdentityMetadata?.identitySchedulingDiagnostics || []) as import("./providers/externalIdentityProvider").IdentitySchedulingDiagnostic[],
     budgetExhaustionReason: String((externalIdentityMetadata?.identityDiscoveryMetrics as { budgetExhaustionReason?: string } | undefined)?.budgetExhaustionReason || (externalIdentityResult?.status !== "completed" ? "provider_failed" : searches.length === 0 ? "no_search_executed" : publicIdentityCandidates.length === 0 ? "no_eligible_candidates" : "closure_reached")),
     providerStatus: externalIdentityResult?.status || "not_scheduled",
     providerFailure: externalIdentityResult?.errors[0],
