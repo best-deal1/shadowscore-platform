@@ -33,6 +33,8 @@ This file records customer-visible improvements in each ShadowScore release.
 
 ### Improved
 
+- External identity searches now use stable evidence tiers. Strong company, domain, and corroborated person pivots stay ahead of username stems, while supported stem continuations stay ahead of speculative social handles.
+
 - External identity discovery now keeps weak person-name matches as unverified leads. It expands them only after a strong identifier or independent source families connect them to the submitted target. Reports separate lead quality from identity attribution.
 
 - Executive Reports now separate search observations, discovery candidates, corroborated evidence, and verified facts. Decisions remain neutral when subject evidence is unavailable, claims cite admitted evidence, and next steps stay within the submitted target and established relationships.

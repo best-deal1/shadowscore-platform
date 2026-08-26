@@ -162,6 +162,9 @@ test("stem-derived siblings receive a first follow-up before noisy recursive han
   const stemSearch = graph.searches.find((search) => search.query === '"nastikmastik" profile');
   assert.deepEqual(stemSearch.results.map((result) => result.discoveryAdmissionDecision), ["DISCOVERY_ADMITTED", "DISCOVERY_ADMITTED", "DISCOVERY_ADMITTED", "DISCOVERY_ADMITTED"]);
   assert.ok(stemSearch.results.at(-1).extractedDiscoveryClues.includes("nesti_bridge"));
+  const evidenceContinuation = queries.findIndex((query) => query.includes("nesti_bridge"));
+  const speculativeSearches = ["nastik707", "nnikass._", "thenastikedit"].map((handle) => queries.findIndex((query) => query.includes(handle))).filter((index) => index >= 0);
+  assert.ok(evidenceContinuation >= 0 && speculativeSearches.every((index) => evidenceContinuation < index));
   const noisyChildSearch = queries.findIndex((query) => query.includes("noisy_child_handle"));
   assert.ok(noisyChildSearch === -1 || queries.indexOf('"nesti_archive" "nastikmastik"') < noisyChildSearch);
   const target = graph.allCandidates.find((candidate) => candidate.profileUrl === "https://www.instagram.com/kuki_nesti_ch");
@@ -173,6 +176,29 @@ test("stem-derived siblings receive a first follow-up before noisy recursive han
   assert.ok(graph.metrics.searchCount <= 12);
   assert.ok(graph.clues.filter((clue) => /anastasia/i.test(clue.displayValue)).every((clue) => clue.pivotAdmissionDecision === "lead_only" && clue.queriesExecuted.length === 0));
   assert.ok(graph.allCandidates.filter((candidate) => /nastik707|nnikass|thenastikedit/.test(candidate.profileUrl)).every((candidate) => candidate.status === "Candidate" && candidate.identityAttributionConfidence === null));
+});
+
+test("a tight budget executes one evidence-bearing stem continuation and a stronger company pivot", async () => {
+  const queries = [];
+  const graph = await discoverExternalIdentityGraph(EMAIL, "test-key", new AbortController().signal, {
+    search: async (query) => {
+      queries.push(query);
+      if (query === '"nastikmastik" profile') return [
+        { title: "Nastikmastik company profile", url: "https://instagram.com/nastikmastik", description: "nastikmastik. Handle: kuki_nesti_ch. Company: Northstar Signal Ltd." },
+        { title: "nastik707", url: "https://instagram.com/nastik707", description: "nastikmastik profile" },
+        { title: "r_nastik_", url: "https://instagram.com/r_nastik_", description: "nastikmastik profile" },
+      ];
+      return [];
+    },
+    limits: { maxSearches: 7, maxIdentifiers: 12, reservedExpansionSearches: 2 },
+  });
+
+  const executed = graph.searches.map((search) => search.pivot);
+  assert.equal(graph.searches.find((search) => search.query === '"nastikmastik" profile').remainingBudget, 2);
+  assert.ok(executed.slice(-2).includes("Northstar Signal Ltd"), JSON.stringify({ executed, clues: graph.clues.map((clue) => clue.displayValue) }));
+  assert.ok(graph.clues.some((clue) => clue.displayValue === "kuki_nesti_ch"));
+  assert.ok(executed.filter((pivot) => pivot === "kuki_nesti_ch").length <= 1);
+  assert.equal(executed.some((pivot) => /nastik707|r_nastik_|thenastikedit/.test(pivot)), false);
 });
 
 test("a stem result can pivot through a handle stated in social relationship copy", async () => {
