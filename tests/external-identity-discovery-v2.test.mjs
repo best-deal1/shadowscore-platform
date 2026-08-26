@@ -175,6 +175,30 @@ test("stem-derived siblings receive a first follow-up before noisy recursive han
   assert.ok(graph.allCandidates.filter((candidate) => /nastik707|nnikass|thenastikedit/.test(candidate.profileUrl)).every((candidate) => candidate.status === "Candidate" && candidate.identityAttributionConfidence === null));
 });
 
+test("an evidence-bearing stem cannot starve a stronger company pivot when two searches remain", async () => {
+  const queries = [];
+  const graph = await discoverExternalIdentityGraph(EMAIL, "test-key", new AbortController().signal, {
+    search: async (query) => {
+      queries.push(query);
+      if (query === '"nastikmastik" profile') return [{
+        title: "Nastikmastik identity record (@nastik707)",
+        url: "https://profiles.example/nastikmastik",
+        description: "nastikmastik. Company: Northstar Signal Ltd. Handle: r_nastik_. Handle: thenastikedit.",
+      }];
+      return [];
+    },
+    limits: { maxSearches: 7, maxIdentifiers: 12, reservedExpansionSearches: 2 },
+  });
+
+  const stemSeedIndex = queries.indexOf('"nastikmastik" profile');
+  const companyIndex = queries.findIndex((query) => query.includes('"Northstar Signal Ltd"'));
+  const stemContinuations = graph.schedulingDiagnostics.filter((item) => item.pivot === "nastikmastik" && item.decision === "scheduled" && item.queryPass !== undefined && item.query !== '"nastikmastik" profile');
+  assert.equal(stemSeedIndex, 4, "the stem is admitted with exactly two searches left");
+  assert.equal(stemContinuations.length, 2, "both evidence-bearing stem continuations are pending");
+  assert.ok(companyIndex > stemSeedIndex, "the stronger company pivot receives one of the final searches");
+  assert.ok(graph.searches.filter((search) => search.pivot === "nastikmastik" && search.hop > 0).length <= 1, "the stem cannot consume both remaining searches");
+});
+
 test("a stem result can pivot through a handle stated in social relationship copy", async () => {
   const queries = [];
   const graph = await discoverExternalIdentityGraph(EMAIL, "test-key", new AbortController().signal, {
