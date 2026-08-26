@@ -35,8 +35,8 @@ function CandidateCard({ candidate, index }: { candidate: ExternalIdentityCandid
   </article>;
 }
 
-function DiagnosticValue({ label, value }: { label: string; value: React.ReactNode }) {
-  return <div><dt className="text-xs font-bold uppercase tracking-wide text-violet-700">{label}</dt><dd className="mt-1 break-words text-slate-950">{value}</dd></div>;
+function DiagnosticValue({ label, value, className }: { label: string; value: React.ReactNode; className?: string }) {
+  return <div className={className}><dt className="text-xs font-bold uppercase tracking-wide text-violet-700">{label}</dt><dd className="mt-1 break-words text-slate-950">{value}</dd></div>;
 }
 
 function DiscoveryDiagnostics({ diagnostics }: { diagnostics: NonNullable<NonNullable<ShadowScoreReport["reportSummary"]>["discoveryDiagnostics"]> }) {
@@ -61,14 +61,14 @@ function DiscoveryDiagnostics({ diagnostics }: { diagnostics: NonNullable<NonNul
             <dl className="mt-4 grid gap-4 sm:grid-cols-2">
               <DiagnosticValue label="Raw result URL" value={<a className="break-all text-cyan-800 underline underline-offset-2" href={result.url} rel="noreferrer" target="_blank">{result.url}</a>} />
               <DiagnosticValue label="Title" value={result.title || "Not recorded"} />
-              <div className="sm:col-span-2"><DiagnosticValue label="Description" value={result.description || "Not recorded"} /></div>
+              <DiagnosticValue className="sm:col-span-2" label="Description" value={result.description || "Not recorded"} />
               <DiagnosticValue label="Admission decision" value={result.admissionDecision} />
               <DiagnosticValue label="Admission score" value={result.admissionScore} />
-              <div className="sm:col-span-2"><DiagnosticValue label="Admission reason" value={result.admissionReason} /></div>
+              <DiagnosticValue className="sm:col-span-2" label="Admission reason" value={result.admissionReason} />
               <DiagnosticValue label="Discovery admission" value={`${result.discoveryAdmissionDecision} (${result.discoveryAdmissionScore})`} />
               <DiagnosticValue label="Evidence admission" value={`${result.evidenceAdmissionDecision} (${result.evidenceAdmissionScore})`} />
-              <div className="sm:col-span-2"><DiagnosticValue label="Discovery admission reason" value={result.discoveryAdmissionReason} /></div>
-              <div className="sm:col-span-2"><DiagnosticValue label="Evidence admission reason" value={result.evidenceAdmissionReason} /></div>
+              <DiagnosticValue className="sm:col-span-2" label="Discovery admission reason" value={result.discoveryAdmissionReason} />
+              <DiagnosticValue className="sm:col-span-2" label="Evidence admission reason" value={result.evidenceAdmissionReason} />
             </dl>
             <h4 className="mt-5 font-semibold text-slate-950">Identifier evaluations</h4>
             {result.identifierEvaluations.length ? <ul className="mt-2 grid gap-2">{result.identifierEvaluations.map((evaluation, evaluationIndex) => <li key={`${evaluation.identifier}-${evaluationIndex}`} className="border border-slate-200 bg-white p-3 text-sm"><strong className="break-all text-slate-950">{evaluation.identifier}</strong><span className="ml-2">{evaluation.type}, {evaluation.derivation}, {evaluation.decision}</span><p className="mt-1"><span className="font-semibold">Exact reason:</span> {evaluation.reason}</p></li>)}</ul> : <p className="mt-2 text-sm">No identifier evaluation was recorded.</p>}

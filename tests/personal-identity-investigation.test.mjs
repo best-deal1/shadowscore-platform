@@ -154,4 +154,7 @@ test("administrator personal reports render the complete discovery trace behind 
   assert.match(presentation, /evaluation\.decision/);
   assert.match(presentation, /evaluation\.reason/);
   assert.match(presentation, /diagnostics\.scheduling\.map/);
+  assert.match(presentation, /function DiagnosticValue\(\{ label, value, className \}/);
+  assert.match(presentation, /<DiagnosticValue className="sm:col-span-2" label="Description"/);
+  assert.doesNotMatch(presentation, /<div className="sm:col-span-2"><DiagnosticValue/);
 });
