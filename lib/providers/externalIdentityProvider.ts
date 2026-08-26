@@ -443,12 +443,12 @@ function observedIdentifiers(hit: SearchResult, originals: Set<string>, evaluati
   const aliases = titleAliases(hit.title);
   const pivots: DiscoveryPivot[] = [
     ...explicit.map((value) => ({ value, type: "person_name" as const, relation: "corroborated_identifier" as const, derivation: "explicit_assertion" as const })),
-    ...(urlHandle ? [{ value: urlHandle, type: "username" as const, relation: "discovery_lead" as const, derivation: "social_url" as const }] : []),
-    ...handles.map((value) => ({ value, type: "username" as const, relation: "discovery_lead" as const, derivation: "explicit_handle" as const })),
     ...namedHandles.map((value) => ({ value, type: "username" as const, relation: "discovery_lead" as const, derivation: "explicit_handle" as const })),
     ...labelledHandles.map((value) => ({ value, type: "username" as const, relation: "discovery_lead" as const, derivation: "explicit_handle" as const })),
     ...linkedHandles.map((value) => ({ value, type: "username" as const, relation: "discovery_lead" as const, derivation: "explicit_handle" as const })),
     ...relationshipHandles.map((value) => ({ value, type: "username" as const, relation: "discovery_lead" as const, derivation: "explicit_handle" as const })),
+    ...(urlHandle ? [{ value: urlHandle, type: "username" as const, relation: "discovery_lead" as const, derivation: "social_url" as const }] : []),
+    ...handles.map((value) => ({ value, type: "username" as const, relation: "discovery_lead" as const, derivation: "explicit_handle" as const })),
     ...typedEntities,
     ...aliases.map((value) => ({ value, type: "person_name" as const, relation: "discovery_lead" as const, derivation: "display_name" as const })),
   ];
@@ -480,8 +480,22 @@ function underlyingSourceFamily(url: string) {
 }
 async function braveSearch(query: string, apiKey: string, signal: AbortSignal, limit: number): Promise<SearchResult[]> { const url = new URL(SEARCH_ENDPOINT); url.searchParams.set("q", query); url.searchParams.set("count", String(limit)); url.searchParams.set("safesearch", "strict"); const response = await fetch(url, { signal, headers: { accept: "application/json", "x-subscription-token": apiKey } }); if (!response.ok) throw new Error(`Public search returned HTTP ${response.status}.`); const payload = await response.json() as { web?: { results?: Array<{ title?: string; url?: string; description?: string }> } }; return (payload.web?.results || []).filter((item): item is SearchResult => Boolean(item.title && item.url)).slice(0, limit); }
 
-type QueueItem = { id: string; label: string; hop: number; path: string[]; query: string; method: string; intent: SearchIntent; identifierStrength?: "discovery_lead" | "corroborated_identifier"; qualityScore: number; priority: number; clueType: EntityClueType; siblingRank?: number; queryPass?: number; schedulingGeneration?: number; branchPriority?: number; firstPassProducedIdentifiers?: boolean; requiredResultIdentifier?: string };
+type SchedulingTier = 1 | 2 | 3 | 4;
+type QueueItem = { id: string; label: string; hop: number; path: string[]; query: string; method: string; intent: SearchIntent; identifierStrength?: "discovery_lead" | "corroborated_identifier"; qualityScore: number; priority: number; clueType: EntityClueType; schedulingTier?: SchedulingTier; siblingRank?: number; queryPass?: number; schedulingGeneration?: number; branchPriority?: number; firstPassProducedIdentifiers?: boolean; requiredResultIdentifier?: string };
 type PendingIdentifier = Omit<QueueItem, "query" | "method" | "intent"> & { exactSource: boolean; order: number; derivation: DiscoveryPivot["derivation"]; adjacentLabels: string[] };
+
+function schedulingTierForPivot(input: { clueType: EntityClueType; derivation: DiscoveryPivot["derivation"]; evidenceAdmitted: boolean; directStemEvidence: boolean; identifierStrength: QueueItem["identifierStrength"] }): SchedulingTier {
+  const strongEntity = ["company_name", "domain"].includes(input.clueType) && input.evidenceAdmitted;
+  if (strongEntity || input.identifierStrength === "corroborated_identifier") return 1;
+  if (input.directStemEvidence && input.evidenceAdmitted && input.derivation === "explicit_handle" && ["username", "social_profile"].includes(input.clueType)) return 2;
+  if (input.directStemEvidence && input.derivation === "social_url" && ["username", "social_profile"].includes(input.clueType)) return 4;
+  if (["username", "social_profile"].includes(input.clueType)) return input.derivation === "explicit_handle" || input.evidenceAdmitted ? 3 : 4;
+  return input.evidenceAdmitted ? 1 : 3;
+}
+
+function compareSchedulingTier(a: { schedulingTier?: SchedulingTier }, b: { schedulingTier?: SchedulingTier }) {
+  return (a.schedulingTier || 3) - (b.schedulingTier || 3);
+}
 
 function contextualQueries(pivot: PendingIdentifier, localPart: string) {
   const value = pivot.label.replace(/["\\]/g, " ").trim();
@@ -569,7 +583,7 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
   addClue({ id: `domain:${domain}`, type: "domain", normalizedValue: domain, displayValue: domain, source: "submitted-target", discoveryPath: [normalized, domain], hop: 0, derivation: "submitted", evidenceStrength: "observed", attributionState: "discovery", adjacentClueIds: [`email:${normalized}`], observedBy: ["submitted-target"], ...schedulingFields({ type: "domain", value: domain, derivation: "submitted", originalOverlap: true }) });
 
   const enqueuePending = () => {
-    pendingIdentifiers.sort((a, b) => b.priority - a.priority || Number(b.exactSource) - Number(a.exactSource) || a.order - b.order);
+    pendingIdentifiers.sort((a, b) => compareSchedulingTier(a, b) || b.priority - a.priority || Number(b.exactSource) - Number(a.exactSource) || a.order - b.order);
     const accepted: Array<{ item: PendingIdentifier; variants: ReturnType<typeof contextualQueries> }> = [];
     const deferred: PendingIdentifier[] = []; const selectedFamilies = new Set<string>();
     for (const item of pendingIdentifiers.splice(0)) {
@@ -598,6 +612,9 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
     // Expand each admitted sibling cohort in rounds. Descendants enter a new
     // generation, while stronger unresolved social variants retain priority.
     queue.sort((a, b) => {
+      const effectiveTier = (candidate: QueueItem) => candidate.queryPass === 1 && candidate.firstPassProducedIdentifiers === true ? Math.max(3, candidate.schedulingTier || 3) : candidate.schedulingTier || 3;
+      const tierOrder = effectiveTier(a) - effectiveTier(b);
+      if (tierOrder) return tierOrder;
       if (a.schedulingGeneration !== undefined && a.schedulingGeneration === b.schedulingGeneration) {
         return (a.queryPass || 0) - (b.queryPass || 0) || a.hop - b.hop || b.priority - a.priority;
       }
@@ -662,7 +679,7 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
           const scheduling = schedulingFields({ type: clueType, value: pivot.value, derivation: pivot.derivation, adjacency: adjacentLabels.length, originalOverlap: originals.has(id), distanceFromRoot: item.hop + 1, independentAnchorCount: strongAnchor ? 1 : sourceFamilies.size >= 2 ? sourceFamilies.size : 0, strongAnchor });
           addClue({ id: `${clueType}:${id}`, type: clueType, normalizedValue: id, displayValue: pivot.value, source: hit.url, discoveryPath: path, hop: item.hop + 1, derivation: pivot.derivation, evidenceStrength: "observed", attributionState: "discovery", adjacentClueIds: [item.id], observedBy: [`${item.query}|${hit.url}`], ...scheduling });
           resultDiagnostic.extractedClues.push(pivot.value); resultDiagnostic.extractedDiscoveryClues.push(pivot.value); if (resultDiagnostic.evidenceAdmissionDecision === "EVIDENCE_ADMITTED") resultDiagnostic.extractedEvidenceClues.push(pivot.value);
-          if (item.hop < limits.maxHops - 1 && scheduling.enqueueDecision === "enqueued") pendingIdentifiers.push({ id, label: pivot.value, hop: item.hop + 1, path, identifierStrength: "discovery_lead", exactSource: false, order: observationOrder++, derivation: pivot.derivation, clueType, adjacentLabels, qualityScore: scheduling.qualityScore, priority: scheduling.searchPriority + (pivot.derivation === "explicit_handle" ? 14 : clueType === "person_name" ? 8 : 0) });
+          if (item.hop < limits.maxHops - 1 && scheduling.enqueueDecision === "enqueued") pendingIdentifiers.push({ id, label: pivot.value, hop: item.hop + 1, path, identifierStrength: "discovery_lead", exactSource: false, order: observationOrder++, derivation: pivot.derivation, clueType, adjacentLabels, qualityScore: scheduling.qualityScore, priority: scheduling.searchPriority + (pivot.derivation === "explicit_handle" ? 14 : clueType === "person_name" ? 8 : 0), schedulingTier: schedulingTierForPivot({ clueType, derivation: pivot.derivation, evidenceAdmitted, directStemEvidence: Boolean(item.requiredResultIdentifier), identifierStrength: "discovery_lead" }) });
         }
         continue;
       }
@@ -736,7 +753,7 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
         const scheduling = schedulingFields({ type: clueType, value: pivot.value, derivation: pivot.derivation, adjacency: adjacentLabels.length, originalOverlap: originals.has(id), distanceFromRoot: item.hop + 1, independentAnchorCount: strongAnchor ? 1 : sourceFamilies.size >= 2 ? sourceFamilies.size : 0, strongAnchor });
         addClue({ id: clueId, type: clueType, normalizedValue: id, displayValue: pivot.value, source: profileUrl, discoveryPath: cluePath, hop: item.hop + 1, derivation: pivot.derivation, evidenceStrength: admittedRelation === "corroborated_identifier" ? "strong" : "observed", attributionState: admittedRelation === "corroborated_identifier" ? "corroborated" : "discovery", adjacentClueIds: [item.id], observedBy: [`${item.query}|${profileUrl}`], ...scheduling });
         resultDiagnostic.extractedClues.push(pivot.value); resultDiagnostic.extractedDiscoveryClues.push(pivot.value); if (resultDiagnostic.evidenceAdmissionDecision === "EVIDENCE_ADMITTED") resultDiagnostic.extractedEvidenceClues.push(pivot.value);
-        if (scheduling.enqueueDecision === "enqueued") pendingIdentifiers.push({ id, label: pivot.value, hop: item.hop + 1, path: cluePath, identifierStrength: admittedRelation, exactSource: exact, order: observationOrder++, derivation: pivot.derivation, clueType, adjacentLabels: [...adjacentLabels, ...precedingPersonClues], qualityScore: scheduling.qualityScore, priority: scheduling.searchPriority });
+        if (scheduling.enqueueDecision === "enqueued") pendingIdentifiers.push({ id, label: pivot.value, hop: item.hop + 1, path: cluePath, identifierStrength: admittedRelation, exactSource: exact, order: observationOrder++, derivation: pivot.derivation, clueType, adjacentLabels: [...adjacentLabels, ...precedingPersonClues], qualityScore: scheduling.qualityScore, priority: scheduling.searchPriority, schedulingTier: schedulingTierForPivot({ clueType, derivation: pivot.derivation, evidenceAdmitted: resultDiagnostic.evidenceAdmissionDecision === "EVIDENCE_ADMITTED", directStemEvidence: Boolean(item.requiredResultIdentifier), identifierStrength: admittedRelation }) });
         if (clueType === "person_name") precedingPersonClues.push(pivot.value);
       }
     }
