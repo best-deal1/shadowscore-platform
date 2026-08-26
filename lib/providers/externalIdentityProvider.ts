@@ -480,7 +480,7 @@ function underlyingSourceFamily(url: string) {
 }
 async function braveSearch(query: string, apiKey: string, signal: AbortSignal, limit: number): Promise<SearchResult[]> { const url = new URL(SEARCH_ENDPOINT); url.searchParams.set("q", query); url.searchParams.set("count", String(limit)); url.searchParams.set("safesearch", "strict"); const response = await fetch(url, { signal, headers: { accept: "application/json", "x-subscription-token": apiKey } }); if (!response.ok) throw new Error(`Public search returned HTTP ${response.status}.`); const payload = await response.json() as { web?: { results?: Array<{ title?: string; url?: string; description?: string }> } }; return (payload.web?.results || []).filter((item): item is SearchResult => Boolean(item.title && item.url)).slice(0, limit); }
 
-type QueueItem = { id: string; label: string; hop: number; path: string[]; query: string; method: string; intent: SearchIntent; identifierStrength?: "discovery_lead" | "corroborated_identifier"; qualityScore: number; priority: number; clueType: EntityClueType; siblingRank?: number; queryPass?: number; schedulingGeneration?: number; branchPriority?: number; firstPassProducedIdentifiers?: boolean; requiredResultIdentifier?: string };
+type QueueItem = { id: string; label: string; hop: number; path: string[]; query: string; method: string; intent: SearchIntent; identifierStrength?: "discovery_lead" | "evidence_bearing_identifier" | "corroborated_identifier"; qualityScore: number; priority: number; clueType: EntityClueType; siblingRank?: number; queryPass?: number; schedulingGeneration?: number; branchPriority?: number; firstPassProducedIdentifiers?: boolean; requiredResultIdentifier?: string; evidenceBearingDirectPivot?: boolean };
 type PendingIdentifier = Omit<QueueItem, "query" | "method" | "intent"> & { exactSource: boolean; order: number; derivation: DiscoveryPivot["derivation"]; adjacentLabels: string[] };
 
 function contextualQueries(pivot: PendingIdentifier, localPart: string) {
@@ -535,7 +535,7 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
   const seedSearchLimit = Math.max(1, limits.maxSearches - Math.min(limits.reservedExpansionSearches, limits.maxSearches - 1));
   const queue: QueueItem[] = seedQueue.slice(0, seedSearchLimit);
   const omittedSeeds = seedQueue.slice(seedSearchLimit);
-  const searched = new Set<string>(); const queuedIdentifiers = new Set<string>(); const candidates = new Map<string, ExternalIdentityCandidate>();
+  const searched = new Set<string>(); const queuedIdentifiers = new Set<string>(); const continuedDirectPivots = new Set<string>(); const candidates = new Map<string, ExternalIdentityCandidate>();
   const clues = new Map<string, EntityClue>();
   const edges: IdentityDiscoveryEdge[] = []; const pendingIdentifiers: PendingIdentifier[] = [];
   const searches: IdentityDiscoverySearchDiagnostic[] = [];
@@ -598,6 +598,10 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
     // Expand each admitted sibling cohort in rounds. Descendants enter a new
     // generation, while stronger unresolved social variants retain priority.
     queue.sort((a, b) => {
+      // A submitted identifier derivative that has appeared in admitted public
+      // evidence is a proven discovery branch. Keep its bounded continuation
+      // ahead of handles admitted only by broad structural similarity.
+      if (Boolean(a.evidenceBearingDirectPivot) !== Boolean(b.evidenceBearingDirectPivot)) return a.evidenceBearingDirectPivot ? -1 : 1;
       if (a.schedulingGeneration !== undefined && a.schedulingGeneration === b.schedulingGeneration) {
         return (a.queryPass || 0) - (b.queryPass || 0) || a.hop - b.hop || b.priority - a.priority;
       }
@@ -739,6 +743,29 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
         if (scheduling.enqueueDecision === "enqueued") pendingIdentifiers.push({ id, label: pivot.value, hop: item.hop + 1, path: cluePath, identifierStrength: admittedRelation, exactSource: exact, order: observationOrder++, derivation: pivot.derivation, clueType, adjacentLabels: [...adjacentLabels, ...precedingPersonClues], qualityScore: scheduling.qualityScore, priority: scheduling.searchPriority });
         if (clueType === "person_name") precedingPersonClues.push(pivot.value);
       }
+    }
+    const directPivotKey = `${item.clueType}:${normalizeIdentifier(item.label)}`;
+    const evidenceBearingDirectPivot = Boolean(item.requiredResultIdentifier)
+      && assessedResults.some(({ diagnostic }) => diagnostic.evidenceAdmissionDecision === "EVIDENCE_ADMITTED");
+    if (evidenceBearingDirectPivot && !continuedDirectPivots.has(directPivotKey) && item.hop < limits.maxHops - 1) {
+      continuedDirectPivots.add(directPivotKey);
+      const continuation: PendingIdentifier = {
+        id: item.id, label: item.label, hop: item.hop + 1, path: item.path,
+        // Evidence-bearing describes discovery relevance only. It does not
+        // promote this pivot to resolver-backed identity corroboration.
+        identifierStrength: "evidence_bearing_identifier", exactSource: true, order: observationOrder++,
+        derivation: "explicit_assertion", clueType: item.clueType,
+        adjacentLabels: [localPart, normalized], qualityScore: activeClue.qualityScore,
+        priority: Math.max(100, activeClue.pivotStrength),
+      };
+      const generation = schedulingGeneration++;
+      const variants = budgetedContextualQueries(continuation, localPart);
+      activeClue.queriesPlanned = [...new Set([...activeClue.queriesPlanned, ...variants.map((variant) => variant.query)])];
+      schedulingDiagnostics.push({ pivot: item.label, clueType: item.clueType, hop: continuation.hop, decision: "admitted", reason: "pivot_admitted", remainingSearchBudget: limits.maxSearches - searchCount });
+      variants.forEach((variant, queryPass) => {
+        schedulingDiagnostics.push({ pivot: item.label, clueType: item.clueType, hop: continuation.hop, query: variant.query, schedulingGeneration: generation, queryPass, decision: "scheduled", reason: "pivot_admitted", remainingSearchBudget: limits.maxSearches - searchCount });
+        queue.push({ ...continuation, ...variant, siblingRank: 1, queryPass, schedulingGeneration: generation, branchPriority: continuation.priority, priority: continuation.priority - queryPass * 10, evidenceBearingDirectPivot: true });
+      });
     }
     const identifiersAfter = new Set(edges.filter((edge) => edge.relation !== "search_result").map((edge) => edge.to));
     const newIdentifiers = [...identifiersAfter].filter((id) => !identifiersBefore.has(id));
