@@ -480,7 +480,7 @@ function underlyingSourceFamily(url: string) {
 }
 async function braveSearch(query: string, apiKey: string, signal: AbortSignal, limit: number): Promise<SearchResult[]> { const url = new URL(SEARCH_ENDPOINT); url.searchParams.set("q", query); url.searchParams.set("count", String(limit)); url.searchParams.set("safesearch", "strict"); const response = await fetch(url, { signal, headers: { accept: "application/json", "x-subscription-token": apiKey } }); if (!response.ok) throw new Error(`Public search returned HTTP ${response.status}.`); const payload = await response.json() as { web?: { results?: Array<{ title?: string; url?: string; description?: string }> } }; return (payload.web?.results || []).filter((item): item is SearchResult => Boolean(item.title && item.url)).slice(0, limit); }
 
-type QueueItem = { id: string; label: string; hop: number; path: string[]; query: string; method: string; intent: SearchIntent; identifierStrength?: "discovery_lead" | "corroborated_identifier"; qualityScore: number; priority: number; clueType: EntityClueType; siblingRank?: number; queryPass?: number; schedulingGeneration?: number; branchPriority?: number; firstPassProducedIdentifiers?: boolean; requiredResultIdentifier?: string };
+type QueueItem = { id: string; label: string; hop: number; path: string[]; query: string; method: string; intent: SearchIntent; identifierStrength?: "discovery_lead" | "corroborated_identifier"; qualityScore: number; priority: number; clueType: EntityClueType; siblingRank?: number; queryPass?: number; schedulingGeneration?: number; branchPriority?: number; firstPassProducedIdentifiers?: boolean; requiredResultIdentifier?: string; evidenceBearingDirectPivot?: boolean };
 type PendingIdentifier = Omit<QueueItem, "query" | "method" | "intent"> & { exactSource: boolean; order: number; derivation: DiscoveryPivot["derivation"]; adjacentLabels: string[] };
 
 function contextualQueries(pivot: PendingIdentifier, localPart: string) {
@@ -569,7 +569,14 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
   addClue({ id: `domain:${domain}`, type: "domain", normalizedValue: domain, displayValue: domain, source: "submitted-target", discoveryPath: [normalized, domain], hop: 0, derivation: "submitted", evidenceStrength: "observed", attributionState: "discovery", adjacentClueIds: [`email:${normalized}`], observedBy: ["submitted-target"], ...schedulingFields({ type: "domain", value: domain, derivation: "submitted", originalOverlap: true }) });
 
   const enqueuePending = () => {
-    pendingIdentifiers.sort((a, b) => b.priority - a.priority || Number(b.exactSource) - Number(a.exactSource) || a.order - b.order);
+    const isSpeculativeSocialPivot = (item: Pick<QueueItem, "clueType" | "evidenceBearingDirectPivot">) =>
+      (item.clueType === "username" || item.clueType === "social_profile") && !item.evidenceBearingDirectPivot;
+    pendingIdentifiers.sort((a, b) => {
+      const directA = Boolean(a.evidenceBearingDirectPivot && isSpeculativeSocialPivot(b));
+      const directB = Boolean(b.evidenceBearingDirectPivot && isSpeculativeSocialPivot(a));
+      if (directA !== directB) return directA ? -1 : 1;
+      return b.priority - a.priority || Number(b.exactSource) - Number(a.exactSource) || a.order - b.order;
+    });
     const accepted: Array<{ item: PendingIdentifier; variants: ReturnType<typeof contextualQueries> }> = [];
     const deferred: PendingIdentifier[] = []; const selectedFamilies = new Set<string>();
     for (const item of pendingIdentifiers.splice(0)) {
@@ -598,6 +605,11 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
     // Expand each admitted sibling cohort in rounds. Descendants enter a new
     // generation, while stronger unresolved social variants retain priority.
     queue.sort((a, b) => {
+      const isSpeculativeSocialPivot = (candidate: QueueItem) =>
+        (candidate.clueType === "username" || candidate.clueType === "social_profile") && !candidate.evidenceBearingDirectPivot;
+      const directA = Boolean(a.evidenceBearingDirectPivot && isSpeculativeSocialPivot(b));
+      const directB = Boolean(b.evidenceBearingDirectPivot && isSpeculativeSocialPivot(a));
+      if (directA !== directB) return directA ? -1 : 1;
       if (a.schedulingGeneration !== undefined && a.schedulingGeneration === b.schedulingGeneration) {
         return (a.queryPass || 0) - (b.queryPass || 0) || a.hop - b.hop || b.priority - a.priority;
       }
@@ -635,6 +647,7 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
       diagnostic.discoveryAdmissionDecision = "REJECTED"; diagnostic.discoveryAdmissionReason = diagnostic.admissionReason; diagnostic.beamDecision = "NOT_ELIGIBLE"; diagnostic.beamDecisionReason = diagnostic.admissionReason;
     }
     const seedDiscoveryBeam = applyDiscoveryBeam(assessedResults, (entry) => entry.resultIndex);
+    const evidenceBearingDirectPivot = Boolean(item.requiredResultIdentifier && assessedResults.some(({ diagnostic }) => diagnostic.discoveryAdmissionDecision === "DISCOVERY_ADMITTED"));
     for (const { resultIndex, hit, diagnostic: resultDiagnostic } of assessedResults) {
       const sourceClass = sourceClassFor(hit.url);
       const platform = platformFor(hit.url);
@@ -742,6 +755,23 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
     }
     const identifiersAfter = new Set(edges.filter((edge) => edge.relation !== "search_result").map((edge) => edge.to));
     const newIdentifiers = [...identifiersAfter].filter((id) => !identifiersBefore.has(id));
+    if (evidenceBearingDirectPivot && item.requiredResultIdentifier && !queuedIdentifiers.has(normalizeIdentifier(item.id))) {
+      pendingIdentifiers.push({
+        id: item.id,
+        label: item.label,
+        hop: item.hop + 1,
+        path: item.path,
+        identifierStrength: "corroborated_identifier",
+        exactSource: true,
+        order: observationOrder++,
+        derivation: "explicit_assertion",
+        clueType: item.clueType,
+        adjacentLabels: [localPart],
+        qualityScore: item.qualityScore,
+        priority: item.priority,
+        evidenceBearingDirectPivot: true,
+      });
+    }
     if (item.queryPass === 0 && item.schedulingGeneration !== undefined) for (const queued of queue) {
       if (queued.id === item.id && queued.schedulingGeneration === item.schedulingGeneration) queued.firstPassProducedIdentifiers = newIdentifiers.length > 0;
     }
