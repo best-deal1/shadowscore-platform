@@ -509,6 +509,47 @@ test("production seed discovery quarantines a structured first hop before later 
   assert.ok(graph.clues.filter((clue) => /anastasia|thenastikedit/i.test(clue.displayValue)).every((clue) => clue.attributionState === "discovery"));
 });
 
+test("admitted evidence for a submitted username stem outranks speculative social candidates", async () => {
+  const queries = [];
+  const graph = await discoverExternalIdentityGraph("nastikmastik358@gmail.com", "key", new AbortController().signal, {
+    search: async (query) => {
+      queries.push(query);
+      if (query.includes("nastikmastik358") && query.includes("site:facebook.com")) return [
+        { title: "nastik707 (@nastik707) | Instagram", url: "https://instagram.com/nastik707", description: "Similar public profile" },
+        { title: "r_nastik_ (@r_nastik_) | Instagram", url: "https://instagram.com/r_nastik_", description: "Similar public profile" },
+        { title: "thenastikedit (@thenastikedit) | Instagram", url: "https://instagram.com/thenastikedit", description: "Similar public profile" },
+      ];
+      if (query === '"nastikmastik" profile') return [
+        { title: "nastikmastik archive", url: "https://nastikmastik.tumblr.com/", description: "nastikmastik public posts. Handle: mastik_neighbor" },
+        { title: "nastikmastik references", url: "https://www.tumblr.com/tagged/nastikmastik", description: "Public pages mentioning nastikmastik" },
+      ];
+      if (query === '"nastikmastik" "nastikmastik358"') return [
+        { title: "nastikmastik profile references", url: "https://profiles.example/nastikmastik", description: "Username: nastikmastik. Handle: public_neighbor" },
+      ];
+      return [];
+    },
+    limits: { maxSearches: 12, maxIdentifiers: 12 },
+  });
+
+  assert.deepEqual(queries.slice(0, 7), [
+    '"nastikmastik358@gmail.com"',
+    '"nastikmastik358@gmail.com" profile OR social',
+    '"nastikmastik358" profile',
+    '"nastikmastik358" site:facebook.com OR site:instagram.com OR site:linkedin.com OR site:x.com OR site:tiktok.com',
+    '"nastikmastik" profile',
+    '"nastikmastik" "nastikmastik358"',
+    'site:instagram.com OR site:tiktok.com OR site:linkedin.com "nastikmastik"',
+  ]);
+  const firstWeakCandidateSearch = queries.findIndex((query) => /"(?:nastik707|r_nastik_|thenastikedit)"/.test(query));
+  assert.ok(firstWeakCandidateSearch === -1 || firstWeakCandidateSearch > 6);
+  const stemSearch = graph.searches.find((search) => search.query === '"nastikmastik" profile');
+  assert.ok(stemSearch.results.every((result) => result.evidenceAdmissionDecision === "EVIDENCE_ADMITTED"));
+  assert.ok(graph.clues.find((clue) => clue.displayValue === "nastikmastik").queriesExecuted.length >= 3);
+  assert.ok(graph.clues.some((clue) => clue.displayValue === "public_neighbor"));
+  assert.equal(graph.metrics.searchCount <= 12, true);
+  assert.ok(graph.allCandidates.filter((candidate) => /nastik707|r_nastik_|thenastikedit/.test(candidate.profileUrl)).every((candidate) => candidate.resolutionEvidenceScore === 0 && candidate.resolutionOutcome === "ABSTAIN"));
+});
+
 test("repeated person clues persist upgraded corroboration metadata before expansion", async () => {
   const graph = await discoverExternalIdentityGraph("fieldnote77@example.com", "key", new AbortController().signal, {
     search: async (query) => {
