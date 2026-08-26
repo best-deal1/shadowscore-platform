@@ -145,3 +145,16 @@ test("raw discovery diagnostics are removed from customer reports and retained f
   assert.equal(presentReportForEndUser(base).reportSummary.discoveryDiagnostics, undefined);
   assert.ok(presentReportForEndUser({ ...base, accessType: "administrator" }).reportSummary.discoveryDiagnostics);
 });
+
+test("administrator personal reports render the complete discovery trace behind an access guard", async () => {
+  const presentation = await readFile(new URL("../components/report/PersonalIdentityReport.tsx", import.meta.url), "utf8");
+  assert.match(presentation, /report\.accessType === "administrator" && diagnostics/);
+  for (const label of ["Discovery Diagnostics", "Query", "Pivot", "Hop", "Scheduling generation", "Query pass", "Result count", "Remaining budget", "Raw result URL", "Title", "Description", "Admission decision", "Admission reason", "Identifier evaluations", "Exact reason", "Pivot Scheduling Decisions", "Decision", "Reason", "Generation", "Pass", "Remaining search budget"]) assert.match(presentation, new RegExp(label, "i"));
+  assert.match(presentation, /result\.identifierEvaluations\.map/);
+  assert.match(presentation, /evaluation\.decision/);
+  assert.match(presentation, /evaluation\.reason/);
+  assert.match(presentation, /diagnostics\.scheduling\.map/);
+  assert.match(presentation, /function DiagnosticValue\(\{ label, value, className \}/);
+  assert.match(presentation, /<DiagnosticValue className="sm:col-span-2" label="Description"/);
+  assert.doesNotMatch(presentation, /<div className="sm:col-span-2"><DiagnosticValue/);
+});

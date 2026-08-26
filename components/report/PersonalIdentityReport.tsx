@@ -35,6 +35,54 @@ function CandidateCard({ candidate, index }: { candidate: ExternalIdentityCandid
   </article>;
 }
 
+function DiagnosticValue({ label, value, className }: { label: string; value: React.ReactNode; className?: string }) {
+  return <div className={className}><dt className="text-xs font-bold uppercase tracking-wide text-violet-700">{label}</dt><dd className="mt-1 break-words text-slate-950">{value}</dd></div>;
+}
+
+function DiscoveryDiagnostics({ diagnostics }: { diagnostics: NonNullable<NonNullable<ShadowScoreReport["reportSummary"]>["discoveryDiagnostics"]> }) {
+  return <section className="mt-12 border border-violet-300 bg-violet-50 p-5 sm:p-7" aria-labelledby="personal-discovery-diagnostics">
+    <h2 id="personal-discovery-diagnostics" className="text-3xl font-semibold text-violet-950">Discovery Diagnostics</h2>
+    <p className="mt-3 max-w-3xl text-violet-900">Internal discovery trace for administrator review. Budget outcome: {diagnostics.budgetExhaustionReason.replaceAll("_", " ")}.</p>
+    <div className="mt-6 grid gap-4">
+      {diagnostics.searches.length ? diagnostics.searches.map((search, searchIndex) => <article key={`${search.query}-${searchIndex}`} className="border border-violet-200 bg-white p-4 sm:p-5" aria-labelledby={`identity-search-${searchIndex}`}>
+        <h3 id={`identity-search-${searchIndex}`} className="text-lg font-semibold text-violet-950">Search {searchIndex + 1}</h3>
+        <dl className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <DiagnosticValue label="Query" value={<code className="text-xs">{search.query}</code>} />
+          <DiagnosticValue label="Pivot" value={search.pivot} />
+          <DiagnosticValue label="Hop" value={search.hop} />
+          <DiagnosticValue label="Scheduling generation" value={search.schedulingGeneration} />
+          <DiagnosticValue label="Query pass" value={search.queryPass} />
+          <DiagnosticValue label="Result count" value={search.resultCount} />
+          <DiagnosticValue label="Remaining budget" value={search.remainingBudget} />
+        </dl>
+        <div className="mt-5 grid gap-3">
+          {search.results.length ? search.results.map((result, resultIndex) => <details key={`${result.url}-${resultIndex}`} className="border border-slate-300 bg-slate-50 p-4">
+            <summary className="cursor-pointer font-semibold text-slate-950">Result {resultIndex + 1}: {result.title || "Untitled result"}</summary>
+            <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+              <DiagnosticValue label="Raw result URL" value={<a className="break-all text-cyan-800 underline underline-offset-2" href={result.url} rel="noreferrer" target="_blank">{result.url}</a>} />
+              <DiagnosticValue label="Title" value={result.title || "Not recorded"} />
+              <DiagnosticValue className="sm:col-span-2" label="Description" value={result.description || "Not recorded"} />
+              <DiagnosticValue label="Admission decision" value={result.admissionDecision} />
+              <DiagnosticValue label="Admission score" value={result.admissionScore} />
+              <DiagnosticValue className="sm:col-span-2" label="Admission reason" value={result.admissionReason} />
+              <DiagnosticValue label="Discovery admission" value={`${result.discoveryAdmissionDecision} (${result.discoveryAdmissionScore})`} />
+              <DiagnosticValue label="Evidence admission" value={`${result.evidenceAdmissionDecision} (${result.evidenceAdmissionScore})`} />
+              <DiagnosticValue className="sm:col-span-2" label="Discovery admission reason" value={result.discoveryAdmissionReason} />
+              <DiagnosticValue className="sm:col-span-2" label="Evidence admission reason" value={result.evidenceAdmissionReason} />
+            </dl>
+            <h4 className="mt-5 font-semibold text-slate-950">Identifier evaluations</h4>
+            {result.identifierEvaluations.length ? <ul className="mt-2 grid gap-2">{result.identifierEvaluations.map((evaluation, evaluationIndex) => <li key={`${evaluation.identifier}-${evaluationIndex}`} className="border border-slate-200 bg-white p-3 text-sm"><strong className="break-all text-slate-950">{evaluation.identifier}</strong><span className="ml-2">{evaluation.type}, {evaluation.derivation}, {evaluation.decision}</span><p className="mt-1"><span className="font-semibold">Exact reason:</span> {evaluation.reason}</p></li>)}</ul> : <p className="mt-2 text-sm">No identifier evaluation was recorded.</p>}
+          </details>) : <p className="border border-slate-300 bg-slate-50 p-4">This search returned no raw results.</p>}
+        </div>
+      </article>) : <p className="border border-violet-200 bg-white p-4">No identity search was recorded.</p>}
+    </div>
+    <div className="mt-6 border border-violet-200 bg-white p-4 sm:p-5">
+      <h3 className="text-lg font-semibold text-violet-950">Pivot Scheduling Decisions</h3>
+      {diagnostics.scheduling.length ? <ol className="mt-4 grid gap-3">{diagnostics.scheduling.map((entry, index) => <li key={`${entry.pivot}-${index}`} className="border border-slate-200 bg-slate-50 p-4"><dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"><DiagnosticValue label="Pivot" value={entry.pivot} /><DiagnosticValue label="Decision" value={entry.decision} /><DiagnosticValue label="Reason" value={entry.reason} /><DiagnosticValue label="Hop" value={entry.hop} /><DiagnosticValue label="Generation" value={entry.schedulingGeneration ?? "Not recorded"} /><DiagnosticValue label="Pass" value={entry.queryPass ?? "Not recorded"} /><DiagnosticValue label="Remaining search budget" value={entry.remainingSearchBudget} /></dl></li>)}</ol> : <p className="mt-3">No pivot scheduling decision was recorded.</p>}
+    </div>
+  </section>;
+}
+
 export default function PersonalIdentityReport({ report }: { report: ShadowScoreReport }) {
   const summary = report.reportSummary;
   const signals = summary?.identitySignals;
@@ -60,6 +108,7 @@ export default function PersonalIdentityReport({ report }: { report: ShadowScore
       <section className="mt-12 grid gap-6 border-t border-slate-300 pt-10 lg:grid-cols-2"><div className="border border-slate-300 bg-white p-5"><h2 className="text-xl font-semibold text-slate-950">Identity Matching Evidence</h2><p className="mt-3">{matches.length ? matches.map((item) => `${item.attribute}: ${item.observed}`).join(", ") : "No positive resolver evidence was recorded."}</p></div><div className="border border-slate-300 bg-white p-5"><h2 className="text-xl font-semibold text-slate-950">Contradictory Identifiers</h2><p className="mt-3">{conflicts.length ? conflicts.map((item) => `${item.attribute}: ${item.submitted} differs from ${item.observed}`).join("; ") : "No contradictory identifier was recorded."}</p></div></section>
       <section className="mt-12 border-t border-slate-300 pt-10"><h2 className="text-3xl font-semibold text-slate-950">Source Provenance</h2><dl className="mt-6 grid gap-4 sm:grid-cols-2"><div className="border border-slate-300 bg-white p-5"><dt className="font-semibold text-slate-950">Independent source count</dt><dd className="mt-2 text-2xl font-semibold">{new Set(candidates.flatMap((candidate) => candidate.sourceProvenance?.map((source) => source.family) || [])).size}</dd></div><div className="border border-slate-300 bg-white p-5"><dt className="font-semibold text-slate-950">Sources reviewed</dt><dd className="mt-2">{sources.map((source) => source.label).join(", ") || "No completed source recorded"}</dd></div></dl></section>
       <section className="mt-12 border-t border-slate-300 pt-10" aria-labelledby="discovery-execution"><h2 id="discovery-execution" className="text-3xl font-semibold text-slate-950">Discovery Execution</h2><dl className="mt-6 grid gap-4 sm:grid-cols-3"><div className="border border-slate-300 bg-white p-5"><dt className="font-semibold text-slate-950">Provider status</dt><dd className="mt-2">{diagnostics?.providerStatus || "Not recorded"}</dd></div><div className="border border-slate-300 bg-white p-5"><dt className="font-semibold text-slate-950">Searches completed</dt><dd className="mt-2 text-2xl font-semibold">{diagnostics?.searches.length || 0}</dd></div><div className="border border-slate-300 bg-white p-5"><dt className="font-semibold text-slate-950">Result reason</dt><dd className="mt-2">{diagnostics?.providerFailure || diagnostics?.budgetExhaustionReason?.replaceAll("_", " ") || "Not recorded"}</dd></div></dl></section>
+      {report.accessType === "administrator" && diagnostics ? <DiscoveryDiagnostics diagnostics={diagnostics} /> : null}
       <section className="mt-12 border-t border-slate-300 pt-10"><h2 className="text-3xl font-semibold text-slate-950">Person-Specific Next Actions</h2><ol className="mt-6 divide-y divide-slate-200 border-y border-slate-300 bg-white">{actions.map((action, index) => <li key={action} className="grid grid-cols-[3rem_1fr] p-5"><span className="font-mono font-bold text-cyan-800">{String(index + 1).padStart(2, "0")}</span><span className="font-semibold text-slate-950">{action}</span></li>)}</ol></section>
     </div>
     <footer className="border-t border-slate-300 bg-white px-6 py-7 text-xs text-slate-500 sm:px-10 lg:px-14">This report reflects the public evidence available at the time of review. An unverified candidate is not an identity attribution.</footer>
