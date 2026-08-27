@@ -160,7 +160,7 @@ test("stem-derived siblings receive a first follow-up before noisy recursive han
   });
 
   const stemSearch = graph.searches.find((search) => search.query === '"nastikmastik" profile');
-  assert.deepEqual(stemSearch.results.map((result) => result.discoveryAdmissionDecision), ["DISCOVERY_ADMITTED", "DISCOVERY_ADMITTED", "DISCOVERY_ADMITTED", "DISCOVERY_ADMITTED"]);
+  assert.equal(stemSearch.results.filter((result) => result.discoveryAdmissionDecision === "DISCOVERY_ADMITTED").length, 3);
   assert.ok(stemSearch.results.at(-1).extractedDiscoveryClues.includes("nesti_bridge"));
   const evidenceContinuation = queries.findIndex((query) => query.includes("nesti_bridge"));
   const speculativeSearches = ["nastik707", "nnikass._", "thenastikedit"].map((handle) => queries.findIndex((query) => query.includes(handle))).filter((index) => index >= 0);
@@ -184,7 +184,7 @@ test("a tight budget executes one evidence-bearing stem continuation and a stron
     search: async (query) => {
       queries.push(query);
       if (query === '"nastikmastik" profile') return [
-        { title: "Nastikmastik company profile", url: "https://instagram.com/nastikmastik", description: "nastikmastik. Handle: kuki_nesti_ch. Company: Northstar Signal Ltd." },
+        { title: "Nastikmastik company profile", url: "https://instagram.com/nastikmastik", description: `nastikmastik. Contact ${EMAIL}. Handle: kuki_nesti_ch. Company: Northstar Signal Ltd.` },
         { title: "nastik707", url: "https://instagram.com/nastik707", description: "nastikmastik profile" },
         { title: "r_nastik_", url: "https://instagram.com/r_nastik_", description: "nastikmastik profile" },
       ];
@@ -207,7 +207,7 @@ test("production-shaped stem evidence executes one direct continuation before sp
   const graph = await discoverExternalIdentityGraph(EMAIL, "test-key", new AbortController().signal, {
     search: async (query) => {
       if (query === '"nastikmastik" profile') return [
-        { title: "nastikmastik (@nastikmastik)", url: "https://instagram.com/nastikmastik", description: "nastikmastik profile. Company: Northstar Signal Ltd." },
+        { title: "nastikmastik (@nastikmastik)", url: "https://instagram.com/nastikmastik", description: `nastikmastik profile. Contact ${EMAIL}. Company: Northstar Signal Ltd.` },
         { title: "nastik707 (@nastik707)", url: "https://instagram.com/nastik707", description: "nastikmastik profile" },
         { title: "r_nastik_ (@r_nastik_)", url: "https://instagram.com/r_nastik_", description: "nastikmastik profile" },
         { title: "thenastikedit (@thenastikedit)", url: "https://instagram.com/thenastikedit", description: "nastikmastik profile" },
@@ -223,7 +223,8 @@ test("production-shaped stem evidence executes one direct continuation before sp
   const speculativeIndexes = executed.flatMap((pivot, index) => /^(?:nastik707|r_nastik_|thenastikedit)$/.test(pivot) ? [index] : []);
   const companyIndex = executed.indexOf("Northstar Signal Ltd");
   assert.ok(seedIndex >= 0);
-  assert.ok(graph.searches[seedIndex].results.every((result) => result.evidenceAdmissionDecision === "EVIDENCE_ADMITTED"));
+  assert.ok(graph.searches[seedIndex].results.every((result) => result.discoveryAdmissionDecision === "DISCOVERY_ADMITTED"));
+  assert.equal(graph.searches[seedIndex].results.filter((result) => result.evidenceAdmissionDecision === "EVIDENCE_ADMITTED").length, 1);
   assert.equal(continuationIndexes.length, 1);
   assert.ok(companyIndex > seedIndex && companyIndex < continuationIndexes[0]);
   assert.ok(speculativeIndexes.every((index) => continuationIndexes[0] < index));
@@ -261,6 +262,37 @@ test("same-handle profile results remain discovery leads without self-confirming
     assert.match(search.results[0].evidenceAdmissionReason, /confirms the search pivot.*no independent subject-linking identifier/i);
   }
   assert.ok(graph.searches.some((entry) => entry.pivot === "nastikmastik" && entry.hop > 0), "the stem evidence continuation is preserved");
+});
+
+test("production Search 6 keeps derived-stem Tumblr activity at discovery relevance", async () => {
+  const queries = [];
+  const graph = await discoverExternalIdentityGraph("nastikmastik358@gmail.com", "test-key", new AbortController().signal, {
+    search: async (query) => {
+      queries.push(query);
+      if (query === '"nastikmastik" profile') return [
+        { title: "nastikmastik liked this", url: "https://www.tumblr.com/post/1001", description: "nastikmastik reblogged this" },
+      ];
+      if (query === 'site:instagram.com OR site:tiktok.com OR site:linkedin.com "nastikmastik"') return [
+        { title: "nastikmastik liked this", url: "https://www.tumblr.com/post/1002", description: "nastikmastik reblogged this" },
+      ];
+      return [];
+    },
+    limits: { maxSearches: 12, maxIdentifiers: 12 },
+  });
+
+  const stemSearch = graph.searches.find((entry) => entry.query === '"nastikmastik" profile');
+  const continuation = graph.searches.find((entry) => entry.query === 'site:instagram.com OR site:tiktok.com OR site:linkedin.com "nastikmastik"');
+  assert.ok(stemSearch);
+  assert.ok(continuation, JSON.stringify(queries));
+  for (const result of [...stemSearch.results, ...continuation.results]) {
+    assert.equal(result.discoveryAdmissionDecision, "DISCOVERY_ADMITTED");
+    assert.equal(result.evidenceAdmissionDecision, "REJECTED");
+    assert.equal(result.evidenceAdmissionScore, 0);
+    assert.deepEqual(result.matchedAnchors, []);
+    assert.match(result.evidenceAdmissionReason, /no independent subject-linking identifier/i);
+  }
+  assert.equal(queries.filter((query) => query === 'site:instagram.com OR site:tiktok.com OR site:linkedin.com "nastikmastik"').length, 1);
+  assert.ok(graph.schedulingDiagnostics.some((diagnostic) => diagnostic.pivot === "nastikmastik" && diagnostic.reason === "evidence_continuation_created"));
 });
 
 test("a discovered handle result is admitted as evidence when it contains an independent subject identifier", async () => {

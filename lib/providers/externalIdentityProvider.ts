@@ -14,7 +14,7 @@ export type SearchIntent = "social_profile_discovery" | "open_web_identity" | "c
 export type SourceClass = "social_profile" | "editorial" | "company_site" | "registry" | "directory" | "other_open_web";
 export type EntityClue = {
   id: string; type: EntityClueType; normalizedValue: string; displayValue: string; source: string;
-  discoveryPath: string[]; hop: number; derivation: "submitted" | DiscoveryPivot["derivation"] | "director" | "domain" | "company";
+  discoveryPath: string[]; hop: number; derivation: "submitted" | "derived_email_stem" | DiscoveryPivot["derivation"] | "director" | "domain" | "company";
   evidenceStrength: "lead" | "observed" | "strong"; attributionState: "discovery" | "corroborated" | "verified";
   adjacentClueIds: string[]; observedBy: string[];
   qualityScore: number; searchPriority: number; enqueueDecision: "enqueued" | "rejected";
@@ -284,7 +284,7 @@ function containsIdentifier(text: string, identifier: string) {
 type DiscoveryPivot = { value: string; type?: EntityClueType; relation: "discovery_lead" | "corroborated_identifier"; derivation: "explicit_assertion" | "social_url" | "explicit_handle" | "display_name" | "title" | "page_entity" };
 function clueQuality(input: { type: EntityClueType; value: string; derivation: EntityClue["derivation"]; observations?: number; adjacency?: number; originalOverlap?: boolean }) {
   const typeScore: Record<EntityClueType, number> = { person_name: 82, social_profile: 84, username: 76, company_name: 84, domain: 80, email: 86, phone: 88, location: 68, role_title: 68, unknown: 45 };
-  const derivationScore: Record<EntityClue["derivation"], number> = { submitted: 10, explicit_assertion: 12, social_url: 10, explicit_handle: 10, display_name: 6, title: -22, page_entity: 8, director: 12, domain: 12, company: 12 };
+  const derivationScore: Record<EntityClue["derivation"], number> = { submitted: 10, derived_email_stem: 2, explicit_assertion: 12, social_url: 10, explicit_handle: 10, display_name: 6, title: -22, page_entity: 8, director: 12, domain: 12, company: 12 };
   const value = normalizeIdentifier(input.value); const rejection = rejectionReason(value);
   if (rejection) return { score: 0, priority: 0, decision: "rejected" as const, rejection };
   const specificity = /[_.-]|\d/.test(value) ? 5 : value.includes(" ") ? 7 : 2;
@@ -585,7 +585,7 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
   };
   addClue({ id: `email:${normalized}`, type: "email", normalizedValue: normalized, displayValue: normalized, source: "submitted-target", discoveryPath: [normalized], hop: 0, derivation: "submitted", evidenceStrength: "strong", attributionState: "verified", adjacentClueIds: [`username:${localPart}`, `domain:${domain}`], observedBy: ["submitted-target"], ...schedulingFields({ type: "email", value: normalized, derivation: "submitted" }) });
   addClue({ id: `username:${localPart}`, type: "username", normalizedValue: normalizeIdentifier(localPart), displayValue: localPart, source: "submitted-target", discoveryPath: [normalized, localPart], hop: 0, derivation: "submitted", evidenceStrength: "observed", attributionState: "discovery", adjacentClueIds: [`email:${normalized}`], observedBy: ["submitted-target"], ...schedulingFields({ type: "username", value: localPart, derivation: "submitted", originalOverlap: true }) });
-  if (usernameStem) addClue({ id: `username:${usernameStem}`, type: "username", normalizedValue: normalizeIdentifier(usernameStem), displayValue: usernameStem, source: "submitted-target", discoveryPath: [normalized, usernameStem], hop: 0, derivation: "submitted", evidenceStrength: "lead", attributionState: "discovery", adjacentClueIds: [`email:${normalized}`, `username:${localPart}`], observedBy: ["submitted-target"], ...schedulingFields({ type: "username", value: usernameStem, derivation: "submitted", originalOverlap: true }) });
+  if (usernameStem) addClue({ id: `username:${usernameStem}`, type: "username", normalizedValue: normalizeIdentifier(usernameStem), displayValue: usernameStem, source: "derived-email-stem", discoveryPath: [normalized, usernameStem], hop: 0, derivation: "derived_email_stem", evidenceStrength: "lead", attributionState: "discovery", adjacentClueIds: [`email:${normalized}`, `username:${localPart}`], observedBy: ["derived-email-stem"], ...schedulingFields({ type: "username", value: usernameStem, derivation: "derived_email_stem", originalOverlap: true }) });
   addClue({ id: `domain:${domain}`, type: "domain", normalizedValue: domain, displayValue: domain, source: "submitted-target", discoveryPath: [normalized, domain], hop: 0, derivation: "submitted", evidenceStrength: "observed", attributionState: "discovery", adjacentClueIds: [`email:${normalized}`], observedBy: ["submitted-target"], ...schedulingFields({ type: "domain", value: domain, derivation: "submitted", originalOverlap: true }) });
 
   const enqueuePending = () => {
@@ -763,7 +763,9 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
         if (clueType === "person_name") precedingPersonClues.push(pivot.value);
       }
     }
-    if (item.requiredResultIdentifier && item.hop < limits.maxHops - 1 && assessedResults.some(({ diagnostic }) => diagnostic.evidenceAdmissionDecision === "EVIDENCE_ADMITTED")) {
+    // A derived stem can justify one bounded discovery continuation, but its
+    // repetition never supplies the independent evidence needed for attribution.
+    if (item.requiredResultIdentifier && item.hop < limits.maxHops - 1 && assessedResults.some(({ diagnostic }) => diagnostic.discoveryAdmissionDecision === "DISCOVERY_ADMITTED")) {
       const continuationId = normalizeIdentifier(item.requiredResultIdentifier);
       if (continuedDirectPivots.has(continuationId)) {
         schedulingDiagnostics.push({ pivot: item.label, clueType: item.clueType, hop: item.hop + 1, decision: "skipped", reason: "evidence_continuation_deduplicated", remainingSearchBudget: limits.maxSearches - searchCount });
