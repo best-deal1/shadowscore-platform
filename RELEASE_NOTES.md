@@ -33,7 +33,7 @@ This file records customer-visible improvements in each ShadowScore release.
 
 ### Improved
 
-- External identity searches now use stable evidence tiers. Strong company, domain, and corroborated person pivots stay ahead of username stems, while supported stem continuations stay ahead of speculative social handles.
+- External identity searches now create one bounded follow-up when a numeric-free username stem returns admitted evidence. Strong company, domain, and corroborated person pivots stay ahead of this follow-up, which runs before speculative social handles. Scheduling diagnostics record when the follow-up is created, admitted, or deduplicated.
 
 - External identity discovery now keeps weak person-name matches as unverified leads. It expands them only after a strong identifier or independent source families connect them to the submitted target. Reports separate lead quality from identity attribution.
 

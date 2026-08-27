@@ -198,7 +198,39 @@ test("a tight budget executes one evidence-bearing stem continuation and a stron
   assert.ok(executed.slice(-2).includes("Northstar Signal Ltd"), JSON.stringify({ executed, clues: graph.clues.map((clue) => clue.displayValue) }));
   assert.ok(graph.clues.some((clue) => clue.displayValue === "kuki_nesti_ch"));
   assert.ok(executed.filter((pivot) => pivot === "kuki_nesti_ch").length <= 1);
+  const continuationIndex = executed.indexOf("nastikmastik", executed.indexOf("nastikmastik") + 1);
+  assert.ok(continuationIndex === -1 || executed.indexOf("Northstar Signal Ltd") < continuationIndex, JSON.stringify(executed));
   assert.equal(executed.some((pivot) => /nastik707|r_nastik_|thenastikedit/.test(pivot)), false);
+});
+
+test("production-shaped stem evidence executes one direct continuation before speculative social pivots", async () => {
+  const graph = await discoverExternalIdentityGraph(EMAIL, "test-key", new AbortController().signal, {
+    search: async (query) => {
+      if (query === '"nastikmastik" profile') return [
+        { title: "nastikmastik (@nastikmastik)", url: "https://instagram.com/nastikmastik", description: "nastikmastik profile. Company: Northstar Signal Ltd." },
+        { title: "nastik707 (@nastik707)", url: "https://instagram.com/nastik707", description: "nastikmastik profile" },
+        { title: "r_nastik_ (@r_nastik_)", url: "https://instagram.com/r_nastik_", description: "nastikmastik profile" },
+        { title: "thenastikedit (@thenastikedit)", url: "https://instagram.com/thenastikedit", description: "nastikmastik profile" },
+      ];
+      return [];
+    },
+    limits: { maxSearches: 12, maxIdentifiers: 12 },
+  });
+
+  const executed = graph.searches.map((search) => search.pivot);
+  const seedIndex = graph.searches.findIndex((search) => search.query === '"nastikmastik" profile');
+  const continuationIndexes = executed.flatMap((pivot, index) => pivot === "nastikmastik" && index > seedIndex ? [index] : []);
+  const speculativeIndexes = executed.flatMap((pivot, index) => /^(?:nastik707|r_nastik_|thenastikedit)$/.test(pivot) ? [index] : []);
+  const companyIndex = executed.indexOf("Northstar Signal Ltd");
+  assert.ok(seedIndex >= 0);
+  assert.ok(graph.searches[seedIndex].results.every((result) => result.evidenceAdmissionDecision === "EVIDENCE_ADMITTED"));
+  assert.equal(continuationIndexes.length, 1);
+  assert.ok(companyIndex > seedIndex && companyIndex < continuationIndexes[0]);
+  assert.ok(speculativeIndexes.every((index) => continuationIndexes[0] < index));
+  assert.equal(graph.metrics.searchCount <= 12, true);
+  assert.ok(graph.schedulingDiagnostics.some((diagnostic) => diagnostic.pivot === "nastikmastik" && diagnostic.decision === "created" && diagnostic.reason === "evidence_continuation_created"));
+  assert.ok(graph.schedulingDiagnostics.some((diagnostic) => diagnostic.pivot === "nastikmastik" && diagnostic.decision === "admitted"));
+  assert.ok(graph.allCandidates.filter((candidate) => /nastik707|r_nastik_|thenastikedit/.test(candidate.profileUrl)).every((candidate) => candidate.matchLevel === "unverified_candidate" && candidate.confidence === 0 && candidate.resolutionOutcome === "ABSTAIN"));
 });
 
 test("a stem result can pivot through a handle stated in social relationship copy", async () => {

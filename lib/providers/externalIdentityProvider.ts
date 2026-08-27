@@ -126,7 +126,7 @@ export type ResultAdmissionDiagnostic = {
 };
 export type IdentitySchedulingDiagnostic = {
   pivot: string; clueType: EntityClueType; hop: number; query?: string; schedulingGeneration?: number; queryPass?: number;
-  decision: "admitted" | "scheduled" | "skipped"; reason: "seed_plan" | "pivot_admitted" | "deduplicated" | "identifier_budget" | "beam_deferred" | "search_budget" | "closure";
+  decision: "created" | "admitted" | "scheduled" | "skipped"; reason: "seed_plan" | "pivot_admitted" | "evidence_continuation_created" | "evidence_continuation_deduplicated" | "deduplicated" | "identifier_budget" | "beam_deferred" | "search_budget" | "closure";
   remainingSearchBudget: number;
 };
 export type PreviewIdentitySignal = { type: "person_name" | "alias" | "handle" | "company_name" | "domain" | "director"; value: string };
@@ -481,7 +481,7 @@ function underlyingSourceFamily(url: string) {
 async function braveSearch(query: string, apiKey: string, signal: AbortSignal, limit: number): Promise<SearchResult[]> { const url = new URL(SEARCH_ENDPOINT); url.searchParams.set("q", query); url.searchParams.set("count", String(limit)); url.searchParams.set("safesearch", "strict"); const response = await fetch(url, { signal, headers: { accept: "application/json", "x-subscription-token": apiKey } }); if (!response.ok) throw new Error(`Public search returned HTTP ${response.status}.`); const payload = await response.json() as { web?: { results?: Array<{ title?: string; url?: string; description?: string }> } }; return (payload.web?.results || []).filter((item): item is SearchResult => Boolean(item.title && item.url)).slice(0, limit); }
 
 type SchedulingTier = 1 | 2 | 3 | 4;
-type QueueItem = { id: string; label: string; hop: number; path: string[]; query: string; method: string; intent: SearchIntent; identifierStrength?: "discovery_lead" | "corroborated_identifier"; qualityScore: number; priority: number; clueType: EntityClueType; schedulingTier?: SchedulingTier; siblingRank?: number; queryPass?: number; schedulingGeneration?: number; branchPriority?: number; firstPassProducedIdentifiers?: boolean; requiredResultIdentifier?: string };
+type QueueItem = { id: string; label: string; hop: number; path: string[]; query: string; method: string; intent: SearchIntent; identifierStrength?: "discovery_lead" | "corroborated_identifier"; qualityScore: number; priority: number; clueType: EntityClueType; schedulingTier?: SchedulingTier; siblingRank?: number; queryPass?: number; schedulingGeneration?: number; branchPriority?: number; firstPassProducedIdentifiers?: boolean; requiredResultIdentifier?: string; evidenceContinuation?: boolean };
 type PendingIdentifier = Omit<QueueItem, "query" | "method" | "intent"> & { exactSource: boolean; order: number; derivation: DiscoveryPivot["derivation"]; adjacentLabels: string[] };
 
 function schedulingTierForPivot(input: { clueType: EntityClueType; derivation: DiscoveryPivot["derivation"]; evidenceAdmitted: boolean; directStemEvidence: boolean; identifierStrength: QueueItem["identifierStrength"] }): SchedulingTier {
@@ -513,6 +513,7 @@ function contextualQueries(pivot: PendingIdentifier, localPart: string) {
 
 function budgetedContextualQueries(pivot: PendingIdentifier, localPart: string) {
   const variants = contextualQueries(pivot, localPart);
+  if (pivot.evidenceContinuation) return variants.slice(0, 1);
   if (pivot.derivation === "explicit_handle") return variants.slice(0, 2);
   const socialVariant = variants.find((variant) => variant.intent === "social_profile_discovery");
   return socialVariant ? [variants[0], socialVariant].filter((variant, index, selected) => selected.indexOf(variant) === index) : variants.slice(0, 2);
@@ -549,7 +550,7 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
   const seedSearchLimit = Math.max(1, limits.maxSearches - Math.min(limits.reservedExpansionSearches, limits.maxSearches - 1));
   const queue: QueueItem[] = seedQueue.slice(0, seedSearchLimit);
   const omittedSeeds = seedQueue.slice(seedSearchLimit);
-  const searched = new Set<string>(); const queuedIdentifiers = new Set<string>(); const candidates = new Map<string, ExternalIdentityCandidate>();
+  const searched = new Set<string>(); const queuedIdentifiers = new Set<string>(); const continuedDirectPivots = new Set<string>(); const candidates = new Map<string, ExternalIdentityCandidate>();
   const clues = new Map<string, EntityClue>();
   const edges: IdentityDiscoveryEdge[] = []; const pendingIdentifiers: PendingIdentifier[] = [];
   const searches: IdentityDiscoverySearchDiagnostic[] = [];
@@ -755,6 +756,17 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
         resultDiagnostic.extractedClues.push(pivot.value); resultDiagnostic.extractedDiscoveryClues.push(pivot.value); if (resultDiagnostic.evidenceAdmissionDecision === "EVIDENCE_ADMITTED") resultDiagnostic.extractedEvidenceClues.push(pivot.value);
         if (scheduling.enqueueDecision === "enqueued") pendingIdentifiers.push({ id, label: pivot.value, hop: item.hop + 1, path: cluePath, identifierStrength: admittedRelation, exactSource: exact, order: observationOrder++, derivation: pivot.derivation, clueType, adjacentLabels: [...adjacentLabels, ...precedingPersonClues], qualityScore: scheduling.qualityScore, priority: scheduling.searchPriority, schedulingTier: schedulingTierForPivot({ clueType, derivation: pivot.derivation, evidenceAdmitted: resultDiagnostic.evidenceAdmissionDecision === "EVIDENCE_ADMITTED", directStemEvidence: Boolean(item.requiredResultIdentifier), identifierStrength: admittedRelation }) });
         if (clueType === "person_name") precedingPersonClues.push(pivot.value);
+      }
+    }
+    if (item.requiredResultIdentifier && item.hop < limits.maxHops - 1 && assessedResults.some(({ diagnostic }) => diagnostic.evidenceAdmissionDecision === "EVIDENCE_ADMITTED")) {
+      const continuationId = normalizeIdentifier(item.requiredResultIdentifier);
+      if (continuedDirectPivots.has(continuationId)) {
+        schedulingDiagnostics.push({ pivot: item.label, clueType: item.clueType, hop: item.hop + 1, decision: "skipped", reason: "evidence_continuation_deduplicated", remainingSearchBudget: limits.maxSearches - searchCount });
+      } else {
+        continuedDirectPivots.add(continuationId);
+        const activeScheduling = schedulingFields({ type: item.clueType, value: item.label, derivation: "explicit_handle", originalOverlap: true, distanceFromRoot: item.hop + 1, independentAnchorCount: 1, strongAnchor: true });
+        pendingIdentifiers.push({ id: continuationId, label: item.label, hop: item.hop + 1, path: [...item.path, item.label], identifierStrength: "discovery_lead", exactSource: false, order: observationOrder++, derivation: "explicit_handle", clueType: item.clueType, adjacentLabels: [...item.path], qualityScore: activeScheduling.qualityScore, priority: activeScheduling.searchPriority, schedulingTier: 2, evidenceContinuation: true });
+        schedulingDiagnostics.push({ pivot: item.label, clueType: item.clueType, hop: item.hop + 1, decision: "created", reason: "evidence_continuation_created", remainingSearchBudget: limits.maxSearches - searchCount });
       }
     }
     const identifiersAfter = new Set(edges.filter((edge) => edge.relation !== "search_result").map((edge) => edge.to));
