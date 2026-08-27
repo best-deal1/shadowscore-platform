@@ -233,6 +233,57 @@ test("production-shaped stem evidence executes one direct continuation before sp
   assert.ok(graph.allCandidates.filter((candidate) => /nastik707|r_nastik_|thenastikedit/.test(candidate.profileUrl)).every((candidate) => candidate.matchLevel === "unverified_candidate" && candidate.confidence === 0 && candidate.resolutionOutcome === "ABSTAIN"));
 });
 
+test("same-handle profile results remain discovery leads without self-confirming identity evidence", async () => {
+  const graph = await discoverExternalIdentityGraph(EMAIL, "test-key", new AbortController().signal, {
+    search: async (query) => {
+      if (query === '"nastikmastik" profile') return [
+        { title: "nastik707 (@nastik707)", url: "https://instagram.com/nastik707", description: "nastikmastik profile" },
+        { title: "nnikass._ (@nnikass._)", url: "https://instagram.com/nnikass._", description: "nastikmastik profile" },
+      ];
+      if (query.includes('site:instagram.com') && query.includes('"nastik707"')) return [
+        { title: "nastik707 (@nastik707)", url: "https://instagram.com/nastik707", description: "Public profile" },
+      ];
+      if (query.includes('site:instagram.com') && query.includes('"nnikass._"')) return [
+        { title: "nnikass._ (@nnikass._)", url: "https://instagram.com/nnikass._", description: "Public profile" },
+      ];
+      return [];
+    },
+    limits: { maxSearches: 12, maxIdentifiers: 12 },
+  });
+
+  for (const pivot of ["nastik707", "nnikass._"]) {
+    const search = graph.searches.find((entry) => entry.pivot === pivot && entry.searchIntent === "social_profile_discovery");
+    assert.ok(search, `${pivot} profile confirmation was searched`);
+    assert.equal(search.results[0].discoveryAdmissionDecision, "DISCOVERY_ADMITTED");
+    assert.equal(search.results[0].evidenceAdmissionDecision, "REJECTED");
+    assert.equal(search.results[0].evidenceAdmissionScore, 0);
+    assert.deepEqual(search.results[0].matchedAnchors, []);
+    assert.match(search.results[0].evidenceAdmissionReason, /confirms the search pivot.*no independent subject-linking identifier/i);
+  }
+  assert.ok(graph.searches.some((entry) => entry.pivot === "nastikmastik" && entry.hop > 0), "the stem evidence continuation is preserved");
+});
+
+test("a discovered handle result is admitted as evidence when it contains an independent subject identifier", async () => {
+  const graph = await discoverExternalIdentityGraph(EMAIL, "test-key", new AbortController().signal, {
+    search: async (query) => {
+      if (query === '"nastikmastik" profile') return [
+        { title: "nastik707 (@nastik707)", url: "https://instagram.com/nastik707", description: "nastikmastik profile" },
+      ];
+      if (query.includes('site:instagram.com') && query.includes('"nastik707"')) return [
+        { title: "nastik707 (@nastik707)", url: "https://instagram.com/nastik707", description: `Contact ${EMAIL}` },
+      ];
+      return [];
+    },
+    limits: { maxSearches: 12, maxIdentifiers: 12 },
+  });
+
+  const search = graph.searches.find((entry) => entry.pivot === "nastik707" && entry.searchIntent === "social_profile_discovery");
+  assert.ok(search);
+  assert.equal(search.results[0].evidenceAdmissionDecision, "EVIDENCE_ADMITTED");
+  assert.equal(search.results[0].evidenceAdmissionScore, 100);
+  assert.ok(search.results[0].matchedAnchors.includes("original_target"));
+});
+
 test("a stem result can pivot through a handle stated in social relationship copy", async () => {
   const queries = [];
   const graph = await discoverExternalIdentityGraph(EMAIL, "test-key", new AbortController().signal, {
