@@ -141,14 +141,17 @@ function evidenceAdmissionForResult(result: SearchResult, active: EntityClue, or
   if (containsIdentifier(text, original)) anchors.push({ label: "original_target", score: 100 });
   const originalLocalPart = original.includes("@") ? original.split("@")[0] : undefined;
   if (originalLocalPart && containsIdentifier(text, originalLocalPart)) anchors.push({ label: "original_local_part", score: 65 });
-  if (containsIdentifier(text, active.displayValue)) anchors.push({ label: "active_clue", score: active.type === "person_name" || active.type === "company_name" ? 75 : 65 });
-  const matchedNeighbors = [...new Set(neighbors.filter((neighbor) => containsIdentifier(text, neighbor)))];
+  const activeMatch = containsIdentifier(text, active.displayValue);
+  // A submitted clue is a subject identifier. A discovered clue is only the
+  // search pivot, so seeing it again cannot independently establish identity.
+  if (active.derivation === "submitted" && activeMatch) anchors.push({ label: "active_clue", score: active.type === "person_name" || active.type === "company_name" ? 75 : 65 });
+  const matchedNeighbors = [...new Set(neighbors.filter((neighbor) => normalizeIdentifier(neighbor) !== active.normalizedValue && containsIdentifier(text, neighbor)))];
   matchedNeighbors.forEach((neighbor) => anchors.push({ label: `graph_neighbor:${neighbor}`, score: 30 }));
   if (matchedNeighbors.length >= 2) anchors.push({ label: "multiple_graph_neighbors", score: 35 });
   const urlHandle = socialUrlHandle(result.url);
-  if (urlHandle && normalizeIdentifier(urlHandle) === normalizeIdentifier(active.displayValue)) anchors.push({ label: "canonical_social_handle", score: 85 });
+  const canonicalPivotMatch = Boolean(urlHandle && normalizeIdentifier(urlHandle) === active.normalizedValue);
   const score = Math.min(100, anchors.reduce((sum, anchor) => sum + anchor.score, 0));
-  return { score, admitted: score >= 60, anchors: anchors.map((anchor) => anchor.label), reason: score >= 60 ? `Subject relevance established by ${anchors.map((anchor) => anchor.label).join(", ")}.` : "No strong subject identifier or sufficient graph-neighbor evidence appears in the result." };
+  return { score, admitted: score >= 60, anchors: anchors.map((anchor) => anchor.label), pivotConfirmation: activeMatch || canonicalPivotMatch, reason: score >= 60 ? `Subject relevance established by ${anchors.map((anchor) => anchor.label).join(", ")}.` : activeMatch || canonicalPivotMatch ? "The result confirms the search pivot, but contains no independent subject-linking identifier." : "No strong subject identifier or sufficient graph-neighbor evidence appears in the result." };
 }
 
 function discoveryAdmissionForResult(result: SearchResult, evidence: ReturnType<typeof evidenceAdmissionForResult>, context: { hop: number; intent: SearchIntent; query: string }) {
@@ -171,9 +174,11 @@ function discoveryAdmissionForResult(result: SearchResult, evidence: ReturnType<
   if (titleConsistency) structural += 12;
   if (sourceClassFor(result.url) === "registry") structural += 20;
   const provenance = seedIntent && structural >= 40 ? querySpecificity : 0;
-  const score = Math.min(100, structural + provenance);
-  const admitted = seedIntent && score >= 60 && !explicitlyUnrelated && !conflictingEmail;
-  return { score, admitted, provenance, reason: admitted ? `Structurally strong seed lead admitted for investigation${provenance ? " with a bounded targeted-query prior" : ""}.` : "Result lacks subject evidence and sufficient structured identity signals for seed discovery." };
+  // Reproducing the pivot is useful for discovery even though it contributes
+  // zero attribution evidence. Keep that distinction explicit in diagnostics.
+  const score = Math.min(100, Math.max(structural + provenance, evidence.pivotConfirmation ? 75 : 0));
+  const admitted = (seedIntent || evidence.pivotConfirmation) && score >= 60 && !explicitlyUnrelated && !conflictingEmail;
+  return { score, admitted, provenance, reason: admitted ? `Structurally strong discovery lead admitted for investigation${provenance ? " with a bounded targeted-query prior" : ""}.` : "Result lacks subject evidence and sufficient structured identity signals for discovery." };
 }
 
 function admissionDiagnostic(result: SearchResult, active: EntityClue, original: string, neighbors: string[], context: { hop: number; intent: SearchIntent; query: string }, branchPriority: number, siblingRank: number, remainingBudget: number): ResultAdmissionDiagnostic {

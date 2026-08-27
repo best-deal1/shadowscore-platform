@@ -204,3 +204,4 @@ This file records customer-visible improvements in each ShadowScore release.
 
 - Administrator test reports now preserve every external identity query, provider result preview, extraction decision, pivot admission, scheduling decision, and remaining search budget. Customer reports continue to hide raw discovery diagnostics.
 - Administrator personal identity reports now show the complete identity search, result admission, identifier evaluation, rejection reason, and pivot scheduling trace. Customer reports continue to hide this diagnostic data.
+- Identity discovery now keeps canonical same-handle profile matches as discovery leads without treating the searched handle as independent identity evidence. Results that contain a separate subject identifier remain eligible for evidence admission.
