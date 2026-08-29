@@ -1,6 +1,6 @@
 # Release Notes
 
-- Personal Identity discovery now extracts bounded subject-name expansions from relevant public results. These aliases receive a targeted continuation before weaker username leads, while remaining discovery-only and unable to verify identity.
+- Personal Identity discovery now extracts bounded subject-name expansions from relevant public results when role, sentence-boundary, or alias syntax supports the expanded name. It rejects adjacent title-case prose. Admitted aliases receive a targeted continuation before weaker username leads, while remaining discovery-only and unable to verify identity.
 
 - Personal Identity reports now preserve an explicitly submitted name alongside the submitted email. Discovery uses both signals, while email-derived stems remain discovery-only clues and cannot create submitted-name contradictions.
 

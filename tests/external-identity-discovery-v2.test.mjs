@@ -794,6 +794,27 @@ test("an admitted subject-name expansion outranks weak username pivots without b
   assert.equal(candidate.resolverMatchedSignals.length, 0);
 });
 
+test("title-case prose after a submitted name does not become a subject-name expansion", async () => {
+  const queries = [];
+  const graph = await discoverExternalIdentityGraph("jane358@example.com", "key", new AbortController().signal, {
+    signals: { name: "Jane Smith" },
+    search: async (query) => {
+      queries.push(query);
+      if (query === '"Jane Smith"') return [{
+        title: "Jane Smith Wins Award",
+        url: "https://news.example/awards/jane-smith",
+        description: "Jane Smith received the annual award.",
+      }];
+      return [];
+    },
+    limits: { maxSearches: 3, reservedExpansionSearches: 1, maxIdentifiers: 6 },
+  });
+
+  assert.equal(graph.clues.some((clue) => clue.displayValue === "Jane Smith Wins"), false);
+  assert.equal(queries.some((query) => query.includes('"Jane Smith Wins"')), false);
+  assert.equal(graph.allCandidates.some((candidate) => candidate.observedDisplayName === "Jane Smith Wins"), false);
+});
+
 test("title names accept lowercase particles and scripts without case while rejecting noise", async () => {
   const queries = [];
   const graph = await discoverExternalIdentityGraph("composer@example.com", "key", new AbortController().signal, {

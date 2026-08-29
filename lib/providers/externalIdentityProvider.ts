@@ -375,6 +375,9 @@ function titleAliases(title: string) {
 const SUBJECT_NAME_CONTEXT_LABELS = new Set([
   "academy", "artist", "author", "category", "company", "editor", "fashion", "home", "israel", "magazine", "news", "page", "photo", "profile", "publication", "site", "team", "video",
 ]);
+const SUBJECT_NAME_ROLE_LABELS = new Set([
+  "actor", "artist", "author", "chef", "designer", "director", "doctor", "editor", "musician", "photographer", "professor", "writer",
+]);
 
 /** Extract one bounded name expansion around the exact submitted-name token sequence. */
 function subjectNameExpansions(result: SearchResult, submittedName?: string) {
@@ -384,7 +387,8 @@ function subjectNameExpansions(result: SearchResult, submittedName?: string) {
   const regions = [result.title, ...(result.description || "").split(/[.!?;|]/u)].slice(0, 5);
   const expansions: string[] = [];
   for (const region of regions) {
-    const tokens = region.match(/[\p{L}\p{M}'’-]+/gu) || [];
+    const tokenMatches = [...region.matchAll(/[\p{L}\p{M}'’-]+/gu)];
+    const tokens = tokenMatches.map((match) => match[0]);
     for (let index = 0; index <= tokens.length - subjectTokens.length; index += 1) {
       if (!subjectNormalized.every((token, offset) => normalizeIdentifier(tokens[index + offset]) === token)) continue;
       // Prefer a single adjacent alias component. This keeps expansion finite
@@ -393,6 +397,18 @@ function subjectNameExpansions(result: SearchResult, submittedName?: string) {
         const neighbor = tokens[neighborIndex];
         if (!neighbor || !/^\p{Lu}[\p{L}\p{M}'’-]{1,29}$/u.test(neighbor)) continue;
         if (SUBJECT_NAME_CONTEXT_LABELS.has(normalizeIdentifier(neighbor)) || NOISE_IDENTIFIERS.has(normalizeIdentifier(neighbor))) continue;
+        const beforeSubject = neighborIndex < index;
+        const previousToken = beforeSubject ? tokens[neighborIndex - 1] : undefined;
+        const neighborMatch = tokenMatches[neighborIndex];
+        const neighborEnd = (neighborMatch.index || 0) + neighbor.length;
+        const parenthesized = region.slice(0, neighborMatch.index).trimEnd().endsWith("(")
+          && region.slice(neighborEnd).trimStart().startsWith(")");
+        const hasNameBoundaryEvidence = beforeSubject
+          && (neighborIndex === 0 || SUBJECT_NAME_ROLE_LABELS.has(normalizeIdentifier(previousToken || "")));
+        // Capitalization alone is weak evidence in prose such as "Jane Smith
+        // Wins Award". Admit only a leading name component at a sentence or
+        // role boundary, or an adjacent component explicitly in parentheses.
+        if (!hasNameBoundaryEvidence && !parenthesized) continue;
         const value = neighborIndex < index ? [neighbor, ...subjectTokens].join(" ") : [...subjectTokens, neighbor].join(" ");
         if (plausiblePersonName(value) && !rejectionReason(value)) expansions.push(value);
       }
