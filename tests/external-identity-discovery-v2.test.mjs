@@ -751,6 +751,49 @@ test("open-web editorial evidence bridges an alias to a fuller name, handle, and
   assert.equal(queries.slice(0, 4).some((query) => query.includes("vale_field_notes")), false);
 });
 
+test("an admitted subject-name expansion outranks weak username pivots without becoming resolver evidence", async () => {
+  const queries = [];
+  const sourceUrl = "https://arts.example/news/jane-smith";
+  const graph = await discoverExternalIdentityGraph("jane358@example.com", "key", new AbortController().signal, {
+    signals: { name: "Jane Smith" },
+    search: async (query) => {
+      queries.push(query);
+      if (query === '"Jane Smith"') return [{
+        title: "Artist Kiki Jane Smith appeared at the exhibition",
+        url: sourceUrl,
+        description: "Fashion Academy | Fashion Israel | 19.06.2017. Guest Shiran Sun attended.",
+      }];
+      if (query.includes('"Kiki Jane Smith"')) return [{
+        title: "Kiki Jane Smith | Instagram",
+        url: "https://instagram.com/kiki_creates",
+        description: "Artist profile",
+      }];
+      return [];
+    },
+    limits: { maxSearches: 3, reservedExpansionSearches: 1, maxIdentifiers: 6 },
+  });
+
+  const alias = graph.clues.find((clue) => clue.displayValue === "Kiki Jane Smith");
+  assert.ok(alias);
+  assert.equal(alias.derivation, "subject_name_expansion");
+  assert.equal(alias.source, sourceUrl);
+  assert.equal(alias.sourceFamily, "arts.example");
+  assert.equal(alias.parentSubmittedIdentifier, "Jane Smith");
+  assert.equal(alias.lifecycleState, "admitted");
+  assert.equal(alias.admissionState, "discovery_only");
+  assert.deepEqual(alias.discoveryPath, ["jane358@example.com", "Jane Smith", "Kiki Jane Smith"]);
+  assert.ok(queries.some((query) => query.includes('"Kiki Jane Smith"')));
+  assert.equal(queries.some((query) => query.includes('"jane358" profile')), false);
+  assert.equal(graph.clues.some((clue) => /Fashion Academy|Fashion Israel|Shiran Sun|19\.06\.2017/i.test(clue.displayValue)), false);
+  assert.equal(graph.edges.filter((edge) => edge.to === "kiki jane smith").every((edge) => edge.relation === "discovery_lead"), true);
+  const candidate = graph.allCandidates.find((item) => item.profileUrl === "https://instagram.com/kiki_creates");
+  assert.ok(candidate);
+  assert.equal(candidate.discoveryOnlyAlias, true);
+  assert.equal(candidate.resolutionEvidenceScore, 0);
+  assert.equal(candidate.resolutionOutcome, "ABSTAIN");
+  assert.equal(candidate.resolverMatchedSignals.length, 0);
+});
+
 test("title names accept lowercase particles and scripts without case while rejecting noise", async () => {
   const queries = [];
   const graph = await discoverExternalIdentityGraph("composer@example.com", "key", new AbortController().signal, {
