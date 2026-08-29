@@ -255,7 +255,9 @@ export async function createIntake(session: WorkspaceSession, record: Omit<Shado
       platform: created.platform,
       caseType: created.case_type,
       email: created.email,
-      identitySignals: created.identity_signals || undefined,
+      identitySignals: created.scan_mode === "personal"
+        ? normalizeIntakeIdentitySignals(created.identity_signals, { target: created.target, email: created.email })
+        : undefined,
       fileNames: created.file_names || [],
       visibleSignalCategories: created.visible_signal_categories || [],
       paymentStatus: created.payment_status,

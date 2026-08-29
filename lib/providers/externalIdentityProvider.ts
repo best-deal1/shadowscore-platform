@@ -61,7 +61,6 @@ export function rankExternalIdentityCandidates(input: string | PersonalIdentityS
   const signals: PersonalIdentitySignals = typeof input === "string" ? { email: input } : input;
   const email = signals.email.trim().toLowerCase();
   const subject = resolverEntity("investigated-subject");
-  const localPart = email.split("@")[0];
   const observations: Observation[] = [];
   const observe = (entity: Entity, attribute: ObservationAttribute, value: string, evidenceReference: string, reliability: number) => {
     const observedValue = value.trim();
@@ -75,7 +74,9 @@ export function rankExternalIdentityCandidates(input: string | PersonalIdentityS
   };
   observe(subject, "email", email, "submitted-target", 0);
   if (signals.name) observe(subject, "name", signals.name, "submitted-target", 0);
-  if (signals.username || localPart) observe(subject, "name", signals.username || localPart, "submitted-target", 0);
+  // Email local-parts and usernames remain discovery identifiers. The resolver
+  // has no username attribute, so typing either as a submitted name would
+  // manufacture name matches and contradictions.
   if (signals.phone) observe(subject, "phone", signals.phone, "submitted-target", 0);
   const entities = candidates.map((candidate) => {
     const entity = resolverEntity(candidate.profileUrl);
@@ -535,9 +536,18 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
   const search = options.search || braveSearch;
   const normalized = email.trim().toLowerCase(); const localPart = normalized.split("@")[0]; const domain = normalized.split("@")[1]; const usernameStem = numericFreeUsernameStem(localPart);
   const submittedSignals = { email: normalized, ...options.signals };
+  const escapedName = options.signals?.name?.replace(/["\\]/g, " ").trim();
+  const nameAndEmailClue = escapedName
+    ? `"${escapedName}" "${usernameStem || localPart}"`
+    : undefined;
   const originals = new Set([normalized, normalizeIdentifier(localPart), normalizeIdentifier(domain), ...(usernameStem ? [normalizeIdentifier(usernameStem)] : [])]);
   const seedQueue: QueueItem[] = [
     { id: normalized, label: normalized, hop: 0, path: [normalized], query: `"${normalized}"`, method: "exact_email", intent: "open_web_identity", qualityScore: 96, priority: 96, clueType: "email" },
+    ...(escapedName ? [
+      { id: escapedName, label: escapedName, hop: 0, path: [normalized, escapedName], query: `"${escapedName}"`, method: "submitted_name_exact", intent: "open_web_identity" as const, qualityScore: 94, priority: 95, clueType: "person_name" as const },
+      { id: escapedName, label: escapedName, hop: 0, path: [normalized, escapedName], query: `"${escapedName}" site:facebook.com OR site:instagram.com OR site:linkedin.com OR site:x.com OR site:tiktok.com`, method: "submitted_name_social", intent: "social_profile_discovery" as const, qualityScore: 94, priority: 94, clueType: "person_name" as const },
+      { id: escapedName, label: escapedName, hop: 0, path: [normalized, escapedName, usernameStem || localPart], query: nameAndEmailClue!, method: "submitted_name_email_clue", intent: "corroboration" as const, qualityScore: 92, priority: 93, clueType: "person_name" as const },
+    ] : []),
     { id: normalized, label: normalized, hop: 0, path: [normalized], query: `"${normalized}" profile OR social`, method: "exact_email_profile", intent: "social_profile_discovery", qualityScore: 96, priority: 95, clueType: "email" },
     { id: localPart, label: localPart, hop: 0, path: [normalized], query: `"${localPart}" profile`, method: "username_open_web", intent: "open_web_identity", qualityScore: 83, priority: 84, clueType: "username" },
     { id: localPart, label: localPart, hop: 0, path: [normalized], query: `"${localPart}" site:facebook.com OR site:instagram.com OR site:linkedin.com OR site:x.com OR site:tiktok.com`, method: "social_profile", intent: "social_profile_discovery", qualityScore: 83, priority: 82, clueType: "username" },
@@ -545,7 +555,6 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
       { id: usernameStem, label: usernameStem, hop: 0, path: [normalized, usernameStem], query: `"${usernameStem}" profile`, method: "numeric_free_username_stem_open_web", intent: "open_web_identity" as const, qualityScore: 76, priority: 79, clueType: "username" as const, requiredResultIdentifier: usernameStem },
     ] : []),
     ...([
-      { value: options.signals?.name, method: "submitted_name", clueType: "person_name" as const, priority: 94 },
       { value: options.signals?.username, method: "submitted_username", clueType: "username" as const, priority: 92 },
       { value: options.signals?.phone, method: "submitted_phone", clueType: "phone" as const, priority: 90 },
     ].flatMap(({ value, ...seed }) => value ? [{ ...seed, id: normalizeIdentifier(value), label: value, hop: 0, path: [normalized, value], query: `"${value.replace(/["\\]/g, " ")}" profile`, intent: "open_web_identity" as const, qualityScore: seed.priority }] : [])),
@@ -584,7 +593,8 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
     if (!prior.discoveryPath.some((step, index) => step !== clue.discoveryPath[index])) return;
   };
   addClue({ id: `email:${normalized}`, type: "email", normalizedValue: normalized, displayValue: normalized, source: "submitted-target", discoveryPath: [normalized], hop: 0, derivation: "submitted", evidenceStrength: "strong", attributionState: "verified", adjacentClueIds: [`username:${localPart}`, `domain:${domain}`], observedBy: ["submitted-target"], ...schedulingFields({ type: "email", value: normalized, derivation: "submitted" }) });
-  addClue({ id: `username:${localPart}`, type: "username", normalizedValue: normalizeIdentifier(localPart), displayValue: localPart, source: "submitted-target", discoveryPath: [normalized, localPart], hop: 0, derivation: "submitted", evidenceStrength: "observed", attributionState: "discovery", adjacentClueIds: [`email:${normalized}`], observedBy: ["submitted-target"], ...schedulingFields({ type: "username", value: localPart, derivation: "submitted", originalOverlap: true }) });
+  if (options.signals?.name) addClue({ id: `person_name:${normalizeIdentifier(options.signals.name)}`, type: "person_name", normalizedValue: normalizeIdentifier(options.signals.name), displayValue: options.signals.name, source: "submitted-target", discoveryPath: [normalized, options.signals.name], hop: 0, derivation: "submitted", evidenceStrength: "strong", attributionState: "verified", adjacentClueIds: [`email:${normalized}`], observedBy: ["submitted-target"], ...schedulingFields({ type: "person_name", value: options.signals.name, derivation: "submitted" }) });
+  addClue({ id: `username:${localPart}`, type: "username", normalizedValue: normalizeIdentifier(localPart), displayValue: localPart, source: "derived-email-local-part", discoveryPath: [normalized, localPart], hop: 0, derivation: "derived_email_stem", evidenceStrength: "lead", attributionState: "discovery", adjacentClueIds: [`email:${normalized}`], observedBy: ["derived-email-local-part"], ...schedulingFields({ type: "username", value: localPart, derivation: "derived_email_stem", originalOverlap: true }) });
   if (usernameStem) addClue({ id: `username:${usernameStem}`, type: "username", normalizedValue: normalizeIdentifier(usernameStem), displayValue: usernameStem, source: "derived-email-stem", discoveryPath: [normalized, usernameStem], hop: 0, derivation: "derived_email_stem", evidenceStrength: "lead", attributionState: "discovery", adjacentClueIds: [`email:${normalized}`, `username:${localPart}`], observedBy: ["derived-email-stem"], ...schedulingFields({ type: "username", value: usernameStem, derivation: "derived_email_stem", originalOverlap: true }) });
   addClue({ id: `domain:${domain}`, type: "domain", normalizedValue: domain, displayValue: domain, source: "submitted-target", discoveryPath: [normalized, domain], hop: 0, derivation: "submitted", evidenceStrength: "observed", attributionState: "discovery", adjacentClueIds: [`email:${normalized}`], observedBy: ["submitted-target"], ...schedulingFields({ type: "domain", value: domain, derivation: "submitted", originalOverlap: true }) });
 

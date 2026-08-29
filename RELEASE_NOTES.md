@@ -1,5 +1,7 @@
 # Release Notes
 
+- Personal Identity reports now preserve an explicitly submitted name alongside the submitted email. Discovery uses both signals, while email-derived stems remain discovery-only clues and cannot create submitted-name contradictions.
+
 ## Personal identity intake, staged for activation
 
 - Added a personal identity intake for email, phone, name, username, and authorized reference images. Account and billing email stays separate from investigated-person signals.
