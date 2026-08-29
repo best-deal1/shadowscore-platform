@@ -160,7 +160,7 @@ function evidenceAdmissionForResult(result: SearchResult, active: EntityClue, or
 
 function discoveryAdmissionForResult(result: SearchResult, evidence: ReturnType<typeof evidenceAdmissionForResult>, context: { hop: number; intent: SearchIntent; query: string }) {
   if (evidence.admitted) return { score: 100, admitted: true, provenance: 0, reason: "Result has subject-local evidence and is suitable for discovery." };
-  const profile = platformFor(result.url); const handle = socialUrlHandle(result.url); const aliases = titleAliases(result.title);
+  const profile = platformFor(result.url); const handle = socialUrlHandle(result.url); const aliases = titleAliases(result.title, result.url);
   const text = `${result.title} ${result.description || ""}`;
   const explicitIdentityLabel = /\b(?:person|director|company|organisation|organization|employer|handle|username|alias|known as)\s*:/iu.test(text);
   const explicitlyUnrelated = /\bunrelated\b/iu.test(text);
@@ -357,7 +357,7 @@ function plausiblePersonName(value: string) {
     return index > 0 && index < words.length - 1 && LOWERCASE_NAME_PARTICLES.has(normalizeIdentifier(word));
   });
 }
-function titleAliases(title: string) {
+function titleAliases(title: string, url: string) {
   const cleaned = titleLead(title).trim();
   // Identity information normally precedes descriptive title copy. Parse those
   // segments instead of promoting every word in a result title to an identifier.
@@ -366,6 +366,10 @@ function titleAliases(title: string) {
   return [...new Set(segments.flatMap((segment) => {
     const withoutHandle = stripDecorations(segment.replace(/\s*\(@[\p{L}\p{N}_.-]+\)\s*/gu, ""));
     if (!withoutHandle || rejectionReason(withoutHandle)) return [];
+    const words = withoutHandle.split(/\s+/u).map(normalizeIdentifier);
+    const contextTitle = words.every((word) => SUBJECT_NAME_CONTEXT_LABELS.has(word));
+    const bareSingleWordTitle = words.length === 1 && !platformFor(url);
+    if (contextTitle || bareSingleWordTitle) return [];
     if (SUBJECT_NAME_CONTEXT_LABELS.has(normalizeIdentifier(withoutHandle)) || new RegExp(`^(?:${SUBJECT_NAME_LIST_ROLE_LABEL.source})$`, "iu").test(withoutHandle)) return [];
     if (/^[\p{L}\p{N}_.@-]{3,30}$/u.test(withoutHandle) && (/[_.@-]|\d|^\p{Lu}/u.test(withoutHandle))) return [withoutHandle];
     if (plausiblePersonName(withoutHandle)) return [withoutHandle];
@@ -374,18 +378,33 @@ function titleAliases(title: string) {
 }
 
 const SUBJECT_NAME_CONTEXT_LABELS = new Set([
-  "academy", "artist", "author", "category", "company", "date", "editor", "fashion", "home", "israel", "location", "magazine", "news", "page", "photo", "profile", "publication", "site", "team", "video",
+  "academy", "artist", "author", "category", "company", "date", "editor", "fashion", "home", "israel", "location", "magazine", "news", "page", "photo", "profile", "publication", "review", "site", "team", "video",
 ]);
 const SUBJECT_NAME_ROLE_LABELS = new Set([
   "actor", "artist", "author", "chef", "designer", "director", "doctor", "editor", "musician", "photographer", "professor", "writer",
 ]);
 const SUBJECT_NAME_LIST_ROLE_LABEL = /(?:actors?|artists?|authors?|cast|contributors?|guests?|members?|models?|panelists?|performers?|presenters?|speakers?)/iu;
 
+function sanitizeNameParsingText(value: string) {
+  const entities: Record<string, string> = { amp: "&", apos: "'", gt: ">", lt: "<", nbsp: " ", quot: '"' };
+  return value
+    .replace(/\\u003c/giu, "<").replace(/\\u003e/giu, ">").replace(/\\x3c/giu, "<").replace(/\\x3e/giu, ">")
+    .replace(/&(?:#(\d+)|#x([\da-f]+)|(amp|apos|gt|lt|nbsp|quot));/giu, (_entity, decimal, hex, named) => {
+      if (decimal) return String.fromCodePoint(Number.parseInt(decimal, 10));
+      if (hex) return String.fromCodePoint(Number.parseInt(hex, 16));
+      return entities[String(named).toLowerCase()] || " ";
+    })
+    .replace(/<\/?(?:b|em|i|mark|strong)\b[^>]*>/giu, "")
+    .replace(/<[^>]+>/gu, " ")
+    .replace(/\s+/gu, " ")
+    .trim();
+}
+
 function roleScopedListExpansions(text: string, subjectTokens: string[], subjectNormalized: string[]) {
   const expansions: string[] = [];
   // A role label and colon bound the human list. Each comma or semicolon then
   // bounds one person, so an expansion cannot consume an adjacent list member.
-  const listPattern = new RegExp(`(?:^|[.!?|]\\s*)(${SUBJECT_NAME_LIST_ROLE_LABEL.source})\\s*:\\s*([^.!?|]+)`, "giu");
+  const listPattern = new RegExp(`\\b(${SUBJECT_NAME_LIST_ROLE_LABEL.source})\\s*:\\s*([^.!?|]+)`, "giu");
   for (const listMatch of text.matchAll(listPattern)) {
     for (const rawItem of listMatch[2].split(/[,;]/u)) {
       const item = stripDecorations(rawItem);
@@ -410,8 +429,10 @@ function subjectNameExpansions(result: SearchResult, submittedName?: string) {
   if (!submittedName || !plausiblePersonName(submittedName)) return [];
   const subjectTokens = submittedName.split(/\s+/u);
   const subjectNormalized = subjectTokens.map(normalizeIdentifier);
-  const regions = [result.title, ...(result.description || "").split(/[.!?;|]/u)].slice(0, 5);
-  const expansions = roleScopedListExpansions(`${result.title}. ${result.description || ""}`, subjectTokens, subjectNormalized);
+  const title = sanitizeNameParsingText(result.title);
+  const description = sanitizeNameParsingText(result.description || "");
+  const regions = [title, ...description.split(/[.!?;|]/u)].slice(0, 5);
+  const expansions = roleScopedListExpansions(`${title}. ${description}`, subjectTokens, subjectNormalized);
   for (const region of regions) {
     const tokenMatches = [...region.matchAll(/[\p{L}\p{M}'’-]+/gu)];
     const tokens = tokenMatches.map((match) => match[0]);
@@ -447,7 +468,7 @@ function extractPreviewIdentitySignals(result: SearchResult) {
   const canonicalHandle = socialUrlHandle(result.url);
   const explicitHandles = [...`${result.title} ${result.description || ""}`.matchAll(/(?:^|[^\p{L}\p{N}_.])@([\p{L}\p{N}][\p{L}\p{N}_.-]{2,39})\b/giu)].map((match) => match[1]);
   const relationshipHandles = socialRelationshipHandles(result);
-  const aliases = titleAliases(result.title);
+  const aliases = titleAliases(result.title, result.url);
   const labelledCompanies = [...`${result.title} ${result.description || ""}`.matchAll(/\b(?:company|organisation|organization)\s*:\s*([^|;.!?]{3,60})/giu)].map((match) => match[1].trim());
   const domains = [...`${result.title} ${result.description || ""}`.matchAll(/\b(?:domain|website)\s*:\s*((?:[\p{L}\p{N}-]+\.)+[\p{L}\p{N}-]+)/giu)].map((match) => match[1]);
   const directors = [...`${result.title} ${result.description || ""}`.matchAll(/\bdirector\s*:\s*([^|;.!?]{3,60})/giu)].map((match) => match[1].trim());
@@ -520,7 +541,7 @@ function observedIdentifiers(hit: SearchResult, originals: Set<string>, evaluati
   ];
   for (const pattern of entityPatterns) for (const match of text.matchAll(pattern.expression)) typedEntities.push({ value: match[1].trim().replace(/[.,]$/, ""), type: pattern.type, relation: "discovery_lead", derivation: "page_entity" });
   const urlHandle = socialUrlHandle(hit.url);
-  const aliases = titleAliases(hit.title);
+  const aliases = titleAliases(hit.title, hit.url);
   const subjectAliases = subjectNameExpansions(hit, submittedName);
   const pivots: DiscoveryPivot[] = [
     ...subjectAliases.map((value) => ({ value, type: "person_name" as const, relation: "discovery_lead" as const, derivation: "subject_name_expansion" as const })),
