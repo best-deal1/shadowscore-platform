@@ -847,7 +847,9 @@ test("unrelated person names and handles outrank noisy social title copy", async
   const handle = graph.clues.find((clue) => clue.normalizedValue === "riverquill");
   assert.equal(person.type, "person_name");
   assert.equal(handle.type, "username");
-  assert.ok(person.qualityScore >= 80 && handle.qualityScore >= 80);
+  assert.ok(person.qualityScore >= 80);
+  assert.equal(handle.derivation, "derived_email_stem");
+  assert.ok(handle.qualityScore < person.qualityScore);
   assert.ok(queries.some((query) => query.toLowerCase() === '"morgan quill" "riverquill"'));
   assert.ok(graph.allCandidates.some((candidate) => candidate.profileUrl === "https://instagram.com/mq_field" && candidate.status === "Candidate"));
   assert.equal(graph.clues.some((clue) => ["watch", "short", "video", "with", "42k", "likes", "open", "and", "discover", "more", "videos"].includes(clue.normalizedValue)), false);
@@ -971,7 +973,9 @@ test("resolver ranking uses observed identity evidence and assigns final sequent
     candidate("https://instagram.com/signal.person", ["signal.person@example.com"], 1),
   ]);
   assert.equal(ranked[0].profileUrl, "https://instagram.com/signal.person");
-  assert.ok(ranked[0].resolutionEvidenceScore > 0);
+  assert.equal(ranked[0].resolutionEvidenceScore, 0);
+  assert.equal(ranked[0].resolutionOutcome, "ABSTAIN");
+  assert.ok(ranked[0].resolverMatchedSignals.some((signal) => signal.attribute === "email"));
   assert.equal(ranked[1].resolutionEvidenceScore, 0);
   assert.deepEqual(ranked.map((item) => item.resolutionRank), [1, 2]);
 });

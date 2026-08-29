@@ -13,6 +13,7 @@ import {
 } from "../lib/personalIdentity.ts";
 import { createIntake } from "../lib/workspace.ts";
 import { ExternalIdentityProvider } from "../lib/providers/externalIdentityProvider.ts";
+import { discoverExternalIdentityGraph, rankExternalIdentityCandidates } from "../lib/providers/externalIdentityProvider.ts";
 
 const signals = (input) => normalizeIdentitySignals(input);
 
@@ -58,13 +59,74 @@ test("email-only intake persists signals and completes discovery, resolver, and 
     assert.equal(external.metadata.submittedEmail, "sivan.efrat.brandes@gmail.com");
     assert.ok(Number(external.metadata.identityDiscoverySearches.length) > 0);
     assert.equal(candidate?.profileUrl, "https://linkedin.com/in/sivan-efrat-brandes");
-    assert.equal(candidate?.resolutionOutcome, "MATCH");
+    assert.equal(candidate?.resolutionOutcome, "ABSTAIN");
     assert.ok(candidate?.resolverMatchedSignals?.some((signal) => signal.attribute === "email"));
+    assert.equal(candidate?.resolverMatchedSignals?.some((signal) => signal.attribute === "name" && /sivan\.efrat/i.test(signal.submitted)), false);
     assert.equal(candidate?.sourceProvenance?.[0].family, "linkedin.com");
   } finally {
     globalThis.fetch = originalFetch;
     if (originalKey === undefined) delete process.env.BRAVE_SEARCH_API_KEY; else process.env.BRAVE_SEARCH_API_KEY = originalKey;
   }
+});
+
+test("explicit name and email retain independent semantics through persistence, discovery, resolver, and report", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalKey = process.env.BRAVE_SEARCH_API_KEY;
+  process.env.BRAVE_SEARCH_API_KEY = "fixture-key";
+  const submitted = { emails: ["river.stone742@example.com"], phones: [], names: ["River Stone"], usernames: [], referenceImages: [] };
+  const queries = [];
+  globalThis.fetch = async (input) => {
+    const query = new URL(String(input)).searchParams.get("q") || "";
+    queries.push(query);
+    return Response.json({ web: { results: query.includes("River Stone") ? [{
+      title: "R. Stoner | LinkedIn",
+      url: "https://linkedin.com/in/r-stoner",
+      description: "Public professional profile.",
+    }] : [] } });
+  };
+  try {
+    const intake = await createIntake({ userId: "identity-name-email", email: "buyer@example.com", name: "Buyer", startedAt: "2026-08-29T00:00:00.000Z" }, {
+      scanMode: "personal", target: submitted.emails[0], platform: "Personal Identity", email: "buyer@example.com",
+      identitySignals: submitted, fileNames: [], visibleSignalCategories: [],
+    });
+    assert.deepEqual(intake.identitySignals, submitted);
+
+    const graph = await discoverExternalIdentityGraph(submitted.emails[0], "fixture-key", new AbortController().signal, {
+      signals: { name: submitted.names[0] },
+      limits: { maxSearches: 8, reservedExpansionSearches: 2 },
+    });
+    assert.ok(queries.some((query) => query === '"River Stone"'));
+    assert.ok(queries.some((query) => query.includes("River Stone") && query.includes("site:linkedin.com")));
+    assert.ok(queries.some((query) => query.includes("River Stone") && query.includes("river.stone")));
+    assert.ok(graph.clues.some((clue) => clue.type === "person_name" && clue.derivation === "submitted" && clue.displayValue === "River Stone"));
+    assert.ok(graph.clues.some((clue) => clue.type === "username" && clue.derivation === "derived_email_stem" && clue.displayValue === "river.stone"));
+    assert.equal(graph.clues.some((clue) => clue.type === "person_name" && /river\.stone/i.test(clue.displayValue)), false);
+
+    const looseNameCandidate = rankExternalIdentityCandidates({ email: submitted.emails[0], name: submitted.names[0] }, [{
+      platform: "LinkedIn", profileUrl: "https://linkedin.com/in/r-stoner", observedDisplayName: "R. Stoner", matchedIdentifiers: [],
+      matchType: "alias", status: "Candidate", matchLevel: "unverified_candidate", matchBasis: "Name discovery lead only.", confidence: 0,
+      evidenceUrl: "https://search.example/name", evidenceQuery: '"River Stone"', evidenceSnippet: "R. Stoner", methods: ["submitted_name_exact"],
+      sourceProvider: "Brave Search", evidenceReference: "https://search.example/name", discoveryPath: [submitted.emails[0], submitted.names[0]],
+      supportingEvidence: [], candidateDiscoveryConfidence: 70, identityAttributionConfidence: null,
+    }])[0];
+    assert.notEqual(looseNameCandidate.resolutionOutcome, "MATCH");
+    assert.ok(looseNameCandidate.resolverConflictingSignals?.every((item) => item.submitted !== "river.stone742" && item.submitted !== "river.stone"));
+
+    const [pipeline, presentation] = await Promise.all([
+      readFile(new URL("../lib/reportPipeline.ts", import.meta.url), "utf8"),
+      readFile(new URL("../components/report/PersonalIdentityReport.tsx", import.meta.url), "utf8"),
+    ]);
+    assert.match(pipeline, /identitySignals: personalSignals/);
+    assert.match(presentation, /signals\?\.names[\s\S]*\["Name", value\]/);
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalKey === undefined) delete process.env.BRAVE_SEARCH_API_KEY; else process.env.BRAVE_SEARCH_API_KEY = originalKey;
+  }
+});
+
+test("administrator intake mapping restores persisted personal identity signals", async () => {
+  const source = await readFile(new URL("../lib/adminReportAccess.ts", import.meta.url), "utf8");
+  assert.match(source, /identitySignals: row\.scan_mode === "personal"[\s\S]*normalizeIntakeIdentitySignals\(row\.identity_signals/);
 });
 
 test("contradictory email and phone identifiers are preserved", () => {

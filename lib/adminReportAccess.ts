@@ -1,6 +1,7 @@
 import "server-only";
 
 import { buildReadyReport } from "./reportPipeline";
+import { normalizeIntakeIdentitySignals } from "./personalIdentity";
 import { isSupabaseConfigured, supabaseFetch } from "./supabase";
 import { presentReportForEndUser, type ShadowScoreIntake, type ShadowScoreReport, type WorkspaceSession } from "./workspace";
 
@@ -22,7 +23,7 @@ export async function getAdministratorRole(session: WorkspaceSession): Promise<A
   return rows[0]?.role === "admin" ? "admin" : "user";
 }
 
-function mapIntake(row: IntakeRow): ShadowScoreIntake {
+function mapAdministratorIntake(row: IntakeRow): ShadowScoreIntake {
   return {
     intakeId: row.intake_id,
     userId: row.user_id,
@@ -31,6 +32,9 @@ function mapIntake(row: IntakeRow): ShadowScoreIntake {
     platform: row.platform,
     caseType: typeof row.case_type === "string" ? row.case_type : undefined,
     email: row.email,
+    identitySignals: row.scan_mode === "personal"
+      ? normalizeIntakeIdentitySignals(row.identity_signals, { target: row.target, email: row.email })
+      : undefined,
     fileNames: Array.isArray(row.file_names) ? row.file_names as string[] : [],
     visibleSignalCategories: Array.isArray(row.visible_signal_categories) ? row.visible_signal_categories as string[] : [],
     paymentStatus: "admin_comped",
@@ -53,7 +57,7 @@ export async function generateAdministratorReport(session: WorkspaceSession, int
 
   const intakes = await supabaseFetch<IntakeRow[]>(`/rest/v1/intakes?intake_id=eq.${encodeURIComponent(intakeId)}&select=*&limit=1`, {}, session.accessToken);
   if (!intakes[0]) throw new AdminReportAccessError("Investigation not found.", 404);
-  const intake = mapIntake(intakes[0]);
+  const intake = mapAdministratorIntake(intakes[0]);
   const now = new Date().toISOString();
   const reportId = `admin-${intake.intakeId}-${Date.now().toString(36)}`;
   const report = await buildReadyReport({
