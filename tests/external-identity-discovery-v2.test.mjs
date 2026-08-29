@@ -832,6 +832,27 @@ test("title-case prose after a submitted name does not become a subject-name exp
   assert.equal(graph.allCandidates.some((candidate) => candidate.observedDisplayName === "Jane Smith Wins"), false);
 });
 
+test("a parenthesized context label does not become a subject-name expansion", async () => {
+  const queries = [];
+  const graph = await discoverExternalIdentityGraph("jane358@example.com", "key", new AbortController().signal, {
+    signals: { name: "Jane Smith" },
+    search: async (query) => {
+      queries.push(query);
+      if (query === '"Jane Smith"') return [{
+        title: "Jane Smith (Israel)",
+        url: "https://directory.example/jane-smith",
+        description: "Public profile",
+      }];
+      return [];
+    },
+    limits: { maxSearches: 3, reservedExpansionSearches: 1, maxIdentifiers: 6 },
+  });
+
+  assert.equal(graph.clues.some((clue) => clue.displayValue === "Jane Smith Israel" && clue.derivation === "subject_name_expansion"), false);
+  assert.equal(queries.some((query) => query.includes('"Jane Smith Israel"')), false);
+  assert.equal(graph.allCandidates.some((candidate) => candidate.observedDisplayName === "Jane Smith Israel"), false);
+});
+
 test("title names accept lowercase particles and scripts without case while rejecting noise", async () => {
   const queries = [];
   const graph = await discoverExternalIdentityGraph("composer@example.com", "key", new AbortController().signal, {

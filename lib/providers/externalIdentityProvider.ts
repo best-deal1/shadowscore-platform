@@ -374,7 +374,7 @@ function titleAliases(title: string) {
 }
 
 const SUBJECT_NAME_CONTEXT_LABELS = new Set([
-  "academy", "artist", "author", "category", "company", "date", "editor", "fashion", "home", "location", "magazine", "news", "page", "photo", "profile", "publication", "site", "team", "video",
+  "academy", "artist", "author", "category", "company", "date", "editor", "fashion", "home", "israel", "location", "magazine", "news", "page", "photo", "profile", "publication", "site", "team", "video",
 ]);
 const SUBJECT_NAME_ROLE_LABELS = new Set([
   "actor", "artist", "author", "chef", "designer", "director", "doctor", "editor", "musician", "photographer", "professor", "writer",
