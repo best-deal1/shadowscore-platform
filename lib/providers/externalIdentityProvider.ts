@@ -366,6 +366,7 @@ function titleAliases(title: string) {
   return [...new Set(segments.flatMap((segment) => {
     const withoutHandle = stripDecorations(segment.replace(/\s*\(@[\p{L}\p{N}_.-]+\)\s*/gu, ""));
     if (!withoutHandle || rejectionReason(withoutHandle)) return [];
+    if (SUBJECT_NAME_CONTEXT_LABELS.has(normalizeIdentifier(withoutHandle)) || new RegExp(`^(?:${SUBJECT_NAME_LIST_ROLE_LABEL.source})$`, "iu").test(withoutHandle)) return [];
     if (/^[\p{L}\p{N}_.@-]{3,30}$/u.test(withoutHandle) && (/[_.@-]|\d|^\p{Lu}/u.test(withoutHandle))) return [withoutHandle];
     if (plausiblePersonName(withoutHandle)) return [withoutHandle];
     return [];
@@ -373,11 +374,36 @@ function titleAliases(title: string) {
 }
 
 const SUBJECT_NAME_CONTEXT_LABELS = new Set([
-  "academy", "artist", "author", "category", "company", "editor", "fashion", "home", "israel", "magazine", "news", "page", "photo", "profile", "publication", "site", "team", "video",
+  "academy", "artist", "author", "category", "company", "date", "editor", "fashion", "home", "location", "magazine", "news", "page", "photo", "profile", "publication", "site", "team", "video",
 ]);
 const SUBJECT_NAME_ROLE_LABELS = new Set([
   "actor", "artist", "author", "chef", "designer", "director", "doctor", "editor", "musician", "photographer", "professor", "writer",
 ]);
+const SUBJECT_NAME_LIST_ROLE_LABEL = /(?:actors?|artists?|authors?|cast|contributors?|guests?|members?|models?|panelists?|performers?|presenters?|speakers?)/iu;
+
+function roleScopedListExpansions(text: string, subjectTokens: string[], subjectNormalized: string[]) {
+  const expansions: string[] = [];
+  // A role label and colon bound the human list. Each comma or semicolon then
+  // bounds one person, so an expansion cannot consume an adjacent list member.
+  const listPattern = new RegExp(`(?:^|[.!?|]\\s*)(${SUBJECT_NAME_LIST_ROLE_LABEL.source})\\s*:\\s*([^.!?|]+)`, "giu");
+  for (const listMatch of text.matchAll(listPattern)) {
+    for (const rawItem of listMatch[2].split(/[,;]/u)) {
+      const item = stripDecorations(rawItem);
+      const tokens = [...item.matchAll(/[\p{L}\p{M}'’-]+/gu)].map((match) => match[0]);
+      if (tokens.length !== subjectTokens.length + 1) continue;
+      for (let index = 0; index <= tokens.length - subjectTokens.length; index += 1) {
+        if (!subjectNormalized.every((token, offset) => normalizeIdentifier(tokens[index + offset]) === token)) continue;
+        const neighborIndex = index === 0 ? subjectTokens.length : index - 1;
+        const neighbor = tokens[neighborIndex];
+        if (!neighbor || !/^\p{Lu}[\p{L}\p{M}'’-]{1,29}$/u.test(neighbor)) continue;
+        if (SUBJECT_NAME_CONTEXT_LABELS.has(normalizeIdentifier(neighbor)) || NOISE_IDENTIFIERS.has(normalizeIdentifier(neighbor))) continue;
+        const value = tokens.join(" ");
+        if (plausiblePersonName(value) && !rejectionReason(value)) expansions.push(value);
+      }
+    }
+  }
+  return expansions;
+}
 
 /** Extract one bounded name expansion around the exact submitted-name token sequence. */
 function subjectNameExpansions(result: SearchResult, submittedName?: string) {
@@ -385,7 +411,7 @@ function subjectNameExpansions(result: SearchResult, submittedName?: string) {
   const subjectTokens = submittedName.split(/\s+/u);
   const subjectNormalized = subjectTokens.map(normalizeIdentifier);
   const regions = [result.title, ...(result.description || "").split(/[.!?;|]/u)].slice(0, 5);
-  const expansions: string[] = [];
+  const expansions = roleScopedListExpansions(`${result.title}. ${result.description || ""}`, subjectTokens, subjectNormalized);
   for (const region of regions) {
     const tokenMatches = [...region.matchAll(/[\p{L}\p{M}'’-]+/gu)];
     const tokens = tokenMatches.map((match) => match[0]);

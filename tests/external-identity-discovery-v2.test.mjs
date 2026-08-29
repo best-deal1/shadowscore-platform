@@ -759,9 +759,9 @@ test("an admitted subject-name expansion outranks weak username pivots without b
     search: async (query) => {
       queries.push(query);
       if (query === '"Jane Smith"') return [{
-        title: "Artist Kiki Jane Smith appeared at the exhibition",
+        title: "Models: Alex Doe, Kiki Jane Smith, Robin Ray",
         url: sourceUrl,
-        description: "Fashion Academy | Fashion Israel | 19.06.2017. Guest Shiran Sun attended.",
+        description: "Publication: City Journal. Location: North Harbor. Instagram: weak_name_358.",
       }];
       if (query.includes('"Kiki Jane Smith"')) return [{
         title: "Kiki Jane Smith | Instagram",
@@ -784,7 +784,7 @@ test("an admitted subject-name expansion outranks weak username pivots without b
   assert.deepEqual(alias.discoveryPath, ["jane358@example.com", "Jane Smith", "Kiki Jane Smith"]);
   assert.ok(queries.some((query) => query.includes('"Kiki Jane Smith"')));
   assert.equal(queries.some((query) => query.includes('"jane358" profile')), false);
-  assert.equal(graph.clues.some((clue) => /Fashion Academy|Fashion Israel|Shiran Sun|19\.06\.2017/i.test(clue.displayValue)), false);
+  assert.equal(graph.clues.some((clue) => /Alex Doe|Robin Ray|City Journal|North Harbor/i.test(clue.displayValue) && clue.enqueueDecision === "enqueued"), false);
   assert.equal(graph.edges.filter((edge) => edge.to === "kiki jane smith").every((edge) => edge.relation === "discovery_lead"), true);
   const candidate = graph.allCandidates.find((item) => item.profileUrl === "https://instagram.com/kiki_creates");
   assert.ok(candidate);
@@ -792,6 +792,23 @@ test("an admitted subject-name expansion outranks weak username pivots without b
   assert.equal(candidate.resolutionEvidenceScore, 0);
   assert.equal(candidate.resolutionOutcome, "ABSTAIN");
   assert.equal(candidate.resolverMatchedSignals.length, 0);
+});
+
+test("role-scoped lists isolate the submitted name item across bounded human-role labels", async () => {
+  for (const label of ["Actors", "Guests", "Authors", "Artists", "Cast", "Contributors"]) {
+    const graph = await discoverExternalIdentityGraph("reader42@example.com", "key", new AbortController().signal, {
+      signals: { name: "Riley Stone" },
+      search: async (query) => query === '"Riley Stone"' ? [{
+        title: `${label}: Morgan Reed; Avery Riley Stone; Taylor Lake`,
+        url: `https://directory.example/${label.toLowerCase()}`,
+        description: "Category: Summer issue. Location: East Hall.",
+      }] : [],
+      limits: { maxSearches: 2, reservedExpansionSearches: 1, maxIdentifiers: 6 },
+    });
+
+    assert.ok(graph.clues.some((clue) => clue.displayValue === "Avery Riley Stone" && clue.derivation === "subject_name_expansion"), label);
+    assert.equal(graph.clues.some((clue) => /Morgan Reed|Taylor Lake|Summer issue|East Hall/i.test(clue.displayValue) && clue.enqueueDecision === "enqueued"), false, label);
+  }
 });
 
 test("title-case prose after a submitted name does not become a subject-name expansion", async () => {
