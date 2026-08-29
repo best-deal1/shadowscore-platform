@@ -1,5 +1,7 @@
 # Release Notes
 
+- Personal Identity discovery now reads names inside emphasized search snippets and role-labeled credit lists. It prioritizes the bounded alias follow-up while excluding adjacent people and page titles from identity pivots.
+
 - Personal Identity discovery now recognizes a submitted name within a role-labeled, comma-delimited or semicolon-delimited list. It can schedule one adjacent name token from the same list item, while neighboring people, locations, and page labels remain excluded from identity pivots.
 
 - Personal Identity discovery now extracts bounded subject-name expansions from relevant public results when role, sentence-boundary, or alias syntax supports the expanded name. It rejects adjacent title-case prose. Admitted aliases receive a targeted continuation before weaker username leads, while remaining discovery-only and unable to verify identity.

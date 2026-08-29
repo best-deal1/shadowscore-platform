@@ -794,6 +794,77 @@ test("an admitted subject-name expansion outranks weak username pivots without b
   assert.equal(candidate.resolverMatchedSignals.length, 0);
 });
 
+test("production-shaped marked-up role lists create a bounded, prioritized discovery-only expansion", async () => {
+  const queries = [];
+  const sourceUrl = "https://portfolio.example/credits/spring";
+  const graph = await discoverExternalIdentityGraph("mara204@example.com", "key", new AbortController().signal, {
+    signals: { name: "Mara Quinn" },
+    search: async (query) => {
+      queries.push(query);
+      if (query === '"Mara Quinn"') return [{
+        title: "Spring credits",
+        url: sourceUrl,
+        description: "Publication: Studio Review; Models: Talia Reed, Lumi &lt;strong&gt;Mara Quinn&lt;/strong&gt;, Owen Park; Location: West Hall; Instagram: mara_204.",
+      }];
+      if (query.includes('"Lumi Mara Quinn"')) return [{
+        title: "Lumi Mara Quinn (@mara_lumi) | Instagram",
+        url: "https://instagram.com/mara_lumi",
+        description: "Public profile",
+      }];
+      return [];
+    },
+    limits: { maxSearches: 3, reservedExpansionSearches: 1, maxIdentifiers: 6 },
+  });
+
+  const expansion = graph.clues.find((clue) => clue.displayValue === "Lumi Mara Quinn");
+  assert.ok(expansion);
+  assert.equal(expansion.derivation, "subject_name_expansion");
+  assert.equal(expansion.admissionState, "discovery_only");
+  assert.deepEqual(expansion.queriesExecuted, [queries.find((query) => query.includes('"Lumi Mara Quinn"'))]);
+  assert.equal(graph.clues.some((clue) => /Talia Reed|Owen Park|Studio Review|West Hall|strong/i.test(clue.displayValue) && clue.enqueueDecision === "enqueued"), false);
+  assert.ok(graph.schedulingDiagnostics.some((entry) => entry.pivot === "Lumi Mara Quinn" && entry.decision === "scheduled"));
+  assert.equal(queries.length, 3);
+  assert.equal(queries.some((query) => query.includes('"mara_204"') || query.includes('"mara204" profile')), false);
+  const candidate = graph.allCandidates.find((item) => item.profileUrl === "https://instagram.com/mara_lumi");
+  assert.ok(candidate);
+  assert.equal(candidate.discoveryOnlyAlias, true);
+  assert.equal(candidate.resolutionEvidenceScore, 0);
+  assert.equal(candidate.resolutionOutcome, "ABSTAIN");
+  assert.deepEqual(candidate.resolverMatchedSignals, []);
+});
+
+test("name parsing strips literal and entity-escaped emphasis markup without joining neighboring people", async () => {
+  for (const markup of ["<strong>Mara Quinn</strong>", "&lt;em&gt;Mara Quinn&lt;/em&gt;"]) {
+    const graph = await discoverExternalIdentityGraph("mara@example.com", "key", new AbortController().signal, {
+      signals: { name: "Mara Quinn" },
+      search: async (query) => query === '"Mara Quinn"' ? [{
+        title: "Credits",
+        url: "https://credits.example/people",
+        description: `Season: Spring, Models: Talia Reed, Lumi ${markup}, Owen Park`,
+      }] : [],
+      limits: { maxSearches: 2, reservedExpansionSearches: 1, maxIdentifiers: 6 },
+    });
+    assert.ok(graph.clues.some((clue) => clue.displayValue === "Lumi Mara Quinn" && clue.derivation === "subject_name_expansion"), markup);
+    assert.equal(graph.clues.some((clue) => /Talia Reed|Owen Park|strong|em/i.test(clue.displayValue) && clue.derivation === "subject_name_expansion"), false, markup);
+  }
+});
+
+test("page and labeled context titles stay out of display-name discovery while social names remain", async () => {
+  const graph = await discoverExternalIdentityGraph("viewer@example.com", "key", new AbortController().signal, {
+    search: async (query) => query === '"viewer@example.com"' ? [
+      { title: "Fashion Academy", url: "https://pages.example/academy", description: "viewer@example.com" },
+      { title: "Fashion Israel", url: "https://pages.example/fashion", description: "viewer@example.com" },
+      { title: "Review", url: "https://publication.example/review", description: "viewer@example.com" },
+      { title: "Publication: Fashion Magazine", url: "https://publication.example/category", description: "viewer@example.com" },
+      { title: "Nesti (@nesti_st) | Instagram", url: "https://instagram.com/nesti_st", description: "viewer@example.com" },
+    ] : [],
+    limits: { maxSearches: 1, maxIdentifiers: 10 },
+  });
+
+  assert.equal(graph.clues.some((clue) => /^(Fashion Academy|Fashion Israel|Review|Publication|Fashion Magazine)$/i.test(clue.displayValue)), false);
+  assert.ok(graph.clues.some((clue) => clue.displayValue === "Nesti" && clue.derivation === "display_name"));
+});
+
 test("role-scoped lists isolate the submitted name item across bounded human-role labels", async () => {
   for (const label of ["Actors", "Guests", "Authors", "Artists", "Cast", "Contributors"]) {
     const graph = await discoverExternalIdentityGraph("reader42@example.com", "key", new AbortController().signal, {
