@@ -12,7 +12,7 @@ export type BusinessFindingCategory =
 
 export type BusinessFindingDirection = "supports_credibility" | "weakens_credibility" | "needs_review";
 
-export type BusinessEvidenceReference = Pick<ProviderEvidence, "id" | "label" | "value" | "source"> & {
+export type BusinessEvidenceReference = Pick<ProviderEvidence, "id" | "label" | "value" | "source" | "sourceFamily"> & {
   providerId: string;
   observedAt: string;
   field: string;

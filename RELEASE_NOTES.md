@@ -1,5 +1,9 @@
 # Release Notes
 
+- Business discovery now keeps similarly named companies separate, preserves result-level claim provenance, avoids unrelated officer assignments, and retains attributable email and address leads.
+
+- Business email investigations now preserve each result's source family, keep search-derived company details out of authoritative registry evidence, and leave ambiguous registration numbers unbound for review.
+
 - Personal Identity discovery now reads names inside emphasized search snippets and role-labeled credit lists. It prioritizes the bounded alias follow-up while excluding adjacent people and page titles from identity pivots.
 
 - Personal Identity discovery now recognizes a submitted name within a role-labeled, comma-delimited or semicolon-delimited list. It can schedule one adjacent name token from the same list item, while neighboring people, locations, and page labels remain excluded from identity pivots.
@@ -219,3 +223,9 @@ This file records customer-visible improvements in each ShadowScore release.
 
 - Business investigations now query the U.S. SEC EDGAR company index and submissions service through the live provider capability runtime. Reports preserve registry provenance, relationship freshness, explicit evidence gaps, and honest unavailable, timed out, failed, empty, and success states.
 - Customer reports now redact exact provider query and raw normalization traces throughout graph evidence. Decision contradictions use only current, eligible evidence, and SEC business locations are identified as business addresses.
+
+# 2026-08-31
+
+- Business email investigations now follow the submitted email to its company domain, legal-entity candidates, registration identifiers, and officer or role candidates. Every relationship retains its source and discovery lifecycle.
+- Public search results remain discovery leads. First-party domain observations count as one source family, and reports state when authoritative Israeli registry coverage is unavailable instead of applying SEC coverage to an Israeli private entity.
+- DNS, TLS, HTTP, and security-header observations no longer appear as independent legal-entity corroboration or as business-registration evidence.

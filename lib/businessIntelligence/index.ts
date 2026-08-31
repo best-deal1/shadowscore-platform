@@ -7,6 +7,7 @@ export const BUSINESS_INTELLIGENCE_ENGINE_VERSION = "business-intelligence-v1";
 
 type Field = "identity" | "ownership" | "payment" | "operations" | "infrastructure" | "claim";
 type Observation = BusinessEvidenceReference & { normalizedValue: string; field: Field; comparisonKey: string };
+const DOMAIN_INFRASTRUCTURE_PROVIDERS = /^(?:dns|ssl|security-headers|spf|dmarc|whois|website-metadata|website-commerce|business-profile|contact-discovery)$/i;
 
 const FIELD_PATTERNS: Array<{ field: Field; pattern: RegExp }> = [
   { field: "ownership", pattern: /registrant|registered owner|beneficial owner|domain owner|owner(?:ship)?|legal entity|company name/i },
@@ -37,7 +38,7 @@ function comparisonKeyFor(field: Field, label: string, key?: string) {
   return "identity_other";
 }
 
-function add(out: Observation[], result: ProviderResult, evidence: Pick<ProviderEvidence, "id" | "label" | "value" | "source">, key?: string) {
+function add(out: Observation[], result: ProviderResult, evidence: Pick<ProviderEvidence, "id" | "label" | "value" | "source" | "sourceFamily">, key?: string) {
   if (!evidence.value?.trim() || evidence.value.trim().toLowerCase() === "unavailable") return;
   if (evidence.source === "submitted-target" || /^(submittedEmail|submittedTarget|requestedTarget)$/i.test(key || "") || /submitted (?:email|target|input)/i.test(evidence.label)) return;
   const field = fieldFor(evidence.label, key);
@@ -56,8 +57,12 @@ function observations(results: ProviderResult[]) {
   return out;
 }
 
-function independent(items: Observation[]) { return new Set(items.map((item) => item.providerId)).size >= 2; }
-function refs(items: Observation[]) { return items.map((item) => ({ id: item.id, label: item.label, value: item.value, source: item.source, providerId: item.providerId, observedAt: item.observedAt, field: item.field })); }
+function sourceFamily(item: Observation) {
+  if (DOMAIN_INFRASTRUCTURE_PROVIDERS.test(item.providerId)) return "subject-domain-observations";
+  return item.sourceFamily?.trim().toLowerCase() || item.providerId;
+}
+function independent(items: Observation[]) { return new Set(items.map(sourceFamily)).size >= 2; }
+function refs(items: Observation[]) { return items.map((item) => ({ id: item.id, label: item.label, value: item.value, source: item.source, sourceFamily: item.sourceFamily, providerId: item.providerId, observedAt: item.observedAt, field: item.field })); }
 function finding(category: BusinessFindingCategory, direction: BusinessFinding["direction"], title: string, statement: string, items: Observation[]): BusinessFinding {
   const fields = Array.from(new Set(items.map((item) => item.field)));
   return { id: `${category}:${fields.join("-")}:${items.map((item) => item.providerId).sort().join("-")}`, category, direction, title, statement, evidence: refs(items), affectedFields: fields };
@@ -76,7 +81,7 @@ export function buildBusinessIntelligence(providerResults: ProviderResult[], gen
       const values = new Map<string, Observation[]>();
       items.forEach((item) => values.set(item.normalizedValue, [...(values.get(item.normalizedValue) || []), item]));
       const corroborated = [...values.values()].filter(independent);
-      corroborated.forEach((itemsForValue) => findings.push(finding("credibility_support", "supports_credibility", `Corroborated ${field} record`, `Independent providers reported the same ${field} value: ${itemsForValue[0].value}.`, itemsForValue)));
+      corroborated.forEach((itemsForValue) => findings.push(finding("credibility_support", "supports_credibility", `Corroborated ${field} record`, `Independent source families reported the same ${field} value: ${itemsForValue[0].value}.`, itemsForValue)));
       if (values.size > 1 && independent(items)) {
         findings.push(finding(CONFLICT_CATEGORY[field], "needs_review", `Conflicting ${field} records`, `Independent providers reported different ${field} values. The available evidence requires reconciliation.`, items));
         findings.push(finding("credibility_weakening", "weakens_credibility", `${field[0].toUpperCase()}${field.slice(1)} evidence weakens credibility`, `The conflicting ${field} records weaken confidence in the business information until they are reconciled.`, items));

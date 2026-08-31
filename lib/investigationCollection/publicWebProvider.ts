@@ -2,6 +2,7 @@ import { discoverExternalIdentityGraph } from "../providers/externalIdentityProv
 import type { EntityCandidate, EvidenceAssertion } from "../investigationEngine/types";
 import { providerAvailability, PROVIDER_CAPABILITY_REGISTRY } from "./capabilityRegistry";
 import type { CollectionSeed, InvestigationProvider, InvestigationProviderManifest, ProviderCollectionContext } from "./types";
+import { isPublicMailboxDomain } from "../emailDomains";
 
 const SEARCH_ENDPOINT = "https://api.search.brave.com/res/v1/web/search";
 const registration = PROVIDER_CAPABILITY_REGISTRY.find((item) => item.id === "public-social-discovery")!;
@@ -38,6 +39,8 @@ export class BravePublicWebInvestigationProvider implements InvestigationProvide
   async collect(seed: CollectionSeed, context: ProviderCollectionContext) {
     const apiKey = this.apiKey;
     if (!apiKey) throw new Error(`${registration.credentialEnv} is not configured.`);
+    const emailDomain = seed.value.split("@").at(-1) || "";
+    if (seed.kind === "email" && !isPublicMailboxDomain(emailDomain) && !/^(?:example\.(?:com|net|org)|example|localhost)$/i.test(emailDomain)) return { candidates: [], evidence: [], discoveredSeeds: [] };
     const observations = seed.kind === "email"
       ? (await discoverExternalIdentityGraph(seed.value, apiKey, context.signal)).candidates.flatMap((candidate) => candidate.supportingEvidence.map((item) => ({ ...item, resultUrl: candidate.profileUrl, sourceUrl: item.url })))
       : await genericSearch(seed, apiKey, context);
