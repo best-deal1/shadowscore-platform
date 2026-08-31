@@ -87,3 +87,70 @@ test("first-party and government search results do not self-confirm a business",
     assert.ok(output.graph.evidence.every((item) => item.lifecycle === "lead"));
   } finally { globalThis.fetch = originalFetch; }
 });
+
+test("candidate IDs hash the complete normalized company name", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => Response.json({ web: { results: [{ title: "Company directory", url: "https://directory.example/companies", description: "International Business Machines Alpha LLC | International Business Machines Beta LLC" }] } });
+  try {
+    const output = await investigateLive({ kind: "domain", value: "example.com" }, { providers: [new BraveBusinessWebInvestigationProvider({ BRAVE_SEARCH_API_KEY: "test" })], now: () => NOW, maxDepth: 0 });
+    const companies = output.graph.entities.filter((item) => item.kind === "company");
+    assert.ok(companies.some((item) => item.label.includes("Alpha LLC")));
+    assert.ok(companies.some((item) => item.label.includes("Beta LLC")));
+    assert.equal(new Set(companies.map((item) => item.entityId)).size, 2);
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+test("an officer role never falls back to an earlier unrelated company", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => Response.json({ web: { results: [
+    { title: "Unrelated Holdings LLC", url: "https://directory.example/unrelated", description: "Unrelated Holdings LLC" },
+    { title: "Jane Doe - CEO at OtherCo", url: "https://directory.example/jane" },
+  ] } });
+  try {
+    const output = await investigateLive({ kind: "domain", value: "example.com" }, { providers: [new BraveBusinessWebInvestigationProvider({ BRAVE_SEARCH_API_KEY: "test" })], now: () => NOW, maxDepth: 0 });
+    const role = output.graph.evidence.find((item) => item.relationship === "officer_role_candidate");
+    const otherCo = output.graph.entities.find((item) => item.kind === "company" && item.label === "OtherCo");
+    const unrelated = output.graph.entities.find((item) => item.kind === "company" && item.label.includes("Unrelated Holdings"));
+    assert.ok(role && otherCo && unrelated);
+    assert.equal(role.fromEntityId, otherCo.entityId);
+    assert.notEqual(role.fromEntityId, unrelated.entityId);
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+test("identical claims from separate collection results retain distinct provenance", async () => {
+  const originalFetch = globalThis.fetch;
+  let call = 0;
+  globalThis.fetch = async () => Response.json({ web: { results: [{ title: "Acme LLC", url: `https://source${++call}.example/acme`, description: "Acme LLC" }] } });
+  try {
+    const provider = new BraveBusinessWebInvestigationProvider({ BRAVE_SEARCH_API_KEY: "test" });
+    const context = { now: NOW, depth: 1, signal: new AbortController().signal };
+    const first = await provider.collect({ kind: "company", value: "Acme" }, context);
+    const second = await provider.collect({ kind: "company", value: "Acme" }, context);
+    const firstClaim = first.evidence.find((item) => item.relationship === "legal_entity_candidate");
+    const secondClaim = second.evidence.find((item) => item.relationship === "legal_entity_candidate");
+    assert.ok(firstClaim && secondClaim);
+    assert.notEqual(firstClaim.evidenceId, secondClaim.evidenceId);
+    assert.equal(firstClaim.source.sourceUrl, "https://source1.example/acme");
+    assert.equal(secondClaim.source.sourceUrl, "https://source2.example/acme");
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+test("business emails and addresses become attributable lead contacts", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => Response.json({ web: { results: [{ title: "Acme LLC", url: "https://acme.example/contact", description: "Contact office@acme.example, business address: 10 Market Street" }] } });
+  try {
+    const output = await investigateLive({ kind: "domain", value: "acme.example" }, { providers: [new BraveBusinessWebInvestigationProvider({ BRAVE_SEARCH_API_KEY: "test" })], now: () => NOW, maxDepth: 0 });
+    const company = output.graph.entities.find((item) => item.kind === "company" && item.label.includes("Acme LLC"));
+    assert.ok(company);
+    assert.ok(output.graph.entities.some((item) => item.kind === "email" && item.label === "office@acme.example"));
+    assert.ok(output.graph.entities.some((item) => item.kind === "address" && item.label === "10 Market Street"));
+    for (const relationship of ["business_email_candidate", "business_address_candidate"]) {
+      const edge = output.graph.evidence.find((item) => item.relationship === relationship);
+      assert.ok(edge);
+      assert.equal(edge.fromEntityId, company.entityId);
+      assert.equal(edge.lifecycle, "lead");
+      assert.equal(edge.evidenceType, "contact");
+    }
+    assert.equal(output.graph.decision.verifiedEvidenceCount, 0);
+  } finally { globalThis.fetch = originalFetch; }
+});

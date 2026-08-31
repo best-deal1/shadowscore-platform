@@ -1,5 +1,7 @@
 # Release Notes
 
+- Business discovery now keeps similarly named companies separate, preserves result-level claim provenance, avoids unrelated officer assignments, and retains attributable email and address leads.
+
 - Business email investigations now preserve each result's source family, keep search-derived company details out of authoritative registry evidence, and leave ambiguous registration numbers unbound for review.
 
 - Personal Identity discovery now reads names inside emphasized search snippets and role-labeled credit lists. It prioritizes the bounded alias follow-up while excluding adjacent people and page titles from identity pivots.
