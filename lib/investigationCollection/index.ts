@@ -4,3 +4,4 @@ export * from "./orchestrator";
 export * from "./capabilityRegistry";
 export * from "./publicWebProvider";
 export * from "./secEdgarProvider";
+export * from "./businessWebProvider";

@@ -25,10 +25,10 @@ export type ExecutiveFindingStory = {
 };
 
 const categoryMatchers: Array<[EvidenceCategory, RegExp]> = [
-  ["Business Registration", /registr|incorpor|company|sec|legal name|filing/i],
   ["Email", /email|dmarc|spf|mail/i],
   ["DNS", /dns|domain name|nameserver/i],
   ["Security", /security|ssl|tls|certificate|header|https/i],
+  ["Business Registration", /registr|incorpor|company number|sec filing|legal name|business filing/i],
   ["Regulatory", /regulat|sanction|litigation|criminal|bankrupt|compliance/i],
   ["Marketplace", /marketplace|seller|amazon|ebay/i],
   ["Social Presence", /social|linkedin|facebook|instagram|twitter|x\.com/i],

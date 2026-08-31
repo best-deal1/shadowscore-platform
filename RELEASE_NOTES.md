@@ -219,3 +219,9 @@ This file records customer-visible improvements in each ShadowScore release.
 
 - Business investigations now query the U.S. SEC EDGAR company index and submissions service through the live provider capability runtime. Reports preserve registry provenance, relationship freshness, explicit evidence gaps, and honest unavailable, timed out, failed, empty, and success states.
 - Customer reports now redact exact provider query and raw normalization traces throughout graph evidence. Decision contradictions use only current, eligible evidence, and SEC business locations are identified as business addresses.
+
+# 2026-08-31
+
+- Business email investigations now follow the submitted email to its company domain, legal-entity candidates, registration identifiers, and officer or role candidates. Every relationship retains its source and discovery lifecycle.
+- Public search results remain discovery leads. First-party domain observations count as one source family, and reports state when authoritative Israeli registry coverage is unavailable instead of applying SEC coverage to an Israeli private entity.
+- DNS, TLS, HTTP, and security-header observations no longer appear as independent legal-entity corroboration or as business-registration evidence.

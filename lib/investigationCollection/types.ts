@@ -35,7 +35,7 @@ export type ProviderRun = {
   seed: CollectionSeed;
   depth: number;
   configuration: "configured" | "unavailable";
-  status: "success" | "empty" | "failed" | "timed_out" | "unavailable" | "budget_blocked";
+  status: "success" | "empty" | "failed" | "timed_out" | "unavailable" | "not_applicable" | "budget_blocked";
   attempts: number;
   evidenceCount: number;
   error?: string;

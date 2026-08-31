@@ -6,6 +6,7 @@ import { isPublicMailboxDomain } from "../emailDomains";
 import { BravePublicWebInvestigationProvider } from "./publicWebProvider";
 import { PROVIDER_CAPABILITY_REGISTRY } from "./capabilityRegistry";
 import { SecEdgarCompanyRegistryProvider } from "./secEdgarProvider";
+import { BraveBusinessWebInvestigationProvider } from "./businessWebProvider";
 
 const key = (seed: CollectionSeed) => `${seed.kind}:${seed.value.trim().toLowerCase()}`;
 const unavailableMarketplaceProvider = (): InvestigationProvider => ({
@@ -18,7 +19,7 @@ const unavailableRegisteredProvider = (registration: (typeof PROVIDER_CAPABILITY
 });
 export function createLiveInvestigationProviders(): InvestigationProvider[] {
   const implemented = new Set(["public-social-discovery", "marketplace-partner", "sec-edgar-company-registry"]);
-  return [new GoogleDnsInvestigationProvider(), new BravePublicWebInvestigationProvider(), new SecEdgarCompanyRegistryProvider(), unavailableMarketplaceProvider(), ...PROVIDER_CAPABILITY_REGISTRY.filter((item) => !implemented.has(item.id)).map(unavailableRegisteredProvider)];
+  return [new GoogleDnsInvestigationProvider(), new BravePublicWebInvestigationProvider(), new BraveBusinessWebInvestigationProvider(), new SecEdgarCompanyRegistryProvider(), unavailableMarketplaceProvider(), ...PROVIDER_CAPABILITY_REGISTRY.filter((item) => !implemented.has(item.id)).map(unavailableRegisteredProvider)];
 }
 
 /** Customer output retains reviewable provenance and gaps, while exact queries and errors remain administrative. */
@@ -40,6 +41,8 @@ export function presentLiveInvestigation(investigation: LiveInvestigation, audie
 export async function investigateLive(seed: CollectionSeed, options: InvestigationCollectionOptions = {}): Promise<LiveInvestigation> {
   if (!seed.value.trim()) throw new Error("Investigation seed value is required.");
   const providers = options.providers || createLiveInvestigationProviders();
+  const submittedDomain = seed.kind === "email" ? seed.value.split("@").at(-1)?.toLowerCase() : seed.kind === "domain" ? seed.value.toLowerCase().replace(/^https?:\/\//, "").split("/")[0] : "";
+  const israeliBusinessTarget = Boolean(submittedDomain?.endsWith(".il")) || (seed.kind === "registration_number" && /^\d{9}$/.test(seed.value.trim()));
   const maxDepth = options.maxDepth ?? 2, maxProviderCalls = options.maxProviderCalls ?? 12, timeoutMs = options.timeoutMs ?? 5_000, maxRetries = options.maxRetries ?? 1, budgetUsd = options.budgetUsd ?? 0.25;
   const now = options.now || (() => new Date());
   const queue: { seed: CollectionSeed; depth: number }[] = [{ seed, depth: 0 }], seen = new Set<string>(), scheduled = new Set([key(seed)]);
@@ -50,6 +53,7 @@ export async function investigateLive(seed: CollectionSeed, options: Investigati
     for (const provider of providers.filter((item) => item.manifest.supportedSeedTypes.includes(current.seed.kind))) {
       if (calls >= maxProviderCalls) break;
       if (provider.manifest.availability.status === "unavailable") { providerRuns.push({ providerId: provider.manifest.id, seed: current.seed, depth: current.depth, configuration: "unavailable", status: "unavailable", attempts: 0, evidenceCount: 0, error: provider.manifest.availability.reason, query: current.seed.value }); continue; }
+      if (israeliBusinessTarget && provider.manifest.id === "sec-edgar-company-registry") { providerRuns.push({ providerId: provider.manifest.id, seed: current.seed, depth: current.depth, configuration: "configured", status: "not_applicable", attempts: 0, evidenceCount: 0, error: "SEC EDGAR covers U.S. public issuers, not Israeli private-company registrations.", query: current.seed.value }); continue; }
       if (current.seed.kind === "email" && provider.manifest.capabilities?.includes("business") && isPublicMailboxDomain(current.seed.value.split("@").at(-1) || "")) continue;
       const cost = provider.manifest.cost?.amount || 0;
       if (spentUsd + cost > budgetUsd) { providerRuns.push({ providerId: provider.manifest.id, seed: current.seed, depth: current.depth, configuration: "configured", status: "budget_blocked", attempts: 0, evidenceCount: 0, query: current.seed.value }); continue; }
@@ -68,7 +72,9 @@ export async function investigateLive(seed: CollectionSeed, options: Investigati
     }
   }
   const authoritativeRuns = providerRuns.filter((run) => providers.find((provider) => provider.manifest.id === run.providerId)?.manifest.capabilities?.includes("registry"));
-  const registryGap = authoritativeRuns.length && authoritativeRuns.every((run) => run.status !== "success")
+  const registryGap = israeliBusinessTarget
+    ? ["Authoritative Israeli company-registry coverage is not configured. SEC EDGAR covers U.S. public issuers and does not verify Israeli private entities. Government, municipal, and first-party records remain supporting evidence only."]
+    : authoritativeRuns.length && authoritativeRuns.every((run) => run.status !== "success")
     ? [`Authoritative registry coverage is unavailable (${authoritativeRuns.map((run) => `${run.providerId}: ${run.status}`).join(", ")}).`]
     : [];
   const graph = buildInvestigationGraph({ seed, candidates: [...candidates.values()], evidence: [...evidence.values()], coverageGaps: registryGap, now: now().toISOString(), logger: options.logger });
