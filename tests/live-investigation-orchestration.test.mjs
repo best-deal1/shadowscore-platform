@@ -165,6 +165,8 @@ test("runs SEC EDGAR through the capability runtime and preserves authoritative 
     const edge = output.graph.evidence.find((item) => item.relationship === "official_website");
     assert.equal(edge.source.sourceFamily, "sec-edgar"); assert.equal(edge.source.license, "open_data"); assert.match(edge.source.sourceUrl, /data\.sec\.gov/);
     assert.equal(edge.lifecycle, "verified"); assert.equal(edge.freshness, "current"); assert.equal(requests[0].userAgent, "Test test@example.com");
+    assert.equal(output.graph.evidence.some((item) => item.relationship === "business_address"), true);
+    assert.equal(output.graph.evidence.some((item) => item.relationship === "registered_address"), false);
     assert.ok(output.graph.decision.reasons.every((item) => item.evidenceIds.length || item.coverageGap));
     assert.ok(output.graph.decision.recommendations.every((item) => item.evidenceIds.length || item.coverageGap));
   } finally { globalThis.fetch = originalFetch; }
@@ -193,8 +195,29 @@ test("expired ownership cannot support a decision and requires refresh", () => {
   assert.equal(graph.evidence[0].freshness, "expired"); assert.equal(graph.decision.verifiedEvidenceCount, 0); assert.equal(graph.decision.outcome, "investigate"); assert.match(graph.decision.coverageGaps.join(" "), /Refresh evidence/);
 });
 
+test("expired ownership cannot create a decision contradiction with current ownership", () => {
+  const candidate = { candidateId: "company", kind: "company", label: "Acme", identifiers: [{ kind: "company", value: "Acme" }], evidenceIds: ["current-owner-one", "current-owner-two", "expired-owner"] };
+  const ownership = (evidenceId, value, sourceFamily, observedAt) => ({ evidenceId, subjectCandidateId: "company", relationship: "owner", value, confidence: 99, lifecycle: "verified", evidenceType: "ownership", source: { sourceId: sourceFamily, sourceFamily, sourceName: sourceFamily, sourceUrl: `https://${sourceFamily}.example/record`, observedAt, retrievedAt: NOW.toISOString(), reliability: 99, license: "open_data" } });
+  const graph = buildInvestigationGraph({ seed: { kind: "company", value: "Acme" }, now: NOW.toISOString(), candidates: [candidate], evidence: [
+    ownership("current-owner-one", "Current Owner", "registry-one", "2026-08-01T00:00:00.000Z"),
+    ownership("current-owner-two", "Current Owner", "registry-two", "2026-08-02T00:00:00.000Z"),
+    ownership("expired-owner", "Former Owner", "registry-old", "2024-01-01T00:00:00.000Z"),
+  ] });
+  assert.equal(graph.contradictions.length, 1);
+  assert.equal(graph.decision.outcome, "proceed");
+  assert.equal(graph.decision.verifiedEvidenceCount, 2);
+});
+
 test("customer serialization redacts provider traces while administrator output retains them", async () => {
-  const investigation = { graph: buildInvestigationGraph({ seed: { kind: "company", value: "Acme" }, candidates: [], evidence: [], now: NOW.toISOString() }), providerRuns: [{ providerId: "registry", seed: { kind: "company", value: "Acme" }, depth: 0, configuration: "configured", status: "failed", attempts: 1, evidenceCount: 0, query: "secret exact query", error: "upstream trace" }], discoveredSeeds: [], spentUsd: 0, limits: { maxDepth: 1, maxProviderCalls: 1, timeoutMs: 1, budgetUsd: 0 } };
-  assert.equal(presentLiveInvestigation(investigation).providerRuns[0].query, undefined); assert.equal(presentLiveInvestigation(investigation).providerRuns[0].error, undefined);
-  assert.equal(presentLiveInvestigation(investigation, "administrator").providerRuns[0].query, "secret exact query");
+  const source = { sourceId: "registry", sourceFamily: "registry-family", sourceName: "Registry name", sourceUrl: "https://registry.example/result/1", observedAt: NOW.toISOString(), retrievedAt: NOW.toISOString(), reliability: 99, license: "open_data", query: "secret graph query", normalization: { raw: "secret raw input", normalized: "acme", method: "case-folded" } };
+  const discovery = { query: "secret discovery query", resultUrl: "https://registry.example/result/1", sourceUrl: "https://registry.example/search", snippet: "Reviewable result provenance", timestamp: NOW.toISOString(), hop: 0, parentEvidenceIds: [] };
+  const graph = buildInvestigationGraph({ seed: { kind: "company", value: "Acme" }, candidates: [{ candidateId: "company", kind: "company", label: "Acme", identifiers: [{ kind: "company", value: "Acme" }], evidenceIds: ["registry-name"] }], evidence: [{ evidenceId: "registry-name", subjectCandidateId: "company", relationship: "legal_name", value: "Acme", confidence: 99, lifecycle: "verified", evidenceType: "registry", source, discovery }], now: NOW.toISOString() });
+  const investigation = { graph, providerRuns: [{ providerId: "registry", seed: { kind: "company", value: "Acme" }, depth: 0, configuration: "configured", status: "failed", attempts: 1, evidenceCount: 0, query: "secret exact query", error: "upstream trace" }], discoveredSeeds: [], spentUsd: 0, limits: { maxDepth: 1, maxProviderCalls: 1, timeoutMs: 1, budgetUsd: 0 } };
+  const customer = presentLiveInvestigation(investigation);
+  const administrator = presentLiveInvestigation(investigation, "administrator");
+  assert.equal(customer.providerRuns[0].query, undefined); assert.equal(customer.providerRuns[0].error, undefined);
+  assert.equal(customer.graph.evidence[0].source.query, undefined); assert.equal(customer.graph.evidence[0].source.normalization.raw, undefined); assert.equal(customer.graph.evidence[0].discovery.query, undefined);
+  assert.equal(customer.graph.evidence[0].source.sourceUrl, source.sourceUrl); assert.equal(customer.graph.evidence[0].source.sourceName, source.sourceName); assert.equal(customer.graph.evidence[0].source.sourceFamily, source.sourceFamily);
+  assert.equal(customer.graph.evidence[0].discovery.resultUrl, discovery.resultUrl); assert.equal(customer.graph.evidence[0].discovery.snippet, discovery.snippet);
+  assert.equal(administrator.providerRuns[0].query, "secret exact query"); assert.equal(administrator.graph.evidence[0].source.query, source.query); assert.equal(administrator.graph.evidence[0].source.normalization.raw, source.normalization.raw); assert.equal(administrator.graph.evidence[0].discovery.query, discovery.query);
 });

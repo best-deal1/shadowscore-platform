@@ -13,7 +13,7 @@ export type SourceReference = {
   sourceFamily?: string;
   license?: "public" | "open_data" | "licensed" | "submitted";
   query?: string;
-  normalization?: { raw: string; normalized: string; method: string };
+  normalization?: { raw?: string; normalized: string; method: string };
 };
 
 export type EntityIdentifier = {
@@ -40,7 +40,7 @@ export type EvidenceAssertion = {
   lifecycle?: "lead" | "observed" | "corroborated" | "verified";
   derivedFromEvidenceIds?: string[];
   confidenceComponents?: { identifierMatch: number; sourceReliability: number; independence: number; freshness: number; hopDecay: number };
-  discovery?: { query: string; resultUrl: string; sourceUrl: string; snippet: string; timestamp: string; hop: number; parentEvidenceIds: string[] };
+  discovery?: { query?: string; resultUrl: string; sourceUrl: string; snippet: string; timestamp: string; hop: number; parentEvidenceIds: string[] };
   evidenceType: "registry" | "website" | "marketplace" | "contact" | "complaint" | "ownership" | "historical" | "other";
 };
 

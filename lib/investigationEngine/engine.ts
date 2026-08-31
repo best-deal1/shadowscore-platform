@@ -148,8 +148,7 @@ export function buildInvestigationGraph(input: InvestigationEngineInput): Invest
   const marketplaceEvidence = evidence.filter((item) => input.evidence.find((source) => source.evidenceId === item.evidenceId)?.evidenceType === "marketplace" || marketplaceEntities.some((entity) => entity.entityId === item.fromEntityId || entity.entityId === item.toEntityId));
   const verifiedEvidence = decisionEvidence(input, entityByCandidate, now);
   const families = independentFamilies(verifiedEvidence, input.evidence);
-  const decisionEvidenceIds = new Set(verifiedEvidence.map((item) => item.evidenceId));
-  const decisionContradictions = contradictions.filter((item) => item.evidenceIds.some((id) => decisionEvidenceIds.has(id)));
+  const decisionContradictions = detectContradictions(verifiedEvidence, entityByCandidate);
   const critical = decisionContradictions.some((item) => item.severity === "critical");
   const high = decisionContradictions.some((item) => item.severity === "high");
   const verifiedEdges = evidence.filter((edge) => verifiedEvidence.some((item) => item.evidenceId === edge.evidenceId));

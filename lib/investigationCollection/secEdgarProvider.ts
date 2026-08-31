@@ -60,7 +60,7 @@ export class SecEdgarCompanyRegistryProvider implements InvestigationProvider {
     if (domain) { const id = `sec-domain:${domain}`; candidates.push({ candidateId: id, kind: "domain", label: domain, identifiers: [{ kind: "domain", value: domain }], evidenceIds: [`sec:${paddedCik}:official_website`] }); add("official_website", domain, "website", id); }
     const address = submission.addresses?.business;
     const addressValue = address && [address.street1, address.street2, address.city, address.stateOrCountry, address.zipCode].filter(Boolean).join(", ");
-    if (addressValue) { const id = `sec-address:${paddedCik}`; candidates.push({ candidateId: id, kind: "address", label: addressValue, identifiers: [{ kind: "address", value: addressValue }], evidenceIds: [`sec:${paddedCik}:registered_address`] }); add("registered_address", addressValue, "contact", id); }
+    if (addressValue) { const id = `sec-address:${paddedCik}`; candidates.push({ candidateId: id, kind: "address", label: addressValue, identifiers: [{ kind: "address", value: addressValue }], evidenceIds: [`sec:${paddedCik}:business_address`] }); add("business_address", addressValue, "contact", id); }
     return { candidates, evidence, discoveredSeeds: domain ? [{ kind: "domain" as const, value: domain }] : [] };
   }
 }

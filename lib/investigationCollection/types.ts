@@ -15,7 +15,7 @@ export type InvestigationProviderManifest = {
   evidenceTypes: EvidenceAssertion["evidenceType"][];
   sourceFamily: string;
   legalBasis: "public" | "open_data" | "licensed";
-  capabilities: ("identity" | "social" | "phone" | "registry" | "business" | "domain_history" | "regulatory" | "reputation" | "marketplace" | "payment")[];
+  capabilities?: ("identity" | "social" | "phone" | "registry" | "business" | "domain_history" | "regulatory" | "reputation" | "marketplace" | "payment")[];
 };
 export type CollectionResult = { candidates: EntityCandidate[]; evidence: EvidenceAssertion[]; discoveredSeeds: CollectionSeed[] };
 export type ProviderCollectionContext = { signal: AbortSignal; now: string; depth: number };

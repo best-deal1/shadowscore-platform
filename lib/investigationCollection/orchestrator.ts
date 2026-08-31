@@ -24,7 +24,17 @@ export function createLiveInvestigationProviders(): InvestigationProvider[] {
 /** Customer output retains reviewable provenance and gaps, while exact queries and errors remain administrative. */
 export function presentLiveInvestigation(investigation: LiveInvestigation, audience: LiveInvestigationAudience = "customer"): LiveInvestigation {
   if (audience === "administrator") return structuredClone(investigation);
-  return { ...structuredClone(investigation), providerRuns: investigation.providerRuns.map(({ query: _query, error: _error, ...run }) => run) };
+  const customer = structuredClone(investigation);
+  for (const run of customer.providerRuns) {
+    delete run.query;
+    delete run.error;
+  }
+  for (const item of customer.graph.evidence) {
+    delete item.source.query;
+    if (item.source.normalization) delete item.source.normalization.raw;
+    if (item.discovery) delete item.discovery.query;
+  }
+  return customer;
 }
 
 export async function investigateLive(seed: CollectionSeed, options: InvestigationCollectionOptions = {}): Promise<LiveInvestigation> {
@@ -57,7 +67,7 @@ export async function investigateLive(seed: CollectionSeed, options: Investigati
       for (const next of result.discoveredSeeds) if (current.depth < maxDepth && !seen.has(key(next)) && !scheduled.has(key(next))) { scheduled.add(key(next)); discoveredSeeds.push(next); queue.push({ seed: next, depth: current.depth + 1 }); }
     }
   }
-  const authoritativeRuns = providerRuns.filter((run) => providers.find((provider) => provider.manifest.id === run.providerId)?.manifest.capabilities.includes("registry"));
+  const authoritativeRuns = providerRuns.filter((run) => providers.find((provider) => provider.manifest.id === run.providerId)?.manifest.capabilities?.includes("registry"));
   const registryGap = authoritativeRuns.length && authoritativeRuns.every((run) => run.status !== "success")
     ? [`Authoritative registry coverage is unavailable (${authoritativeRuns.map((run) => `${run.providerId}: ${run.status}`).join(", ")}).`]
     : [];

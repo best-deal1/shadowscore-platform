@@ -218,3 +218,4 @@ This file records customer-visible improvements in each ShadowScore release.
 # 2026-08-30
 
 - Business investigations now query the U.S. SEC EDGAR company index and submissions service through the live provider capability runtime. Reports preserve registry provenance, relationship freshness, explicit evidence gaps, and honest unavailable, timed out, failed, empty, and success states.
+- Customer reports now redact exact provider query and raw normalization traces throughout graph evidence. Decision contradictions use only current, eligible evidence, and SEC business locations are identified as business addresses.

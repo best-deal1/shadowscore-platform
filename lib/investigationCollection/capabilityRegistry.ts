@@ -3,7 +3,7 @@ import type { InvestigationProviderManifest } from "./types";
 
 export type ProviderCapabilityRegistration = {
   id: string;
-  capability: InvestigationProviderManifest["capabilities"][number];
+  capability: NonNullable<InvestigationProviderManifest["capabilities"]>[number];
   targetTypes: InvestigationInputKind[];
   credentialEnv?: string;
   legalBasis: InvestigationProviderManifest["legalBasis"];
