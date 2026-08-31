@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { BraveBusinessWebInvestigationProvider, extractBusinessWebClaims, investigateLive } from "../lib/investigationCollection/index.ts";
+import { buildBusinessIntelligence } from "../lib/businessIntelligence/index.ts";
 
 const NOW = new Date("2026-08-31T12:00:00.000Z");
 const benchmarkResults = [
@@ -16,6 +17,20 @@ test("business extraction keeps legal entities, registration IDs, and roles out 
   assert.ok(claims.some((item) => item.kind === "registration_number" && item.value === "514131291"));
   assert.deepEqual(claims.find((item) => item.kind === "person_role"), { kind: "person_role", value: "Ram Matan: Co CEO", person: "Ram Matan", role: "Co CEO", company: "Leshem-Sheffer Environmental" });
   assert.equal(claims.some((item) => /** @type {any} */ (item).kind === "person_name"), false);
+});
+
+test("business intelligence uses evidence source families within one provider", () => {
+  const result = buildBusinessIntelligence([{ providerId: "public-business-discovery", providerVersion: "1", status: "completed", startedAt: NOW, completedAt: NOW, duration: 0, findings: [], errors: [], metadata: {}, evidence: [
+    { id: "first-party", type: "observation", label: "Company name", value: "SHL", source: "https://shl.co.il", sourceFamily: "first-party:shl.co.il" },
+    { id: "government", type: "observation", label: "Company name", value: "SHL", source: "https://contracts.tel-aviv.muni.il", sourceFamily: "israeli-government:contracts.tel-aviv.muni.il" },
+  ] }]);
+  assert.ok(result.findings.some((item) => item.category === "credibility_support"));
+
+  const sameFamily = buildBusinessIntelligence([{ providerId: "public-business-discovery", providerVersion: "1", status: "completed", startedAt: NOW, completedAt: NOW, duration: 0, findings: [], errors: [], metadata: {}, evidence: [
+    { id: "one", type: "observation", label: "Company name", value: "SHL", source: "https://shl.co.il/about", sourceFamily: "first-party:shl.co.il" },
+    { id: "two", type: "observation", label: "Company name", value: "SHL", source: "https://shl.co.il/contact", sourceFamily: "first-party:shl.co.il" },
+  ] }]);
+  assert.equal(sameFamily.findings.length, 0);
 });
 
 test("corporate email follows email to domain, entity, registration, and officer candidates with provenance", async () => {
@@ -39,6 +54,23 @@ test("corporate email follows email to domain, entity, registration, and officer
     assert.equal(output.graph.decision.verifiedEvidenceCount, 0);
     assert.match(output.graph.decision.coverageGaps.join(" "), /Israeli company-registry coverage is not configured/);
     assert.ok(output.graph.evidence.filter((item) => item.source.sourceName.includes("search result")).every((item) => item.lifecycle === "lead"));
+    assert.ok(output.graph.evidence.filter((item) => ["legal_entity_candidate", "company_registration_id_candidate"].includes(item.relationship)).every((item) => item.evidenceType === "other"));
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+test("an ambiguous registration number remains unbound when a result names two companies", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => Response.json({ web: { results: [{ title: "Alpha Holdings LLC and Beta Trading LLC", url: "https://directory.example/record", description: "Company number 12345678" }] } });
+  try {
+    const output = await investigateLive({ kind: "domain", value: "example.com" }, { providers: [new BraveBusinessWebInvestigationProvider({ BRAVE_SEARCH_API_KEY: "test" })], now: () => NOW, maxDepth: 0 });
+    const companies = output.graph.entities.filter((item) => item.kind === "company");
+    assert.equal(companies.length, 2);
+    assert.ok(companies.every((item) => item.identifiers.every((identifier) => identifier.value !== "12345678")));
+    const claim = output.graph.evidence.find((item) => item.relationship === "company_registration_id_candidate" && item.value === "12345678");
+    assert.ok(claim);
+    assert.equal(claim.fromEntityId, output.graph.entities.find((item) => item.kind === "domain")?.entityId);
+    assert.equal(claim.evidenceType, "other");
+    assert.equal(claim.lifecycle, "lead");
   } finally { globalThis.fetch = originalFetch; }
 });
 

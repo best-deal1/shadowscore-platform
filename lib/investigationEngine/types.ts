@@ -67,6 +67,7 @@ export type EvidenceEdge = {
   contradictionIds: string[];
   source: SourceReference;
   evidenceId: string;
+  evidenceType: EvidenceAssertion["evidenceType"];
   freshness: "current" | "stale" | "expired";
   lifecycle: "lead" | "observed" | "corroborated" | "verified";
   derivedFromEvidenceIds: string[];

@@ -23,8 +23,16 @@ export function extractBusinessWebClaims(raw: string): BusinessWebClaim[] {
   const text = normalizeText(raw);
   const claims: BusinessWebClaim[] = [];
   const add = (claim: BusinessWebClaim) => { if (!claims.some((item) => item.kind === claim.kind && item.value.toLowerCase() === claim.value.toLowerCase())) claims.push(claim); };
-  for (const match of text.matchAll(new RegExp(`([\\p{L}][\\p{L}\\p{N} &'().,-]{2,80}?\\s${LEGAL_SUFFIX})`, "giu"))) add({ kind: "legal_name", value: match[1].trim().replace(/^[|,:;.-]+/, "") });
-  for (const match of text.matchAll(/(?:company|corporation|registration|company number|מס(?:פר)?\s*(?:חברה)?|ח\.?\s*פ\.?)\s*(?:no\.?|number|[:#-])?\s*(\d{8,10})/giu)) add({ kind: "registration_number", value: match[1] });
+  const legalNamePattern = new RegExp(`([\\p{L}][\\p{L}\\p{N} &'().,-]{2,80}?\\s${LEGAL_SUFFIX})`, "giu");
+  for (const match of text.matchAll(legalNamePattern)) add({ kind: "legal_name", value: match[1].trim().replace(/^[|,:;.-]+/, "") });
+  for (const match of text.matchAll(/(?:company|corporation|registration|company number|מס(?:פר)?\s*(?:חברה)?|ח\.?\s*פ\.?)\s*(?:no\.?|number|[:#-])?\s*(\d{8,10})/giu)) {
+    const matchIndex = match.index ?? 0;
+    const clauseStart = Math.max(text.lastIndexOf(";", matchIndex), text.lastIndexOf("|", matchIndex)) + 1;
+    const followingStops = [text.indexOf(";", matchIndex), text.indexOf("|", matchIndex)].filter((index) => index >= 0);
+    const clause = text.slice(clauseStart, followingStops.length ? Math.min(...followingStops) : text.length);
+    const localCompanies = [...new Set([...clause.matchAll(new RegExp(legalNamePattern.source, legalNamePattern.flags))].map((item) => item[1].trim().replace(/^[|,:;.-]+/, "")))];
+    add({ kind: "registration_number", value: match[1], company: localCompanies.length === 1 ? localCompanies[0] : undefined });
+  }
   for (const match of text.matchAll(new RegExp(`([\\p{L}][\\p{L} .'-]{1,60}?)\\s*[-|,]\\s*(${ROLE})\\s+(?:at|of|ב[- ]?)\\s*([\\p{L}\\p{N} &'().,-]{2,100})`, "giu"))) {
     const person = match[1].trim().split(/(?:[.!?]\s+|\|)/).at(-1)!.trim(), role = match[2].trim(), company = match[3].trim().replace(/\s+(?:\||[-–]).*$/, "");
     add({ kind: "person_role", value: `${person}: ${role}`, person, role, company });
@@ -40,7 +48,7 @@ export class BraveBusinessWebInvestigationProvider implements InvestigationProvi
 
   constructor(env: NodeJS.ProcessEnv = process.env) {
     this.apiKey = env.BRAVE_SEARCH_API_KEY;
-    this.manifest = { id: "public-business-discovery", name: "Brave public business discovery", supportedSeedTypes: ["email", "domain", "company", "legal_entity", "registration_number"], supportedJurisdictions: ["global"], supportedMarketplaces: [], availability: this.apiKey ? { status: "available" } : { status: "unavailable", reason: "BRAVE_SEARCH_API_KEY is not configured." }, authentication: "api_key", rateLimit: "Defined by Brave Search API plan", cost: null, evidenceTypes: ["registry", "website", "contact", "other"], sourceFamily: "brave-public-web", legalBasis: "licensed", capabilities: ["business"] };
+    this.manifest = { id: "public-business-discovery", name: "Brave public business discovery", supportedSeedTypes: ["email", "domain", "company", "legal_entity", "registration_number"], supportedJurisdictions: ["global"], supportedMarketplaces: [], availability: this.apiKey ? { status: "available" } : { status: "unavailable", reason: "BRAVE_SEARCH_API_KEY is not configured." }, authentication: "api_key", rateLimit: "Defined by Brave Search API plan", cost: null, evidenceTypes: ["website", "contact", "other"], sourceFamily: "brave-public-web", legalBasis: "licensed", capabilities: ["business"] };
   }
 
   async collect(seed: CollectionSeed, context: ProviderCollectionContext) {
@@ -75,19 +83,20 @@ export class BraveBusinessWebInvestigationProvider implements InvestigationProvi
       candidates.find((item) => item.candidateId === anchorId)!.evidenceIds.push(discoveryId);
       evidence.push({ evidenceId: discoveryId, subjectCandidateId: anchorId, relationship: "business_source_candidate", value: resultUrl, confidence: 35, lifecycle: "lead", evidenceType: "other", discovery: { query, resultUrl, sourceUrl: request.toString(), snippet, timestamp: context.now, hop: context.depth, parentEvidenceIds: [] }, source: { sourceId: "brave-business-search", sourceFamily: "brave-public-web", sourceName: "Brave Search API", sourceUrl: resultUrl, observedAt: context.now, retrievedAt: context.now, reliability: 65, license: "licensed" } });
       const claims = extractBusinessWebClaims(snippet);
-      const hitCompanyIds = claims.filter((claim) => claim.kind === "legal_name").map((claim) => `company:${id(claim.value)}`);
       for (const claim of claims) {
         const claimId = `business-claim:${index}:${claim.kind}:${id(claim.value)}`;
         if (claim.kind === "legal_name") {
           const companyId = `company:${id(claim.value)}`; addCandidate({ candidateId: companyId, kind: "company", label: claim.value, identifiers: [{ kind: "legal_entity", value: claim.value }], evidenceIds: [claimId] });
-          evidence.push({ evidenceId: claimId, subjectCandidateId: anchorId, objectCandidateId: companyId, relationship: "legal_entity_candidate", value: claim.value, confidence: 45, lifecycle: "lead", evidenceType: "registry", derivedFromEvidenceIds: [discoveryId], discovery: { query, resultUrl, sourceUrl: request.toString(), snippet, timestamp: context.now, hop: context.depth, parentEvidenceIds: [discoveryId] }, source: { sourceId: "brave-business-search", sourceFamily, sourceName: isIsraeliGovernment(host) ? "Israeli public body search result" : "Public web search result", sourceUrl: resultUrl, observedAt: context.now, retrievedAt: context.now, reliability: isIsraeliGovernment(host) ? 85 : 65, license: "public" } });
+          evidence.push({ evidenceId: claimId, subjectCandidateId: anchorId, objectCandidateId: companyId, relationship: "legal_entity_candidate", value: claim.value, confidence: 45, lifecycle: "lead", evidenceType: "other", derivedFromEvidenceIds: [discoveryId], discovery: { query, resultUrl, sourceUrl: request.toString(), snippet, timestamp: context.now, hop: context.depth, parentEvidenceIds: [discoveryId] }, source: { sourceId: "brave-business-search", sourceFamily, sourceName: isIsraeliGovernment(host) ? "Israeli public body search result" : "Public web search result", sourceUrl: resultUrl, observedAt: context.now, retrievedAt: context.now, reliability: isIsraeliGovernment(host) ? 85 : 65, license: "public" } });
           if (domain && (snippet.toLowerCase().includes(domain) || host === domain)) discoveredSeeds.push({ kind: "legal_entity", value: claim.value });
         } else if (claim.kind === "registration_number") {
-          // Registration identifiers stay with a legal entity extracted from the
-          // same source result. This prevents same-name search neighbors merging.
-          const companyId = hitCompanyIds[0] || anchorId;
-          candidates.find((item) => item.candidateId === companyId)!.identifiers.push({ kind: "registration_number", value: claim.value }); candidates.find((item) => item.candidateId === companyId)!.evidenceIds.push(claimId);
-          evidence.push({ evidenceId: claimId, subjectCandidateId: companyId, relationship: "company_registration_id_candidate", value: claim.value, confidence: 45, lifecycle: "lead", evidenceType: "registry", derivedFromEvidenceIds: [discoveryId], discovery: { query, resultUrl, sourceUrl: request.toString(), snippet, timestamp: context.now, hop: context.depth, parentEvidenceIds: [discoveryId] }, source: { sourceId: "brave-business-search", sourceFamily, sourceName: isIsraeliGovernment(host) ? "Israeli public body search result" : "Public web search result", sourceUrl: resultUrl, observedAt: context.now, retrievedAt: context.now, reliability: isIsraeliGovernment(host) ? 85 : 65, license: "public" } });
+          const companyId = claim.company
+            ? candidates.find((item) => item.kind === "company" && item.label.toLowerCase() === claim.company!.toLowerCase())?.candidateId
+            : undefined;
+          const subjectCandidateId = companyId || anchorId;
+          if (companyId) candidates.find((item) => item.candidateId === companyId)!.identifiers.push({ kind: "registration_number", value: claim.value });
+          candidates.find((item) => item.candidateId === subjectCandidateId)!.evidenceIds.push(claimId);
+          evidence.push({ evidenceId: claimId, subjectCandidateId, relationship: "company_registration_id_candidate", value: claim.value, confidence: 45, lifecycle: "lead", evidenceType: "other", derivedFromEvidenceIds: [discoveryId], discovery: { query, resultUrl, sourceUrl: request.toString(), snippet, timestamp: context.now, hop: context.depth, parentEvidenceIds: [discoveryId] }, source: { sourceId: "brave-business-search", sourceFamily, sourceName: isIsraeliGovernment(host) ? "Israeli public body search result" : "Public web search result", sourceUrl: resultUrl, observedAt: context.now, retrievedAt: context.now, reliability: isIsraeliGovernment(host) ? 85 : 65, license: "public" } });
           discoveredSeeds.push({ kind: "registration_number", value: claim.value });
         } else if (claim.kind === "person_role" && claim.person && claim.role) {
           const companyId = candidates.find((item) => item.kind === "company" && (!claim.company || claim.company.toLowerCase().includes(item.label.toLowerCase().split(" ")[0])))?.candidateId || candidates.find((item) => item.kind === "company")?.candidateId || anchorId;

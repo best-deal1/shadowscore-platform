@@ -38,7 +38,7 @@ function comparisonKeyFor(field: Field, label: string, key?: string) {
   return "identity_other";
 }
 
-function add(out: Observation[], result: ProviderResult, evidence: Pick<ProviderEvidence, "id" | "label" | "value" | "source">, key?: string) {
+function add(out: Observation[], result: ProviderResult, evidence: Pick<ProviderEvidence, "id" | "label" | "value" | "source" | "sourceFamily">, key?: string) {
   if (!evidence.value?.trim() || evidence.value.trim().toLowerCase() === "unavailable") return;
   if (evidence.source === "submitted-target" || /^(submittedEmail|submittedTarget|requestedTarget)$/i.test(key || "") || /submitted (?:email|target|input)/i.test(evidence.label)) return;
   const field = fieldFor(evidence.label, key);
@@ -57,9 +57,12 @@ function observations(results: ProviderResult[]) {
   return out;
 }
 
-function sourceFamily(item: Observation) { return DOMAIN_INFRASTRUCTURE_PROVIDERS.test(item.providerId) ? "subject-domain-observations" : item.providerId; }
+function sourceFamily(item: Observation) {
+  if (DOMAIN_INFRASTRUCTURE_PROVIDERS.test(item.providerId)) return "subject-domain-observations";
+  return item.sourceFamily?.trim().toLowerCase() || item.providerId;
+}
 function independent(items: Observation[]) { return new Set(items.map(sourceFamily)).size >= 2; }
-function refs(items: Observation[]) { return items.map((item) => ({ id: item.id, label: item.label, value: item.value, source: item.source, providerId: item.providerId, observedAt: item.observedAt, field: item.field })); }
+function refs(items: Observation[]) { return items.map((item) => ({ id: item.id, label: item.label, value: item.value, source: item.source, sourceFamily: item.sourceFamily, providerId: item.providerId, observedAt: item.observedAt, field: item.field })); }
 function finding(category: BusinessFindingCategory, direction: BusinessFinding["direction"], title: string, statement: string, items: Observation[]): BusinessFinding {
   const fields = Array.from(new Set(items.map((item) => item.field)));
   return { id: `${category}:${fields.join("-")}:${items.map((item) => item.providerId).sort().join("-")}`, category, direction, title, statement, evidence: refs(items), affectedFields: fields };

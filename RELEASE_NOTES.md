@@ -1,5 +1,7 @@
 # Release Notes
 
+- Business email investigations now preserve each result's source family, keep search-derived company details out of authoritative registry evidence, and leave ambiguous registration numbers unbound for review.
+
 - Personal Identity discovery now reads names inside emphasized search snippets and role-labeled credit lists. It prioritizes the bounded alias follow-up while excluding adjacent people and page titles from identity pivots.
 
 - Personal Identity discovery now recognizes a submitted name within a role-labeled, comma-delimited or semicolon-delimited list. It can schedule one adjacent name token from the same list item, while neighboring people, locations, and page labels remain excluded from identity pivots.

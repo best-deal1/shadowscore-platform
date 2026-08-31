@@ -38,6 +38,7 @@ export type ProviderEvidence = {
   label: string;
   value?: string;
   source: string;
+  sourceFamily?: string;
   regulatoryClassification?: RegulatoryEvidenceClassification;
   authoritative?: boolean;
   investigationId?: string;
