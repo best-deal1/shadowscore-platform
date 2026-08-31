@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { BravePublicWebInvestigationProvider, GoogleDnsInvestigationProvider, createLiveInvestigationProviders, investigateLive } from "../lib/investigationCollection/index.ts";
+import { BravePublicWebInvestigationProvider, GoogleDnsInvestigationProvider, SecEdgarCompanyRegistryProvider, createLiveInvestigationProviders, investigateLive, presentLiveInvestigation } from "../lib/investigationCollection/index.ts";
 import { buildInvestigationGraph } from "../lib/investigationEngine/index.ts";
 
 const NOW = new Date("2026-08-09T12:00:00.000Z");
@@ -46,7 +46,7 @@ test("correlates marketplace evidence in the graph through a pluggable provider"
 test("reports unavailable credentialed providers without fabricating evidence", async () => {
   const marketplace = createLiveInvestigationProviders().find((provider) => provider.manifest.id === "marketplace-partner");
   const output = await investigateLive({ kind: "marketplace_identity", value: "etsy/acme" }, { providers: [marketplace], now: () => NOW });
-  assert.equal(output.providerRuns[0].status, "PROVIDER_UNAVAILABLE");
+  assert.equal(output.providerRuns[0].status, "unavailable");
   assert.match(output.providerRuns[0].error, /credentialed marketplace partner client/);
   assert.equal(output.graph.evidence.length, 0);
   assert.equal(output.graph.decision.outcome, "investigate");
@@ -129,7 +129,7 @@ test("executes configured public search and preserves discovery provenance", asy
   try {
     const provider = new BravePublicWebInvestigationProvider({ BRAVE_SEARCH_API_KEY: "configured" });
     const output = await investigateLive({ kind: "email", value: "person@example.com" }, { providers: [provider], now: () => NOW, maxRetries: 0 });
-    assert.equal(output.providerRuns[0].status, "completed");
+    assert.equal(output.providerRuns[0].status, "success");
     assert.ok(output.providerRuns[0].evidenceCount > 0);
     const item = output.graph.evidence[0];
     assert.equal(item.lifecycle, "lead");
@@ -144,7 +144,80 @@ test("executes configured public search and preserves discovery provenance", asy
 test("marks public search unavailable when credentials are missing", async () => {
   const provider = new BravePublicWebInvestigationProvider({});
   const output = await investigateLive({ kind: "email", value: "random-person@gmail.com" }, { providers: [provider], now: () => NOW });
-  assert.equal(output.providerRuns[0].status, "PROVIDER_UNAVAILABLE");
+  assert.equal(output.providerRuns[0].status, "unavailable");
   assert.match(output.providerRuns[0].error, /BRAVE_SEARCH_API_KEY/);
   assert.equal(output.graph.evidence.length, 0);
+});
+
+test("runs SEC EDGAR through the capability runtime and preserves authoritative provenance", async () => {
+  const originalFetch = globalThis.fetch;
+  const requests = [];
+  globalThis.fetch = async (input, init) => {
+    requests.push({ url: String(input), userAgent: init.headers["user-agent"] });
+    if (String(input).includes("company_tickers")) return Response.json({ data: [[320193, "Apple Inc.", "AAPL", "Nasdaq"]] });
+    return Response.json({ name: "Apple Inc.", website: "https://www.apple.com", addresses: { business: { street1: "One Apple Park Way", city: "Cupertino", stateOrCountry: "CA", zipCode: "95014" } } });
+  };
+  try {
+    const output = await investigateLive({ kind: "registration_number", value: "320193" }, { providers: [new SecEdgarCompanyRegistryProvider({ SEC_EDGAR_USER_AGENT: "Test test@example.com" })], now: () => NOW, maxDepth: 0 });
+    assert.equal(output.providerRuns[0].configuration, "configured"); assert.equal(output.providerRuns[0].status, "success");
+    assert.equal(output.graph.entities.some((item) => item.kind === "company" && item.label === "Apple Inc."), true);
+    assert.equal(output.graph.entities.some((item) => item.kind === "domain" && item.label === "apple.com"), true);
+    const edge = output.graph.evidence.find((item) => item.relationship === "official_website");
+    assert.equal(edge.source.sourceFamily, "sec-edgar"); assert.equal(edge.source.license, "open_data"); assert.match(edge.source.sourceUrl, /data\.sec\.gov/);
+    assert.equal(edge.lifecycle, "verified"); assert.equal(edge.freshness, "current"); assert.equal(requests[0].userAgent, "Test test@example.com");
+    assert.equal(output.graph.evidence.some((item) => item.relationship === "business_address"), true);
+    assert.equal(output.graph.evidence.some((item) => item.relationship === "registered_address"), false);
+    assert.ok(output.graph.decision.reasons.every((item) => item.evidenceIds.length || item.coverageGap));
+    assert.ok(output.graph.decision.recommendations.every((item) => item.evidenceIds.length || item.coverageGap));
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+test("reports honest SEC empty, unavailable, failed, and timed out states", async () => {
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async () => Response.json({ data: [] });
+    const empty = await investigateLive({ kind: "company", value: "Missing Company" }, { providers: [new SecEdgarCompanyRegistryProvider({})], now: () => NOW });
+    assert.equal(empty.providerRuns[0].status, "empty"); assert.match(empty.graph.decision.coverageGaps[0], /No current/);
+    const unavailable = await investigateLive({ kind: "company", value: "Apple Inc." }, { providers: [new SecEdgarCompanyRegistryProvider({ SEC_EDGAR_REGISTRY_ENABLED: "false" })], now: () => NOW });
+    assert.equal(unavailable.providerRuns[0].configuration, "unavailable"); assert.equal(unavailable.providerRuns[0].status, "unavailable");
+    globalThis.fetch = async () => new Response("failure", { status: 503 });
+    const failed = await investigateLive({ kind: "company", value: "Apple Inc." }, { providers: [new SecEdgarCompanyRegistryProvider({})], now: () => NOW, maxRetries: 0 });
+    assert.equal(failed.providerRuns[0].status, "failed");
+    globalThis.fetch = async (_input, init) => await new Promise((_resolve, reject) => init.signal.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError"))));
+    const timedOut = await investigateLive({ kind: "company", value: "Apple Inc." }, { providers: [new SecEdgarCompanyRegistryProvider({})], now: () => NOW, timeoutMs: 2, maxRetries: 0 });
+    assert.equal(timedOut.providerRuns[0].status, "timed_out");
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+test("expired ownership cannot support a decision and requires refresh", () => {
+  const candidate = { candidateId: "company", kind: "company", label: "Acme", identifiers: [{ kind: "company", value: "Acme" }], evidenceIds: ["old-owner"] };
+  const graph = buildInvestigationGraph({ seed: { kind: "company", value: "Acme" }, now: NOW.toISOString(), candidates: [candidate], evidence: [{ evidenceId: "old-owner", subjectCandidateId: "company", relationship: "owner", value: "Old Owner", confidence: 99, lifecycle: "verified", evidenceType: "ownership", source: { sourceId: "registry", sourceFamily: "registry", sourceName: "Registry", sourceUrl: "https://registry.example/record", observedAt: "2024-01-01T00:00:00.000Z", retrievedAt: "2024-01-01T00:00:00.000Z", reliability: 99, license: "open_data" } }] });
+  assert.equal(graph.evidence[0].freshness, "expired"); assert.equal(graph.decision.verifiedEvidenceCount, 0); assert.equal(graph.decision.outcome, "investigate"); assert.match(graph.decision.coverageGaps.join(" "), /Refresh evidence/);
+});
+
+test("expired ownership cannot create a decision contradiction with current ownership", () => {
+  const candidate = { candidateId: "company", kind: "company", label: "Acme", identifiers: [{ kind: "company", value: "Acme" }], evidenceIds: ["current-owner-one", "current-owner-two", "expired-owner"] };
+  const ownership = (evidenceId, value, sourceFamily, observedAt) => ({ evidenceId, subjectCandidateId: "company", relationship: "owner", value, confidence: 99, lifecycle: "verified", evidenceType: "ownership", source: { sourceId: sourceFamily, sourceFamily, sourceName: sourceFamily, sourceUrl: `https://${sourceFamily}.example/record`, observedAt, retrievedAt: NOW.toISOString(), reliability: 99, license: "open_data" } });
+  const graph = buildInvestigationGraph({ seed: { kind: "company", value: "Acme" }, now: NOW.toISOString(), candidates: [candidate], evidence: [
+    ownership("current-owner-one", "Current Owner", "registry-one", "2026-08-01T00:00:00.000Z"),
+    ownership("current-owner-two", "Current Owner", "registry-two", "2026-08-02T00:00:00.000Z"),
+    ownership("expired-owner", "Former Owner", "registry-old", "2024-01-01T00:00:00.000Z"),
+  ] });
+  assert.equal(graph.contradictions.length, 1);
+  assert.equal(graph.decision.outcome, "proceed");
+  assert.equal(graph.decision.verifiedEvidenceCount, 2);
+});
+
+test("customer serialization redacts provider traces while administrator output retains them", async () => {
+  const source = { sourceId: "registry", sourceFamily: "registry-family", sourceName: "Registry name", sourceUrl: "https://registry.example/result/1", observedAt: NOW.toISOString(), retrievedAt: NOW.toISOString(), reliability: 99, license: "open_data", query: "secret graph query", normalization: { raw: "secret raw input", normalized: "acme", method: "case-folded" } };
+  const discovery = { query: "secret discovery query", resultUrl: "https://registry.example/result/1", sourceUrl: "https://registry.example/search", snippet: "Reviewable result provenance", timestamp: NOW.toISOString(), hop: 0, parentEvidenceIds: [] };
+  const graph = buildInvestigationGraph({ seed: { kind: "company", value: "Acme" }, candidates: [{ candidateId: "company", kind: "company", label: "Acme", identifiers: [{ kind: "company", value: "Acme" }], evidenceIds: ["registry-name"] }], evidence: [{ evidenceId: "registry-name", subjectCandidateId: "company", relationship: "legal_name", value: "Acme", confidence: 99, lifecycle: "verified", evidenceType: "registry", source, discovery }], now: NOW.toISOString() });
+  const investigation = { graph, providerRuns: [{ providerId: "registry", seed: { kind: "company", value: "Acme" }, depth: 0, configuration: "configured", status: "failed", attempts: 1, evidenceCount: 0, query: "secret exact query", error: "upstream trace" }], discoveredSeeds: [], spentUsd: 0, limits: { maxDepth: 1, maxProviderCalls: 1, timeoutMs: 1, budgetUsd: 0 } };
+  const customer = presentLiveInvestigation(investigation);
+  const administrator = presentLiveInvestigation(investigation, "administrator");
+  assert.equal(customer.providerRuns[0].query, undefined); assert.equal(customer.providerRuns[0].error, undefined);
+  assert.equal(customer.graph.evidence[0].source.query, undefined); assert.equal(customer.graph.evidence[0].source.normalization.raw, undefined); assert.equal(customer.graph.evidence[0].discovery.query, undefined);
+  assert.equal(customer.graph.evidence[0].source.sourceUrl, source.sourceUrl); assert.equal(customer.graph.evidence[0].source.sourceName, source.sourceName); assert.equal(customer.graph.evidence[0].source.sourceFamily, source.sourceFamily);
+  assert.equal(customer.graph.evidence[0].discovery.resultUrl, discovery.resultUrl); assert.equal(customer.graph.evidence[0].discovery.snippet, discovery.snippet);
+  assert.equal(administrator.providerRuns[0].query, "secret exact query"); assert.equal(administrator.graph.evidence[0].source.query, source.query); assert.equal(administrator.graph.evidence[0].source.normalization.raw, source.normalization.raw); assert.equal(administrator.graph.evidence[0].discovery.query, discovery.query);
 });

@@ -1,5 +1,9 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Authoritative business registry runtime
+
+Live company, legal entity, and registration-number investigations invoke the U.S. SEC EDGAR company index and submissions APIs through `createLiveInvestigationProviders()` and `investigateLive()`. The integration uses SEC open data and needs no API credential. Set `SEC_EDGAR_USER_AGENT` to an operational contact string for SEC requests. Set `SEC_EDGAR_REGISTRY_ENABLED=false` to disable the provider explicitly. The runtime records configured, unavailable, timed out, failed, empty, and success outcomes. It creates no registry evidence when the provider is unavailable or returns no matching issuer.
+
 ## Getting Started
 
 First, run the development server:

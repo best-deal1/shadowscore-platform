@@ -1,10 +1,11 @@
 import { buildInvestigationGraph } from "../investigationEngine";
 import type { EntityCandidate, EvidenceAssertion } from "../investigationEngine/types";
 import { GoogleDnsInvestigationProvider } from "./dnsProvider";
-import type { CollectionSeed, InvestigationCollectionOptions, InvestigationProvider, LiveInvestigation, ProviderRun } from "./types";
+import type { CollectionSeed, InvestigationCollectionOptions, InvestigationProvider, LiveInvestigation, LiveInvestigationAudience, ProviderRun } from "./types";
 import { isPublicMailboxDomain } from "../emailDomains";
 import { BravePublicWebInvestigationProvider } from "./publicWebProvider";
 import { PROVIDER_CAPABILITY_REGISTRY } from "./capabilityRegistry";
+import { SecEdgarCompanyRegistryProvider } from "./secEdgarProvider";
 
 const key = (seed: CollectionSeed) => `${seed.kind}:${seed.value.trim().toLowerCase()}`;
 const unavailableMarketplaceProvider = (): InvestigationProvider => ({
@@ -16,8 +17,24 @@ const unavailableRegisteredProvider = (registration: (typeof PROVIDER_CAPABILITY
   async collect() { throw new Error(`The authorized ${registration.id} API client is not configured.`); },
 });
 export function createLiveInvestigationProviders(): InvestigationProvider[] {
-  const implemented = new Set(["public-social-discovery", "marketplace-partner"]);
-  return [new GoogleDnsInvestigationProvider(), new BravePublicWebInvestigationProvider(), unavailableMarketplaceProvider(), ...PROVIDER_CAPABILITY_REGISTRY.filter((item) => !implemented.has(item.id)).map(unavailableRegisteredProvider)];
+  const implemented = new Set(["public-social-discovery", "marketplace-partner", "sec-edgar-company-registry"]);
+  return [new GoogleDnsInvestigationProvider(), new BravePublicWebInvestigationProvider(), new SecEdgarCompanyRegistryProvider(), unavailableMarketplaceProvider(), ...PROVIDER_CAPABILITY_REGISTRY.filter((item) => !implemented.has(item.id)).map(unavailableRegisteredProvider)];
+}
+
+/** Customer output retains reviewable provenance and gaps, while exact queries and errors remain administrative. */
+export function presentLiveInvestigation(investigation: LiveInvestigation, audience: LiveInvestigationAudience = "customer"): LiveInvestigation {
+  if (audience === "administrator") return structuredClone(investigation);
+  const customer = structuredClone(investigation);
+  for (const run of customer.providerRuns) {
+    delete run.query;
+    delete run.error;
+  }
+  for (const item of customer.graph.evidence) {
+    delete item.source.query;
+    if (item.source.normalization) delete item.source.normalization.raw;
+    if (item.discovery) delete item.discovery.query;
+  }
+  return customer;
 }
 
 export async function investigateLive(seed: CollectionSeed, options: InvestigationCollectionOptions = {}): Promise<LiveInvestigation> {
@@ -32,10 +49,10 @@ export async function investigateLive(seed: CollectionSeed, options: Investigati
     const current = queue.shift()!; seen.add(key(current.seed));
     for (const provider of providers.filter((item) => item.manifest.supportedSeedTypes.includes(current.seed.kind))) {
       if (calls >= maxProviderCalls) break;
-      if (provider.manifest.availability.status === "unavailable") { providerRuns.push({ providerId: provider.manifest.id, seed: current.seed, depth: current.depth, status: "PROVIDER_UNAVAILABLE", attempts: 0, evidenceCount: 0, error: provider.manifest.availability.reason }); continue; }
+      if (provider.manifest.availability.status === "unavailable") { providerRuns.push({ providerId: provider.manifest.id, seed: current.seed, depth: current.depth, configuration: "unavailable", status: "unavailable", attempts: 0, evidenceCount: 0, error: provider.manifest.availability.reason, query: current.seed.value }); continue; }
       if (current.seed.kind === "email" && provider.manifest.capabilities?.includes("business") && isPublicMailboxDomain(current.seed.value.split("@").at(-1) || "")) continue;
       const cost = provider.manifest.cost?.amount || 0;
-      if (spentUsd + cost > budgetUsd) { providerRuns.push({ providerId: provider.manifest.id, seed: current.seed, depth: current.depth, status: "budget_blocked", attempts: 0, evidenceCount: 0 }); continue; }
+      if (spentUsd + cost > budgetUsd) { providerRuns.push({ providerId: provider.manifest.id, seed: current.seed, depth: current.depth, configuration: "configured", status: "budget_blocked", attempts: 0, evidenceCount: 0, query: current.seed.value }); continue; }
       let attempts = 0, result, error: unknown, timedOut = false;
       while (attempts <= maxRetries && !result && calls < maxProviderCalls) {
         attempts += 1; calls += 1; const controller = new AbortController(); const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -43,14 +60,18 @@ export async function investigateLive(seed: CollectionSeed, options: Investigati
         catch (caught) { error = caught; timedOut = controller.signal.aborted; }
         finally { clearTimeout(timer); }
       }
-      if (!result) { const message = error instanceof Error ? error.message : String(error); providerRuns.push({ providerId: provider.manifest.id, seed: current.seed, depth: current.depth, status: timedOut ? "timed_out" : "failed", attempts, evidenceCount: 0, error: message }); options.logger?.warn("investigation_provider_failed", { providerId: provider.manifest.id, seedKind: current.seed.kind, attempts, error: message }); continue; }
-      spentUsd += cost; providerRuns.push({ providerId: provider.manifest.id, seed: current.seed, depth: current.depth, status: "completed", attempts, evidenceCount: result.evidence.length });
+      if (!result) { const message = error instanceof Error ? error.message : String(error); providerRuns.push({ providerId: provider.manifest.id, seed: current.seed, depth: current.depth, configuration: "configured", status: timedOut ? "timed_out" : "failed", attempts, evidenceCount: 0, error: message, query: current.seed.value }); options.logger?.warn("investigation_provider_failed", { providerId: provider.manifest.id, seedKind: current.seed.kind, attempts, error: message }); continue; }
+      spentUsd += cost; providerRuns.push({ providerId: provider.manifest.id, seed: current.seed, depth: current.depth, configuration: "configured", status: result.evidence.length ? "success" : "empty", attempts, evidenceCount: result.evidence.length, query: current.seed.value });
       for (const item of result.candidates) { const existing = candidates.get(item.candidateId); candidates.set(item.candidateId, existing ? { ...existing, identifiers: [...existing.identifiers, ...item.identifiers], evidenceIds: [...new Set([...existing.evidenceIds, ...item.evidenceIds])] } : item); }
       for (const item of result.evidence) evidence.set(item.evidenceId, { ...item, source: { ...item.source, sourceFamily: item.source.sourceFamily || provider.manifest.sourceFamily, license: item.source.license || provider.manifest.legalBasis }, lifecycle: item.lifecycle || "observed", confidenceComponents: item.confidenceComponents || { identifierMatch: item.confidence, sourceReliability: item.source.reliability, independence: 100, freshness: 100, hopDecay: current.depth * 10 } });
       for (const next of result.discoveredSeeds) if (current.depth < maxDepth && !seen.has(key(next)) && !scheduled.has(key(next))) { scheduled.add(key(next)); discoveredSeeds.push(next); queue.push({ seed: next, depth: current.depth + 1 }); }
     }
   }
-  const graph = buildInvestigationGraph({ seed, candidates: [...candidates.values()], evidence: [...evidence.values()], now: now().toISOString(), logger: options.logger });
+  const authoritativeRuns = providerRuns.filter((run) => providers.find((provider) => provider.manifest.id === run.providerId)?.manifest.capabilities?.includes("registry"));
+  const registryGap = authoritativeRuns.length && authoritativeRuns.every((run) => run.status !== "success")
+    ? [`Authoritative registry coverage is unavailable (${authoritativeRuns.map((run) => `${run.providerId}: ${run.status}`).join(", ")}).`]
+    : [];
+  const graph = buildInvestigationGraph({ seed, candidates: [...candidates.values()], evidence: [...evidence.values()], coverageGaps: registryGap, now: now().toISOString(), logger: options.logger });
   options.logger?.info("live_investigation_completed", { seedKind: seed.kind, providerCalls: calls, evidence: evidence.size, discoveredSeeds: discoveredSeeds.length, decision: graph.decision.outcome });
   return { graph, providerRuns, discoveredSeeds, spentUsd, limits: { maxDepth, maxProviderCalls, timeoutMs, budgetUsd } };
 }

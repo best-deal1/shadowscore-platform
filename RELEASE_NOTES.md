@@ -214,3 +214,8 @@ This file records customer-visible improvements in each ShadowScore release.
 - Administrator personal identity reports now show the complete identity search, result admission, identifier evaluation, rejection reason, and pivot scheduling trace. Customer reports continue to hide this diagnostic data.
 - Identity discovery now keeps canonical same-handle profile matches as discovery leads without treating the searched handle as independent identity evidence. Results that contain a separate subject identifier remain eligible for evidence admission.
 - Numeric-free email stems now remain discovery-only identifiers. Repeated stem mentions can drive one bounded follow-up, but evidence admission requires a separate subject-linking identifier.
+
+# 2026-08-30
+
+- Business investigations now query the U.S. SEC EDGAR company index and submissions service through the live provider capability runtime. Reports preserve registry provenance, relationship freshness, explicit evidence gaps, and honest unavailable, timed out, failed, empty, and success states.
+- Customer reports now redact exact provider query and raw normalization traces throughout graph evidence. Decision contradictions use only current, eligible evidence, and SEC business locations are identified as business addresses.
