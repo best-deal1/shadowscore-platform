@@ -12,6 +12,8 @@ export type SourceReference = {
   /** Sources in one family are one corroborating channel, even through mirrors. */
   sourceFamily?: string;
   license?: "public" | "open_data" | "licensed" | "submitted";
+  query?: string;
+  normalization?: { raw: string; normalized: string; method: string };
 };
 
 export type EntityIdentifier = {
@@ -65,7 +67,7 @@ export type EvidenceEdge = {
   contradictionIds: string[];
   source: SourceReference;
   evidenceId: string;
-  freshness: "current" | "aging" | "stale";
+  freshness: "current" | "stale" | "expired";
   lifecycle: "lead" | "observed" | "corroborated" | "verified";
   derivedFromEvidenceIds: string[];
   confidenceComponents?: EvidenceAssertion["confidenceComponents"];
@@ -90,6 +92,9 @@ export type InvestigationDecision = {
   verifiedEvidenceCount: number;
   independentSourceFamilyCount: number;
   coverageGaps: string[];
+  /** Every reason and action cites graph evidence or a named coverage gap. */
+  reasons: Array<{ text: string; evidenceIds: string[]; coverageGap?: string }>;
+  recommendations: Array<{ text: string; evidenceIds: string[]; coverageGap?: string }>;
 };
 
 export type InvestigationGraph = {
@@ -107,6 +112,7 @@ export type InvestigationEngineInput = {
   seed: { kind: InvestigationInputKind; value: string };
   candidates: EntityCandidate[];
   evidence: EvidenceAssertion[];
+  coverageGaps?: string[];
   now?: string;
   logger?: Pick<Console, "info" | "warn">;
 };

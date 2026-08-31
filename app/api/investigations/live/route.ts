@@ -1,6 +1,6 @@
 import { getWorkspaceAccessToken } from "@/lib/workspace/actor.server";
 import { resolveWorkspaceActor, WorkspaceAccessError } from "@/lib/workspace/actor";
-import { investigateLive } from "@/lib/investigationCollection";
+import { investigateLive, presentLiveInvestigation } from "@/lib/investigationCollection";
 import type { InvestigationInputKind } from "@/lib/investigationEngine/types";
 import { supabaseFetch } from "@/lib/supabase";
 
@@ -15,7 +15,7 @@ export async function POST(request: Request) {
       return Response.json({ error: "A valid investigation seed type and value are required." }, { status: 422 });
     }
     const investigation = await investigateLive({ kind: body.kind as InvestigationInputKind, value: body.value }, { logger: console });
-    return Response.json({ investigation }, { status: 200 });
+    return Response.json({ investigation: presentLiveInvestigation(investigation) }, { status: 200 });
   } catch (error) {
     if (error instanceof WorkspaceAccessError) return Response.json({ error: "Authentication is required." }, { status: 401 });
     console.error("Live investigation failed.", { error });

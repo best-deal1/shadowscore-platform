@@ -30,5 +30,17 @@ export type InvestigationCollectionOptions = {
   now?: () => Date;
   logger?: Pick<Console, "info" | "warn" | "error">;
 };
-export type ProviderRun = { providerId: string; seed: CollectionSeed; depth: number; status: "completed" | "failed" | "timed_out" | "PROVIDER_UNAVAILABLE" | "budget_blocked"; attempts: number; evidenceCount: number; error?: string };
+export type ProviderRun = {
+  providerId: string;
+  seed: CollectionSeed;
+  depth: number;
+  configuration: "configured" | "unavailable";
+  status: "success" | "empty" | "failed" | "timed_out" | "unavailable" | "budget_blocked";
+  attempts: number;
+  evidenceCount: number;
+  error?: string;
+  /** Exact request reference is retained for administrator diagnostics. */
+  query?: string;
+};
 export type LiveInvestigation = { graph: InvestigationGraph; providerRuns: ProviderRun[]; discoveredSeeds: CollectionSeed[]; spentUsd: number; limits: { maxDepth: number; maxProviderCalls: number; timeoutMs: number; budgetUsd: number } };
+export type LiveInvestigationAudience = "customer" | "administrator";

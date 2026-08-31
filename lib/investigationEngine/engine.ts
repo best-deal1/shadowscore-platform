@@ -2,7 +2,7 @@ import type { EntityCandidate, EntityIdentifier, EvidenceAssertion, Investigatio
 
 export const INVESTIGATION_ENGINE_VERSION = "investigation-graph@1.0.0";
 const STRONG_IDENTIFIERS = new Set<InvestigationInputKind>(["email", "phone", "registration_number", "domain", "marketplace_identity", "payment_identifier", "social_profile"]);
-const CONFLICTING_RELATIONSHIPS = new Set(["address", "registered_address", "owner", "director", "company_age", "domain_owner", "seller_name"]);
+const CONFLICTING_RELATIONSHIPS = new Set(["address", "registered_address", "owner", "director", "company_age", "domain_owner", "official_website", "seller_name"]);
 
 function normalize(identifier: EntityIdentifier) {
   let value = identifier.value.trim().toLowerCase();
@@ -11,10 +11,17 @@ function normalize(identifier: EntityIdentifier) {
   return `${identifier.kind}:${value}`;
 }
 
-function freshness(observedAt: string, now: Date) {
+const FRESHNESS_DAYS: Record<EvidenceAssertion["evidenceType"], { stale: number; expired: number }> = {
+  registry: { stale: 365, expired: 730 }, website: { stale: 30, expired: 90 }, marketplace: { stale: 30, expired: 90 },
+  contact: { stale: 180, expired: 365 }, complaint: { stale: 365, expired: 1095 }, ownership: { stale: 180, expired: 365 }, historical: { stale: 365, expired: 1825 }, other: { stale: 365, expired: 730 },
+};
+
+function freshness(item: EvidenceAssertion, now: Date) {
+  const observedAt = item.source.observedAt;
   const age = now.getTime() - new Date(observedAt).getTime();
-  if (age > 730 * 86_400_000) return "stale" as const;
-  if (age > 365 * 86_400_000) return "aging" as const;
+  const policy = FRESHNESS_DAYS[item.evidenceType];
+  if (age > policy.expired * 86_400_000) return "expired" as const;
+  if (age > policy.stale * 86_400_000) return "stale" as const;
   return "current" as const;
 }
 
@@ -45,13 +52,14 @@ function validate(input: InvestigationEngineInput) {
 function family(item: EvidenceAssertion) { return item.source.sourceFamily || item.source.sourceId; }
 function isSubjectEvidence(item: EvidenceAssertion) { return item.lifecycle === "corroborated" || item.lifecycle === "verified"; }
 
-function decisionEvidence(input: InvestigationEngineInput, entityByCandidate: Map<string, ResolvedEntity>) {
+function decisionEvidence(input: InvestigationEngineInput, entityByCandidate: Map<string, ResolvedEntity>, now: Date) {
   const seedKey = normalize({ kind: input.seed.kind, value: input.seed.value });
   const seedValue = input.seed.value.trim().toLowerCase();
   const subjectIds = new Set(input.candidates.filter((candidate) => candidate.identifiers.some((identifier) => normalize(identifier) === seedKey) || candidate.label.trim().toLowerCase() === seedValue).map((candidate) => entityByCandidate.get(candidate.candidateId)?.entityId).filter(Boolean));
   if (!subjectIds.size) return [];
   return input.evidence.filter((item) => {
-    if (!isSubjectEvidence(item)) return false;
+    if (!isSubjectEvidence(item) || freshness(item, now) === "expired") return false;
+    if (freshness(item, now) === "stale" && ["registry", "ownership"].includes(item.evidenceType)) return false;
     const from = entityByCandidate.get(item.subjectCandidateId)?.entityId;
     const to = item.objectCandidateId ? entityByCandidate.get(item.objectCandidateId)?.entityId : undefined;
     return Boolean((from && subjectIds.has(from)) || (to && subjectIds.has(to)));
@@ -131,14 +139,14 @@ export function buildInvestigationGraph(input: InvestigationEngineInput): Invest
   const evidence = input.evidence.map((item) => {
     const from = entityByCandidate.get(item.subjectCandidateId)!;
     const sourceAdjusted = Math.round((item.confidence * 0.7) + (item.source.reliability * 0.3));
-    const age = freshness(item.source.observedAt, now);
-    const adjusted = Math.max(0, sourceAdjusted - (age === "stale" ? 20 : age === "aging" ? 8 : 0));
+    const age = freshness(item, now);
+    const adjusted = Math.max(0, sourceAdjusted - (age === "expired" ? 100 : age === "stale" ? 20 : 0));
     const contradictionIds = contradictions.filter((entry) => entry.evidenceIds.includes(item.evidenceId)).map((entry) => entry.contradictionId);
     return { edgeId: `edge:${item.evidenceId}`, fromEntityId: from.entityId, toEntityId: item.objectCandidateId ? entityByCandidate.get(item.objectCandidateId)?.entityId : undefined, relationship: item.relationship, value: item.value, confidence: adjusted, status: status(adjusted, contradictionIds.length > 0), contradictionIds, source: item.source, evidenceId: item.evidenceId, freshness: age, lifecycle: item.lifecycle || "lead", derivedFromEvidenceIds: item.derivedFromEvidenceIds || [], confidenceComponents: item.confidenceComponents, discovery: item.discovery };
   });
   const marketplaceEntities = entities.filter((entity) => entity.kind === "marketplace_account");
   const marketplaceEvidence = evidence.filter((item) => input.evidence.find((source) => source.evidenceId === item.evidenceId)?.evidenceType === "marketplace" || marketplaceEntities.some((entity) => entity.entityId === item.fromEntityId || entity.entityId === item.toEntityId));
-  const verifiedEvidence = decisionEvidence(input, entityByCandidate);
+  const verifiedEvidence = decisionEvidence(input, entityByCandidate, now);
   const families = independentFamilies(verifiedEvidence, input.evidence);
   const decisionEvidenceIds = new Set(verifiedEvidence.map((item) => item.evidenceId));
   const decisionContradictions = contradictions.filter((item) => item.evidenceIds.some((id) => decisionEvidenceIds.has(id)));
@@ -146,14 +154,25 @@ export function buildInvestigationGraph(input: InvestigationEngineInput): Invest
   const high = decisionContradictions.some((item) => item.severity === "high");
   const verifiedEdges = evidence.filter((edge) => verifiedEvidence.some((item) => item.evidenceId === edge.evidenceId));
   const average = verifiedEdges.length ? Math.round(verifiedEdges.reduce((sum, item) => sum + item.confidence, 0) / verifiedEdges.length) : 0;
-  const coverageGaps = verifiedEvidence.length === 0 ? ["No corroborated or verified subject evidence was collected."] : families.size < 2 ? ["Verified subject evidence needs support from another independent source family."] : [];
+  const expiredCritical = input.evidence.filter((item) => isSubjectEvidence(item) && ["registry", "ownership"].includes(item.evidenceType) && freshness(item, now) !== "current");
+  const coverageGaps = [
+    ...(verifiedEvidence.length === 0 ? ["No current corroborated or verified subject evidence was collected."] : families.size < 2 ? ["Verified subject evidence needs support from another independent source family."] : []),
+    ...(expiredCritical.length ? [`Current registry or ownership coverage is missing. Refresh evidence: ${expiredCritical.map((item) => item.evidenceId).join(", ")}.`] : []),
+    ...(input.coverageGaps || []),
+  ];
   const decisionBase = verifiedEvidence.length === 0
     ? { outcome: "investigate" as const, confidence: 0, summary: "The investigation has insufficient verified subject evidence for a transaction decision.", nextActions: ["Collect corroborated subject evidence from an independent source."] }
     : critical ? { outcome: "stop" as const, confidence: average, summary: "Critical verified contradictions require the transaction to stop pending resolution.", nextActions: ["Resolve the critical evidence conflicts with primary-source records."] }
     : high ? { outcome: "investigate" as const, confidence: average, summary: "Material verified identity conflicts require further investigation.", nextActions: ["Verify reused identifiers and ownership against independent primary sources."] }
     : average >= 75 && families.size >= 2 ? { outcome: "proceed" as const, confidence: average, summary: "Independent evidence supports the resolved entity and its relationships.", nextActions: ["Retain the evidence trail with the customer decision."] }
     : { outcome: "proceed_with_conditions" as const, confidence: average, summary: "Verified evidence is limited to one source family or has incomplete coverage.", nextActions: ["Collect another independent source for unresolved relationships."] };
-  const decision = { ...decisionBase, verifiedEvidenceCount: verifiedEvidence.length, independentSourceFamilyCount: families.size, coverageGaps };
+  const citedEvidenceIds = verifiedEvidence.map((item) => item.evidenceId);
+  const primaryGap = coverageGaps[0];
+  const decision = {
+    ...decisionBase, verifiedEvidenceCount: verifiedEvidence.length, independentSourceFamilyCount: families.size, coverageGaps,
+    reasons: [{ text: decisionBase.summary, evidenceIds: citedEvidenceIds, ...(primaryGap ? { coverageGap: primaryGap } : {}) }],
+    recommendations: decisionBase.nextActions.map((text) => ({ text, evidenceIds: citedEvidenceIds, ...(primaryGap ? { coverageGap: primaryGap } : {}) })),
+  };
   input.logger?.info("investigation_graph_built", { seedKind: input.seed.kind, entities: entities.length, marketplaceEntities: marketplaceEntities.length, contradictions: contradictions.length, decision: decision.outcome });
   if (contradictions.length) input.logger?.warn("investigation_graph_contradictions", { count: contradictions.length, ids: contradictions.map((item) => item.contradictionId) });
   return { engineVersion: INVESTIGATION_ENGINE_VERSION, generatedAt: now.toISOString(), seed: input.seed, entities, evidence, contradictions, marketplace: { entityIds: marketplaceEntities.map((item) => item.entityId), evidenceIds: marketplaceEvidence.map((item) => item.evidenceId), connectedEntityIds: [...new Set(marketplaceEvidence.flatMap((item) => [item.fromEntityId, item.toEntityId]).filter((id): id is string => Boolean(id) && !marketplaceEntities.some((entity) => entity.entityId === id)))] }, decision };
