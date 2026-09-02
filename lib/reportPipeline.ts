@@ -32,6 +32,7 @@ import { buildInvestigationIntelligence } from "./investigationIntelligence";
 import { isolateProviderResults } from "./targetIntegrity";
 import { resolveFirstPartyEntities, resolutionTarget } from "./entityResolution/firstParty";
 import { identityObjective, normalizeIntakeIdentitySignals } from "./personalIdentity";
+import { classifyEmailInvestigation } from "./emailDomains";
 
 export const REPORT_ENGINE_VERSION = "report-pipeline-v22";
 
@@ -59,13 +60,16 @@ export async function buildReadyReport(input: {
 
   const submittedTarget = intake.target.trim();
   const submittedClassification = classifyTarget(submittedTarget);
+  const emailRouting = submittedClassification.targetType === "Email" ? classifyEmailInvestigation(submittedTarget) : undefined;
+  const corporateEmailInvestigation = emailRouting?.emailClassification === "CORPORATE_DOMAIN";
   const resolvableTarget = ["Email", "Website"].includes(submittedClassification.targetType);
   const resolution = resolvableTarget ? resolutionTarget(submittedTarget) : undefined;
-  const emailInvestigation = submittedClassification.targetType === "Email" && intake.scanMode !== "personal";
+  const emailInvestigation = submittedClassification.targetType === "Email" && (intake.scanMode !== "personal" || corporateEmailInvestigation);
+  const personalIdentityInvestigation = intake.scanMode === "personal" && !corporateEmailInvestigation;
   const providerTarget = intake.scanMode === "website" && resolution && !emailInvestigation ? resolution.domain : submittedTarget;
   const canonicalTarget = submittedTarget;
-  const personalSignals = intake.scanMode === "personal" ? normalizeIntakeIdentitySignals(intake.identitySignals, { target: intake.target, email: intake.email }) : undefined;
-  const investigationEmail = emailInvestigation ? submittedTarget : intake.scanMode === "personal" ? personalSignals?.emails[0] : intake.scanMode === "website" ? undefined : intake.email;
+  const personalSignals = personalIdentityInvestigation ? normalizeIntakeIdentitySignals(intake.identitySignals, { target: intake.target, email: intake.email }) : undefined;
+  const investigationEmail = emailInvestigation ? submittedTarget : personalIdentityInvestigation ? personalSignals?.emails[0] : intake.scanMode === "website" ? undefined : intake.email;
   const providerContext: ProviderExecutionContext = {
     intakeId: intake.intakeId,
     scanMode: intake.scanMode,
@@ -86,7 +90,7 @@ export async function buildReadyReport(input: {
   const classification = submittedClassification;
   executionFlow.push(`✓ Target classified as ${classification.targetType}`);
   const classifiedPlan = planFromClassification(classification);
-  const executionPlan = intake.scanMode === "personal" ? {
+  const executionPlan = personalIdentityInvestigation ? {
     ...classifiedPlan,
     executionPlan: classifiedPlan.executionPlan.filter((step) => ["email-intelligence", "external-identity"].includes(step.engineId)),
     skippedEngines: [...classifiedPlan.skippedEngines, ...classifiedPlan.executionPlan.filter((step) => !["email-intelligence", "external-identity"].includes(step.engineId)).map((step) => ({ engineId: step.engineId, label: step.label, reason: "Personal identity scope excludes organization and infrastructure checks." }))],
@@ -118,14 +122,14 @@ export async function buildReadyReport(input: {
   const publicIdentityCandidates = (externalIdentityMetadata?.externalIdentityCandidates || []) as ExternalIdentityCandidate[];
   const externalIdentityResult = providerResults.find((result) => result.providerId === "external-identity");
   const searches = (externalIdentityMetadata?.identityDiscoverySearches || []) as import("./providers/externalIdentityProvider").IdentityDiscoverySearchDiagnostic[];
-  const discoveryDiagnostics = intake.scanMode === "personal" ? {
+  const discoveryDiagnostics = personalIdentityInvestigation ? {
     searches,
     scheduling: (externalIdentityMetadata?.identitySchedulingDiagnostics || []) as import("./providers/externalIdentityProvider").IdentitySchedulingDiagnostic[],
     budgetExhaustionReason: String((externalIdentityMetadata?.identityDiscoveryMetrics as { budgetExhaustionReason?: string } | undefined)?.budgetExhaustionReason || (externalIdentityResult?.status !== "completed" ? "provider_failed" : searches.length === 0 ? "no_search_executed" : publicIdentityCandidates.length === 0 ? "no_eligible_candidates" : "closure_reached")),
     providerStatus: externalIdentityResult?.status || "not_scheduled",
     providerFailure: externalIdentityResult?.errors[0],
   } : undefined;
-  if (intake.scanMode === "personal") console.info("personal_identity_discovery_execution", { investigationId: intake.intakeId, submittedSignalCounts: Object.fromEntries(Object.entries(personalSignals || {}).map(([key, values]) => [key, values.length])), providerStatus: discoveryDiagnostics?.providerStatus, searchCount: searches.length, candidateCount: publicIdentityCandidates.length, emptyResultReason: discoveryDiagnostics?.budgetExhaustionReason, providerFailure: discoveryDiagnostics?.providerFailure });
+  if (personalIdentityInvestigation) console.info("personal_identity_discovery_execution", { investigationId: intake.intakeId, submittedSignalCounts: Object.fromEntries(Object.entries(personalSignals || {}).map(([key, values]) => [key, values.length])), providerStatus: discoveryDiagnostics?.providerStatus, searchCount: searches.length, candidateCount: publicIdentityCandidates.length, emptyResultReason: discoveryDiagnostics?.budgetExhaustionReason, providerFailure: discoveryDiagnostics?.providerFailure });
   const providerCategories = Object.fromEntries(providerManager.listProviders().map((provider) => [provider.id, provider.category]));
   const canonicalEvidenceSummary = summarizeEvidence(evidenceItems, providerCategories);
   executionRecords
@@ -201,7 +205,7 @@ export async function buildReadyReport(input: {
   });
   executionFlow.push("✓ Decision generated");
   const scorecard = buildShadowScorecard({ evidenceItems: providerEvidenceItems, websiteEvidence: websiteEvidenceItems });
-  const investigationTimeline = intake.scanMode === "personal" ? [
+  const investigationTimeline = personalIdentityInvestigation ? [
     { id: "submitted-signals", label: "Submitted identity signals", status: "completed" as const, source: "Personal identity intake", observedAt: now },
     { id: "public-discovery", label: "Public identity discovery", status: "completed" as const, source: "Identity discovery", observedAt: now },
     { id: "identity-resolution", label: "Identity matching evidence", status: "completed" as const, source: "Entity resolver", observedAt: now },
@@ -237,7 +241,7 @@ export async function buildReadyReport(input: {
     intakeId: intake.intakeId,
     paymentIntentId: paymentIntent.id,
     userId: intake.userId,
-    title: `${intake.scanMode === "personal" ? "Personal Identity" : emailInvestigation ? "Email" : intake.scanMode === "website" ? "Website" : "Trust"} Intelligence Report`,
+    title: `${personalIdentityInvestigation ? "Personal Identity" : emailInvestigation ? "Email" : intake.scanMode === "website" ? "Website" : "Trust"} Intelligence Report`,
     entity: canonicalTarget,
     platform: intake.platform,
     scanMode: intake.scanMode,
@@ -256,28 +260,28 @@ export async function buildReadyReport(input: {
       ...canonicalEvidenceSummary,
     },
     reportSummary: {
-      message: intake.scanMode === "personal" ? "Report generated from the submitted identity signals and source-backed public evidence." : "Report generated from paid intake, provider evidence and Insight Engine business-trust analysis.",
+      message: personalIdentityInvestigation ? "Report generated from the submitted identity signals and source-backed public evidence." : "Report generated from paid intake, provider evidence and Insight Engine business-trust analysis.",
       objective: personalSignals ? identityObjective(personalSignals) : undefined,
       identitySignals: personalSignals,
-      primaryRiskDomain: intake.scanMode === "personal" ? undefined : riskEnginePreview.primaryRiskDomain,
-      findingCount: intake.scanMode === "personal" ? undefined : riskEnginePreview.findings.length,
-      insights: intake.scanMode === "personal" ? undefined : insightOutput.insights,
+      primaryRiskDomain: personalIdentityInvestigation ? undefined : riskEnginePreview.primaryRiskDomain,
+      findingCount: personalIdentityInvestigation ? undefined : riskEnginePreview.findings.length,
+      insights: personalIdentityInvestigation ? undefined : insightOutput.insights,
       insightEngineVersion: insightOutput.engineVersion,
-      decision: intake.scanMode === "personal" ? undefined : decision,
-      reasoning: intake.scanMode === "personal" ? undefined : reasoning,
+      decision: personalIdentityInvestigation ? undefined : decision,
+      reasoning: personalIdentityInvestigation ? undefined : reasoning,
       correlationSummary,
       identityProfile,
-      businessNarrative: intake.scanMode === "personal" ? undefined : businessNarrative,
-      businessIdentityResolution: intake.scanMode === "personal" ? undefined : businessIdentityResolution,
-      businessIdentityIntelligence: intake.scanMode === "personal" ? undefined : businessIdentityIntelligence,
-      businessIntelligence: intake.scanMode === "personal" ? undefined : businessIntelligence,
-      investigationIntelligence: intake.scanMode === "personal" ? undefined : investigationIntelligence,
+      businessNarrative: personalIdentityInvestigation ? undefined : businessNarrative,
+      businessIdentityResolution: personalIdentityInvestigation ? undefined : businessIdentityResolution,
+      businessIdentityIntelligence: personalIdentityInvestigation ? undefined : businessIdentityIntelligence,
+      businessIntelligence: personalIdentityInvestigation ? undefined : businessIntelligence,
+      investigationIntelligence: personalIdentityInvestigation ? undefined : investigationIntelligence,
       websiteIntelligence,
       canonicalWebsiteReport,
       websiteChangeReport: websiteMonitoring?.snapshot.changeReport,
       websiteAlertSummary: websiteMonitoring ? { count: websiteMonitoring.alerts.length, severities: websiteMonitoring.alerts.reduce<Record<string, number>>((summary, alert) => ({ ...summary, [alert.severity]: (summary[alert.severity] || 0) + 1 }), {}) } : undefined,
       websiteChangeTimeline: websiteMonitoring?.history.map((snapshot) => ({ scanId: snapshot.scanId, scannedAt: snapshot.scannedAt, summary: snapshot.changeReport.summary, changeCount: snapshot.changeReport.changes.length, alertIds: websiteMonitoring.alerts.filter((alert) => alert.currentScanId === snapshot.scanId).map((alert) => alert.id) })),
-      scorecard: intake.scanMode === "personal" ? undefined : scorecard,
+      scorecard: personalIdentityInvestigation ? undefined : scorecard,
       investigationTimeline,
       execution: {
         completedInSeconds: Number(((Date.now() - startedAt) / 1000).toFixed(2)),
@@ -286,7 +290,7 @@ export async function buildReadyReport(input: {
         decisionConfidence: decisionIntelligence.confidenceLevel,
       },
       executionFlow,
-      knowledgeGraph: intake.scanMode === "personal" ? undefined : knowledgeGraph.snapshot(),
+      knowledgeGraph: personalIdentityInvestigation ? undefined : knowledgeGraph.snapshot(),
       technicalDetails: {
         executed: executionRecords.filter((record) => record.status === "executed"),
         skipped: executionRecords.filter((record) => record.status === "skipped"),
@@ -298,8 +302,9 @@ export async function buildReadyReport(input: {
         .map((provider) => ({ label: provider.providerId.replace(/[-_]/g, " "), completedAt: provider.completedAt })),
       targetResolution,
       resolvedEntities,
-      investigationType: emailInvestigation ? "EMAIL" : intake.scanMode === "personal" ? "PERSONAL_IDENTITY" : intake.scanMode.toUpperCase(),
-      mailboxProviderDomain: emailInvestigation && resolution ? resolution.domain : undefined,
+      investigationType: emailInvestigation ? "EMAIL" : personalIdentityInvestigation ? "PERSONAL_IDENTITY" : intake.scanMode.toUpperCase(),
+      mailboxProviderDomain: emailRouting?.domainInvestigated,
+      investigationRouting: emailRouting,
       publicIdentityCandidates,
       discoveryDiagnostics,
     },

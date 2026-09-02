@@ -229,3 +229,7 @@ This file records customer-visible improvements in each ShadowScore release.
 - Business email investigations now follow the submitted email to its company domain, legal-entity candidates, registration identifiers, and officer or role candidates. Every relationship retains its source and discovery lifecycle.
 - Public search results remain discovery leads. First-party domain observations count as one source family, and reports state when authoritative Israeli registry coverage is unavailable instead of applying SEC coverage to an Israeli private entity.
 - DNS, TLS, HTTP, and security-header observations no longer appear as independent legal-entity corroboration or as business-registration evidence.
+# Corporate email routing correction
+
+- Corporate and custom-domain email submissions now investigate the domain and associated business or legal entity first. Mailbox local-parts remain unverified until independent evidence connects a person to that organization.
+- Reports and live investigation responses now include the email classification, primary entity, routing reason, investigated domain, and local-part expansion policy.

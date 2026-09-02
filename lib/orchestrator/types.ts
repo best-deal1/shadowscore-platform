@@ -9,6 +9,7 @@ export type OrchestratorEngineId =
   | "ssl"
   | "headers"
   | "business-profile"
+  | "authoritative-company"
   | "marketplace"
   | "reputation"
   | "graph"
@@ -43,6 +44,7 @@ export interface ExecutionPlan {
   skippedEngines: SkippedEngine[];
   reasoning: string[];
   estimatedCoverage: CoverageLevel;
+  emailRouting?: import("../emailDomains").EmailInvestigationRouting;
 }
 
 export type TargetClassificationInput = TargetClassificationResult;

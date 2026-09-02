@@ -6,7 +6,7 @@ import type {
   SkippedEngine,
   TargetClassificationInput,
 } from "./types";
-import { isPublicMailboxDomain } from "../emailDomains";
+import { classifyEmailInvestigation, isPublicMailboxDomain } from "../emailDomains";
 
 const ENGINE_DEFINITIONS: Record<OrchestratorEngineId, EngineDefinition> = {
   dns: { engineId: "dns", label: "DNS", supportedTargets: ["Website", "Business", "Company", "Brand", "Business Profile", "Evidence Package"] },
@@ -14,6 +14,7 @@ const ENGINE_DEFINITIONS: Record<OrchestratorEngineId, EngineDefinition> = {
   ssl: { engineId: "ssl", label: "SSL", supportedTargets: ["Website", "Business", "Company", "Brand", "Business Profile", "Evidence Package"] },
   headers: { engineId: "headers", label: "Headers", supportedTargets: ["Website", "Evidence Package"] },
   "business-profile": { engineId: "business-profile", label: "Business Profile", supportedTargets: ["Website", "Business", "Marketplace Seller", "Marketplace Store", "Company", "Brand", "Business Profile", "Evidence Package"] },
+  "authoritative-company": { engineId: "authoritative-company", label: "Authoritative Company Records", supportedTargets: ["Email", "Website", "Business", "Company", "Brand", "Business Profile"] },
   marketplace: { engineId: "marketplace", label: "Marketplace Engine", supportedTargets: ["Marketplace Seller", "Marketplace Store"] },
   reputation: { engineId: "reputation", label: "Reputation", supportedTargets: ["Marketplace Seller", "Marketplace Store", "Business", "Company", "Brand", "Business Profile"] },
   graph: { engineId: "graph", label: "Graph", supportedTargets: ["Marketplace Seller", "Marketplace Store", "Business", "Company", "Brand", "Business Profile", "Evidence Package"] },
@@ -48,7 +49,7 @@ function enginesFor(classification: TargetClassificationInput): OrchestratorEngi
   const domain = emailDomain(classification.normalizedTarget || "");
   return domain && isPublicMailboxDomain(domain)
     ? ["email-intelligence", "external-identity"]
-    : ["email-intelligence", "external-identity", "domain"];
+    : ["email-intelligence", "domain", "whois", "ssl", "business-profile", "authoritative-company"];
 }
 
 function planIdFor(classification: TargetClassificationInput, engineIds: OrchestratorEngineId[]): string {
@@ -70,6 +71,7 @@ function reasonForEngine(engineId: OrchestratorEngineId, classification: TargetC
     case "ssl": return "Certificate metadata helps validate the public web endpoint.";
     case "headers": return "HTTP headers provide observable website configuration signals.";
     case "business-profile": return "Business profile evidence normalizes organization-level identity signals.";
+    case "authoritative-company": return "Authoritative company records are checked for legal entity and registration evidence when jurisdictional providers permit.";
     case "marketplace": return `Marketplace-specific checks apply because the target was classified as ${classification.targetType}.`;
     case "reputation": return "Reputation signals are useful for public-facing commercial targets.";
     case "graph": return "Graph analysis links entities, identifiers, and evidence relationships.";
@@ -124,6 +126,7 @@ export function createExecutionPlan(classification: TargetClassificationInput): 
     skippedEngines,
     reasoning,
     estimatedCoverage: coverageFor(executionPlan.length),
+    emailRouting: classification.targetType === "Email" ? classifyEmailInvestigation(classification.normalizedTarget) : undefined,
   };
 }
 

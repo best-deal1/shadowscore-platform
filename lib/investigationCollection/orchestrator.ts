@@ -2,7 +2,7 @@ import { buildInvestigationGraph } from "../investigationEngine";
 import type { EntityCandidate, EvidenceAssertion } from "../investigationEngine/types";
 import { GoogleDnsInvestigationProvider } from "./dnsProvider";
 import type { CollectionSeed, InvestigationCollectionOptions, InvestigationProvider, LiveInvestigation, LiveInvestigationAudience, ProviderRun } from "./types";
-import { isPublicMailboxDomain } from "../emailDomains";
+import { classifyEmailInvestigation, isPublicMailboxDomain } from "../emailDomains";
 import { BravePublicWebInvestigationProvider } from "./publicWebProvider";
 import { PROVIDER_CAPABILITY_REGISTRY } from "./capabilityRegistry";
 import { SecEdgarCompanyRegistryProvider } from "./secEdgarProvider";
@@ -42,6 +42,7 @@ export async function investigateLive(seed: CollectionSeed, options: Investigati
   if (!seed.value.trim()) throw new Error("Investigation seed value is required.");
   const providers = options.providers || createLiveInvestigationProviders();
   const submittedDomain = seed.kind === "email" ? seed.value.split("@").at(-1)?.toLowerCase() : seed.kind === "domain" ? seed.value.toLowerCase().replace(/^https?:\/\//, "").split("/")[0] : "";
+  const investigationRouting = seed.kind === "email" ? classifyEmailInvestigation(seed.value) : undefined;
   const israeliBusinessTarget = Boolean(submittedDomain?.endsWith(".il")) || (seed.kind === "registration_number" && /^\d{9}$/.test(seed.value.trim()));
   const maxDepth = options.maxDepth ?? 2, maxProviderCalls = options.maxProviderCalls ?? 12, timeoutMs = options.timeoutMs ?? 5_000, maxRetries = options.maxRetries ?? 1, budgetUsd = options.budgetUsd ?? 0.25;
   const now = options.now || (() => new Date());
@@ -79,5 +80,5 @@ export async function investigateLive(seed: CollectionSeed, options: Investigati
     : [];
   const graph = buildInvestigationGraph({ seed, candidates: [...candidates.values()], evidence: [...evidence.values()], coverageGaps: registryGap, now: now().toISOString(), logger: options.logger });
   options.logger?.info("live_investigation_completed", { seedKind: seed.kind, providerCalls: calls, evidence: evidence.size, discoveredSeeds: discoveredSeeds.length, decision: graph.decision.outcome });
-  return { graph, providerRuns, discoveredSeeds, spentUsd, limits: { maxDepth, maxProviderCalls, timeoutMs, budgetUsd } };
+  return { graph, providerRuns, discoveredSeeds, investigationRouting, spentUsd, limits: { maxDepth, maxProviderCalls, timeoutMs, budgetUsd } };
 }

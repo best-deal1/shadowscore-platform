@@ -182,11 +182,11 @@ test("production-shaped persisted personal email report uses only identity prese
   ]);
   for (const label of ["Person Under Review", "Personal Identity Investigation", "Submitted Identity Signals", "Public Identity Candidates", "Identity Matching Evidence", "Contradictory Identifiers", "Source Provenance", "Independent source count", "Identity confidence", "Verification status", "Person-Specific Next Actions", "Unverified Candidate", "Discovery relevance", "Resolver-backed identity evidence score", "Matched signals", "Conflicting signals", "Resolver outcome", "Final ranking", "Evidence sources"]) assert.match(presentation, new RegExp(label, "i"));
   for (const forbidden of ["commercial trustworthiness", "DNS", "WHOIS", "SSL/TLS", "Hosting", "Domain registration", "Legal business records", "Company ownership", "Marketplace seller verification", "Business Under Review", "Business Identity"]) assert.doesNotMatch(presentation, new RegExp(forbidden, "i"));
-  assert.match(pipeline, /intake\.scanMode === "personal"[\s\S]*email-intelligence[\s\S]*external-identity/);
+  assert.match(pipeline, /personalIdentityInvestigation[\s\S]*email-intelligence[\s\S]*external-identity/);
   assert.match(pipeline, /Personal scan mode is authoritative/);
-  assert.match(pipeline, /businessNarrative: intake\.scanMode === "personal" \? undefined/);
-  assert.match(pipeline, /decision: intake\.scanMode === "personal" \? undefined/);
-  assert.match(pipeline, /scorecard: intake\.scanMode === "personal" \? undefined/);
+  assert.match(pipeline, /businessNarrative: personalIdentityInvestigation \? undefined/);
+  assert.match(pipeline, /decision: personalIdentityInvestigation \? undefined/);
+  assert.match(pipeline, /scorecard: personalIdentityInvestigation \? undefined/);
   assert.match(migration, /drop constraint if exists intakes_scan_mode_check/);
   assert.match(migration, /scan_mode in \('website', 'marketplace', 'evidence', 'personal'\)/);
   assert.match(migration, /validate constraint intakes_scan_mode_check/);
