@@ -42,5 +42,5 @@ export type ProviderRun = {
   /** Exact request reference is retained for administrator diagnostics. */
   query?: string;
 };
-export type LiveInvestigation = { graph: InvestigationGraph; providerRuns: ProviderRun[]; discoveredSeeds: CollectionSeed[]; spentUsd: number; limits: { maxDepth: number; maxProviderCalls: number; timeoutMs: number; budgetUsd: number } };
+export type LiveInvestigation = { graph: InvestigationGraph; providerRuns: ProviderRun[]; discoveredSeeds: CollectionSeed[]; investigationRouting?: import("../emailDomains").EmailInvestigationRouting; spentUsd: number; limits: { maxDepth: number; maxProviderCalls: number; timeoutMs: number; budgetUsd: number } };
 export type LiveInvestigationAudience = "customer" | "administrator";

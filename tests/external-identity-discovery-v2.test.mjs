@@ -468,9 +468,9 @@ test("public mailbox plan runs email intelligence and external discovery without
   assert.deepEqual(plan.executionPlan.map((step) => step.engineId), ["email-intelligence", "external-identity"]);
 });
 
-test("corporate email preserves runnable domain fallback alongside identity discovery", () => {
+test("corporate email routes to business and legal-entity providers without identity discovery", () => {
   const plan = createExecutionPlan({ targetType: "Email", normalizedTarget: "moshez@s-horowitz.com", confidence: 1, reasoning: "email", detectedPlatform: null });
-  assert.deepEqual(plan.executionPlan.map((step) => step.engineId), ["email-intelligence", "external-identity", "domain"]);
+  assert.deepEqual(plan.executionPlan.map((step) => step.engineId), ["email-intelligence", "domain", "whois", "ssl", "business-profile", "authoritative-company"]);
 });
 
 test("email intelligence is always runnable without external credentials", async () => {
@@ -1166,17 +1166,17 @@ test("production provider sends submitted and observed contact signals through t
   process.env.BRAVE_SEARCH_API_KEY = "test-key";
   globalThis.fetch = async (input) => {
     const query = new URL(String(input)).searchParams.get("q") || "";
-    return Response.json({ web: { results: query.includes("signal.person@example.com") ? [{
+    return Response.json({ web: { results: query.includes("signal.person@gmail.com") ? [{
       title: "Signal Person (@signalperson) | LinkedIn",
       url: "https://linkedin.com/in/signalperson",
-      description: "Signal Person. signal.person@example.com. Contact +1 202 555 0199.",
+      description: "Signal Person. signal.person@gmail.com. Contact +1 202 555 0199.",
     }] : [] } });
   };
   try {
-    const result = await new ExternalIdentityProvider().execute({ intakeId: "production-person", scanMode: "website", target: "signal.person@example.com", requestedTarget: "signal.person@example.com", platform: "website", fileNames: [], visibleSignalCategories: [], resolvedEntity: { entityId: "person", entityType: "person", displayName: "Signal Person", canonicalName: "Signal Person", resolutionStatus: "resolved", provenance: [], createdAt: "2026-08-24T00:00:00.000Z", updatedAt: "2026-08-24T00:00:00.000Z", resolverVersion: "test", schemaVersion: "test", metadata: { username: "signalperson", phone: "+1 202 555 0100" } } });
+    const result = await new ExternalIdentityProvider().execute({ intakeId: "production-person", scanMode: "website", target: "signal.person@gmail.com", requestedTarget: "signal.person@gmail.com", platform: "website", fileNames: [], visibleSignalCategories: [], resolvedEntity: { entityId: "person", entityType: "person", displayName: "Signal Person", canonicalName: "Signal Person", resolutionStatus: "resolved", provenance: [], createdAt: "2026-08-24T00:00:00.000Z", updatedAt: "2026-08-24T00:00:00.000Z", resolverVersion: "test", schemaVersion: "test", metadata: { username: "signalperson", phone: "+1 202 555 0100" } } });
     const candidate = result.metadata.externalIdentityCandidates[0];
     assert.equal(result.status, "completed");
-    assert.ok(candidate.observedEmails.includes("signal.person@example.com"));
+    assert.ok(candidate.observedEmails.includes("signal.person@gmail.com"));
     assert.ok(candidate.observedPhoneNumbers.includes("+1 202 555 0199"));
     assert.equal(candidate.resolutionOutcome, "MATCH");
     assert.ok(candidate.resolverMatchedSignals.some((signal) => signal.attribute === "email"));
