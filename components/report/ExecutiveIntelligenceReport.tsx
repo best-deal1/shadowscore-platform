@@ -5,6 +5,7 @@ import { useState } from "react";
 import type { ShadowScoreReport } from "../../lib/workspace";
 import { executiveBusinessImpacts, executiveDecisionReasons, executiveFindingStories, executiveRecommendation, groupExecutiveEvidence, materialEvidenceGaps, recommendedActions } from "../../lib/executiveReport";
 import PersonalIdentityReport from "./PersonalIdentityReport";
+import { executiveReportKind, reportEmailRouting } from "../../lib/reportRouting";
 
 function dateTime(value?: string) {
   if (!value) return "Not recorded";
@@ -39,7 +40,8 @@ function normalizeIdentityCandidate(candidate: NonNullable<ShadowScoreReport["re
 }
 
 function caseObjective(report: ShadowScoreReport) {
-  if (report.reportSummary?.investigationType === "EMAIL") return "Investigate the submitted email as a person or identity identifier and assess public evidence without attributing the mailbox provider's infrastructure to the subject.";
+  if (report.reportSummary?.investigationRouting?.primaryInvestigationType === "PERSON_IDENTITY") return "Investigate the submitted email as an identity identifier and assess public evidence without attributing the mailbox provider infrastructure to the subject.";
+  if (report.reportSummary?.investigationRouting?.primaryInvestigationType === "DOMAIN_BUSINESS_LEGAL_ENTITY") return "Identify the business and legal entity associated with the submitted corporate domain, then assess registration, ownership, and operating evidence.";
   const type = `${report.scanMode || ""} ${report.platform || ""}`.toLowerCase();
   if (/marketplace|seller/.test(type)) return "Investigate marketplace seller legitimacy before a commercial commitment.";
   if (/evidence|document/.test(type)) return "Assess supplied business evidence before a commercial decision.";
@@ -60,8 +62,12 @@ const investigationScope = [
 export default function ExecutiveIntelligenceReport({ report }: { report: ShadowScoreReport }) {
   const [actionStatus, setActionStatus] = useState("");
   const recommendation = executiveRecommendation(report);
-  const isEmailInvestigation = report.reportSummary?.investigationType === "EMAIL";
-  const isPersonalInvestigation = report.scanMode === "personal";
+  const routing = reportEmailRouting(report);
+  const reportKind = executiveReportKind(report);
+  const isEmailInvestigation = reportKind === "personal_identity";
+  const isPersonalInvestigation = reportKind === "personal_identity";
+  const isCorporateEmailInvestigation = reportKind === "business_domain_legal_entity";
+  const coverageGaps = report.reportSummary?.providerCoverageGaps || [];
   const personalInfrastructure = /dns|whois|ssl|tls|hosting|nameserver|mail server|infrastructure/i;
   const findingStories = executiveFindingStories(report).filter((item) => !isEmailInvestigation || !personalInfrastructure.test(`${item.title} ${item.observation} ${item.commercialRisk}`));
   const evidenceGroups = groupExecutiveEvidence(report).filter((group) => !isEmailInvestigation || !/DNS|Website|Security|Business Registration/i.test(group.category));
@@ -157,9 +163,10 @@ export default function ExecutiveIntelligenceReport({ report }: { report: Shadow
             {[
               ["Case Reference", caseReference],
               ["Investigation Date", dateTime(report.readyAt || report.createdAt)],
-              ["Business Under Review", narrative?.businessName || report.target || report.entity],
+              ["Business Under Review", narrative?.businessName || report.reportSummary?.primaryEntity || report.entity],
+              ...(isCorporateEmailInvestigation ? [["Submitted email", report.reportSummary?.submittedSeed || report.target], ["Corporate domain", routing?.domainInvestigated]] : []),
               ["Investigation Type", investigationType],
-              ["Investigation Status", "Completed"],
+              ["Investigation Status", coverageGaps.length ? "Coverage gap" : "Completed"],
               ["Evidence Sources Reviewed", sourceCount],
               ["Search results reviewed", lifecycleCounts?.observations ?? 0],
               ["Potential identity matches", Math.max(lifecycleCounts?.discoveryCandidates ?? 0, publicIdentityCandidates.length)],
@@ -174,6 +181,8 @@ export default function ExecutiveIntelligenceReport({ report }: { report: Shadow
             <BriefPanel title="Case Objective"><p>{caseObjective(report)}</p></BriefPanel>
             <BriefPanel title="Investigation Methodology"><p>Conclusions are supported by the available evidence and derived through correlation across the sources reviewed. Findings distinguish verified records, conflicting information, and unresolved evidence gaps.</p></BriefPanel>
           </div>
+
+          {coverageGaps.length > 0 && <div role="status" className="mt-6 border border-amber-300 bg-amber-50 p-5 text-amber-950"><h3 className="font-semibold">Registry coverage gap</h3><ul className="mt-2 space-y-2 text-sm">{coverageGaps.map((gap) => <li key={`${gap.providerId}-${gap.jurisdiction || "global"}`}><strong>{gap.code}</strong>: {gap.message}</li>)}</ul></div>}
 
           <div className="mt-6 border border-slate-300 bg-white p-5 sm:p-6"><h3 className="text-sm font-bold uppercase tracking-[0.16em] text-slate-500">Investigation Scope</h3><ul className="mt-4 grid gap-x-8 gap-y-3 text-sm sm:grid-cols-2">{investigationScope.map((item) => <li key={item} className="flex items-center gap-3 border-b border-slate-100 pb-2"><span aria-hidden="true" className="text-cyan-800">●</span><span className="font-medium text-slate-950">{item}</span></li>)}</ul></div>
         </section>

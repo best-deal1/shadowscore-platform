@@ -10,6 +10,7 @@ import InvestigationAgent from "./InvestigationAgent";
 import { canViewFullReport } from "../../../lib/reportAccess";
 import { PAYPAL_BUSINESS_EMAIL } from "../../../lib/config";
 import { REPORT_PRODUCT, type PaymentIntent, type ShadowScoreReport } from "../../../lib/workspace";
+import { executiveReportKind } from "../../../lib/reportRouting";
 
 type Mode = "unlock" | "processing" | "report";
 
@@ -102,7 +103,7 @@ export default function ReportFlow({ reportId, mode }: { reportId: string; mode:
   const failedPayment = report?.paymentStatus === "failed";
   const failedGeneration = paid && report?.reportStatus === "failed";
   const sourceCount = report?.reportSummary?.sourceProvenance?.length;
-  const personalIdentity = report?.reportSummary?.investigationType === "EMAIL" || Boolean(report?.target?.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/));
+  const personalIdentity = report ? executiveReportKind(report) === "personal_identity" : false;
   const investigationLabel = personalIdentity ? "Personal Identity Investigation" : REPORT_PRODUCT.name;
   const subjectLabel = personalIdentity ? "Person or identifier" : "Business";
 

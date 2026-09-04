@@ -233,3 +233,7 @@ This file records customer-visible improvements in each ShadowScore release.
 
 - Corporate and custom-domain email submissions now investigate the domain and associated business or legal entity first. Mailbox local-parts remain unverified until independent evidence connects a person to that organization.
 - Reports and live investigation responses now include the email classification, primary entity, routing reason, investigated domain, and local-part expansion policy.
+
+## 2026-09-03
+- Corporate email investigations now retain the submitted mailbox and routing decision through paid and administrator report storage.
+- Executive Reports route corporate mailboxes to business, domain, and legal-entity sections. Reports also show registry provider coverage gaps instead of presenting missing authority as a completed result.

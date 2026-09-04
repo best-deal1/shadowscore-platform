@@ -444,7 +444,7 @@ test("production email candidate remains visible without creating a false identi
     assert.match(reportSource, /candidate\.evidenceReference/);
     assert.match(reportSource, /candidate\.status/);
     const pipelineSource = await readFile(new URL("../lib/reportPipeline.ts", import.meta.url), "utf8");
-    assert.match(pipelineSource, /investigationType: emailInvestigation \? "EMAIL"/);
+    assert.match(pipelineSource, /emailInvestigation \? "PERSONAL_IDENTITY"/);
     assert.match(pipelineSource, /intake\.scanMode === "website" && !emailInvestigation/);
   } finally {
     globalThis.fetch = originalFetch;
