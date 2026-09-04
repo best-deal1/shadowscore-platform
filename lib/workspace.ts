@@ -23,6 +23,7 @@ import { supabaseFetch, isSupabaseConfigured, requirePersistentSessionInProducti
 import { cloneWorkspace, getMutableMemoryWorkspace } from "./workspaceStore";
 import { BETA_PRODUCT } from "./pricing";
 import { normalizeIntakeIdentitySignals, type IdentitySignals } from "./personalIdentity";
+import { classifyEmailInvestigation, type EmailInvestigationRouting } from "./emailDomains";
 
 export type WorkspaceSession = {
   userId: string;
@@ -47,6 +48,8 @@ export type ShadowScoreIntake = {
   caseType?: string;
   email: string;
   identitySignals?: IdentitySignals;
+  submittedSeed?: string;
+  investigationRouting?: EmailInvestigationRouting;
   fileNames: string[];
   visibleSignalCategories: string[];
   paymentStatus: PaymentStatus;
@@ -79,7 +82,7 @@ export type ShadowScoreReport = {
   providerVersions?: Record<string, string>;
   providerResults?: ProviderResult[];
   evidenceSummary?: unknown;
-  reportSummary?: { message: string; objective?: string; identitySignals?: IdentitySignals; primaryRiskDomain?: string; findingCount?: number; insights?: TrustInsight[]; insightEngineVersion?: string; decision?: DecisionOutput; reasoning?: ReasoningOutput; correlationSummary?: CorrelationSummary; identityProfile?: IdentityProfile; businessNarrative?: BusinessNarrative; businessIdentityResolution?: unknown; businessIdentityIntelligence?: BusinessIdentityIntelligenceResult; businessIntelligence?: BusinessIntelligenceResult; investigationIntelligence?: InvestigationIntelligence; websiteIntelligence?: WebsiteIntelligenceReport; canonicalWebsiteReport?: CanonicalWebsiteReport; websiteChangeReport?: WebsiteChangeReport; websiteAlertSummary?: { count: number; severities: Record<string, number> }; websiteChangeTimeline?: Array<{ scanId: string; scannedAt: string; summary: string; changeCount: number; alertIds: string[] }>; scorecard?: ShadowScorecard; investigationTimeline?: InvestigationStage[]; execution?: { completedInSeconds: number; providersExecuted: number; evidenceCollected: number; decisionConfidence?: string }; executionFlow?: string[]; knowledgeGraph?: KnowledgeGraphSnapshot; technicalDetails?: { executed: ProviderExecutionRecord[]; skipped: ProviderExecutionRecord[]; pending: ProviderExecutionRecord[]; failed: ProviderExecutionRecord[] }; sourceProvenance?: Array<{ label: string; completedAt?: string }>; targetResolution?: TargetResolution; resolvedEntities?: FirstPartyResolution; investigationType?: string; mailboxProviderDomain?: string; investigationRouting?: import("./emailDomains").EmailInvestigationRouting; publicIdentityCandidates?: ExternalIdentityCandidate[]; discoveryDiagnostics?: { searches: IdentityDiscoverySearchDiagnostic[]; scheduling: IdentitySchedulingDiagnostic[]; budgetExhaustionReason: string; providerStatus: string; providerFailure?: string } };
+  reportSummary?: { message: string; objective?: string; identitySignals?: IdentitySignals; submittedSeed?: string; primaryEntity?: string; providerCoverageGaps?: Array<{ providerId: string; code: "PROVIDER_UNAVAILABLE"; jurisdiction?: string; message: string }>; primaryRiskDomain?: string; findingCount?: number; insights?: TrustInsight[]; insightEngineVersion?: string; decision?: DecisionOutput; reasoning?: ReasoningOutput; correlationSummary?: CorrelationSummary; identityProfile?: IdentityProfile; businessNarrative?: BusinessNarrative; businessIdentityResolution?: unknown; businessIdentityIntelligence?: BusinessIdentityIntelligenceResult; businessIntelligence?: BusinessIntelligenceResult; investigationIntelligence?: InvestigationIntelligence; websiteIntelligence?: WebsiteIntelligenceReport; canonicalWebsiteReport?: CanonicalWebsiteReport; websiteChangeReport?: WebsiteChangeReport; websiteAlertSummary?: { count: number; severities: Record<string, number> }; websiteChangeTimeline?: Array<{ scanId: string; scannedAt: string; summary: string; changeCount: number; alertIds: string[] }>; scorecard?: ShadowScorecard; investigationTimeline?: InvestigationStage[]; execution?: { completedInSeconds: number; providersExecuted: number; evidenceCollected: number; decisionConfidence?: string }; executionFlow?: string[]; knowledgeGraph?: KnowledgeGraphSnapshot; technicalDetails?: { executed: ProviderExecutionRecord[]; skipped: ProviderExecutionRecord[]; pending: ProviderExecutionRecord[]; failed: ProviderExecutionRecord[] }; sourceProvenance?: Array<{ label: string; completedAt?: string }>; targetResolution?: TargetResolution; resolvedEntities?: FirstPartyResolution; investigationType?: string; mailboxProviderDomain?: string; investigationRouting?: import("./emailDomains").EmailInvestigationRouting; publicIdentityCandidates?: ExternalIdentityCandidate[]; discoveryDiagnostics?: { searches: IdentityDiscoverySearchDiagnostic[]; scheduling: IdentitySchedulingDiagnostic[]; budgetExhaustionReason: string; providerStatus: string; providerFailure?: string } };
   topFactors: string[];
 };
 
@@ -187,7 +190,7 @@ export async function getWorkspace(session: WorkspaceSession): Promise<Workspace
     ]);
     return presentWorkspaceForEndUser({
       reports: reportRows.map((row) => ({ reportId: row.report_id, intakeId: row.intake_id, paymentIntentId: row.payment_intent_id, acceptanceId: row.acceptance_id, title: row.title, entity: row.entity, platform: row.platform, scanMode: row.scan_mode, target: row.target, riskScore: row.risk_score || undefined, confidenceScore: row.confidence_score || undefined, stage: row.stage || "Healthy", createdAt: row.created_at, readyAt: row.ready_at, paymentStatus: row.payment_status || (row.metadata?.paymentStatus as PaymentStatus), accessType: row.access_type || row.metadata?.accessType, administratorNotice: row.metadata?.administratorNotice, reportStatus: row.report_status || "ready", source: row.source, engineVersion: row.risk_engine_version, providerVersions: row.provider_versions || {}, providerResults: row.provider_results || [], evidenceSummary: row.evidence_snapshot || {}, reportSummary: row.metadata?.reportSummary, topFactors: row.top_factors || [] })),
-      intakes: intakeRows.map((row) => ({ intakeId: row.intake_id, userId: row.user_id, scanMode: row.scan_mode, target: row.target, platform: row.platform, caseType: row.case_type, email: row.email, identitySignals: row.scan_mode === "personal" ? normalizeIntakeIdentitySignals(row.identity_signals, { target: row.target, email: row.email }) : undefined, fileNames: row.file_names || [], visibleSignalCategories: row.visible_signal_categories || [], paymentStatus: row.payment_status, reportStatus: row.report_status, createdAt: row.created_at })),
+      intakes: intakeRows.map((row) => ({ intakeId: row.intake_id, userId: row.user_id, scanMode: row.scan_mode, target: row.target, platform: row.platform, caseType: row.case_type, email: row.email, identitySignals: row.scan_mode === "personal" ? normalizeIntakeIdentitySignals(row.identity_signals, { target: row.target, email: row.email }) : undefined, submittedSeed: row.submitted_seed || undefined, investigationRouting: row.investigation_routing || undefined, fileNames: row.file_names || [], visibleSignalCategories: row.visible_signal_categories || [], paymentStatus: row.payment_status, reportStatus: row.report_status, createdAt: row.created_at })),
       entities: entityRows.map((row) => ({ id: row.id, name: row.name, type: row.type, status: row.status, lastScore: row.last_score, updatedAt: row.updated_at })),
       acceptances: acceptanceRows.map((row) => ({ reportId: row.report_id || row.payment_intent_id || row.id, planName: row.metadata?.planName || "Checkout", price: row.metadata?.price || "", method: row.metadata?.method || "", acceptedAt: row.accepted_at, legalVersion: row.legal_version, source: row.source })),
       paymentIntents: intentRows.map(mapPaymentIntentRow),
@@ -225,7 +228,8 @@ export async function createIntake(session: WorkspaceSession, record: Omit<Shado
     if (!response.ok || !payload?.intake) throw new Error(payload?.error || "The investigation could not be saved.");
     return payload.intake;
   }
-  const normalizedRecord = record.scanMode === "personal" ? { ...record, identitySignals: normalizeIntakeIdentitySignals(record.identitySignals, { target: record.target, email: record.email }) } : record;
+  const routing = record.investigationRouting || classifyEmailInvestigation(record.target);
+  const normalizedRecord = { ...record, submittedSeed: routing?.submittedSeed || record.submittedSeed, investigationRouting: routing, ...(record.scanMode === "personal" ? { identitySignals: normalizeIntakeIdentitySignals(record.identitySignals, { target: record.target, email: record.email }) } : {}) };
   const intake: ShadowScoreIntake = { intakeId: `intake-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`, userId: session.userId, ...normalizedRecord, paymentStatus: "payment_pending", reportStatus: "preview", createdAt: new Date().toISOString() };
   if (isSupabaseConfigured() && session.accessToken) {
     const [created] = await supabaseFetch<Record<string, any>[]>("/rest/v1/intakes?select=*", {
@@ -240,6 +244,8 @@ export async function createIntake(session: WorkspaceSession, record: Omit<Shado
         case_type: intake.caseType,
         email: intake.email,
         identity_signals: intake.identitySignals,
+        submitted_seed: intake.submittedSeed,
+        investigation_routing: intake.investigationRouting,
         file_names: intake.fileNames,
         visible_signal_categories: intake.visibleSignalCategories,
         payment_status: intake.paymentStatus,
@@ -258,6 +264,8 @@ export async function createIntake(session: WorkspaceSession, record: Omit<Shado
       identitySignals: created.scan_mode === "personal"
         ? normalizeIntakeIdentitySignals(created.identity_signals, { target: created.target, email: created.email })
         : undefined,
+      submittedSeed: created.submitted_seed || undefined,
+      investigationRouting: created.investigation_routing || undefined,
       fileNames: created.file_names || [],
       visibleSignalCategories: created.visible_signal_categories || [],
       paymentStatus: created.payment_status,

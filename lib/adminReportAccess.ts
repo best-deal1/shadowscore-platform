@@ -2,6 +2,7 @@ import "server-only";
 
 import { buildReadyReport } from "./reportPipeline";
 import { normalizeIntakeIdentitySignals } from "./personalIdentity";
+import { classifyEmailInvestigation } from "./emailDomains";
 import { isSupabaseConfigured, supabaseFetch } from "./supabase";
 import { presentReportForEndUser, type ShadowScoreIntake, type ShadowScoreReport, type WorkspaceSession } from "./workspace";
 
@@ -32,6 +33,8 @@ function mapAdministratorIntake(row: IntakeRow): ShadowScoreIntake {
     platform: row.platform,
     caseType: typeof row.case_type === "string" ? row.case_type : undefined,
     email: row.email,
+    submittedSeed: typeof row.submitted_seed === "string" ? row.submitted_seed : row.target,
+    investigationRouting: (row.investigation_routing as ShadowScoreIntake["investigationRouting"]) || classifyEmailInvestigation(row.target),
     identitySignals: row.scan_mode === "personal"
       ? normalizeIntakeIdentitySignals(row.identity_signals, { target: row.target, email: row.email })
       : undefined,

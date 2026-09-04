@@ -18,10 +18,13 @@ const ENTITY_TYPES: KnowledgeEntityType[] = ["Business", "Domain", "Email", "Pho
 const RELATIONSHIP_TYPES: KnowledgeRelationshipType[] = ["OWNS", "USES", "BELONGS_TO", "HAS_EMAIL", "HAS_PHONE", "OPERATES_ON", "SHARES_IDENTITY_WITH", "LINKED_TO"];
 
 export class BusinessKnowledgeGraph {
+  private readonly resolver: EntityResolver;
   private readonly entities = new Map<string, KnowledgeEntity>();
   private readonly relationships = new Map<string, KnowledgeRelationship>();
 
-  constructor(private readonly resolver: EntityResolver = deterministicEntityResolver) {}
+  constructor(resolver: EntityResolver = deterministicEntityResolver) {
+    this.resolver = resolver;
+  }
 
   applyScan(scan: KnowledgeScanInput): KnowledgeScanResult {
     const entitiesCreated: KnowledgeEntity[] = [];

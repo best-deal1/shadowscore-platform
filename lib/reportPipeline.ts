@@ -58,16 +58,16 @@ export async function buildReadyReport(input: {
     throw new Error("Report generation requires paymentStatus == paid.");
   }
 
-  const submittedTarget = intake.target.trim();
+  const submittedTarget = (intake.submittedSeed || intake.target).trim();
   const submittedClassification = classifyTarget(submittedTarget);
-  const emailRouting = submittedClassification.targetType === "Email" ? classifyEmailInvestigation(submittedTarget) : undefined;
+  const emailRouting = submittedClassification.targetType === "Email" ? intake.investigationRouting || classifyEmailInvestigation(submittedTarget) : undefined;
   const corporateEmailInvestigation = emailRouting?.emailClassification === "CORPORATE_DOMAIN";
   const resolvableTarget = ["Email", "Website"].includes(submittedClassification.targetType);
   const resolution = resolvableTarget ? resolutionTarget(submittedTarget) : undefined;
   const emailInvestigation = submittedClassification.targetType === "Email" && (intake.scanMode !== "personal" || corporateEmailInvestigation);
   const personalIdentityInvestigation = intake.scanMode === "personal" && !corporateEmailInvestigation;
   const providerTarget = intake.scanMode === "website" && resolution && !emailInvestigation ? resolution.domain : submittedTarget;
-  const canonicalTarget = submittedTarget;
+  const canonicalTarget = emailRouting?.primaryInvestigationEntity || submittedTarget;
   const personalSignals = personalIdentityInvestigation ? normalizeIntakeIdentitySignals(intake.identitySignals, { target: intake.target, email: intake.email }) : undefined;
   const investigationEmail = emailInvestigation ? submittedTarget : personalIdentityInvestigation ? personalSignals?.emails[0] : intake.scanMode === "website" ? undefined : intake.email;
   const providerContext: ProviderExecutionContext = {
@@ -102,7 +102,7 @@ export async function buildReadyReport(input: {
   const providerResults = isolated?.providerResults || execution.providerResults;
   const targetResolution = isolated?.resolution;
   const executionRecords = execution.executionRecords;
-  console.info("investigation_target_resolution", { investigationId: intake.intakeId, submittedTarget: intake.target, canonicalTarget, providerTargets: providerResults.map((item) => item.metadata.providerTarget), evidenceTargets: providerResults.flatMap((item) => item.evidence.map((evidence) => evidence.canonicalTarget || canonicalTarget)), reportTarget: canonicalTarget, redirectDomainMismatch: targetResolution?.redirectDomainMismatch, rejectedEvidenceCount: targetResolution?.rejectedEvidenceCount });
+  console.info("investigation_target_resolution", { investigationId: intake.intakeId, submittedTarget: intake.target, canonicalTarget, providerTargets: providerResults.map((item) => item.metadata.providerTarget), evidenceTargets: providerResults.flatMap((item) => item.evidence.map((evidence) => evidence.canonicalTarget || canonicalTarget)), reportTarget: emailRouting?.submittedSeed || canonicalTarget, primaryInvestigationEntity: emailRouting?.primaryInvestigationEntity || canonicalTarget, redirectDomainMismatch: targetResolution?.redirectDomainMismatch, rejectedEvidenceCount: targetResolution?.rejectedEvidenceCount });
   const resolvedEntities = resolution ? await resolveFirstPartyEntities(submittedTarget) : undefined;
   const alerting = input.websiteTenantId && input.websiteAlertRepository ? { tenantId: input.websiteTenantId, repository: input.websiteAlertRepository, watchlistRepository: input.websiteWatchlistRepository } : undefined;
   const websiteMonitoring = intake.scanMode === "website" && !emailInvestigation ? await investigateAndRecordWebsite({ target: providerTarget }, input.websiteHistoryRepository, alerting) : undefined;
@@ -241,11 +241,11 @@ export async function buildReadyReport(input: {
     intakeId: intake.intakeId,
     paymentIntentId: paymentIntent.id,
     userId: intake.userId,
-    title: `${personalIdentityInvestigation ? "Personal Identity" : emailInvestigation ? "Email" : intake.scanMode === "website" ? "Website" : "Trust"} Intelligence Report`,
-    entity: canonicalTarget,
+    title: `${personalIdentityInvestigation ? "Personal Identity" : corporateEmailInvestigation ? "Business Domain and Legal Entity" : emailInvestigation ? "Email Identity" : intake.scanMode === "website" ? "Website" : "Trust"} Intelligence Report`,
+    entity: emailRouting?.primaryInvestigationEntity || canonicalTarget,
     platform: intake.platform,
     scanMode: intake.scanMode,
-    target: canonicalTarget,
+    target: emailRouting?.submittedSeed || canonicalTarget,
     createdAt: input.createdAt || paymentIntent.createdAt,
     readyAt: now,
     paymentStatus: paymentIntent.paymentStatus,
@@ -260,6 +260,9 @@ export async function buildReadyReport(input: {
       ...canonicalEvidenceSummary,
     },
     reportSummary: {
+      submittedSeed: emailRouting?.submittedSeed,
+      primaryEntity: emailRouting?.primaryInvestigationEntity,
+      providerCoverageGaps: corporateEmailInvestigation ? executionRecords.filter((record) => record.engineId === "authoritative-company" && record.status !== "executed").map(() => ({ providerId: "authoritative-company", code: "PROVIDER_UNAVAILABLE" as const, jurisdiction: emailRouting.domainInvestigated.endsWith(".il") ? "Israel" : undefined, message: emailRouting.domainInvestigated.endsWith(".il") ? "Authoritative Israeli company registry coverage is unavailable for this investigation." : "Authoritative company registry coverage is unavailable for this investigation." })) : undefined,
       message: personalIdentityInvestigation ? "Report generated from the submitted identity signals and source-backed public evidence." : "Report generated from paid intake, provider evidence and Insight Engine business-trust analysis.",
       objective: personalSignals ? identityObjective(personalSignals) : undefined,
       identitySignals: personalSignals,
@@ -302,7 +305,7 @@ export async function buildReadyReport(input: {
         .map((provider) => ({ label: provider.providerId.replace(/[-_]/g, " "), completedAt: provider.completedAt })),
       targetResolution,
       resolvedEntities,
-      investigationType: emailInvestigation ? "EMAIL" : personalIdentityInvestigation ? "PERSONAL_IDENTITY" : intake.scanMode.toUpperCase(),
+      investigationType: corporateEmailInvestigation ? "BUSINESS_DOMAIN_LEGAL_ENTITY" : emailInvestigation ? "PERSONAL_IDENTITY" : personalIdentityInvestigation ? "PERSONAL_IDENTITY" : intake.scanMode.toUpperCase(),
       mailboxProviderDomain: emailRouting?.domainInvestigated,
       investigationRouting: emailRouting,
       publicIdentityCandidates,
