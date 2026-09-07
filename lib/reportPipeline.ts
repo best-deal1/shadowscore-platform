@@ -307,7 +307,7 @@ export async function buildReadyReport(input: {
       investigationType: investigationRouting.primaryInvestigationType,
       mailboxProviderDomain: emailRouting?.domainInvestigated,
       investigationRouting,
-      completionStatus: investigationCompletionStatus(providerResultsWithCanonicalIdentity, evidenceItems.length),
+      completionStatus: investigationCompletionStatus(providerResultsWithCanonicalIdentity, evidenceItems),
       publicIdentityCandidates,
       discoveryDiagnostics,
     },

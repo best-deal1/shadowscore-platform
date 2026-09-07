@@ -238,3 +238,4 @@ This file records customer-visible improvements in each ShadowScore release.
 
 - Full Investigations now preserve one canonical investigation intent from intake through Executive Report presentation. Corporate mailbox investigations remain scoped to the domain and business. Public mailbox investigations receive the complete personal identity provider and report path, including recovered legacy records.
 - Executive Reports now show evidence and coverage outcomes instead of treating orchestration completion as investigation completion.
+- Personal Identity reports now show the canonical investigation outcome to customers. Submitted inputs and provider placeholders no longer count as completed evidence.

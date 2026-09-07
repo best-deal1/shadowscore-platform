@@ -7,6 +7,7 @@ import { classifyTarget } from "../lib/targetClassifier/index.ts";
 import { investigationCompletionStatus } from "../lib/reportCoverage.ts";
 import { presentReportForEndUser } from "../lib/workspace.ts";
 import { ExternalIdentityProvider } from "../lib/providers/externalIdentityProvider.ts";
+import { readFile } from "node:fs/promises";
 
 const plan = (target, scanMode, persisted) => {
   const routing = resolveInvestigationRouting({ target, scanMode, investigationRouting: persisted });
@@ -54,12 +55,20 @@ test("corporate provider guard prevents a generic Sharon pivot and unrelated can
 });
 
 const provider = (executionCode, coverageState = "gap") => ({ providerId: "authoritative-company", providerVersion: "1", status: "skipped", startedAt: "", completedAt: "", duration: 0, findings: [], evidence: [], errors: [], metadata: { executionCode, coverageState, jurisdiction: null, providerSupportedJurisdictions: ["US federal public issuers"] } });
+const evidenceItem = (type, category = "Verified") => ({ id: `evidence-${type}`, source: "test-source", provider: "external-identity", category, status: category === "Verified" ? "observed" : "not_checked", confidence: 85, title: "Production evidence", description: "Production evidence", businessImpact: "Review the evidence.", evidenceRefs: [{ id: type, type, label: type, source: "test-source" }] });
 
 test("coverage outcomes remain distinct", () => {
-  assert.equal(investigationCompletionStatus([provider("UNSUPPORTED_JURISDICTION")], 0), "UNSUPPORTED_JURISDICTION");
-  assert.equal(investigationCompletionStatus([provider("PROVIDER_UNAVAILABLE", "unavailable")], 0), "PROVIDER_UNAVAILABLE");
-  assert.equal(investigationCompletionStatus([provider("NO_AUTHORITATIVE_MATCH")], 1), "COMPLETED_WITH_UNRESOLVED_EVIDENCE");
-  assert.equal(investigationCompletionStatus([], 0), "NO_EVIDENCE_ABSTAIN");
+  assert.equal(investigationCompletionStatus([provider("UNSUPPORTED_JURISDICTION")], []), "UNSUPPORTED_JURISDICTION");
+  assert.equal(investigationCompletionStatus([provider("PROVIDER_UNAVAILABLE", "unavailable")], []), "PROVIDER_UNAVAILABLE");
+  assert.equal(investigationCompletionStatus([provider("NO_AUTHORITATIVE_MATCH")], [evidenceItem("placeholder")]), "COMPLETED_WITH_UNRESOLVED_EVIDENCE");
+  assert.equal(investigationCompletionStatus([], []), "NO_EVIDENCE_ABSTAIN");
+});
+
+test("personal placeholder and unavailable observations are not successful evidence completion", () => {
+  const placeholders = [evidenceItem("placeholder"), evidenceItem("provider", "Unavailable"), evidenceItem("search_result")];
+  assert.equal(investigationCompletionStatus([], placeholders), "NO_EVIDENCE_ABSTAIN");
+  assert.equal(investigationCompletionStatus([{ ...provider("PROVIDER_UNAVAILABLE", "unavailable"), providerId: "external-identity" }], placeholders), "PROVIDER_UNAVAILABLE");
+  assert.equal(investigationCompletionStatus([], [...placeholders, evidenceItem("document")]), "COMPLETED_WITH_EVIDENCE");
 });
 
 test("paid report presentation preserves routing while removing internal provider data", () => {
@@ -68,4 +77,25 @@ test("paid report presentation preserves routing while removing internal provide
   assert.equal(report.providerResults, undefined);
   assert.deepEqual(report.reportSummary.investigationRouting, routing);
   assert.equal(reportRendererForRouting(report.reportSummary.investigationRouting), "business");
+});
+
+test("production-shaped paid personal reports preserve and render every canonical completion state", async () => {
+  const presentation = await readFile(new URL("../components/report/PersonalIdentityReport.tsx", import.meta.url), "utf8");
+  const routing = resolveInvestigationRouting({ target: "person@gmail.com", scanMode: "personal" });
+  const expected = new Map([
+    ["COMPLETED_WITH_EVIDENCE", "Completed with evidence"],
+    ["COMPLETED_WITH_UNRESOLVED_EVIDENCE", "Unresolved, no match"],
+    ["PROVIDER_UNAVAILABLE", "Provider unavailable"],
+    ["COVERAGE_GAP", "Coverage gap"],
+    ["UNSUPPORTED_JURISDICTION", "Unsupported coverage"],
+    ["NO_EVIDENCE_ABSTAIN", "No evidence, result withheld"],
+  ]);
+  for (const [completionStatus, customerLabel] of expected) {
+    const report = presentReportForEndUser({ reportId: `paid-${completionStatus}`, title: "Paid personal report", entity: "person@gmail.com", target: "person@gmail.com", platform: "Personal Identity", scanMode: "personal", stage: "Unknown", createdAt: new Date(0).toISOString(), reportStatus: "ready", source: "payment_unlock_pipeline", providerResults: [], reportSummary: { message: "Complete", investigationRouting: routing, investigationType: routing.primaryInvestigationType, completionStatus, discoveryDiagnostics: { searches: [], scheduling: [], budgetExhaustionReason: "provider_failed", providerStatus: "failed" } }, topFactors: [] });
+    assert.equal(report.reportSummary.completionStatus, completionStatus);
+    assert.equal(report.reportSummary.discoveryDiagnostics, undefined);
+    assert.match(presentation, new RegExp(customerLabel));
+  }
+  assert.match(presentation, /personalCompletionPresentation\(summary\?\.completionStatus\)/);
+  assert.match(presentation, /aria-label="Investigation completion status"/);
 });
