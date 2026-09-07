@@ -126,7 +126,7 @@ test("explicit name and email retain independent semantics through persistence, 
 
 test("administrator intake mapping restores persisted personal identity signals", async () => {
   const source = await readFile(new URL("../lib/adminReportAccess.ts", import.meta.url), "utf8");
-  assert.match(source, /identitySignals: row\.scan_mode === "personal"[\s\S]*normalizeIntakeIdentitySignals\(row\.identity_signals/);
+  assert.match(source, /identitySignals: investigationRouting\.primaryInvestigationType === "PERSON_IDENTITY"[\s\S]*normalizeIntakeIdentitySignals\(row\.identity_signals/);
 });
 
 test("contradictory email and phone identifiers are preserved", () => {
@@ -183,7 +183,7 @@ test("production-shaped persisted personal email report uses only identity prese
   for (const label of ["Person Under Review", "Personal Identity Investigation", "Submitted Identity Signals", "Public Identity Candidates", "Identity Matching Evidence", "Contradictory Identifiers", "Source Provenance", "Independent source count", "Identity confidence", "Verification status", "Person-Specific Next Actions", "Unverified Candidate", "Discovery relevance", "Resolver-backed identity evidence score", "Matched signals", "Conflicting signals", "Resolver outcome", "Final ranking", "Evidence sources"]) assert.match(presentation, new RegExp(label, "i"));
   for (const forbidden of ["commercial trustworthiness", "DNS", "WHOIS", "SSL/TLS", "Hosting", "Domain registration", "Legal business records", "Company ownership", "Marketplace seller verification", "Business Under Review", "Business Identity"]) assert.doesNotMatch(presentation, new RegExp(forbidden, "i"));
   assert.match(pipeline, /personalIdentityInvestigation[\s\S]*email-intelligence[\s\S]*external-identity/);
-  assert.match(pipeline, /Personal scan mode is authoritative/);
+  assert.match(pipeline, /Canonical personal identity routing permits only person-specific identity providers/);
   assert.match(pipeline, /businessNarrative: personalIdentityInvestigation \? undefined/);
   assert.match(pipeline, /decision: personalIdentityInvestigation \? undefined/);
   assert.match(pipeline, /scorecard: personalIdentityInvestigation \? undefined/);

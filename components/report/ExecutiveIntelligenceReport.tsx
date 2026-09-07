@@ -5,6 +5,7 @@ import { useState } from "react";
 import type { ShadowScoreReport } from "../../lib/workspace";
 import { executiveBusinessImpacts, executiveDecisionReasons, executiveFindingStories, executiveRecommendation, groupExecutiveEvidence, materialEvidenceGaps, recommendedActions } from "../../lib/executiveReport";
 import PersonalIdentityReport from "./PersonalIdentityReport";
+import { reportRendererForRouting, resolveInvestigationRouting } from "../../lib/investigationRouting";
 
 function dateTime(value?: string) {
   if (!value) return "Not recorded";
@@ -61,7 +62,8 @@ export default function ExecutiveIntelligenceReport({ report }: { report: Shadow
   const [actionStatus, setActionStatus] = useState("");
   const recommendation = executiveRecommendation(report);
   const isEmailInvestigation = report.reportSummary?.investigationType === "EMAIL";
-  const isPersonalInvestigation = report.scanMode === "personal";
+  const canonicalRouting = resolveInvestigationRouting({ target: report.reportSummary?.investigationRouting?.submittedSeed || report.target || report.entity, scanMode: report.scanMode, investigationRouting: report.reportSummary?.investigationRouting });
+  const isPersonalInvestigation = reportRendererForRouting(canonicalRouting) === "personal";
   const personalInfrastructure = /dns|whois|ssl|tls|hosting|nameserver|mail server|infrastructure/i;
   const findingStories = executiveFindingStories(report).filter((item) => !isEmailInvestigation || !personalInfrastructure.test(`${item.title} ${item.observation} ${item.commercialRisk}`));
   const evidenceGroups = groupExecutiveEvidence(report).filter((group) => !isEmailInvestigation || !/DNS|Website|Security|Business Registration/i.test(group.category));
@@ -159,7 +161,7 @@ export default function ExecutiveIntelligenceReport({ report }: { report: Shadow
               ["Investigation Date", dateTime(report.readyAt || report.createdAt)],
               ["Business Under Review", narrative?.businessName || report.target || report.entity],
               ["Investigation Type", investigationType],
-              ["Investigation Status", "Completed"],
+              ["Investigation Status", levelLabel(report.reportSummary?.completionStatus || "NO_EVIDENCE_ABSTAIN")],
               ["Evidence Sources Reviewed", sourceCount],
               ["Search results reviewed", lifecycleCounts?.observations ?? 0],
               ["Potential identity matches", Math.max(lifecycleCounts?.discoveryCandidates ?? 0, publicIdentityCandidates.length)],

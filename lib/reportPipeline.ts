@@ -32,7 +32,8 @@ import { buildInvestigationIntelligence } from "./investigationIntelligence";
 import { isolateProviderResults } from "./targetIntegrity";
 import { resolveFirstPartyEntities, resolutionTarget } from "./entityResolution/firstParty";
 import { identityObjective, normalizeIntakeIdentitySignals } from "./personalIdentity";
-import { classifyEmailInvestigation } from "./emailDomains";
+import { resolveInvestigationRouting } from "./investigationRouting";
+import { investigationCompletionStatus } from "./reportCoverage";
 
 export const REPORT_ENGINE_VERSION = "report-pipeline-v22";
 
@@ -60,14 +61,14 @@ export async function buildReadyReport(input: {
 
   const submittedTarget = intake.target.trim();
   const submittedClassification = classifyTarget(submittedTarget);
-  const emailRouting = submittedClassification.targetType === "Email" ? classifyEmailInvestigation(submittedTarget) : undefined;
-  const corporateEmailInvestigation = emailRouting?.emailClassification === "CORPORATE_DOMAIN";
+  const investigationRouting = resolveInvestigationRouting(intake);
+  const emailRouting = investigationRouting.emailClassification ? investigationRouting : undefined;
   const resolvableTarget = ["Email", "Website"].includes(submittedClassification.targetType);
-  const resolution = resolvableTarget ? resolutionTarget(submittedTarget) : undefined;
-  const emailInvestigation = submittedClassification.targetType === "Email" && (intake.scanMode !== "personal" || corporateEmailInvestigation);
-  const personalIdentityInvestigation = intake.scanMode === "personal" && !corporateEmailInvestigation;
-  const providerTarget = intake.scanMode === "website" && resolution && !emailInvestigation ? resolution.domain : submittedTarget;
-  const canonicalTarget = submittedTarget;
+  const resolution = resolvableTarget ? resolutionTarget(investigationRouting.primaryInvestigationEntity) : undefined;
+  const emailInvestigation = Boolean(emailRouting);
+  const personalIdentityInvestigation = investigationRouting.primaryInvestigationType === "PERSON_IDENTITY";
+  const providerTarget = investigationRouting.primaryInvestigationEntity;
+  const canonicalTarget = investigationRouting.primaryInvestigationEntity;
   const personalSignals = personalIdentityInvestigation ? normalizeIntakeIdentitySignals(intake.identitySignals, { target: intake.target, email: intake.email }) : undefined;
   const investigationEmail = emailInvestigation ? submittedTarget : personalIdentityInvestigation ? personalSignals?.emails[0] : intake.scanMode === "website" ? undefined : intake.email;
   const providerContext: ProviderExecutionContext = {
@@ -77,6 +78,7 @@ export async function buildReadyReport(input: {
     requestedTarget: submittedTarget,
     investigationId: intake.intakeId,
     canonicalTarget,
+    investigationRouting,
     platform: intake.platform,
     caseType: intake.caseType,
     email: investigationEmail,
@@ -89,12 +91,12 @@ export async function buildReadyReport(input: {
   const executionFlow: string[] = [];
   const classification = submittedClassification;
   executionFlow.push(`✓ Target classified as ${classification.targetType}`);
-  const classifiedPlan = planFromClassification(classification);
+  const classifiedPlan = planFromClassification(classification, investigationRouting);
   const executionPlan = personalIdentityInvestigation ? {
     ...classifiedPlan,
     executionPlan: classifiedPlan.executionPlan.filter((step) => ["email-intelligence", "external-identity"].includes(step.engineId)),
     skippedEngines: [...classifiedPlan.skippedEngines, ...classifiedPlan.executionPlan.filter((step) => !["email-intelligence", "external-identity"].includes(step.engineId)).map((step) => ({ engineId: step.engineId, label: step.label, reason: "Personal identity scope excludes organization and infrastructure checks." }))],
-    reasoning: [...classifiedPlan.reasoning, "Personal scan mode is authoritative. Only person-specific identity providers are eligible."],
+    reasoning: [...classifiedPlan.reasoning, "Canonical personal identity routing permits only person-specific identity providers."],
   } : classifiedPlan;
   executionFlow.push("✓ Execution plan created");
   const execution = await providerManager.runExecutionPlan(providerContext, executionPlan.executionPlan, executionPlan.skippedEngines);
@@ -103,9 +105,9 @@ export async function buildReadyReport(input: {
   const targetResolution = isolated?.resolution;
   const executionRecords = execution.executionRecords;
   console.info("investigation_target_resolution", { investigationId: intake.intakeId, submittedTarget: intake.target, canonicalTarget, providerTargets: providerResults.map((item) => item.metadata.providerTarget), evidenceTargets: providerResults.flatMap((item) => item.evidence.map((evidence) => evidence.canonicalTarget || canonicalTarget)), reportTarget: canonicalTarget, redirectDomainMismatch: targetResolution?.redirectDomainMismatch, rejectedEvidenceCount: targetResolution?.rejectedEvidenceCount });
-  const resolvedEntities = resolution ? await resolveFirstPartyEntities(submittedTarget) : undefined;
+  const resolvedEntities = resolution ? await resolveFirstPartyEntities(canonicalTarget) : undefined;
   const alerting = input.websiteTenantId && input.websiteAlertRepository ? { tenantId: input.websiteTenantId, repository: input.websiteAlertRepository, watchlistRepository: input.websiteWatchlistRepository } : undefined;
-  const websiteMonitoring = intake.scanMode === "website" && !emailInvestigation ? await investigateAndRecordWebsite({ target: providerTarget }, input.websiteHistoryRepository, alerting) : undefined;
+  const websiteMonitoring = investigationRouting.primaryInvestigationType === "DOMAIN_BUSINESS_LEGAL_ENTITY" && !emailInvestigation ? await investigateAndRecordWebsite({ target: providerTarget }, input.websiteHistoryRepository, alerting) : undefined;
   const websiteIntelligence = websiteMonitoring?.report;
   const canonicalWebsiteReport = websiteIntelligence ? toCanonicalWebsiteReport(websiteIntelligence) : undefined;
   const websiteEvidenceItems = websiteIntelligence ? normalizeWebsiteEvidence(websiteIntelligence) : [];
@@ -115,7 +117,7 @@ export async function buildReadyReport(input: {
       .filter((record) => record.status === "pending" || record.status === "skipped")
       .map((record) => ({ providerId: record.providerId || record.engineId, reason: record.reason || "Provider was not checked in this execution plan." })),
   });
-  const investigationType = emailInvestigation ? "email" : intake.scanMode;
+  const investigationType = personalIdentityInvestigation ? "personal" : emailInvestigation ? "email" : intake.scanMode;
   const evidenceItems = applicableEvidence([...providerEvidenceItems, ...websiteEvidenceItems], investigationType);
   const correlationSummary = correlateEvidence({ evidenceItems, targetType: investigationType });
   const externalIdentityMetadata = providerResults.find((result) => result.providerId === "external-identity")?.metadata as Record<string, unknown> | undefined;
@@ -146,7 +148,7 @@ export async function buildReadyReport(input: {
     email: investigationEmail,
     fileNames: intake.fileNames,
     evidencePresent: intake.visibleSignalCategories.length,
-    evidenceRequired: intake.scanMode === "website" ? 0 : 4,
+    evidenceRequired: investigationRouting.primaryInvestigationType === "DOMAIN_BUSINESS_LEGAL_ENTITY" ? 0 : 4,
     providerResults,
   };
   const riskEnginePreview = analyzeRisk(engineInput);
@@ -302,9 +304,10 @@ export async function buildReadyReport(input: {
         .map((provider) => ({ label: provider.providerId.replace(/[-_]/g, " "), completedAt: provider.completedAt })),
       targetResolution,
       resolvedEntities,
-      investigationType: emailInvestigation ? "EMAIL" : personalIdentityInvestigation ? "PERSONAL_IDENTITY" : intake.scanMode.toUpperCase(),
+      investigationType: investigationRouting.primaryInvestigationType,
       mailboxProviderDomain: emailRouting?.domainInvestigated,
-      investigationRouting: emailRouting,
+      investigationRouting,
+      completionStatus: investigationCompletionStatus(providerResultsWithCanonicalIdentity, evidenceItems.length),
       publicIdentityCandidates,
       discoveryDiagnostics,
     },
