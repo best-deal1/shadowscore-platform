@@ -170,7 +170,7 @@ test("canonical migration and upload route use only identity-evidence with owner
 test("legacy email and business scan modes remain accepted", async () => {
   const route = await readFile(new URL("../app/api/intakes/route.ts", import.meta.url), "utf8");
   assert.match(route, /"website", "marketplace", "evidence", "personal"/);
-  assert.match(route, /body\.scanMode === "personal"/);
+  assert.match(route, /primaryInvestigationType === "PERSON_IDENTITY"/);
 });
 
 test("production-shaped persisted personal email report uses only identity presentation", async () => {

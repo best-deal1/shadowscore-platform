@@ -31,7 +31,7 @@ import { applyCanonicalIdentityToBusinessProfile, applyCanonicalIdentityToIdenti
 import { buildInvestigationIntelligence } from "./investigationIntelligence";
 import { isolateProviderResults } from "./targetIntegrity";
 import { resolveFirstPartyEntities, resolutionTarget } from "./entityResolution/firstParty";
-import { identityObjective, normalizeIntakeIdentitySignals } from "./personalIdentity";
+import { identityInvestigationGuardIssues, identityObjective, normalizeIntakeIdentitySignals } from "./personalIdentity";
 import { resolveInvestigationRouting } from "./investigationRouting";
 import { investigationCompletionStatus } from "./reportCoverage";
 
@@ -70,6 +70,11 @@ export async function buildReadyReport(input: {
   const providerTarget = investigationRouting.primaryInvestigationEntity;
   const canonicalTarget = investigationRouting.primaryInvestigationEntity;
   const personalSignals = personalIdentityInvestigation ? normalizeIntakeIdentitySignals(intake.identitySignals, { target: intake.target, email: intake.email }) : undefined;
+  const personalGuardIssues = identityInvestigationGuardIssues(personalIdentityInvestigation, personalSignals || { emails: [], phones: [], names: [], usernames: [], referenceImages: [] });
+  if (personalGuardIssues.length) {
+    console.error("personal_identity_execution_blocked", { investigationId: intake.intakeId, issues: personalGuardIssues });
+    throw new Error("Personal identity investigation readiness requirements are not satisfied.");
+  }
   const investigationEmail = emailInvestigation ? submittedTarget : personalIdentityInvestigation ? personalSignals?.emails[0] : intake.scanMode === "website" ? undefined : intake.email;
   const providerContext: ProviderExecutionContext = {
     intakeId: intake.intakeId,

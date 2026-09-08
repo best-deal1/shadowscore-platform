@@ -7,6 +7,7 @@ import { classifyTarget } from "../lib/targetClassifier/index.ts";
 import { investigationCompletionStatus } from "../lib/reportCoverage.ts";
 import { presentReportForEndUser } from "../lib/workspace.ts";
 import { ExternalIdentityProvider } from "../lib/providers/externalIdentityProvider.ts";
+import { identityInvestigationGuardIssues, normalizeIntakeIdentitySignals } from "../lib/personalIdentity.ts";
 import { readFile } from "node:fs/promises";
 
 const plan = (target, scanMode, persisted) => {
@@ -62,6 +63,35 @@ test("coverage outcomes remain distinct", () => {
   assert.equal(investigationCompletionStatus([provider("PROVIDER_UNAVAILABLE", "unavailable")], []), "PROVIDER_UNAVAILABLE");
   assert.equal(investigationCompletionStatus([provider("NO_AUTHORITATIVE_MATCH")], [evidenceItem("placeholder")]), "COMPLETED_WITH_UNRESOLVED_EVIDENCE");
   assert.equal(investigationCompletionStatus([], []), "NO_EVIDENCE_ABSTAIN");
+});
+
+test("provider execution failures override unrelated observations", () => {
+  const infrastructureObservation = evidenceItem("document");
+  assert.equal(investigationCompletionStatus([{ ...provider("PROVIDER_EXECUTION_TIMEOUT"), providerId: "external-identity" }], []), "COVERAGE_GAP");
+  assert.equal(investigationCompletionStatus([provider("PROVIDER_EXECUTION_FAILURE")], [infrastructureObservation]), "COVERAGE_GAP");
+});
+
+test("canonically personal website-mode free-mail is guarded at intake and execution", async () => {
+  const routing = resolveInvestigationRouting({ target: "person@gmail.com", scanMode: "website" });
+  const signals = normalizeIntakeIdentitySignals(undefined, { target: routing.submittedSeed, email: "buyer@example.com" });
+  assert.equal(routing.primaryInvestigationType, "PERSON_IDENTITY");
+  assert.deepEqual(signals.emails, ["person@gmail.com"]);
+  assert.ok(identityInvestigationGuardIssues(true, signals, {}).length >= 5);
+  assert.deepEqual(identityInvestigationGuardIssues(true, signals, {
+    NEXT_PUBLIC_PERSONAL_IDENTITY_ENABLED: "true",
+    PERSONAL_IDENTITY_ENABLED: "true",
+    IDENTITY_MIGRATION_APPLIED: "true",
+    IDENTITY_EVIDENCE_BUCKET_READY: "true",
+    IDENTITY_STORAGE_POLICIES_VERIFIED: "true",
+  }), []);
+
+  const [intakeRoute, pipeline] = await Promise.all([
+    readFile(new URL("../app/api/intakes/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../lib/reportPipeline.ts", import.meta.url), "utf8"),
+  ]);
+  assert.match(intakeRoute, /resolveInvestigationRouting[\s\S]*primaryInvestigationType === "PERSON_IDENTITY"[\s\S]*identityInvestigationGuardIssues/);
+  assert.match(intakeRoute, /identitySignals: personalIdentityInvestigation \? identitySignals : undefined/);
+  assert.match(pipeline, /identityInvestigationGuardIssues\(personalIdentityInvestigation[\s\S]*personal_identity_execution_blocked[\s\S]*throw new Error/);
 });
 
 test("personal placeholder and unavailable observations are not successful evidence completion", () => {
