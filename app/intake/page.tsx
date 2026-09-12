@@ -15,6 +15,7 @@ import { useLocale } from "../../components/LocaleProvider";
 import { BETA_PRODUCT } from "../../lib/pricing";
 import QuickCheckResult from "../../components/quick-check/QuickCheckResult";
 import type { QuickCheckReport } from "../../lib/quickCheck/report";
+import { resolveInvestigationRouting } from "../../lib/investigationRouting";
 
 type Severity = "Low" | "Medium" | "High" | "Critical";
 type Finding = {
@@ -606,6 +607,8 @@ export default function IntakePage() {
       : marketplace;
   const identityTarget = identityEmail.trim() || identityPhone.trim() || identityUsername.trim() || identityName.trim();
   const activeTarget = scanMode === "website" ? websiteTarget : scanMode === "personal" ? identityTarget : store;
+  const canonicalRouting = useMemo(() => resolveInvestigationRouting({ target: activeTarget, scanMode }), [activeTarget, scanMode]);
+  const canonicalPersonalInvestigation = canonicalRouting.primaryInvestigationType === "PERSON_IDENTITY";
   const requirements = useMemo(
     () =>
       scanMode === "website"
@@ -808,6 +811,8 @@ export default function IntakePage() {
     }
     if (scanMode === "website" && !websiteTarget.trim())
       errors.push("Enter a website URL, business name or company domain.");
+    if (canonicalPersonalInvestigation && !personalIdentityEnabled)
+      errors.push("Personal Identity Investigations are currently unavailable. Choose a business or company-domain target.");
     if (scanMode === "evidence" && files.length === 0)
       errors.push("Upload evidence for case review.");
     if (scanMode === "personal" && !identityTarget) errors.push("Add at least one identity signal.");
@@ -824,6 +829,8 @@ export default function IntakePage() {
     store,
     websiteTarget,
     files.length,
+    canonicalPersonalInvestigation,
+    personalIdentityEnabled,
   ]);
 
   const canAnalyze =
@@ -1049,6 +1056,7 @@ export default function IntakePage() {
                     placeholder={t.intakeUi.targetPlaceholder}
                   />
                 </label>
+                {activeTarget.trim() && canonicalPersonalInvestigation && <div className="md:col-span-2 rounded-2xl border border-cyan-300/25 bg-cyan-400/10 p-4 text-sm leading-6 text-cyan-100" role="status"><p className="font-bold">Personal Identity Investigation</p><p>This public mailbox routes to a personal identity investigation. The review and purchase details below use that scope.</p></div>}
               </div>
             )}
 
@@ -1308,6 +1316,9 @@ export default function IntakePage() {
               <div className="mt-8 space-y-6">
                 {(() => {
                   const submittedTarget = freeScanResult?.targetResolution?.requestedTarget || activeTarget;
+                  const checkoutRouting = resolveInvestigationRouting({ target: submittedTarget, scanMode });
+                  const checkoutIsPersonal = checkoutRouting.primaryInvestigationType === "PERSON_IDENTITY";
+                  const checkoutScope = checkoutIsPersonal ? "Personal identity" : activeMode.label;
                   return <>
                     <QuickCheckResult target={submittedTarget} report={freeScanResult?.quickCheck} />
 
@@ -1317,11 +1328,11 @@ export default function IntakePage() {
                       </button>
                     ) : (
                     <section className="rounded-[28px] border border-yellow-400/20 bg-yellow-500/10 p-6 text-sm leading-7 text-yellow-100" aria-labelledby="paid-intake-title">
-                        <div className="text-xs uppercase tracking-[0.22em] text-yellow-200">{scanMode === "personal" ? "Personal identity investigation" : "Business Investigation intake"}</div>
-                      <h3 id="paid-intake-title" className="mt-3 text-lg font-bold text-white">Confirm the {scanMode === "personal" ? "person signals" : "business"}, scope, customer account, and purchase.</h3>
+                        <div className="text-xs uppercase tracking-[0.22em] text-yellow-200">{checkoutIsPersonal ? "Personal identity investigation" : "Business Investigation intake"}</div>
+                      <h3 id="paid-intake-title" className="mt-3 text-lg font-bold text-white">Confirm the {checkoutIsPersonal ? "identity subject" : "business"}, scope, customer account, and purchase.</h3>
                       <p className="mt-2 text-sm text-yellow-100">Your Free Quick Check remains attached to this intake. Payment starts the full investigation. Your Executive Report becomes available after processing completes.</p>
                       <div className="mt-5 rounded-2xl border border-white/10 bg-black/30 p-5">
-                        <dl className="mb-5 grid gap-3 text-sm sm:grid-cols-2"><div><dt className="text-zinc-500">{scanMode === "personal" ? "Identity subject" : "Business"}</dt><dd className="font-bold text-white">{submittedTarget}</dd></div><div><dt className="text-zinc-500">Investigation scope</dt><dd className="font-bold text-white">{activeMode.label}</dd></div><div><dt className="text-zinc-500">Existing result</dt><dd className="font-bold text-white">Free Quick Check</dd></div><div><dt className="text-zinc-500">Purchase</dt><dd className="font-bold text-white">Full {scanMode === "personal" ? "Personal Identity" : "Business"} Investigation · {BETA_PRODUCT.price}</dd></div></dl>
+                        <dl className="mb-5 grid gap-3 text-sm sm:grid-cols-2"><div><dt className="text-zinc-500">{checkoutIsPersonal ? "Identity subject" : "Business"}</dt><dd className="font-bold text-white">{submittedTarget}</dd></div><div><dt className="text-zinc-500">Investigation scope</dt><dd className="font-bold text-white">{checkoutScope}</dd></div><div><dt className="text-zinc-500">Existing result</dt><dd className="font-bold text-white">Free Quick Check</dd></div><div><dt className="text-zinc-500">Purchase</dt><dd className="font-bold text-white">Full {checkoutIsPersonal ? "Personal Identity" : "Business"} Investigation · {BETA_PRODUCT.price}</dd></div></dl>
                         <label><div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">Customer email (required)</div><input type="email" required value={email} onChange={(e) => { setEmail(e.target.value); setSaveError(""); }} aria-describedby={saveError ? "checkout-email-error" : undefined} className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white" placeholder="you@example.com" /></label>
                         {saveError && <p id="checkout-email-error" className="mt-3 text-sm text-red-200" role="alert">{saveError}</p>}
                         <ul className="mt-4 space-y-2 text-sm font-bold leading-6 text-white" aria-label="Purchase confidence"><li>✓ One paid investigation</li><li>✓ One-time payment of {BETA_PRODUCT.price}</li><li>✓ No subscription</li><li>✓ Processing begins after payment</li><li>✓ Executive Report available after completion</li></ul>

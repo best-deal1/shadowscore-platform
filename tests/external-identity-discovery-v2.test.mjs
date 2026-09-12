@@ -444,8 +444,8 @@ test("production email candidate remains visible without creating a false identi
     assert.match(reportSource, /candidate\.evidenceReference/);
     assert.match(reportSource, /candidate\.status/);
     const pipelineSource = await readFile(new URL("../lib/reportPipeline.ts", import.meta.url), "utf8");
-    assert.match(pipelineSource, /investigationType: emailInvestigation \? "EMAIL"/);
-    assert.match(pipelineSource, /intake\.scanMode === "website" && !emailInvestigation/);
+    assert.match(pipelineSource, /investigationType: investigationRouting\.primaryInvestigationType/);
+    assert.match(pipelineSource, /investigationRouting\.primaryInvestigationType === "DOMAIN_BUSINESS_LEGAL_ENTITY"/);
   } finally {
     globalThis.fetch = originalFetch;
     if (originalKey === undefined) delete process.env.BRAVE_SEARCH_API_KEY; else process.env.BRAVE_SEARCH_API_KEY = originalKey;

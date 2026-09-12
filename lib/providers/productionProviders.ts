@@ -201,7 +201,7 @@ export class WHOISProvider extends ProductionProvider {
 export class AuthoritativeCompanyEvidenceProvider extends ProductionProvider { readonly id = "authoritative-company"; readonly name = "Authoritative Company Evidence Provider"; readonly version = "1.0.0"; readonly category = "business_profile" as const;
   async health(): Promise<ProviderHealth> { return { providerId: this.id, providerVersion: this.version, status: "healthy", checkedAt: new Date().toISOString(), metadata: { category: this.category, providerName: this.name, integration: "sec-company-tickers-exchange", authoritativeSource: SEC_COMPANY_TICKERS_EXCHANGE_URL } }; }
   protected async collect(context: ProviderExecutionContext): Promise<Pick<ProviderResult, "findings" | "evidence" | "metadata">> {
-    const target = publicCompanyTarget(context); if (!target.supported) throw new Error("Authoritative public-company lookup requires a ticker or CIK; domains, page titles and SSL certificates are not legal-identity sources.");
+    const target = publicCompanyTarget(context); if (!target.supported) throw new Error("Unsupported jurisdiction or entity class. The SEC provider supports US public issuers identified by ticker or CIK. Domains, page titles, and SSL certificates are not legal-identity sources.");
     const dataset = await fetchSecJson<SecCompanyTickerExchange>(SEC_COMPANY_TICKERS_EXCHANGE_URL);
     const row = dataset.data.find(([cik, , ticker]) => (target.cik && String(cik).padStart(10, "0") === target.cik) || (target.ticker && ticker.toUpperCase() === target.ticker));
     let submissions: { name?: string; website?: string; sic?: string; stateOfIncorporation?: string } | undefined;

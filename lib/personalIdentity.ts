@@ -26,6 +26,17 @@ export function isIdentityInvestigationReady(environment: IdentityReadinessEnvir
   return identityReadinessIssues(environment).length === 0;
 }
 
+export function identityInvestigationGuardIssues(
+  isPersonalIdentity: boolean,
+  signals: IdentitySignals,
+  environment: IdentityReadinessEnvironment = process.env,
+) {
+  if (!isPersonalIdentity) return [];
+  const issues = identityReadinessIssues(environment);
+  if (!hasSubmittedIdentitySignal(signals)) issues.push("At least one identity signal is required.");
+  return issues;
+}
+
 const unique = (values: unknown, normalize: (value: string) => string) => Array.isArray(values)
   ? [...new Set(values.filter((value): value is string => typeof value === "string").map((value) => normalize(value.trim())).filter(Boolean))]
   : [];
