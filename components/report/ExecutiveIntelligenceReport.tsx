@@ -161,7 +161,7 @@ export default function ExecutiveIntelligenceReport({ report }: { report: Shadow
               ["Investigation Date", dateTime(report.readyAt || report.createdAt)],
               ["Business Under Review", narrative?.businessName || report.target || report.entity],
               ["Investigation Type", investigationType],
-              ["Investigation Status", levelLabel(report.reportSummary?.completionStatus || "NO_EVIDENCE_ABSTAIN")],
+              ["Investigation Status", report.reportSummary?.completionStatus ? levelLabel(report.reportSummary.completionStatus) : "Status not recorded"],
               ["Evidence Sources Reviewed", sourceCount],
               ["Search results reviewed", lifecycleCounts?.observations ?? 0],
               ["Potential identity matches", Math.max(lifecycleCounts?.discoveryCandidates ?? 0, publicIdentityCandidates.length)],

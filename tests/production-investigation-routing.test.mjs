@@ -56,7 +56,7 @@ test("corporate provider guard prevents a generic Sharon pivot and unrelated can
 });
 
 const provider = (executionCode, coverageState = "gap") => ({ providerId: "authoritative-company", providerVersion: "1", status: "skipped", startedAt: "", completedAt: "", duration: 0, findings: [], evidence: [], errors: [], metadata: { executionCode, coverageState, jurisdiction: null, providerSupportedJurisdictions: ["US federal public issuers"] } });
-const evidenceItem = (type, category = "Verified") => ({ id: `evidence-${type}`, source: "test-source", provider: "external-identity", category, status: category === "Verified" ? "observed" : "not_checked", confidence: 85, title: "Production evidence", description: "Production evidence", businessImpact: "Review the evidence.", evidenceRefs: [{ id: type, type, label: type, source: "test-source" }] });
+const evidenceItem = (type, category = "Verified", id = type, source = "test-source") => ({ id: `evidence-${id}`, source, provider: "external-identity", category, status: category === "Verified" ? "observed" : "not_checked", confidence: 85, title: "Production evidence", description: "Production evidence", businessImpact: "Review the evidence.", evidenceRefs: [{ id, type, label: type, source }] });
 
 test("coverage outcomes remain distinct", () => {
   assert.equal(investigationCompletionStatus([provider("UNSUPPORTED_JURISDICTION")], []), "UNSUPPORTED_JURISDICTION");
@@ -69,6 +69,18 @@ test("provider execution failures override unrelated observations", () => {
   const infrastructureObservation = evidenceItem("document");
   assert.equal(investigationCompletionStatus([{ ...provider("PROVIDER_EXECUTION_TIMEOUT"), providerId: "external-identity" }], []), "COVERAGE_GAP");
   assert.equal(investigationCompletionStatus([provider("PROVIDER_EXECUTION_FAILURE")], [infrastructureObservation]), "COVERAGE_GAP");
+});
+
+test("failed provider HTTP outcomes override target echoes and other observations", () => {
+  const targetEcho = evidenceItem("observation", "Verified", "profile-domain");
+  const independentDocument = evidenceItem("document");
+  for (const httpOutcome of ["blocked", "timeout", "network_failure", "tls_failure", "unsupported_content", "challenge_page", "parser_failure"]) {
+    const failedBusinessProfile = { ...provider(undefined, "available"), providerId: "business-profile", status: "completed", metadata: { httpOutcome } };
+    assert.equal(investigationCompletionStatus([failedBusinessProfile], [targetEcho, independentDocument]), "COVERAGE_GAP", httpOutcome);
+  }
+  const successfulBusinessProfile = { ...provider(undefined, "available"), providerId: "business-profile", status: "completed", metadata: { httpOutcome: "completed_with_evidence" } };
+  assert.equal(investigationCompletionStatus([successfulBusinessProfile], [targetEcho]), "NO_EVIDENCE_ABSTAIN");
+  assert.equal(investigationCompletionStatus([successfulBusinessProfile], [targetEcho, independentDocument]), "COMPLETED_WITH_EVIDENCE");
 });
 
 test("canonically personal website-mode free-mail is guarded at intake and execution", async () => {
@@ -128,4 +140,18 @@ test("production-shaped paid personal reports preserve and render every canonica
   }
   assert.match(presentation, /personalCompletionPresentation\(summary\?\.completionStatus\)/);
   assert.match(presentation, /aria-label="Investigation completion status"/);
+});
+
+test("checkout presents canonical personal scope and blocks disabled indirect entry", async () => {
+  const intakePage = await readFile(new URL("../app/intake/page.tsx", import.meta.url), "utf8");
+  assert.match(intakePage, /canonicalRouting\.primaryInvestigationType === "PERSON_IDENTITY"/);
+  assert.match(intakePage, /canonicalPersonalInvestigation && !personalIdentityEnabled/);
+  assert.match(intakePage, /checkoutRouting\.primaryInvestigationType === "PERSON_IDENTITY"/);
+  assert.match(intakePage, /checkoutIsPersonal \? "Personal Identity" : "Business"/);
+});
+
+test("business reports keep missing legacy completion status unknown", async () => {
+  const presentation = await readFile(new URL("../components/report/ExecutiveIntelligenceReport.tsx", import.meta.url), "utf8");
+  assert.match(presentation, /completionStatus \? levelLabel\(report\.reportSummary\.completionStatus\) : "Status not recorded"/);
+  assert.doesNotMatch(presentation, /completionStatus \|\| "NO_EVIDENCE_ABSTAIN"/);
 });

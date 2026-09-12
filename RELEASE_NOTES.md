@@ -240,3 +240,4 @@ This file records customer-visible improvements in each ShadowScore release.
 - Executive Reports now show evidence and coverage outcomes instead of treating orchestration completion as investigation completion.
 - Personal Identity reports now show the canonical investigation outcome to customers. Submitted inputs and provider placeholders no longer count as completed evidence.
 - Personal investigation readiness now follows canonical routing at intake and execution. Provider timeouts and execution failures remain visible as coverage gaps, even when another provider returns infrastructure observations.
+- Checkout now shows the canonical investigation scope before payment. Reports preserve unknown legacy completion states, and failed HTTP provider outcomes remain visible as coverage gaps.
