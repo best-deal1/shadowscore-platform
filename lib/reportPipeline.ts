@@ -59,9 +59,9 @@ export async function buildReadyReport(input: {
     throw new Error("Report generation requires paymentStatus == paid.");
   }
 
-  const submittedTarget = intake.target.trim();
-  const submittedClassification = classifyTarget(submittedTarget);
   const investigationRouting = resolveInvestigationRouting(intake);
+  const submittedTarget = investigationRouting.submittedSeed.trim();
+  const submittedClassification = classifyTarget(submittedTarget);
   const emailRouting = investigationRouting.emailClassification ? investigationRouting : undefined;
   const resolvableTarget = ["Email", "Website"].includes(submittedClassification.targetType);
   const resolution = resolvableTarget ? resolutionTarget(investigationRouting.primaryInvestigationEntity) : undefined;
@@ -69,7 +69,7 @@ export async function buildReadyReport(input: {
   const personalIdentityInvestigation = investigationRouting.primaryInvestigationType === "PERSON_IDENTITY";
   const providerTarget = investigationRouting.primaryInvestigationEntity;
   const canonicalTarget = investigationRouting.primaryInvestigationEntity;
-  const personalSignals = personalIdentityInvestigation ? normalizeIntakeIdentitySignals(intake.identitySignals, { target: intake.target, email: intake.email }) : undefined;
+  const personalSignals = personalIdentityInvestigation ? normalizeIntakeIdentitySignals(intake.identitySignals, { target: submittedTarget, email: intake.email }) : undefined;
   const personalGuardIssues = identityInvestigationGuardIssues(personalIdentityInvestigation, personalSignals || { emails: [], phones: [], names: [], usernames: [], referenceImages: [] });
   if (personalGuardIssues.length) {
     console.error("personal_identity_execution_blocked", { investigationId: intake.intakeId, issues: personalGuardIssues });
@@ -312,7 +312,10 @@ export async function buildReadyReport(input: {
       investigationType: investigationRouting.primaryInvestigationType,
       mailboxProviderDomain: emailRouting?.domainInvestigated,
       investigationRouting,
-      completionStatus: investigationCompletionStatus(providerResultsWithCanonicalIdentity, evidenceItems),
+      completionStatus: investigationCompletionStatus(providerResultsWithCanonicalIdentity, evidenceItems, {
+        executionRecords,
+        requiredPlanSteps: executionPlan.executionPlan,
+      }),
       publicIdentityCandidates,
       discoveryDiagnostics,
     },
