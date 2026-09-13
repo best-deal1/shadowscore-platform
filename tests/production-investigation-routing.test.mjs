@@ -155,3 +155,37 @@ test("business reports keep missing legacy completion status unknown", async () 
   assert.match(presentation, /completionStatus \? levelLabel\(report\.reportSummary\.completionStatus\) : "Status not recorded"/);
   assert.doesNotMatch(presentation, /completionStatus \|\| "NO_EVIDENCE_ABSTAIN"/);
 });
+
+
+test("missing or failed required engines produce a coverage gap", () => {
+  const requiredPlanSteps = [
+    { engineId: "marketplace", label: "Marketplace Engine", order: 1, required: true, reason: "Required marketplace check." },
+    { engineId: "graph", label: "Graph", order: 2, required: false, reason: "Optional correlation." },
+  ];
+  const substantiveEvidence = [evidenceItem("document")];
+
+  assert.equal(investigationCompletionStatus([], substantiveEvidence, {
+    requiredPlanSteps,
+    executionRecords: [
+      { engineId: "marketplace", label: "Marketplace Engine", order: 1, status: "skipped", reason: "No registered provider is available for this orchestrator step.", evidenceCount: 0, findingCount: 0, errors: [] },
+      { engineId: "graph", label: "Graph", order: 2, status: "executed", evidenceCount: 1, findingCount: 0, errors: [] },
+    ],
+  }), "COVERAGE_GAP");
+
+  assert.equal(investigationCompletionStatus([], substantiveEvidence, {
+    requiredPlanSteps,
+    executionRecords: [
+      { engineId: "marketplace", label: "Marketplace Engine", order: 1, status: "executed", evidenceCount: 1, findingCount: 0, errors: [] },
+      { engineId: "graph", label: "Graph", order: 2, status: "skipped", evidenceCount: 0, findingCount: 0, errors: [] },
+    ],
+  }), "COMPLETED_WITH_EVIDENCE");
+});
+
+test("report execution derives classification and provider inputs from the persisted seed", async () => {
+  const pipeline = await readFile(new URL("../lib/reportPipeline.ts", import.meta.url), "utf8");
+  assert.match(pipeline, /const investigationRouting = resolveInvestigationRouting\(intake\);[\s\S]*const submittedTarget = investigationRouting\.submittedSeed\.trim\(\);[\s\S]*const submittedClassification = classifyTarget\(submittedTarget\)/);
+  assert.match(pipeline, /requestedTarget: submittedTarget/);
+  assert.match(pipeline, /target: submittedTarget, email: intake\.email/);
+  assert.match(pipeline, /requiredPlanSteps: executionPlan\.executionPlan/);
+  assert.doesNotMatch(pipeline, /const submittedTarget = intake\.target\.trim\(\)/);
+});
