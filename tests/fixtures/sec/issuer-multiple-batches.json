@@ -1,0 +1,13 @@
+{
+  "cik": "320193",
+  "name": "Apple Inc.",
+  "filings": {
+    "recent": {
+      "accessionNumber": ["0000320193-26-000003", "0000320193-26-000002"],
+      "filingDate": ["2026-03-03", "2026-02-02"],
+      "form": ["4", "10-Q"],
+      "primaryDocument": ["ownership.xml", "aapl-q2.htm"]
+    },
+    "files": [{ "name": "CIK0000320193-submissions-001.json" }]
+  }
+}

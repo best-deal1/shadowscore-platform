@@ -1,0 +1,13 @@
+{
+  "cik": "789019",
+  "name": "Microsoft Corporation",
+  "filings": {
+    "recent": {
+      "accessionNumber": ["0000789019-26-000010"],
+      "filingDate": ["2026-02-03"],
+      "form": ["8-K"],
+      "primaryDocument": ["msft-20260203.htm"]
+    },
+    "files": []
+  }
+}

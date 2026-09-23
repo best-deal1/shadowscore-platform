@@ -13,5 +13,6 @@ export type SECSubmissions = {
   sic?: string;
   stateOfIncorporation?: string;
   website?: string;
+  filings?: unknown;
   [key: string]: unknown;
 };
