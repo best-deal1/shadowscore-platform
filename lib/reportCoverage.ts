@@ -17,7 +17,7 @@ function isSubstantiveEvidence(item: EvidenceItem) {
     && reference.type !== "search_result"
     && reference.type !== "provider"
     && reference.source !== "submitted-target"
-    && !/^(?:profile|metadata)-domain$/.test(reference.id),
+    && !/^(?:dns|profile|metadata)-domain$/.test(reference.id),
   );
 }
 
@@ -25,7 +25,11 @@ const FAILED_HTTP_OUTCOMES = new Set(["blocked", "timeout", "network_failure", "
 
 function hasFailedHttpOutcome(result: ProviderResult) {
   const outcome = result.metadata.httpOutcome;
-  return typeof outcome === "string" && FAILED_HTTP_OUTCOMES.has(outcome);
+  const statusCode = result.metadata.httpDiagnostics && typeof result.metadata.httpDiagnostics === "object"
+    ? (result.metadata.httpDiagnostics as { statusCode?: unknown }).statusCode
+    : undefined;
+  return (typeof statusCode === "number" && (statusCode < 200 || statusCode >= 300))
+    || (typeof outcome === "string" && FAILED_HTTP_OUTCOMES.has(outcome));
 }
 
 function hasRequiredExecutionGap(context?: CompletionExecutionContext) {
