@@ -40,10 +40,11 @@ const TARGET_ENGINE_MATRIX: Record<TargetClassificationInput["targetType"], Orch
 };
 
 function enginesFor(classification: TargetClassificationInput, routing?: InvestigationRouting): OrchestratorEngineId[] {
+  if (routing?.primaryInvestigationType === "PERSON_IDENTITY") {
+    return ["email-intelligence", "external-identity"];
+  }
   if (classification.targetType !== "Email") return TARGET_ENGINE_MATRIX[classification.targetType] ?? [];
-  return routing?.primaryInvestigationType === "PERSON_IDENTITY"
-    ? ["email-intelligence", "external-identity"]
-    : ["email-intelligence", "domain", "whois", "ssl", "business-profile", "authoritative-company"];
+  return ["email-intelligence", "domain", "whois", "ssl", "business-profile", "authoritative-company"];
 }
 
 function planIdFor(classification: TargetClassificationInput, engineIds: OrchestratorEngineId[]): string {
