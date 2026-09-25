@@ -862,7 +862,7 @@ export default function IntakePage() {
 
     if (!canAnalyze) return;
 
-    if (scanMode !== "website") {
+    if (scanMode !== "website" || canonicalPersonalInvestigation) {
       setFreeScanResult(null);
       setPreviewStatus("ready");
       return;
@@ -1318,7 +1318,7 @@ export default function IntakePage() {
                   const submittedTarget = freeScanResult?.targetResolution?.requestedTarget || activeTarget;
                   const checkoutRouting = resolveInvestigationRouting({ target: submittedTarget, scanMode });
                   const checkoutIsPersonal = checkoutRouting.primaryInvestigationType === "PERSON_IDENTITY";
-                  const checkoutScope = checkoutIsPersonal ? "Personal identity" : activeMode.label;
+                  const checkoutScope = checkoutIsPersonal ? "Personal identity" : "Business and domain";
                   return <>
                     <QuickCheckResult target={submittedTarget} report={freeScanResult?.quickCheck} />
 
