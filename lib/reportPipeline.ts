@@ -105,7 +105,7 @@ export async function buildReadyReport(input: {
   } : classifiedPlan;
   executionFlow.push("✓ Execution plan created");
   const execution = await providerManager.runExecutionPlan(providerContext, executionPlan.executionPlan, executionPlan.skippedEngines);
-  const isolated = intake.scanMode === "website" && resolution?.inputType !== "email" ? isolateProviderResults({ investigationId: intake.intakeId, submittedTarget, providerResults: execution.providerResults }) : undefined;
+  const isolated = investigationRouting.primaryInvestigationType === "DOMAIN_BUSINESS_LEGAL_ENTITY" && resolution?.inputType !== "email" ? isolateProviderResults({ investigationId: intake.intakeId, submittedTarget, providerResults: execution.providerResults }) : undefined;
   const providerResults = isolated?.providerResults || execution.providerResults;
   const targetResolution = isolated?.resolution;
   const executionRecords = execution.executionRecords;
