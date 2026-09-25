@@ -6,7 +6,7 @@ import type {
   SkippedEngine,
   TargetClassificationInput,
 } from "./types";
-import { classifyEmailInvestigation, isPublicMailboxDomain } from "../emailDomains";
+import { resolveInvestigationRouting, type InvestigationRouting } from "../investigationRouting";
 
 const ENGINE_DEFINITIONS: Record<OrchestratorEngineId, EngineDefinition> = {
   dns: { engineId: "dns", label: "DNS", supportedTargets: ["Website", "Business", "Company", "Brand", "Business Profile", "Evidence Package"] },
@@ -39,17 +39,12 @@ const TARGET_ENGINE_MATRIX: Record<TargetClassificationInput["targetType"], Orch
   Unknown: [],
 };
 
-function emailDomain(target: string) {
-  const match = /^[^\s@]+@([^\s@]+)$/i.exec(target.trim());
-  return match?.[1]?.toLowerCase().replace(/^www\./, "");
-}
-
-function enginesFor(classification: TargetClassificationInput): OrchestratorEngineId[] {
+function enginesFor(classification: TargetClassificationInput, routing?: InvestigationRouting): OrchestratorEngineId[] {
+  if (routing?.primaryInvestigationType === "PERSON_IDENTITY") {
+    return ["email-intelligence", "external-identity"];
+  }
   if (classification.targetType !== "Email") return TARGET_ENGINE_MATRIX[classification.targetType] ?? [];
-  const domain = emailDomain(classification.normalizedTarget || "");
-  return domain && isPublicMailboxDomain(domain)
-    ? ["email-intelligence", "external-identity"]
-    : ["email-intelligence", "domain", "whois", "ssl", "business-profile", "authoritative-company"];
+  return ["email-intelligence", "domain", "whois", "ssl", "business-profile", "authoritative-company"];
 }
 
 function planIdFor(classification: TargetClassificationInput, engineIds: OrchestratorEngineId[]): string {
@@ -83,8 +78,9 @@ function reasonForEngine(engineId: OrchestratorEngineId, classification: TargetC
   }
 }
 
-export function createExecutionPlan(classification: TargetClassificationInput): ExecutionPlan {
-  const engineIds = enginesFor(classification);
+export function createExecutionPlan(classification: TargetClassificationInput, routing?: InvestigationRouting): ExecutionPlan {
+  const canonicalRouting = routing || (classification.targetType === "Email" ? resolveInvestigationRouting({ target: classification.normalizedTarget }) : undefined);
+  const engineIds = enginesFor(classification, canonicalRouting);
   const selected = new Set(engineIds);
   const executionPlan: EnginePlanStep[] = engineIds.map((engineId, index) => ({
     engineId,
@@ -110,10 +106,9 @@ export function createExecutionPlan(classification: TargetClassificationInput): 
     engineIds.length > 0 ? `Selected ${engineIds.length} deterministic engine(s) for this target type.` : "No deterministic engine path is available for this target type.",
   ];
   if (classification.targetType === "Email") {
-    const domain = emailDomain(classification.normalizedTarget || "");
-    if (domain) reasoning.push(isPublicMailboxDomain(domain)
-      ? `Detected public mailbox domain ${domain}; business-domain infrastructure checks are suppressed.`
-      : `Detected custom email domain ${domain}; domain evidence remains available as a candidate corporate signal.`);
+    if (canonicalRouting?.domainInvestigated) reasoning.push(canonicalRouting.emailClassification === "FREE_MAIL"
+      ? `Canonical routing identifies public mailbox domain ${canonicalRouting.domainInvestigated}; business-domain infrastructure checks are suppressed.`
+      : `Canonical routing identifies custom email domain ${canonicalRouting.domainInvestigated}; the domain and business are the primary entity.`);
   }
   if (classification.detectedPlatform) reasoning.push(`Detected platform ${classification.detectedPlatform} influenced marketplace-aware planning.`);
 
@@ -126,7 +121,7 @@ export function createExecutionPlan(classification: TargetClassificationInput): 
     skippedEngines,
     reasoning,
     estimatedCoverage: coverageFor(executionPlan.length),
-    emailRouting: classification.targetType === "Email" ? classifyEmailInvestigation(classification.normalizedTarget) : undefined,
+    emailRouting: canonicalRouting?.emailClassification ? canonicalRouting : undefined,
   };
 }
 
