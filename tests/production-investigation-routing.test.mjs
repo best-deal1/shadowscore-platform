@@ -150,6 +150,32 @@ test("checkout presents canonical personal scope and blocks disabled indirect en
   assert.match(intakePage, /checkoutIsPersonal \? "Personal Identity" : "Business"/);
 });
 
+test("non-email canonical personal seeds plan identity engines before target fallback", () => {
+  for (const target of ["+14155550123", "Jane Example", "@jane_example"]) {
+    const routing = resolveInvestigationRouting({ target, scanMode: "personal" });
+    const executionPlan = createExecutionPlan(classifyTarget(target), routing);
+    assert.equal(routing.primaryInvestigationType, "PERSON_IDENTITY");
+    assert.deepEqual(executionPlan.executionPlan.map(({ engineId }) => engineId), ["email-intelligence", "external-identity"]);
+  }
+});
+
+test("ordinary unsuccessful HTTP statuses and DNS input echoes cannot complete with evidence", () => {
+  const errorPage = { ...provider(undefined, "available"), providerId: "business-profile", status: "completed", metadata: { httpOutcome: "completed_with_evidence", httpDiagnostics: { statusCode: 404 } } };
+  assert.equal(investigationCompletionStatus([errorPage], [evidenceItem("document")]), "COVERAGE_GAP");
+  assert.equal(investigationCompletionStatus([], [evidenceItem("observation", "Verified", "dns-domain", "node:dns")]), "NO_EVIDENCE_ABSTAIN");
+});
+
+test("canonical routes control preview, checkout scope, and domain isolation", async () => {
+  const [intakePage, pipeline] = await Promise.all([
+    readFile(new URL("../app/intake/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../lib/reportPipeline.ts", import.meta.url), "utf8"),
+  ]);
+  assert.match(intakePage, /scanMode !== "website" \|\| canonicalPersonalInvestigation/);
+  assert.match(intakePage, /checkoutIsPersonal \? "Personal identity" : "Business and domain"/);
+  assert.match(pipeline, /investigationRouting\.primaryInvestigationType === "DOMAIN_BUSINESS_LEGAL_ENTITY"[\s\S]*isolateProviderResults/);
+  assert.doesNotMatch(pipeline, /intake\.scanMode === "website"[\s\S]{0,120}isolateProviderResults/);
+});
+
 test("business reports keep missing legacy completion status unknown", async () => {
   const presentation = await readFile(new URL("../components/report/ExecutiveIntelligenceReport.tsx", import.meta.url), "utf8");
   assert.match(presentation, /completionStatus \? levelLabel\(report\.reportSummary\.completionStatus\) : "Status not recorded"/);
