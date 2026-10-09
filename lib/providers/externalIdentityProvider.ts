@@ -243,6 +243,15 @@ export async function investigateEntityClues(seed: EntityInvestigationSeed, sear
 }
 
 function emailFromContext(context: ProviderExecutionContext) { const values = [context.requestedTarget, context.target, context.email].filter(Boolean) as string[]; return values.map((value) => value.trim().toLowerCase()).find((value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)); }
+function nonEmailSeedsFromContext(context: ProviderExecutionContext): EntityInvestigationSeed[] {
+  const signals = context.identitySignals;
+  if (!signals) return [];
+  return [
+    ...signals.phones.map((value) => ({ type: "phone" as const, value })),
+    ...signals.usernames.map((value) => ({ type: "username" as const, value })),
+    ...signals.names.map((value) => ({ type: "person_name" as const, value })),
+  ];
+}
 function containsExactEmailToken(text: string, email: string) { const escaped = email.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); return new RegExp(`(^|[^A-Z0-9._%+\\-])${escaped}($|[^A-Z0-9._%+\\-])`, "i").test(text); }
 function platformFor(url: string) { try {
   const parsed = new URL(url); const host = parsed.hostname.toLowerCase().replace(/^www\./, "");
@@ -282,6 +291,10 @@ function usefulIdentifier(value: string, original: Set<string>) {
     && !/^(?:log\s*in|sign\s*(?:in|up)|search results?|click here|learn more)$/i.test(normalized);
 }
 function containsIdentifier(text: string, identifier: string) {
+  if (/^\+?[\d\s().-]{7,}$/.test(identifier)) {
+    const normalizedPhone = identifier.replace(/\D/g, "");
+    return normalizedPhone.length >= 7 && text.replace(/\D/g, "").includes(normalizedPhone);
+  }
   const escaped = identifier.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   return new RegExp(`(^|[^\\p{L}\\p{N}_.-])@?${escaped}($|[^\\p{L}\\p{N}_.-])`, "iu").test(text);
 }
@@ -916,8 +929,45 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
 export async function discoverExternalIdentityCandidates(email: string, apiKey: string, signal: AbortSignal) { return (await discoverExternalIdentityGraph(email, apiKey, signal)).candidates; }
 
 export class EmailIntelligenceProvider extends BaseProvider { readonly id = "email-intelligence"; readonly name = "Email Intelligence"; readonly version = "1.2.0"; readonly category = "business_profile" as const; protected async collect(context: ProviderExecutionContext): Promise<Pick<ProviderResult, "findings" | "evidence" | "metadata">> { const email = emailFromContext(context); if (!email) throw new Error("Email intelligence requires an email target."); const routing = context.investigationRouting || resolveInvestigationRouting({ target: email, scanMode: context.scanMode }); const domain = routing.domainInvestigated; const publicMailbox = routing.emailClassification === "FREE_MAIL"; return { findings: [], evidence: [{ id: "email-target-classification", type: "placeholder", label: "Mailbox classification", value: publicMailbox ? "Public mailbox provider" : "Corporate/custom domain candidate", source: "submitted-target", investigationId: context.investigationId || context.intakeId, canonicalTarget: email, providerName: this.name, collectedAt: new Date().toISOString() }], metadata: { lookupPerformed: true, submittedEmail: email, emailDomain: domain, publicMailbox, investigationRouting: routing, evidenceIndependence: "submitted_input_only" } }; } }
-export class ExternalIdentityProvider extends BaseProvider { readonly id = "external-identity"; readonly name = "External Identity Discovery"; readonly version = "4.2.0"; readonly category = "business_profile" as const; failureReason(error: unknown): ProviderFailureReason { if (error instanceof Error && /BRAVE_SEARCH_API_KEY|credential|not configured|provider unavailable/i.test(error.message)) return "Unavailable"; return super.failureReason(error); } protected async collect(context: ProviderExecutionContext): Promise<Pick<ProviderResult, "findings" | "evidence" | "metadata">> { const email = emailFromContext(context); if (!email) throw new Error("External identity discovery requires an email target."); const routing = context.investigationRouting || resolveInvestigationRouting({ target: email, scanMode: context.scanMode }); if (routing.emailClassification === "CORPORATE_DOMAIN" || !routing.localPartIdentityExpansionPermitted) return { findings: [], evidence: [], metadata: { lookupPerformed: false, submittedEmail: email, investigationRouting: routing, candidateCount: 0, externalIdentityCandidates: [], evidencePolicy: "Corporate mailbox identity expansion requires independent evidence connecting a person to the domain or organization." } }; const apiKey = process.env.BRAVE_SEARCH_API_KEY; if (!apiKey) throw new Error("External identity provider unavailable: BRAVE_SEARCH_API_KEY is not configured."); const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 8_000); try { const metadata = context.resolvedEntity?.metadata || {};
+export class ExternalIdentityProvider extends BaseProvider { readonly id = "external-identity"; readonly name = "External Identity Discovery"; readonly version = "4.3.0"; readonly category = "business_profile" as const; failureReason(error: unknown): ProviderFailureReason { if (error instanceof Error && /BRAVE_SEARCH_API_KEY|credential|not configured|provider unavailable/i.test(error.message)) return "Unavailable"; return super.failureReason(error); } protected async collect(context: ProviderExecutionContext): Promise<Pick<ProviderResult, "findings" | "evidence" | "metadata">> { const email = emailFromContext(context); const nonEmailSeeds = nonEmailSeedsFromContext(context); if (!email && !nonEmailSeeds.length) throw new Error("External identity discovery requires an email, phone number, name, or username."); const routing = context.investigationRouting || resolveInvestigationRouting({ target: email || nonEmailSeeds[0].value, scanMode: context.scanMode }); if (email && (routing.emailClassification === "CORPORATE_DOMAIN" || !routing.localPartIdentityExpansionPermitted)) return { findings: [], evidence: [], metadata: { lookupPerformed: false, submittedEmail: email, investigationRouting: routing, candidateCount: 0, externalIdentityCandidates: [], evidencePolicy: "Corporate mailbox identity expansion requires independent evidence connecting a person to the domain or organization." } }; const apiKey = process.env.BRAVE_SEARCH_API_KEY; if (!apiKey) throw new Error("External identity provider unavailable: BRAVE_SEARCH_API_KEY is not configured."); const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 8_000); try { const metadata = context.resolvedEntity?.metadata || {};
     const textSignal = (key: string) => typeof metadata[key] === "string" ? String(metadata[key]).trim() || undefined : undefined;
+    if (!email) {
+      const supportingSignals = nonEmailSeeds.map((seed) => seed.value);
+      const investigations = await Promise.all(nonEmailSeeds.slice(0, 3).map((seed) => investigateEntityClues(
+        seed,
+        (query) => braveSearch([query, ...supportingSignals.filter((value) => value !== seed.value).slice(0, 2).map((value) => `"${value.replace(/["\\]/g, " ")}"`)].join(" "), apiKey, controller.signal, DEFAULT_IDENTITY_DISCOVERY_LIMITS.maxResultsPerSearch),
+        DEFAULT_IDENTITY_DISCOVERY_LIMITS,
+      )));
+      const admittedResults = investigations.flatMap((investigation) => investigation.diagnostics.flatMap((diagnostic) => diagnostic.results
+        .filter((result) => result.evidenceAdmissionDecision === "EVIDENCE_ADMITTED")
+        .map((result) => ({ result, query: diagnostic.query }))));
+      const uniqueResults = [...new Map(admittedResults.map((entry) => [canonicalUrl(entry.result.url), entry])).values()];
+      const canonicalTarget = context.requestedTarget || nonEmailSeeds[0].value;
+      const evidence: ProviderEvidence[] = uniqueResults.map(({ result }, index) => ({
+        id: `external-identity-signal-${index + 1}`,
+        type: "document",
+        label: "Public identity evidence",
+        value: `${result.title} | ${result.description}`,
+        source: result.url,
+        sourceFamily: underlyingSourceFamily(result.url),
+        investigationId: context.investigationId || context.intakeId,
+        canonicalTarget,
+        providerName: this.name,
+        collectedAt: new Date().toISOString(),
+      }));
+      return { findings: [], evidence, metadata: {
+        lookupPerformed: true,
+        submittedSignals: context.identitySignals,
+        candidateCount: uniqueResults.length,
+        entityClues: investigations.flatMap((item) => item.clues),
+        entityRelationships: investigations.flatMap((item) => item.relationships),
+        entityConvergences: investigations.flatMap((item) => item.convergences),
+        identityDiscoverySearches: investigations.flatMap((item) => item.diagnostics),
+        identityDiscoveryMetrics: { searches: investigations.reduce((sum, item) => sum + item.metrics.searchCount, 0), seedCount: investigations.length },
+        evidenceQueries: uniqueResults.map((entry) => entry.query),
+        evidencePolicy: "Submitted signals guide discovery but are not independent corroboration. Only source-local evidence tied to the submitted subject is admitted.",
+      } };
+    }
     const graph = await discoverExternalIdentityGraph(email, apiKey, controller.signal, { signals: {
       name: context.identitySignals?.names[0] || context.resolvedEntity?.canonicalName || textSignal("name"),
       username: context.identitySignals?.usernames[0] || textSignal("username") || textSignal("handle"),

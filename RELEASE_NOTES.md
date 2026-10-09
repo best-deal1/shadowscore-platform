@@ -241,3 +241,8 @@ This file records customer-visible improvements in each ShadowScore release.
 - Personal Identity reports now show the canonical investigation outcome to customers. Submitted inputs and provider placeholders no longer count as completed evidence.
 - Personal investigation readiness now follows canonical routing at intake and execution. Provider timeouts and execution failures remain visible as coverage gaps, even when another provider returns infrastructure observations.
 - Checkout now shows the canonical investigation scope before payment. Reports preserve unknown legacy completion states, and failed HTTP provider outcomes remain visible as coverage gaps.
+
+## Personal identity signal execution
+
+- Phone, name, and username investigations now use the signal-compatible public identity discovery engine instead of email-only providers.
+- Customer-visible completion remains evidence-gated. Submitted clues guide discovery but do not count as independent proof.

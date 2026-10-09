@@ -150,12 +150,48 @@ test("checkout presents canonical personal scope and blocks disabled indirect en
   assert.match(intakePage, /checkoutIsPersonal \? "Personal Identity" : "Business"/);
 });
 
-test("non-email canonical personal seeds plan identity engines before target fallback", () => {
+test("non-email canonical personal seeds plan only a signal-compatible identity engine", () => {
   for (const target of ["+14155550123", "Jane Example", "@jane_example"]) {
     const routing = resolveInvestigationRouting({ target, scanMode: "personal" });
     const executionPlan = createExecutionPlan(classifyTarget(target), routing);
     assert.equal(routing.primaryInvestigationType, "PERSON_IDENTITY");
-    assert.deepEqual(executionPlan.executionPlan.map(({ engineId }) => engineId), ["email-intelligence", "external-identity"]);
+    assert.deepEqual(executionPlan.executionPlan.map(({ engineId }) => engineId), ["external-identity"]);
+  }
+});
+
+test("external identity provider executes phone, name, and username investigations without email", async () => {
+  const previousKey = process.env.BRAVE_SEARCH_API_KEY;
+  const previousFetch = globalThis.fetch;
+  process.env.BRAVE_SEARCH_API_KEY = "test-key";
+  const queries = [];
+  globalThis.fetch = async (input) => {
+    queries.push(new URL(String(input)).searchParams.get("q"));
+    return Response.json({ web: { results: [{
+      title: "Jane Example | Owner at Example Works",
+      url: "https://example.test/people/jane-example",
+      description: "Person: Jane Example. Username: @jane_example. Company: Example Works. Phone: +1 415 555 0123",
+    }] } });
+  };
+  try {
+    const cases = [
+      { target: "+14155550123", identitySignals: { emails: [], phones: ["+14155550123"], names: [], usernames: [], referenceImages: [] } },
+      { target: "Jane Example", identitySignals: { emails: [], phones: [], names: ["Jane Example"], usernames: [], referenceImages: [] } },
+      { target: "@jane_example", identitySignals: { emails: [], phones: [], names: [], usernames: ["jane_example"], referenceImages: [] } },
+    ];
+    for (const item of cases) {
+      const routing = resolveInvestigationRouting({ target: item.target, scanMode: "personal" });
+      const result = await new ExternalIdentityProvider().execute({ intakeId: `signal-${queries.length}`, scanMode: "personal", target: item.target, requestedTarget: item.target, platform: "Personal Identity", fileNames: [], visibleSignalCategories: [], investigationRouting: routing, identitySignals: item.identitySignals });
+      assert.equal(result.status, "completed");
+      assert.equal(result.metadata.lookupPerformed, true);
+      if (item.target !== "@jane_example") assert.ok(result.evidence.length > 0, `${item.target} should produce admitted evidence`);
+    }
+    assert.ok(queries.some((query) => query.includes("+14155550123")));
+    assert.ok(queries.some((query) => query.includes("Jane Example")));
+    assert.ok(queries.some((query) => query.includes("jane_example")));
+  } finally {
+    globalThis.fetch = previousFetch;
+    if (previousKey === undefined) delete process.env.BRAVE_SEARCH_API_KEY;
+    else process.env.BRAVE_SEARCH_API_KEY = previousKey;
   }
 });
 

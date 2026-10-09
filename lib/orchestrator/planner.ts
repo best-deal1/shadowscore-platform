@@ -41,7 +41,9 @@ const TARGET_ENGINE_MATRIX: Record<TargetClassificationInput["targetType"], Orch
 
 function enginesFor(classification: TargetClassificationInput, routing?: InvestigationRouting): OrchestratorEngineId[] {
   if (routing?.primaryInvestigationType === "PERSON_IDENTITY") {
-    return ["email-intelligence", "external-identity"];
+    return classification.targetType === "Email"
+      ? ["email-intelligence", "external-identity"]
+      : ["external-identity"];
   }
   if (classification.targetType !== "Email") return TARGET_ENGINE_MATRIX[classification.targetType] ?? [];
   return ["email-intelligence", "domain", "whois", "ssl", "business-profile", "authoritative-company"];
@@ -71,7 +73,7 @@ function reasonForEngine(engineId: OrchestratorEngineId, classification: TargetC
     case "reputation": return "Reputation signals are useful for public-facing commercial targets.";
     case "graph": return "Graph analysis links entities, identifiers, and evidence relationships.";
     case "email-intelligence": return "Email intelligence preserves and classifies the submitted email identifier without treating a public mailbox provider as the subject business.";
-    case "external-identity": return "Public web discovery searches for evidence-backed profiles and identity candidates associated with the submitted email.";
+    case "external-identity": return "Public web discovery searches for evidence-backed profiles and identity candidates associated with the submitted identity signals.";
     case "domain": return "A custom email domain can be investigated as a candidate corporate domain while the submitted email remains the primary identifier.";
     case "evidence-parser": return "Evidence packages must be parsed before downstream checks can compare claims.";
     case "contradiction-engine": return "Contradiction checks compare parsed evidence for inconsistent claims.";
