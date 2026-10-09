@@ -8,6 +8,7 @@ import { investigationCompletionStatus } from "../lib/reportCoverage.ts";
 import { presentReportForEndUser } from "../lib/workspace.ts";
 import { ExternalIdentityProvider } from "../lib/providers/externalIdentityProvider.ts";
 import { identityInvestigationGuardIssues, normalizeIntakeIdentitySignals } from "../lib/personalIdentity.ts";
+import { isolateProviderResults } from "../lib/targetIntegrity.ts";
 import { readFile } from "node:fs/promises";
 
 const plan = (target, scanMode, persisted) => {
@@ -241,6 +242,41 @@ test("missing or failed required engines produce a coverage gap", () => {
       { engineId: "graph", label: "Graph", order: 2, status: "skipped", evidenceCount: 0, findingCount: 0, errors: [] },
     ],
   }), "COMPLETED_WITH_EVIDENCE");
+});
+
+test("target isolation rejection of a required provider prevents successful completion", () => {
+  const providerResult = (providerId, evidence, metadata = {}) => ({
+    providerId,
+    providerVersion: "1",
+    status: "completed",
+    startedAt: "2026-10-09T00:00:00.000Z",
+    completedAt: "2026-10-09T00:00:01.000Z",
+    duration: 1000,
+    findings: [],
+    evidence,
+    metadata,
+    errors: [],
+  });
+  const isolated = isolateProviderResults({
+    investigationId: "redirect-isolation",
+    submittedTarget: "example.com",
+    providerResults: [
+      providerResult("business-profile", [{ id: "redirect-title", type: "document", label: "Page title", value: "Unrelated landing page", source: "public-web" }], { domain: "example.com", httpDiagnostics: { finalUrl: "https://unrelated.test/landing" } }),
+      providerResult("dns", [{ id: "dns-a", type: "document", label: "DNS A record", value: "203.0.113.5", source: "node:dns" }], { domain: "example.com" }),
+    ],
+  });
+  const executionRecords = [
+    { engineId: "dns", providerId: "dns", label: "DNS", order: 1, status: "executed", evidenceCount: 1, findingCount: 0, errors: [] },
+    { engineId: "business-profile", providerId: "business-profile", label: "Business Profile", order: 2, status: "executed", evidenceCount: 1, findingCount: 0, errors: [] },
+  ];
+  const requiredPlanSteps = [
+    { engineId: "dns", label: "DNS", order: 1, required: true, reason: "Required infrastructure check." },
+    { engineId: "business-profile", label: "Business Profile", order: 2, required: true, reason: "Required identity check." },
+  ];
+
+  assert.equal(isolated.resolution.redirectDomainMismatch, true);
+  assert.equal(isolated.providerResults.find((result) => result.providerId === "business-profile").metadata.evidenceRejected, true);
+  assert.equal(investigationCompletionStatus(isolated.providerResults, [evidenceItem("document")], { executionRecords, requiredPlanSteps }), "COVERAGE_GAP");
 });
 
 test("report execution derives classification and provider inputs from the persisted seed", async () => {

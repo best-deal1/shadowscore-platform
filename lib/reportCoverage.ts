@@ -42,6 +42,19 @@ function hasRequiredExecutionGap(context?: CompletionExecutionContext) {
   });
 }
 
+function hasRejectedRequiredEvidence(results: ProviderResult[], context?: CompletionExecutionContext) {
+  if (!context) return false;
+  const rejectedProviders = new Set(results
+    .filter((result) => result.metadata.evidenceRejected === true)
+    .map((result) => result.providerId));
+  const recordsByEngine = new Map(context.executionRecords.map((record) => [record.engineId, record]));
+  return context.requiredPlanSteps.some((step) => {
+    if (!step.required) return false;
+    const record = recordsByEngine.get(step.engineId);
+    return rejectedProviders.has(record?.providerId || step.engineId);
+  });
+}
+
 export function investigationCompletionStatus(
   results: ProviderResult[],
   evidenceItems: EvidenceItem[],
@@ -52,6 +65,7 @@ export function investigationCompletionStatus(
   if (results.some((result) => result.metadata.executionCode === "PROVIDER_EXECUTION_TIMEOUT" || result.metadata.executionCode === "PROVIDER_EXECUTION_FAILURE")) return "COVERAGE_GAP";
   if (results.some(hasFailedHttpOutcome)) return "COVERAGE_GAP";
   if (hasRequiredExecutionGap(executionContext)) return "COVERAGE_GAP";
+  if (hasRejectedRequiredEvidence(results, executionContext)) return "COVERAGE_GAP";
   if (results.some((result) => result.metadata.executionCode === "NO_AUTHORITATIVE_MATCH" || result.metadata.executionCode === "NO_EVIDENCE_RETURNED")) return "COMPLETED_WITH_UNRESOLVED_EVIDENCE";
   if (results.some((result) => result.metadata.coverageState === "gap")) return "COVERAGE_GAP";
   if (!evidenceItems.some(isSubstantiveEvidence)) return "NO_EVIDENCE_ABSTAIN";

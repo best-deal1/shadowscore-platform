@@ -24,10 +24,15 @@ test("production fixture rejects unrelated domains and stamps accepted evidence"
 test("provider scope and redirect destinations cannot silently replace the target",()=>{
  const prior=isolateProviderResults({investigationId:"new",submittedTarget:"gadgetdeals.co.il",providerResults:[result("smart-deals.biz",[{id:"cached",type:"observation",label:"Domain",value:"smart-deals.biz",source:"cache"}])]});
  assert.equal(prior.providerResults[0].evidence.length,0);
- const redirected=isolateProviderResults({investigationId:"new",submittedTarget:"gadgetdeals.co.il",providerResults:[result("gadgetdeals.co.il",[],{httpDiagnostics:{finalUrl:"https://smart-deals.biz/landing"}})]});
+ const redirected=isolateProviderResults({investigationId:"new",submittedTarget:"gadgetdeals.co.il",providerResults:[result("gadgetdeals.co.il",[{id:"generic",type:"document",label:"Page title",value:"Welcome",source:"public-web"}],{httpDiagnostics:{finalUrl:"https://smart-deals.biz/landing"}})]});
  assert.equal(redirected.resolution.canonicalTarget,"gadgetdeals.co.il");
  assert.equal(redirected.resolution.finalDestination,"smart-deals.biz");
  assert.equal(redirected.resolution.redirectDomainMismatch,true);
+ assert.equal(redirected.resolution.rejectedEvidenceCount,1);
+ assert.deepEqual(redirected.resolution.rejectedTargets,["smart-deals.biz"]);
+ assert.equal(redirected.providerResults[0].evidence.length,0);
+ assert.equal(redirected.providerResults[0].metadata.evidenceRejected,true);
+ assert.equal(redirected.providerResults[0].metadata.evidenceRejectionReason,"redirect_domain_mismatch");
 });
 
 test("customer and account email domains are not target inputs",()=>{

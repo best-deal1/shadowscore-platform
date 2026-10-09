@@ -246,3 +246,4 @@ This file records customer-visible improvements in each ShadowScore release.
 
 - Phone, name, and username investigations now use the signal-compatible public identity discovery engine instead of email-only providers.
 - Customer-visible completion remains evidence-gated. Submitted clues guide discovery but do not count as independent proof.
+- Required provider evidence rejected by target isolation now produces a visible coverage gap. Redirects to unrelated domains cannot produce a successful completion state.
