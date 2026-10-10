@@ -1,5 +1,7 @@
 # Release Notes
 
+- Personal Identity intake now interprets free-text requests into person, organization, role, and requested output. Name-led discovery carries that context into public-source queries, and reports show requested phone, email, or profile observations with source links while keeping uncorroborated results explicitly unverified.
+
 - Business discovery now keeps similarly named companies separate, preserves result-level claim provenance, avoids unrelated officer assignments, and retains attributable email and address leads.
 
 - Business email investigations now preserve each result's source family, keep search-derived company details out of authoritative registry evidence, and leave ambiguous registration numbers unbound for review.

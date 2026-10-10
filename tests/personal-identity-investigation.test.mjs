@@ -9,11 +9,13 @@ import {
   normalizeIdentitySignals,
   normalizeIntakeIdentitySignals,
   preserveContradictoryContacts,
+  requestedIdentityResults,
   scoreIdentityCandidate,
 } from "../lib/personalIdentity.ts";
 import { createIntake } from "../lib/workspace.ts";
-import { ExternalIdentityProvider } from "../lib/providers/externalIdentityProvider.ts";
+import { buildSignalIdentityCandidates, ExternalIdentityProvider } from "../lib/providers/externalIdentityProvider.ts";
 import { discoverExternalIdentityGraph, rankExternalIdentityCandidates } from "../lib/providers/externalIdentityProvider.ts";
+import { interpretIdentityRequest } from "../lib/identityRequest.ts";
 
 const signals = (input) => normalizeIdentitySignals(input);
 
@@ -28,6 +30,64 @@ test("combined investigation retains every normalized signal", () => {
   const result = signals({ emails: ["A@Example.com"], phones: ["+1 212-555-0100"], names: ["Ada Lovelace"], usernames: ["@Ada"] });
   assert.deepEqual(result, { emails: ["a@example.com"], phones: ["+12125550100"], names: ["Ada Lovelace"], usernames: ["ada"], referenceImages: [] });
   assert.match(identityObjective(result), /same person/);
+});
+
+test("free-text request separates person, organization, role, and requested phone", () => {
+  for (const request of [
+    "אריאל תובל נייד\nיכול להשיג\nעצמלא בעלים",
+    "אריאל תובל, עצמלא, בעלים, נייד",
+    "Ariel Tuval, Atzmale, owner, mobile number",
+  ]) {
+    const interpreted = interpretIdentityRequest(request);
+    assert.equal(interpreted.personName, /[\u0590-\u05ff]/u.test(request) ? "אריאל תובל" : "Ariel Tuval");
+    assert.equal(interpreted.organization, /[\u0590-\u05ff]/u.test(request) ? "עצמלא" : "Atzmale");
+    assert.equal(interpreted.role, /[\u0590-\u05ff]/u.test(request) ? "בעלים" : "owner");
+    assert.deepEqual(interpreted.requestedAttributes, ["phone"]);
+    assert.equal(interpreted.confidence, "high");
+    assert.equal(interpreted.needsConfirmation, false);
+  }
+});
+
+test("request context persists and produces an accurate source-backed objective", () => {
+  const result = signals({
+    names: ["Ariel Tuval"],
+    organizations: ["Atzmale"],
+    roles: ["owner"],
+    requestedAttributes: ["phone"],
+    requestText: "Ariel Tuval, Atzmale, owner, mobile number",
+  });
+  assert.deepEqual(result.organizations, ["Atzmale"]);
+  assert.deepEqual(result.roles, ["owner"]);
+  assert.deepEqual(result.requestedAttributes, ["phone"]);
+  assert.match(identityObjective(result), /Atzmale as owner/);
+  assert.match(identityObjective(result), /source-backed phone number/);
+});
+
+test("non-email discovery returns structured phone candidates for the requested result", () => {
+  const identitySignals = signals({
+    names: ["Ariel Tuval"],
+    organizations: ["Atzmale"],
+    roles: ["owner"],
+    requestedAttributes: ["phone"],
+  });
+  const candidates = buildSignalIdentityCandidates([{
+    query: '"Ariel Tuval" "Atzmale" "owner"',
+    result: {
+      title: "Ariel Tuval | Atzmale",
+      description: "Ariel Tuval, owner at Atzmale. Phone +972 50-123-4567.",
+      url: "https://atzmale.example/team/ariel-tuval",
+      canonicalDisplayName: "Ariel Tuval",
+      evidenceAdmissionScore: 100,
+    },
+  }], identitySignals);
+  assert.equal(candidates.length, 1);
+  assert.deepEqual(candidates[0].observedPhoneNumbers, ["+972 50-123-4567"]);
+  assert.deepEqual(candidates[0].observedOrganizations, ["Atzmale"]);
+  const requested = requestedIdentityResults(identitySignals, candidates);
+  assert.deepEqual(requested.map((result) => [result.type, result.value]), [["Phone number", "+972 50-123-4567"]]);
+  assert.equal(requested[0].sourceUrl, "https://atzmale.example/team/ariel-tuval");
+  assert.equal(requested[0].corroborated, false);
+  assert.equal(requested[0].association, "Observed on an unverified candidate source");
 });
 
 test("legacy personal targets recover identity signals only when structured signals are absent", () => {
@@ -196,7 +256,7 @@ test("production-shaped persisted personal email report uses only identity prese
 test("candidate presentation cannot promote discovery relevance without resolver matches", async () => {
   const presentation = await readFile(new URL("../components/report/PersonalIdentityReport.tsx", import.meta.url), "utf8");
   assert.match(presentation, /const evidenceScore = matched\.length \? candidate\.resolutionEvidenceScore \|\| 0 : 0/);
-  assert.match(presentation, /const verified = candidate\.resolutionOutcome === "MATCH" && matched\.length > 0/);
+  assert.match(presentation, /const verified = isCorroboratedIdentityCandidate\(candidate\)/);
   assert.match(presentation, /No positive resolver evidence/);
   assert.match(presentation, /Not returned by the source/);
 });

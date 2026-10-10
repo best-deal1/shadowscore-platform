@@ -43,6 +43,7 @@ export type ExternalIdentityCandidate = {
   resolverMatchedSignals?: Array<{ attribute: string; submitted: string; observed: string; similarity: number }>;
   resolverConflictingSignals?: Array<{ attribute: string; submitted: string; observed: string; similarity: number }>;
   observedEmails?: string[]; observedPhoneNumbers?: string[];
+  observedOrganizations?: string[]; observedRoles?: string[];
   sourceProvenance?: Array<{ url: string; family: string; query: string }>;
   independentSourceFamilyCount?: number;
   discoveryOnlyAlias?: boolean;
@@ -587,6 +588,73 @@ function observedContacts(hit: SearchResult) {
   return { emails, phoneNumbers };
 }
 
+type SignalSearchResult = { result: ResultAdmissionDiagnostic; query: string };
+
+export function buildSignalIdentityCandidates(
+  entries: SignalSearchResult[],
+  signals: NonNullable<ProviderExecutionContext["identitySignals"]>,
+): ExternalIdentityCandidate[] {
+  const submittedIdentifiers = [
+    ...signals.emails,
+    ...signals.phones,
+    ...signals.names,
+    ...signals.usernames,
+  ];
+  const submittedOrganizations = signals.organizations || [];
+  const submittedRoles = signals.roles || [];
+  const rawCandidates = entries.map(({ result, query }): ExternalIdentityCandidate => {
+    const text = `${result.title} ${result.description || ""} ${result.url}`;
+    const contacts = observedContacts({ title: result.title, description: result.description, url: result.url });
+    const matchedIdentifiers = submittedIdentifiers.filter((identifier) => containsIdentifier(text, identifier));
+    const matchedOrganizations = submittedOrganizations.filter((organization) => containsIdentifier(text, organization));
+    const matchedRoles = submittedRoles.filter((role) => containsIdentifier(text, role));
+    const sourceFamily = underlyingSourceFamily(result.url);
+    const platform = platformFor(result.url) || sourceClassFor(result.url).replace(/_/g, " ");
+    const observedDisplayName = result.canonicalDisplayName
+      || signals.names.find((name) => containsIdentifier(text, name))
+      || result.title;
+    const contextDetail = [
+      matchedOrganizations.length ? `organization ${matchedOrganizations.join(", ")}` : undefined,
+      matchedRoles.length ? `role ${matchedRoles.join(", ")}` : undefined,
+    ].filter(Boolean).join(" and ");
+
+    return {
+      platform,
+      profileUrl: canonicalUrl(result.url),
+      observedDisplayName,
+      matchedIdentifiers,
+      matchType: signals.usernames.some((username) => matchedIdentifiers.includes(username)) ? "username" : "alias",
+      status: "Candidate",
+      matchLevel: "unverified_candidate",
+      matchBasis: `The source repeats ${matchedIdentifiers.length ? `submitted identifier ${matchedIdentifiers.join(", ")}` : "the submitted subject"}${contextDetail ? ` with ${contextDetail}` : ""}. Contact details remain source observations until independently corroborated.`,
+      confidence: 0,
+      evidenceUrl: result.url,
+      evidenceQuery: query,
+      evidenceSnippet: `${result.title}${result.description ? ` - ${result.description}` : ""}`,
+      methods: ["signal-compatible-open-web"],
+      sourceProvider: "Brave Search",
+      evidenceReference: result.url,
+      discoveryPath: [signals.names[0] || signals.usernames[0] || signals.phones[0] || signals.emails[0] || "submitted subject", result.url],
+      supportingEvidence: [{ query, snippet: `${result.title}${result.description ? ` - ${result.description}` : ""}`, url: result.url, sourceUrl: result.url, hop: 0 }],
+      candidateDiscoveryConfidence: result.evidenceAdmissionScore,
+      identityAttributionConfidence: null,
+      observedEmails: contacts.emails,
+      observedPhoneNumbers: contacts.phoneNumbers,
+      observedOrganizations: matchedOrganizations,
+      observedRoles: matchedRoles,
+      sourceProvenance: [{ url: result.url, family: sourceFamily, query }],
+      independentSourceFamilyCount: 1,
+    };
+  });
+
+  return rankExternalIdentityCandidates({
+    email: signals.emails[0] || "",
+    name: signals.names[0],
+    username: signals.usernames[0],
+    phone: signals.phones[0],
+  }, rawCandidates);
+}
+
 function underlyingSourceFamily(url: string) {
   try {
     const host = new URL(url).hostname.toLowerCase().replace(/^www\./, "");
@@ -932,16 +1000,34 @@ export class EmailIntelligenceProvider extends BaseProvider { readonly id = "ema
 export class ExternalIdentityProvider extends BaseProvider { readonly id = "external-identity"; readonly name = "External Identity Discovery"; readonly version = "4.3.0"; readonly category = "business_profile" as const; failureReason(error: unknown): ProviderFailureReason { if (error instanceof Error && /BRAVE_SEARCH_API_KEY|credential|not configured|provider unavailable/i.test(error.message)) return "Unavailable"; return super.failureReason(error); } protected async collect(context: ProviderExecutionContext): Promise<Pick<ProviderResult, "findings" | "evidence" | "metadata">> { const email = emailFromContext(context); const nonEmailSeeds = nonEmailSeedsFromContext(context); if (!email && !nonEmailSeeds.length) throw new Error("External identity discovery requires an email, phone number, name, or username."); const routing = context.investigationRouting || resolveInvestigationRouting({ target: email || nonEmailSeeds[0].value, scanMode: context.scanMode }); if (email && (routing.emailClassification === "CORPORATE_DOMAIN" || !routing.localPartIdentityExpansionPermitted)) return { findings: [], evidence: [], metadata: { lookupPerformed: false, submittedEmail: email, investigationRouting: routing, candidateCount: 0, externalIdentityCandidates: [], evidencePolicy: "Corporate mailbox identity expansion requires independent evidence connecting a person to the domain or organization." } }; const apiKey = process.env.BRAVE_SEARCH_API_KEY; if (!apiKey) throw new Error("External identity provider unavailable: BRAVE_SEARCH_API_KEY is not configured."); const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 8_000); try { const metadata = context.resolvedEntity?.metadata || {};
     const textSignal = (key: string) => typeof metadata[key] === "string" ? String(metadata[key]).trim() || undefined : undefined;
     if (!email) {
-      const supportingSignals = nonEmailSeeds.map((seed) => seed.value);
+      const submittedOrganizations = context.identitySignals?.organizations || [];
+      const supportingSignals = [
+        ...nonEmailSeeds.map((seed) => seed.value),
+        ...submittedOrganizations,
+        ...(context.identitySignals?.roles || []),
+      ];
       const investigations = await Promise.all(nonEmailSeeds.slice(0, 3).map((seed) => investigateEntityClues(
         seed,
-        (query) => braveSearch([query, ...supportingSignals.filter((value) => value !== seed.value).slice(0, 2).map((value) => `"${value.replace(/["\\]/g, " ")}"`)].join(" "), apiKey, controller.signal, DEFAULT_IDENTITY_DISCOVERY_LIMITS.maxResultsPerSearch),
+        (query) => braveSearch([query, ...supportingSignals.filter((value) => value !== seed.value).slice(0, 3).map((value) => `"${value.replace(/["\\]/g, " ")}"`)].join(" "), apiKey, controller.signal, DEFAULT_IDENTITY_DISCOVERY_LIMITS.maxResultsPerSearch),
         DEFAULT_IDENTITY_DISCOVERY_LIMITS,
       )));
       const admittedResults = investigations.flatMap((investigation) => investigation.diagnostics.flatMap((diagnostic) => diagnostic.results
         .filter((result) => result.evidenceAdmissionDecision === "EVIDENCE_ADMITTED")
         .map((result) => ({ result, query: diagnostic.query }))));
-      const uniqueResults = [...new Map(admittedResults.map((entry) => [canonicalUrl(entry.result.url), entry])).values()];
+      const contextEligibleResults = admittedResults.filter(({ result }) => {
+        if (!submittedOrganizations.length) return true;
+        const text = `${result.title} ${result.description || ""} ${result.url}`;
+        const matched = submittedOrganizations.some((organization) => containsIdentifier(text, organization));
+        if (!matched) {
+          result.evidenceAdmissionDecision = "REJECTED";
+          result.evidenceAdmissionReason = "The result did not repeat the submitted organization context.";
+          result.admissionDecision = "rejected";
+          result.admissionReason = result.evidenceAdmissionReason;
+        }
+        return matched;
+      });
+      const uniqueResults = [...new Map(contextEligibleResults.map((entry) => [canonicalUrl(entry.result.url), entry])).values()];
+      const externalIdentityCandidates = buildSignalIdentityCandidates(uniqueResults, context.identitySignals!);
       const canonicalTarget = context.requestedTarget || nonEmailSeeds[0].value;
       const evidence: ProviderEvidence[] = uniqueResults.map(({ result }, index) => ({
         id: `external-identity-signal-${index + 1}`,
@@ -958,7 +1044,8 @@ export class ExternalIdentityProvider extends BaseProvider { readonly id = "exte
       return { findings: [], evidence, metadata: {
         lookupPerformed: true,
         submittedSignals: context.identitySignals,
-        candidateCount: uniqueResults.length,
+        candidateCount: externalIdentityCandidates.length,
+        externalIdentityCandidates,
         entityClues: investigations.flatMap((item) => item.clues),
         entityRelationships: investigations.flatMap((item) => item.relationships),
         entityConvergences: investigations.flatMap((item) => item.convergences),

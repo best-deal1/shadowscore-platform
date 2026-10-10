@@ -27,7 +27,7 @@ import type { ExternalIdentityCandidate } from "./providers/externalIdentityProv
 import { analyzeRisk } from "./riskEngine";
 import type { PaymentIntent, ShadowScoreIntake, ShadowScoreReport } from "./workspace";
 import { resolveBusinessIdentity } from "./businessIdentityResolver";
-import { applyCanonicalIdentityToBusinessProfile, applyCanonicalIdentityToIdentityProfile } from "./canonicalReportIdentity";
+import { applyCanonicalIdentityToBusinessProfile, applyCanonicalIdentityToIdentityProfile, enrichBusinessProfileProviderResults } from "./canonicalReportIdentity";
 import { buildInvestigationIntelligence } from "./investigationIntelligence";
 import { isolateProviderResults } from "./targetIntegrity";
 import { resolveFirstPartyEntities, resolutionTarget } from "./entityResolution/firstParty";
@@ -163,10 +163,7 @@ export async function buildReadyReport(input: {
   const businessProfile = buildBusinessProfile({ providerResults, target: canonicalTarget, generatedAt: now });
   const businessIdentityResolution = resolveBusinessIdentity(canonicalTarget, { providerResults, businessProfile, observedAt: now, generatedAt: now });
   const canonicalIdentity = businessIdentityResolution.canonicalIdentity;
-  const providerResultsWithCanonicalIdentity = providerResults.map((result) => result.providerId === "business-profile" && canonicalIdentity?.canonicalDisplayName ? {
-    ...result,
-    evidence: result.evidence.some((item) => /business name|profile title|organization/i.test(item.label) && String(item.value || "").trim() && String(item.value).toLowerCase() !== "unavailable") ? result.evidence : [...result.evidence, { id: "canonical-business-name", type: "document" as const, label: "Business name", value: canonicalIdentity.canonicalDisplayName, source: "canonical-identity-resolution" }],
-  } : result);
+  const providerResultsWithCanonicalIdentity = enrichBusinessProfileProviderResults(providerResults, canonicalIdentity);
   const canonicalBusinessProfile = applyCanonicalIdentityToBusinessProfile(businessProfile, canonicalIdentity);
   const identityProfile = applyCanonicalIdentityToIdentityProfile(baseIdentityProfile, canonicalIdentity);
   const businessIdentityIntelligence = buildBusinessIdentityIntelligence({ providerResults: providerResultsWithCanonicalIdentity, target: canonicalTarget, claimedBusinessName: canonicalBusinessProfile.businessName, canonicalIdentity, generatedAt: now });

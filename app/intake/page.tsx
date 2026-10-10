@@ -16,6 +16,8 @@ import { BETA_PRODUCT } from "../../lib/pricing";
 import QuickCheckResult from "../../components/quick-check/QuickCheckResult";
 import type { QuickCheckReport } from "../../lib/quickCheck/report";
 import { resolveInvestigationRouting } from "../../lib/investigationRouting";
+import { interpretIdentityRequest, requestedAttributeLabel } from "../../lib/identityRequest";
+import type { IdentityRequestedAttribute } from "../../lib/personalIdentity";
 
 type Severity = "Low" | "Medium" | "High" | "Critical";
 type Finding = {
@@ -532,6 +534,10 @@ export default function IntakePage() {
   const [identityPhone, setIdentityPhone] = useState("");
   const [identityName, setIdentityName] = useState("");
   const [identityUsername, setIdentityUsername] = useState("");
+  const [identityRequest, setIdentityRequest] = useState("");
+  const [identityOrganization, setIdentityOrganization] = useState("");
+  const [identityRole, setIdentityRole] = useState("");
+  const [identityRequestedAttribute, setIdentityRequestedAttribute] = useState<IdentityRequestedAttribute | "">("");
   const [referenceImage, setReferenceImage] = useState<File | null>(null);
   const [referenceAuthorized, setReferenceAuthorized] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -605,7 +611,17 @@ export default function IntakePage() {
     marketplace === "Other"
       ? customMarketplace || "Other marketplace"
       : marketplace;
-  const identityTarget = identityEmail.trim() || identityPhone.trim() || identityUsername.trim() || identityName.trim();
+  const interpretedIdentityRequest = useMemo(() => interpretIdentityRequest(identityRequest), [identityRequest]);
+  const effectiveIdentityEmail = identityEmail.trim() || interpretedIdentityRequest.emails[0] || "";
+  const effectiveIdentityPhone = identityPhone.trim() || interpretedIdentityRequest.phones[0] || "";
+  const effectiveIdentityUsername = identityUsername.trim() || interpretedIdentityRequest.usernames[0] || "";
+  const effectiveIdentityName = identityName.trim() || interpretedIdentityRequest.personName || "";
+  const effectiveIdentityOrganization = identityOrganization.trim() || interpretedIdentityRequest.organization || "";
+  const effectiveIdentityRole = identityRole.trim() || interpretedIdentityRequest.role || "";
+  const effectiveRequestedAttributes = identityRequestedAttribute
+    ? [identityRequestedAttribute]
+    : interpretedIdentityRequest.requestedAttributes;
+  const identityTarget = effectiveIdentityEmail || effectiveIdentityPhone || effectiveIdentityUsername || effectiveIdentityName;
   const activeTarget = scanMode === "website" ? websiteTarget : scanMode === "personal" ? identityTarget : store;
   const canonicalRouting = useMemo(() => resolveInvestigationRouting({ target: activeTarget, scanMode }), [activeTarget, scanMode]);
   const canonicalPersonalInvestigation = canonicalRouting.primaryInvestigationType === "PERSON_IDENTITY";
@@ -844,7 +860,17 @@ export default function IntakePage() {
       caseType: scanMode === "website" ? "Business trust scan" : scanMode === "personal" ? "Identity resolution" : caseType,
       target: activeTarget,
       email: resolvedEmail,
-      identitySignals: scanMode === "personal" ? { emails: identityEmail.trim() ? [identityEmail] : [], phones: identityPhone.trim() ? [identityPhone] : [], names: identityName.trim() ? [identityName] : [], usernames: identityUsername.trim() ? [identityUsername] : [], referenceImages: [] } : undefined,
+      identitySignals: scanMode === "personal" ? {
+        emails: effectiveIdentityEmail ? [effectiveIdentityEmail] : [],
+        phones: effectiveIdentityPhone ? [effectiveIdentityPhone] : [],
+        names: effectiveIdentityName ? [effectiveIdentityName] : [],
+        usernames: effectiveIdentityUsername ? [effectiveIdentityUsername] : [],
+        referenceImages: [],
+        organizations: effectiveIdentityOrganization ? [effectiveIdentityOrganization] : [],
+        roles: effectiveIdentityRole ? [effectiveIdentityRole] : [],
+        requestedAttributes: effectiveRequestedAttributes,
+        requestText: identityRequest.trim() || undefined,
+      } : undefined,
       fileNames: files.map((file) => file.name),
       visibleSignalCategories: scanMode === "website" ? WEBSITE_SIGNAL_CATEGORIES : scanMode === "personal" ? ["Identity discovery", "Independent-source corroboration", "Contradictory contact evidence"] : (detectedSignals.length ? detectedSignals.map((item) => item.title) : ["Marketplace identity", t.intakeUi.evidenceReadiness, "Payment or policy categories"]),
     });
@@ -853,6 +879,13 @@ export default function IntakePage() {
     setFreeScanResult(null);
     setPreviewStatus("idle");
     setFreeScanError("");
+  };
+
+  const resetIdentityJourney = () => {
+    setSubmitted(false);
+    setLeadSaved(false);
+    setCheckoutStage(false);
+    resetFreeScan();
   };
 
   const runFreePreview = async () => {
@@ -1063,15 +1096,42 @@ export default function IntakePage() {
             {scanMode === "personal" && (
               <fieldset className="mt-6 rounded-2xl border border-white/10 p-5">
                 <legend className="px-2 text-sm font-bold text-white">Identity signals</legend>
-                <p className="mb-5 text-sm leading-6 text-zinc-400">Add one or more signals for the person you want to investigate. Your account email remains separate and is used for billing and report delivery.</p>
+                <p className="mb-5 text-sm leading-6 text-zinc-400">Describe the result you need or add the known signals directly. Your account email remains separate and is used for billing and report delivery.</p>
+                <label className="block">
+                  <span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">Investigation request</span>
+                  <textarea
+                    value={identityRequest}
+                    onChange={(event) => {
+                      setIdentityRequest(event.target.value);
+                      resetIdentityJourney();
+                    }}
+                    className="min-h-28 w-full rounded-2xl border border-white/10 bg-black p-4 text-white"
+                    placeholder="Example: Ariel Tuval, Atzmale, owner, find a mobile number"
+                    maxLength={500}
+                  />
+                  <span className="mt-2 block text-xs leading-5 text-zinc-500">ShadowScore separates the person, organization, role, and requested result before it searches.</span>
+                </label>
+                {identityRequest.trim() && <div className={`mt-5 rounded-2xl border p-4 ${interpretedIdentityRequest.needsConfirmation ? "border-amber-300/25 bg-amber-400/10 text-amber-100" : "border-emerald-300/25 bg-emerald-400/10 text-emerald-100"}`} role="status" aria-live="polite">
+                  <div className="flex flex-wrap items-center justify-between gap-2"><p className="font-bold">Request interpreted</p><span className="rounded-full border border-current/25 px-3 py-1 text-xs font-bold uppercase tracking-wider">{interpretedIdentityRequest.confidence} confidence</span></div>
+                  <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+                    <div><dt className="text-xs font-bold uppercase tracking-wider opacity-70">Person</dt><dd className="mt-1 font-semibold">{effectiveIdentityName || effectiveIdentityEmail || effectiveIdentityPhone || effectiveIdentityUsername || "Not identified"}</dd></div>
+                    <div><dt className="text-xs font-bold uppercase tracking-wider opacity-70">Organization</dt><dd className="mt-1 font-semibold">{effectiveIdentityOrganization || "Not identified"}</dd></div>
+                    <div><dt className="text-xs font-bold uppercase tracking-wider opacity-70">Role</dt><dd className="mt-1 font-semibold">{effectiveIdentityRole || "Not identified"}</dd></div>
+                    <div><dt className="text-xs font-bold uppercase tracking-wider opacity-70">Requested result</dt><dd className="mt-1 font-semibold">{effectiveRequestedAttributes.map(requestedAttributeLabel).join(", ") || "General identity match"}</dd></div>
+                  </dl>
+                  {interpretedIdentityRequest.needsConfirmation && <p className="mt-3 text-xs leading-5">Review the fields below before starting. Values entered below override this interpretation.</p>}
+                </div>}
                 <div className="grid gap-5 md:grid-cols-2">
-                  <label><span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">Person&apos;s email</span><input type="email" value={identityEmail} onChange={(event) => setIdentityEmail(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-black p-4" autoComplete="off" /></label>
-                  <label><span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">Person&apos;s phone</span><input type="tel" value={identityPhone} onChange={(event) => setIdentityPhone(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-black p-4" autoComplete="off" /></label>
-                  <label><span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">Full name</span><input value={identityName} onChange={(event) => setIdentityName(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-black p-4" autoComplete="off" /></label>
-                  <label><span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">Username</span><input value={identityUsername} onChange={(event) => setIdentityUsername(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-black p-4" placeholder="username" autoComplete="off" /></label>
+                  <label><span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">Person&apos;s email</span><input type="email" value={identityEmail} onChange={(event) => { setIdentityEmail(event.target.value); resetIdentityJourney(); }} className="w-full rounded-2xl border border-white/10 bg-black p-4" autoComplete="off" /></label>
+                  <label><span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">Person&apos;s phone</span><input type="tel" value={identityPhone} onChange={(event) => { setIdentityPhone(event.target.value); resetIdentityJourney(); }} className="w-full rounded-2xl border border-white/10 bg-black p-4" autoComplete="off" /></label>
+                  <label><span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">Full name</span><input value={identityName} onChange={(event) => { setIdentityName(event.target.value); resetIdentityJourney(); }} className="w-full rounded-2xl border border-white/10 bg-black p-4" placeholder={interpretedIdentityRequest.personName || undefined} autoComplete="off" /></label>
+                  <label><span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">Username</span><input value={identityUsername} onChange={(event) => { setIdentityUsername(event.target.value); resetIdentityJourney(); }} className="w-full rounded-2xl border border-white/10 bg-black p-4" placeholder="username" autoComplete="off" /></label>
+                  <label><span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">Organization</span><input value={identityOrganization} onChange={(event) => { setIdentityOrganization(event.target.value); resetIdentityJourney(); }} className="w-full rounded-2xl border border-white/10 bg-black p-4" placeholder={interpretedIdentityRequest.organization || "Company or organization"} autoComplete="organization" /></label>
+                  <label><span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">Role</span><input value={identityRole} onChange={(event) => { setIdentityRole(event.target.value); resetIdentityJourney(); }} className="w-full rounded-2xl border border-white/10 bg-black p-4" placeholder={interpretedIdentityRequest.role || "Owner, founder, director"} autoComplete="organization-title" /></label>
+                  <label className="md:col-span-2"><span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">Requested result</span><select value={identityRequestedAttribute || interpretedIdentityRequest.requestedAttributes[0] || ""} onChange={(event) => { setIdentityRequestedAttribute(event.target.value as IdentityRequestedAttribute | ""); resetIdentityJourney(); }} className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white"><option value="">General identity match</option><option value="phone">Phone number</option><option value="email">Email address</option><option value="social_profile">Public profile</option><option value="identity_match">Identity match</option></select></label>
                 </div>
-                <label className="mt-5 block rounded-2xl border border-dashed border-white/15 p-4"><span className="block text-sm font-bold">Authorized reference image, optional</span><span className="mt-1 block text-xs text-zinc-500">JPG, PNG, or WebP. Maximum 10MB.</span><input className="mt-3 block w-full text-sm" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setReferenceImage(event.target.files?.[0] || null)} /></label>
-                {referenceImage && <label className="mt-4 flex items-start gap-3 text-sm text-zinc-300"><input className="mt-1" type="checkbox" checked={referenceAuthorized} onChange={(event) => setReferenceAuthorized(event.target.checked)} /><span>I am authorized to use this image for this investigation.</span></label>}
+                <label className="mt-5 block rounded-2xl border border-dashed border-white/15 p-4"><span className="block text-sm font-bold">Authorized reference image, optional</span><span className="mt-1 block text-xs text-zinc-500">JPG, PNG, or WebP. Maximum 10MB.</span><input className="mt-3 block w-full text-sm" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { setReferenceImage(event.target.files?.[0] || null); resetIdentityJourney(); }} /></label>
+                {referenceImage && <label className="mt-4 flex items-start gap-3 text-sm text-zinc-300"><input className="mt-1" type="checkbox" checked={referenceAuthorized} onChange={(event) => { setReferenceAuthorized(event.target.checked); resetIdentityJourney(); }} /><span>I am authorized to use this image for this investigation.</span></label>}
               </fieldset>
             )}
 

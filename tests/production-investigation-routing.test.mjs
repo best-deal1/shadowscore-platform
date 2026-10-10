@@ -9,6 +9,7 @@ import { presentReportForEndUser } from "../lib/workspace.ts";
 import { ExternalIdentityProvider } from "../lib/providers/externalIdentityProvider.ts";
 import { identityInvestigationGuardIssues, normalizeIntakeIdentitySignals } from "../lib/personalIdentity.ts";
 import { isolateProviderResults } from "../lib/targetIntegrity.ts";
+import { enrichBusinessProfileProviderResults } from "../lib/canonicalReportIdentity.ts";
 import { readFile } from "node:fs/promises";
 
 const plan = (target, scanMode, persisted) => {
@@ -176,7 +177,7 @@ test("external identity provider executes phone, name, and username investigatio
   try {
     const cases = [
       { target: "+14155550123", identitySignals: { emails: [], phones: ["+14155550123"], names: [], usernames: [], referenceImages: [] } },
-      { target: "Jane Example", identitySignals: { emails: [], phones: [], names: ["Jane Example"], usernames: [], referenceImages: [] } },
+      { target: "Jane Example", identitySignals: { emails: [], phones: [], names: ["Jane Example"], usernames: [], referenceImages: [], organizations: ["Example Works"], roles: ["Owner"], requestedAttributes: ["phone"] } },
       { target: "@jane_example", identitySignals: { emails: [], phones: [], names: [], usernames: ["jane_example"], referenceImages: [] } },
     ];
     for (const item of cases) {
@@ -185,9 +186,14 @@ test("external identity provider executes phone, name, and username investigatio
       assert.equal(result.status, "completed");
       assert.equal(result.metadata.lookupPerformed, true);
       if (item.target !== "@jane_example") assert.ok(result.evidence.length > 0, `${item.target} should produce admitted evidence`);
+      if (item.target === "Jane Example") {
+        assert.ok(result.metadata.externalIdentityCandidates.length > 0);
+        assert.deepEqual(result.metadata.externalIdentityCandidates[0].observedPhoneNumbers, ["+1 415 555 0123"]);
+      }
     }
     assert.ok(queries.some((query) => query.includes("+14155550123")));
     assert.ok(queries.some((query) => query.includes("Jane Example")));
+    assert.ok(queries.some((query) => query.includes("Example Works") && query.includes("Owner")));
     assert.ok(queries.some((query) => query.includes("jane_example")));
   } finally {
     globalThis.fetch = previousFetch;
@@ -277,6 +283,57 @@ test("target isolation rejection of a required provider prevents successful comp
   assert.equal(isolated.resolution.redirectDomainMismatch, true);
   assert.equal(isolated.providerResults.find((result) => result.providerId === "business-profile").metadata.evidenceRejected, true);
   assert.equal(investigationCompletionStatus(isolated.providerResults, [evidenceItem("document")], { executionRecords, requiredPlanSteps }), "COVERAGE_GAP");
+});
+
+test("canonical identity enrichment keeps rejected provider results quarantined", () => {
+  const rejected = {
+    providerId: "business-profile",
+    providerVersion: "1",
+    status: "completed",
+    startedAt: "2026-10-09T00:00:00.000Z",
+    completedAt: "2026-10-09T00:00:01.000Z",
+    duration: 1000,
+    findings: [],
+    evidence: [],
+    metadata: {
+      evidenceRejected: true,
+      evidenceRejectionReason: "redirect_domain_mismatch",
+    },
+    errors: [],
+  };
+  const canonicalIdentity = {
+    canonicalDisplayName: "Example Ltd",
+    identityStatus: "SUPPORTED",
+  };
+
+  const [enriched] = enrichBusinessProfileProviderResults([rejected], canonicalIdentity);
+
+  assert.strictEqual(enriched, rejected);
+  assert.deepEqual(enriched.evidence, []);
+  assert.equal(enriched.metadata.evidenceRejected, true);
+});
+
+test("canonical identity enrichment adds a resolved business name only to accepted results", () => {
+  const accepted = {
+    providerId: "business-profile",
+    providerVersion: "1",
+    status: "completed",
+    startedAt: "2026-10-09T00:00:00.000Z",
+    completedAt: "2026-10-09T00:00:01.000Z",
+    duration: 1000,
+    findings: [],
+    evidence: [],
+    metadata: {},
+    errors: [],
+  };
+
+  const [enriched] = enrichBusinessProfileProviderResults([accepted], {
+    canonicalDisplayName: "Example Ltd",
+    identityStatus: "SUPPORTED",
+  });
+
+  assert.deepEqual(enriched.evidence.map((item) => item.id), ["canonical-business-name"]);
+  assert.equal(enriched.evidence[0].value, "Example Ltd");
 });
 
 test("report execution derives classification and provider inputs from the persisted seed", async () => {
