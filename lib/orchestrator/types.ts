@@ -44,7 +44,7 @@ export interface ExecutionPlan {
   skippedEngines: SkippedEngine[];
   reasoning: string[];
   estimatedCoverage: CoverageLevel;
-  emailRouting?: import("../emailDomains").EmailInvestigationRouting;
+  emailRouting?: import("../investigationRouting").InvestigationRouting;
 }
 
 export type TargetClassificationInput = TargetClassificationResult;

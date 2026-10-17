@@ -1,5 +1,6 @@
 import type { BusinessProfile } from "./businessProfileEngine";
 import type { IdentityProfile, IdentityFieldName, BusinessIdentityStatus } from "./identityEngine";
+import type { ProviderResult } from "./providers/types";
 
 type CanonicalIdentity = {
   canonicalDisplayName?: string;
@@ -15,6 +16,40 @@ type CanonicalIdentity = {
 
 function resolved(canonical?: CanonicalIdentity) {
   return Boolean(canonical?.canonicalDisplayName && canonical.canonicalDisplayName !== "Unknown" && canonical.identityStatus !== "UNRESOLVED");
+}
+
+export function enrichBusinessProfileProviderResults(
+  providerResults: ProviderResult[],
+  canonical?: CanonicalIdentity,
+): ProviderResult[] {
+  const canonicalDisplayName = canonical?.canonicalDisplayName;
+  if (!resolved(canonical) || !canonicalDisplayName) return providerResults;
+
+  return providerResults.map((result) => {
+    if (result.providerId !== "business-profile" || result.metadata.evidenceRejected === true) return result;
+
+    const hasUsableBusinessName = result.evidence.some((item) =>
+      /business name|profile title|organization/i.test(item.label)
+      && String(item.value || "").trim()
+      && String(item.value).toLowerCase() !== "unavailable",
+    );
+
+    if (hasUsableBusinessName) return result;
+
+    return {
+      ...result,
+      evidence: [
+        ...result.evidence,
+        {
+          id: "canonical-business-name",
+          type: "document" as const,
+          label: "Business name",
+          value: canonicalDisplayName,
+          source: "canonical-identity-resolution",
+        },
+      ],
+    };
+  });
 }
 
 export function displayCompanyType(canonical?: CanonicalIdentity, fallback = "Online business") {
