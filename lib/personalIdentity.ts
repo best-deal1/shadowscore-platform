@@ -133,18 +133,28 @@ export type RequestedIdentityResult = {
 export function isCorroboratedIdentityCandidate(candidate: ExternalIdentityCandidate) {
   return candidate.resolutionOutcome === "MATCH"
     && (candidate.resolverMatchedSignals?.length || 0) > 0
+    && (candidate.resolverConflictingSignals?.length || 0) === 0
     && (candidate.independentSourceFamilyCount || 0) >= 2;
 }
 
 export function requestedIdentityResults(signals: IdentitySignals | undefined, candidates: ExternalIdentityCandidate[]): RequestedIdentityResult[] {
   const requested = new Set(signals?.requestedAttributes || []);
   const results = candidates.flatMap((candidate) => {
+    const resultForContact = (type: "email" | "phone", value: string) => {
+      const normalized = type === "email" ? value.trim().toLowerCase() : value.replace(/\D/g, "");
+      const evidence = (candidate.observedContactProvenance || []).filter((entry) => entry.type === type
+        && (type === "email" ? entry.value.trim().toLowerCase() : entry.value.replace(/\D/g, "")) === normalized);
+      const sourceUrl = evidence[0]?.url || candidate.sourceProvenance?.[0]?.url || candidate.profileUrl;
+      const independentlyRepeated = new Set(evidence.map((entry) => entry.family)).size >= 2;
+      const corroborated = isCorroboratedIdentityCandidate(candidate) && independentlyRepeated;
+      return { sourceUrl, corroborated, association: corroborated ? "Linked to a corroborated identity candidate" : "Observed on an unverified candidate source" };
+    };
     const sourceUrl = candidate.sourceProvenance?.[0]?.url || candidate.profileUrl;
     const corroborated = isCorroboratedIdentityCandidate(candidate);
     const association = corroborated ? "Linked to a corroborated identity candidate" : "Observed on an unverified candidate source";
     return [
-      ...(requested.has("phone") ? (candidate.observedPhoneNumbers || []).map((value) => ({ type: "Phone number" as const, value, sourceUrl, association, corroborated })) : []),
-      ...(requested.has("email") ? (candidate.observedEmails || []).map((value) => ({ type: "Email address" as const, value, sourceUrl, association, corroborated })) : []),
+      ...(requested.has("phone") ? (candidate.observedPhoneNumbers || []).map((value) => ({ type: "Phone number" as const, value, ...resultForContact("phone", value) })) : []),
+      ...(requested.has("email") ? (candidate.observedEmails || []).map((value) => ({ type: "Email address" as const, value, ...resultForContact("email", value) })) : []),
       ...(requested.has("social_profile") ? [{ type: "Public profile" as const, value: candidate.profileUrl, sourceUrl, association, corroborated }] : []),
       ...(requested.has("identity_match") && corroborated ? [{ type: "Identity match" as const, value: candidate.observedDisplayName || candidate.profileUrl, sourceUrl, association, corroborated }] : []),
     ];

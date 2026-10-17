@@ -45,6 +45,7 @@ export type ExternalIdentityCandidate = {
   observedEmails?: string[]; observedPhoneNumbers?: string[];
   observedOrganizations?: string[]; observedRoles?: string[];
   sourceProvenance?: Array<{ url: string; family: string; query: string }>;
+  observedContactProvenance?: Array<{ type: "email" | "phone"; value: string; url: string; family: string }>;
   independentSourceFamilyCount?: number;
   discoveryOnlyAlias?: boolean;
   convergingPaths?: string[][]; sharedIdentifiers?: string[]; loopStrength?: number;
@@ -590,6 +591,96 @@ function observedContacts(hit: SearchResult) {
 
 type SignalSearchResult = { result: ResultAdmissionDiagnostic; query: string };
 
+function signalCandidateGroupKey(candidate: ExternalIdentityCandidate, signals: NonNullable<ProviderExecutionContext["identitySignals"]>) {
+  const matched = new Set(candidate.matchedIdentifiers.map(normalizeIdentifier));
+  const anchors: Array<[string, string[]]> = [
+    ["email", signals.emails],
+    ["phone", signals.phones],
+    ["username", signals.usernames],
+    ["name", signals.names],
+  ];
+  const anchor = anchors.flatMap(([type, values]) => values
+    .filter((value) => matched.has(normalizeIdentifier(value)))
+    .map((value) => `${type}:${normalizeIdentifier(value)}`))[0];
+  if (!anchor) return `source:${candidate.profileUrl}`;
+
+  const matchedOrganizations = new Set((candidate.observedOrganizations || []).map(normalizeIdentifier));
+  const organizationContext = (signals.organizations || []).filter((value) => matchedOrganizations.has(normalizeIdentifier(value)));
+  if ((signals.organizations || []).length && !organizationContext.length) return `source:${candidate.profileUrl}`;
+
+  const matchedRoles = new Set((candidate.observedRoles || []).map(normalizeIdentifier));
+  const roleContext = (signals.roles || []).filter((value) => matchedRoles.has(normalizeIdentifier(value)));
+  if ((signals.roles || []).length && !roleContext.length) return `source:${candidate.profileUrl}`;
+
+  return [
+    anchor,
+    `organization:${organizationContext.map(normalizeIdentifier).sort().join("|")}`,
+    `role:${roleContext.map(normalizeIdentifier).sort().join("|")}`,
+  ].join("::");
+}
+
+function contactKey(type: "email" | "phone", value: string) {
+  return `${type}:${type === "email" ? value.trim().toLowerCase() : value.replace(/\D/gu, "")}`;
+}
+
+function mergeSignalIdentityCandidates(
+  candidates: ExternalIdentityCandidate[],
+  signals: NonNullable<ProviderExecutionContext["identitySignals"]>,
+) {
+  const groups = new Map<string, ExternalIdentityCandidate[]>();
+  for (const candidate of candidates) {
+    const key = signalCandidateGroupKey(candidate, signals);
+    groups.set(key, [...(groups.get(key) || []), candidate]);
+  }
+
+  return [...groups.values()].map((group) => {
+    const base = group[0];
+    const provenance = [...new Map(group.flatMap((candidate) => candidate.sourceProvenance || [])
+      .map((entry) => [`${entry.family}|${entry.url}`, entry])).values()];
+    const contactProvenance = [...new Map(group.flatMap((candidate) => candidate.observedContactProvenance || [])
+      .map((entry) => [`${contactKey(entry.type, entry.value)}|${entry.family}|${entry.url}`, entry])).values()];
+    const independentSourceFamilyCount = new Set(provenance.map((entry) => entry.family)).size;
+    const sourcesLabel = independentSourceFamilyCount > 1 ? `${independentSourceFamilyCount} independent public sources` : base.platform;
+    const values = <T,>(items: T[]) => [...new Set(items)];
+
+    return {
+      ...base,
+      platform: sourcesLabel,
+      matchedIdentifiers: values(group.flatMap((candidate) => candidate.matchedIdentifiers)),
+      methods: values(group.flatMap((candidate) => candidate.methods)),
+      supportingEvidence: [...new Map(group.flatMap((candidate) => candidate.supportingEvidence)
+        .map((entry) => [`${entry.sourceUrl || entry.url}|${entry.query}`, entry])).values()],
+      candidateDiscoveryConfidence: Math.max(...group.map((candidate) => candidate.candidateDiscoveryConfidence)),
+      observedEmails: values(group.flatMap((candidate) => candidate.observedEmails || [])),
+      observedPhoneNumbers: values(group.flatMap((candidate) => candidate.observedPhoneNumbers || [])),
+      observedOrganizations: values(group.flatMap((candidate) => candidate.observedOrganizations || [])),
+      observedRoles: values(group.flatMap((candidate) => candidate.observedRoles || [])),
+      sourceProvenance: provenance,
+      observedContactProvenance: contactProvenance,
+      independentSourceFamilyCount,
+      matchBasis: independentSourceFamilyCount > 1
+        ? `${independentSourceFamilyCount} independent source families repeat the submitted subject and context. Contact values remain unverified unless the same value is repeated across those sources.`
+        : base.matchBasis,
+    } satisfies ExternalIdentityCandidate;
+  });
+}
+
+function corroborateMergedSignalCandidate(candidate: ExternalIdentityCandidate) {
+  const repeatedContact = [...new Map((candidate.observedContactProvenance || []).map((entry) => [contactKey(entry.type, entry.value), entry])).keys()]
+    .some((key) => new Set((candidate.observedContactProvenance || [])
+      .filter((entry) => contactKey(entry.type, entry.value) === key)
+      .map((entry) => entry.family)).size >= 2);
+  const hasMatchedSubject = (candidate.resolverMatchedSignals?.length || 0) > 0;
+  const hasConflict = (candidate.resolverConflictingSignals?.length || 0) > 0;
+  if (!repeatedContact || !hasMatchedSubject || hasConflict || (candidate.independentSourceFamilyCount || 0) < 2) return candidate;
+  return {
+    ...candidate,
+    status: "Corroborated" as const,
+    resolutionOutcome: "MATCH" as const,
+    identityAttributionConfidence: candidate.identityAttributionConfidence ?? 75,
+  };
+}
+
 export function buildSignalIdentityCandidates(
   entries: SignalSearchResult[],
   signals: NonNullable<ProviderExecutionContext["identitySignals"]>,
@@ -643,16 +734,21 @@ export function buildSignalIdentityCandidates(
       observedOrganizations: matchedOrganizations,
       observedRoles: matchedRoles,
       sourceProvenance: [{ url: result.url, family: sourceFamily, query }],
+      observedContactProvenance: [
+        ...contacts.emails.map((value) => ({ type: "email" as const, value, url: result.url, family: sourceFamily })),
+        ...contacts.phoneNumbers.map((value) => ({ type: "phone" as const, value, url: result.url, family: sourceFamily })),
+      ],
       independentSourceFamilyCount: 1,
     };
   });
 
+  const mergedCandidates = mergeSignalIdentityCandidates(rawCandidates, signals);
   return rankExternalIdentityCandidates({
     email: signals.emails[0] || "",
     name: signals.names[0],
     username: signals.usernames[0],
     phone: signals.phones[0],
-  }, rawCandidates);
+  }, mergedCandidates).map(corroborateMergedSignalCandidate);
 }
 
 function underlyingSourceFamily(url: string) {

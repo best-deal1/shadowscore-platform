@@ -65,6 +65,25 @@ function cleanOrganization(value: string) {
     .replace(/^(?:של|ב|at|of)\s+/iu, ""));
 }
 
+function organizationFollowingRole(value: string, roleExpression?: RegExp) {
+  if (!roleExpression) return undefined;
+  const expression = new RegExp(roleExpression.source, roleExpression.flags.replace(/g/gu, ""));
+  const match = expression.exec(value);
+  if (!match) return undefined;
+  const remainder = value.slice(match.index + match[0].length);
+  const organization = remainder.match(/^\s*(?:(?:at|of)\s+|(?:של\s*|ב))([^,;|\n]{2,100})/iu)?.[1];
+  return cleanOrganization(stripRequestLanguage(organization || "")) || undefined;
+}
+
+function withoutOrganization(value: string, organization?: string) {
+  if (!organization) return cleanClause(value);
+  const escaped = quoted(organization);
+  return cleanClause(value
+    .replace(new RegExp(`(?:^|\\s)(?:(?:at|of)\\s+|(?:של\\s*|ב))${escaped}(?=$|[\\s,;|])`, "giu"), " ")
+    .replace(new RegExp(`(?:^|\\s)${escaped}(?=$|[\\s,;|])`, "giu"), " ")
+    .replace(/(?:^|\s)(?:at|of|של|ב)(?=$|\s)/giu, " "));
+}
+
 function unique(values: string[]) {
   return [...new Set(values.map(cleanClause).filter(Boolean))];
 }
@@ -87,8 +106,11 @@ export function interpretIdentityRequest(value: string): IdentityRequestInterpre
 
   const clauses = rawRequest.split(/[\n,;|]+/u).map(cleanClause).filter(Boolean);
   const cleanedClauses = clauses.map(stripRequestLanguage).filter(Boolean);
-  let personName = cleanedClauses.find(plausibleName);
-  let organization = cleanedClauses.find((clause) => clause !== personName && clause.length >= 2);
+  const initialPersonName = cleanedClauses.find(plausibleName);
+  let organization = cleanedClauses.find((clause) => clause !== initialPersonName && clause.length >= 2);
+  organization ||= organizationFollowingRole(rawRequest, matchedRole?.expression);
+  const subjectClauses = cleanedClauses.map((clause) => withoutOrganization(clause, organization)).filter(Boolean);
+  let personName = subjectClauses.find(plausibleName);
 
   if (!organization) {
     const actionDivider = new RegExp(ACTION_PATTERNS.map((pattern) => `(?:${pattern.source})`).join("|"), "iu");
@@ -107,6 +129,8 @@ export function interpretIdentityRequest(value: string): IdentityRequestInterpre
     const organizationBeforeRole = rawRequest.match(new RegExp(`([\\p{L}\\p{M}\\p{N}&.'’-]{2,}(?:\\s+[\\p{L}\\p{M}\\p{N}&.'’-]{2,}){0,3})\\s+${roleExpression}`, "iu"))?.[1];
     organization = cleanOrganization(organizationAfterRole || organizationBeforeRole || "") || undefined;
   }
+
+  if (organization && personName) personName = withoutOrganization(personName, organization);
 
   if (!personName) {
     let remaining = rawRequest;

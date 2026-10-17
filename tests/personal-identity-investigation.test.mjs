@@ -48,6 +48,20 @@ test("free-text request separates person, organization, role, and requested phon
   }
 });
 
+test("comma-free requests keep organization clauses out of the person name", () => {
+  for (const [request, personName, organization, role] of [
+    ["Find the phone number for Ariel Tuval owner at Atzmale", "Ariel Tuval", "Atzmale", "owner"],
+    ["תמצא לי טלפון של אריאל תובל בעלים בעצמלא", "אריאל תובל", "עצמלא", "בעלים"],
+  ]) {
+    const interpreted = interpretIdentityRequest(request);
+    assert.equal(interpreted.personName, personName);
+    assert.equal(interpreted.organization, organization);
+    assert.equal(interpreted.role, role);
+    assert.deepEqual(interpreted.requestedAttributes, ["phone"]);
+    assert.equal(interpreted.confidence, "high");
+  }
+});
+
 test("request context persists and produces an accurate source-backed objective", () => {
   const result = signals({
     names: ["Ariel Tuval"],
@@ -88,6 +102,52 @@ test("non-email discovery returns structured phone candidates for the requested 
   assert.equal(requested[0].sourceUrl, "https://atzmale.example/team/ariel-tuval");
   assert.equal(requested[0].corroborated, false);
   assert.equal(requested[0].association, "Observed on an unverified candidate source");
+});
+
+test("independent sources merge into one corroborated subject and phone result", () => {
+  const identitySignals = signals({
+    names: ["Ariel Tuval"],
+    organizations: ["Atzmale"],
+    roles: ["owner"],
+    requestedAttributes: ["phone"],
+  });
+  const result = (url, title, description) => ({
+    query: '"Ariel Tuval" "Atzmale" "owner"',
+    result: { title, description, url, canonicalDisplayName: "Ariel Tuval", evidenceAdmissionScore: 100 },
+  });
+  const candidates = buildSignalIdentityCandidates([
+    result("https://atzmale.com/team/ariel-tuval", "Ariel Tuval | Atzmale", "Ariel Tuval, owner at Atzmale. Phone +972 50-123-4567."),
+    result("https://industrynews.org/people/ariel-tuval", "Ariel Tuval, Atzmale owner", "Ariel Tuval is the owner of Atzmale. Phone +972 50-123-4567."),
+  ], identitySignals);
+
+  assert.equal(candidates.length, 1);
+  assert.equal(candidates[0].independentSourceFamilyCount, 2);
+  assert.deepEqual(candidates[0].sourceProvenance.map((source) => source.family).sort(), ["atzmale.com", "industrynews.org"]);
+  assert.equal(candidates[0].resolutionOutcome, "MATCH");
+  assert.equal(candidates[0].status, "Corroborated");
+  const requested = requestedIdentityResults(identitySignals, candidates);
+  assert.equal(requested.length, 1);
+  assert.equal(requested[0].value, "+972 50-123-4567");
+  assert.equal(requested[0].corroborated, true);
+  const conflicted = [{ ...candidates[0], resolverConflictingSignals: [{ attribute: "phone", submitted: "+972501234567", observed: "+972509999999", similarity: 0 }] }];
+  assert.equal(requestedIdentityResults(identitySignals, conflicted)[0].corroborated, false);
+});
+
+test("a contact observed by only one source stays unverified after subject aggregation", () => {
+  const identitySignals = signals({ names: ["Ariel Tuval"], organizations: ["Atzmale"], roles: ["owner"], requestedAttributes: ["phone"] });
+  const candidates = buildSignalIdentityCandidates([
+    { query: "subject", result: { title: "Ariel Tuval | Atzmale", description: "Ariel Tuval, owner at Atzmale. Phone +972 50-123-4567.", url: "https://atzmale.com/ariel", canonicalDisplayName: "Ariel Tuval", evidenceAdmissionScore: 100 } },
+    { query: "subject", result: { title: "Ariel Tuval, Atzmale owner", description: "Ariel Tuval is the owner of Atzmale.", url: "https://industrynews.org/ariel", canonicalDisplayName: "Ariel Tuval", evidenceAdmissionScore: 100 } },
+  ], identitySignals);
+  assert.equal(candidates.length, 1);
+  assert.equal(candidates[0].independentSourceFamilyCount, 2);
+  assert.equal(candidates[0].resolutionOutcome, "ABSTAIN");
+  assert.equal(requestedIdentityResults(identitySignals, candidates)[0].corroborated, false);
+});
+
+test("editing personal identity inputs clears the persisted intake reference", async () => {
+  const source = await readFile(new URL("../app/intake/page.tsx", import.meta.url), "utf8");
+  assert.match(source, /const resetIdentityJourney = \(\) => \{[\s\S]{0,240}setIntake\(null\)/);
 });
 
 test("legacy personal targets recover identity signals only when structured signals are absent", () => {

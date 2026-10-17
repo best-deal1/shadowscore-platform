@@ -884,6 +884,7 @@ export default function IntakePage() {
   const resetIdentityJourney = () => {
     setSubmitted(false);
     setLeadSaved(false);
+    setIntake(null);
     setCheckoutStage(false);
     resetFreeScan();
   };
