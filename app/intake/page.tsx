@@ -1042,9 +1042,7 @@ export default function IntakePage() {
                   onClick={() => {
                     if (mode.id === "personal" && !personalIdentityEnabled) return;
                     setScanMode(mode.id);
-                    setSubmitted(false);
-                    setLeadSaved(false);
-                    resetFreeScan();
+                    resetIdentityJourney();
                   }}
                   disabled={mode.id === "personal" && !personalIdentityEnabled}
                   aria-describedby={mode.id === "personal" && !personalIdentityEnabled ? "personal-identity-readiness" : undefined}
@@ -1082,9 +1080,7 @@ export default function IntakePage() {
                     value={websiteTarget}
                     onChange={(e) => {
                       setWebsiteTarget(e.target.value);
-                      setSubmitted(false);
-                      setLeadSaved(false);
-                      resetFreeScan();
+                      resetIdentityJourney();
                     }}
                     className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white"
                     placeholder={t.intakeUi.targetPlaceholder}
