@@ -1,5 +1,7 @@
 # Release Notes
 
+- Personal Identity checkout now presents a prepared request instead of claiming that a Business Quick Check completed. Identity scope, purchase terms, and progress stay consistent for both Personal mode and free-mail targets entered in Website mode.
+
 - Personal Identity requests now separate relation words from names and organizations in Hebrew and English. Explicitly selecting General identity match overrides inferred contact requests. Email-led investigations preserve contact-level provenance across admitted public sources, and username-led results require exact observed handles before corroboration. Editing the target or investigation type clears saved checkout state and ignores late responses from the previous request.
 
 - Personal Identity intake now interprets free-text requests into person, organization, role, and requested output, including requests without punctuation. Editing any identity field invalidates the prior saved intake before checkout. Name-led discovery merges evidence for the same constrained subject across independent source families, and reports verify a requested contact only when the same value is repeated by those sources.

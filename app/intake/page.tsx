@@ -557,10 +557,6 @@ export default function IntakePage() {
   }, []);
 
   useEffect(() => {
-    document.title = scanMode === "personal" ? "Personal Identity Investigation | ShadowScore" : "Start an Investigation | ShadowScore";
-  }, [scanMode]);
-
-  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const target = params.get("target")?.trim();
     const mode = params.get("mode");
@@ -628,6 +624,9 @@ export default function IntakePage() {
   const activeTarget = scanMode === "website" ? websiteTarget : scanMode === "personal" ? identityTarget : store;
   const canonicalRouting = useMemo(() => resolveInvestigationRouting({ target: activeTarget, scanMode }), [activeTarget, scanMode]);
   const canonicalPersonalInvestigation = canonicalRouting.primaryInvestigationType === "PERSON_IDENTITY";
+  useEffect(() => {
+    document.title = canonicalPersonalInvestigation ? "Personal Identity Investigation | ShadowScore" : "Start an Investigation | ShadowScore";
+  }, [canonicalPersonalInvestigation]);
   const requirements = useMemo(
     () =>
       scanMode === "website"
@@ -1031,26 +1030,26 @@ export default function IntakePage() {
             {t.intakeUi.back}
           </Link>
           <div className="rounded-full border border-red-400/25 bg-red-500/10 px-4 py-2 text-sm font-bold text-red-200">
-            {t.intakeUi.preview}
+            {canonicalPersonalInvestigation ? "Personal Identity Investigation" : t.intakeUi.preview}
           </div>
         </div>
       </header>
 
-      <JourneyProgress current={1} />
+      <JourneyProgress current={checkoutStage ? 2 : 1} />
 
       <section className="relative z-10 mx-auto max-w-7xl px-6 py-14">
         <div className="grid gap-10 lg:grid-cols-[.82fr_1.18fr]">
           <div>
-            <div className="text-xs uppercase tracking-[0.35em] text-red-300">{scanMode === "personal" ? "Identity investigation" : t.intakeUi.investigationEyebrow}</div>
-            <h1 className="mt-6 text-5xl font-extrabold leading-tight">{scanMode === "personal" ? "Investigate a Personal Identity" : t.intakeUi.investigationTitle}</h1>
-            <p className="mt-6 max-w-lg text-lg leading-8 text-zinc-400">{scanMode === "personal" ? "Submit known identity signals. The report separates public discovery leads from resolver-backed identity evidence." : t.intakeUi.investigationPrice}</p>
-            <div className="mt-8 rounded-2xl border border-white/10 bg-white/[.035] p-5"><p className="font-bold">{scanMode === "personal" ? "What the identity check covers" : t.intakeUi.investigationTime}</p><ol className="mt-4 space-y-3 text-sm text-zinc-300">{scanMode === "personal" ? <><li>1. Review submitted identity signals</li><li>2. Discover eligible public profile candidates</li><li>3. Compare matches, conflicts, and source provenance</li></> : <><li>1. {t.intakeUi.investigationStepIdentify}</li><li>2. {t.intakeUi.investigationStepReview}</li><li>3. {t.intakeUi.investigationStepReport}</li></>}</ol><p className="mt-4 text-sm text-zinc-400">{scanMode === "personal" ? "Purchase includes one private Personal Identity Investigation report after payment." : t.intakeUi.investigationStartTerms}</p></div>
+            <div className="text-xs uppercase tracking-[0.35em] text-red-300">{canonicalPersonalInvestigation ? "Identity investigation" : t.intakeUi.investigationEyebrow}</div>
+            <h1 className="mt-6 text-5xl font-extrabold leading-tight">{canonicalPersonalInvestigation ? "Investigate a Personal Identity" : t.intakeUi.investigationTitle}</h1>
+            <p className="mt-6 max-w-lg text-lg leading-8 text-zinc-400">{canonicalPersonalInvestigation ? "Submit known identity signals. The report separates public discovery leads from resolver-backed identity evidence." : t.intakeUi.investigationPrice}</p>
+            <div className="mt-8 rounded-2xl border border-white/10 bg-white/[.035] p-5"><p className="font-bold">{canonicalPersonalInvestigation ? "What the identity check covers" : t.intakeUi.investigationTime}</p><ol className="mt-4 space-y-3 text-sm text-zinc-300">{canonicalPersonalInvestigation ? <><li>1. Review submitted identity signals</li><li>2. Discover eligible public profile candidates</li><li>3. Compare matches, conflicts, and source provenance</li></> : <><li>1. {t.intakeUi.investigationStepIdentify}</li><li>2. {t.intakeUi.investigationStepReview}</li><li>3. {t.intakeUi.investigationStepReport}</li></>}</ol><p className="mt-4 text-sm text-zinc-400">{canonicalPersonalInvestigation ? "Purchase includes one private Personal Identity Investigation report after payment." : t.intakeUi.investigationStartTerms}</p></div>
           </div>
 
           <div className="rounded-[32px] border border-white/10 bg-black/55 p-6 shadow-[0_0_60px_rgba(120,0,20,0.16)] backdrop-blur-xl">
             <h2 className="text-2xl font-black text-white">{t.intakeUi.investigationTypeTitle}</h2>
-            <p className="mt-2 text-sm leading-6 text-zinc-400">{t.intakeUi.investigationTypeDescription}</p>
-            <p className="mt-1 text-sm leading-6 text-zinc-500">{t.intakeUi.investigationTypeReportDescription}</p>
+            <p className="mt-2 text-sm leading-6 text-zinc-400">{canonicalPersonalInvestigation ? "Choose how to identify the person you want to investigate." : t.intakeUi.investigationTypeDescription}</p>
+            <p className="mt-1 text-sm leading-6 text-zinc-400">{canonicalPersonalInvestigation ? "One Personal Identity Investigation produces one private Executive Report." : t.intakeUi.investigationTypeReportDescription}</p>
             <div className="mt-6 grid gap-3 md:grid-cols-2">
               {scanModes.map((mode) => (
                 <button
@@ -1115,6 +1114,7 @@ export default function IntakePage() {
                 <label className="block">
                   <span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">Investigation request</span>
                   <textarea
+                    dir="auto"
                     value={identityRequest}
                     onChange={(event) => {
                       setIdentityRequest(event.target.value);
@@ -1376,7 +1376,7 @@ export default function IntakePage() {
               aria-busy={freeScanRunning}
               className="mt-6 block w-full rounded-2xl bg-red-600 px-7 py-5 text-center text-sm font-black uppercase tracking-[0.16em] shadow-[0_0_28px_rgba(220,38,38,0.28)] hover:bg-red-500 disabled:cursor-wait disabled:opacity-60"
             >
-              {freeScanRunning ? t.intakeUi.investigating : previewStatus === "ready" ? t.intakeUi.previewReady : t.intakeUi.startInvestigation}
+              {freeScanRunning ? t.intakeUi.investigating : previewStatus === "ready" ? canonicalPersonalInvestigation ? "Ready to review" : t.intakeUi.previewReady : t.intakeUi.startInvestigation}
             </button>
 
             {previewStatus === "failed" && freeScanError && (
@@ -1393,7 +1393,15 @@ export default function IntakePage() {
                   const checkoutIsPersonal = checkoutRouting.primaryInvestigationType === "PERSON_IDENTITY";
                   const checkoutScope = checkoutIsPersonal ? "Personal identity" : "Business and domain";
                   return <>
-                    <QuickCheckResult target={submittedTarget} report={freeScanResult?.quickCheck} />
+                    {checkoutIsPersonal ? <section className="rounded-2xl border border-cyan-300/20 bg-cyan-400/5 p-5" aria-labelledby="identity-review-title">
+                      <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-200">Identity request prepared</p>
+                      <h2 id="identity-review-title" className="mt-3 break-words text-2xl font-bold text-white" dir="auto">{submittedTarget}</h2>
+                      <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2">
+                        <div><dt className="text-zinc-400">Investigation scope</dt><dd className="mt-1 font-semibold text-white">Personal identity</dd></div>
+                        <div><dt className="text-zinc-400">Requested result</dt><dd className="mt-1 font-semibold text-white">{scanMode === "personal" && effectiveRequestedAttributes.length ? effectiveRequestedAttributes.map(requestedAttributeLabel).join(", ") : "General identity match"}</dd></div>
+                      </dl>
+                      <p className="mt-4 text-sm leading-6 text-zinc-300">Review the submitted signals before continuing. Public-source collection begins after payment.</p>
+                    </section> : <QuickCheckResult target={submittedTarget} report={freeScanResult?.quickCheck} />}
 
                     {!checkoutStage ? (
                       <button type="button" onClick={() => setCheckoutStage(true)} className="block w-full rounded-2xl bg-emerald-500 px-7 py-5 text-center text-sm font-black uppercase tracking-[0.12em] text-black hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200">
@@ -1403,9 +1411,9 @@ export default function IntakePage() {
                     <section className="rounded-[28px] border border-yellow-400/20 bg-yellow-500/10 p-6 text-sm leading-7 text-yellow-100" aria-labelledby="paid-intake-title">
                         <div className="text-xs uppercase tracking-[0.22em] text-yellow-200">{checkoutIsPersonal ? "Personal identity investigation" : "Business Investigation intake"}</div>
                       <h3 id="paid-intake-title" className="mt-3 text-lg font-bold text-white">Confirm the {checkoutIsPersonal ? "identity subject" : "business"}, scope, customer account, and purchase.</h3>
-                      <p className="mt-2 text-sm text-yellow-100">Your Free Quick Check remains attached to this intake. Payment starts the full investigation. Your Executive Report becomes available after processing completes.</p>
+                      <p className="mt-2 text-sm text-yellow-100">{checkoutIsPersonal ? "Your identity request is ready for review. Payment starts public-source collection." : "Your Free Quick Check remains attached to this intake. Payment starts the full investigation."} Your Executive Report becomes available after processing completes.</p>
                       <div className="mt-5 rounded-2xl border border-white/10 bg-black/30 p-5">
-                        <dl className="mb-5 grid gap-3 text-sm sm:grid-cols-2"><div><dt className="text-zinc-500">{checkoutIsPersonal ? "Identity subject" : "Business"}</dt><dd className="font-bold text-white">{submittedTarget}</dd></div><div><dt className="text-zinc-500">Investigation scope</dt><dd className="font-bold text-white">{checkoutScope}</dd></div><div><dt className="text-zinc-500">Existing result</dt><dd className="font-bold text-white">Free Quick Check</dd></div><div><dt className="text-zinc-500">Purchase</dt><dd className="font-bold text-white">Full {checkoutIsPersonal ? "Personal Identity" : "Business"} Investigation · {BETA_PRODUCT.price}</dd></div></dl>
+                        <dl className="mb-5 grid gap-3 text-sm sm:grid-cols-2"><div><dt className="text-zinc-400">{checkoutIsPersonal ? "Identity subject" : "Business"}</dt><dd className="break-words font-bold text-white">{submittedTarget}</dd></div><div><dt className="text-zinc-400">Investigation scope</dt><dd className="font-bold text-white">{checkoutScope}</dd></div><div><dt className="text-zinc-400">{checkoutIsPersonal ? "Preparation" : "Existing result"}</dt><dd className="font-bold text-white">{checkoutIsPersonal ? "Identity request reviewed" : "Free Quick Check"}</dd></div><div><dt className="text-zinc-400">Purchase</dt><dd className="font-bold text-white">Full {checkoutIsPersonal ? "Personal Identity" : "Business"} Investigation · {BETA_PRODUCT.price}</dd></div></dl>
                         <label><div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">Customer email (required)</div><input type="email" required value={email} onChange={(e) => { setEmail(e.target.value); setSaveError(""); }} aria-describedby={saveError ? "checkout-email-error" : undefined} className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white" placeholder="you@example.com" /></label>
                         {saveError && <p id="checkout-email-error" className="mt-3 text-sm text-red-200" role="alert">{saveError}</p>}
                         <ul className="mt-4 space-y-2 text-sm font-bold leading-6 text-white" aria-label="Purchase confidence"><li>✓ One paid investigation</li><li>✓ One-time payment of {BETA_PRODUCT.price}</li><li>✓ No subscription</li><li>✓ Processing begins after payment</li><li>✓ Executive Report available after completion</li></ul>

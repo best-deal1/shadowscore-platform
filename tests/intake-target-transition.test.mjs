@@ -116,6 +116,36 @@ test("explicit General identity overrides inferred phone and persists after edit
   assert.equal(page.persisted[0].identitySignals.names[0], "Ariel Tuval");
 });
 
+for (const mode of ["personal", "website-free-mail"]) test(`${mode} review does not claim an unexecuted business Quick Check`, async () => {
+  let providerRequests = 0;
+  const page = await pageDriver({ fetch: async () => { providerRequests += 1; throw new Error("Unexpected provider request"); } });
+  if (mode === "personal") {
+    page.button("Personal identity").props.onClick();
+    page.find((node) => node.type === "textarea").props.onChange({ target: { value: "Find phone for Dana Example who is owner at Example Labs" } });
+  } else page.target().props.onChange({ target: { value: "subject-b@gmail.com" } });
+  await page.advance();
+  const tree = page.render();
+  assert.equal(providerRequests, 0);
+  assert.equal(page.persisted.length, 0);
+  assert.equal(elements(tree).some((node) => node.type === "QuickCheckResult"), false);
+  assert.match(textOf(tree), /Identity request prepared/);
+  assert.match(textOf(tree), /Public-source collection begins after payment/);
+  assert.match(textOf(tree), /Identity request reviewed/);
+  assert.doesNotMatch(textOf(tree), /Free Quick Check|Each option is one evidence-backed Business Investigation/);
+  assert.equal(elements(tree).find((node) => node.type === "JourneyProgress").props.current, 2);
+});
+
+test("business review preserves its existing Quick Check and purchase summary", async () => {
+  const page = await pageDriver();
+  page.target().props.onChange({ target: { value: "business-a.example" } });
+  await page.advance();
+  const tree = page.render();
+  assert.equal(elements(tree).filter((node) => node.type === "QuickCheckResult").length, 1);
+  assert.match(textOf(tree), /Your Free Quick Check remains attached/);
+  assert.doesNotMatch(textOf(tree), /Identity request prepared/);
+  assert.equal(page.persisted.length, 0);
+});
+
 test("late preview and persistence responses cannot restore a previous target's checkout", async () => {
   const previewGate = deferred();
   const page = await pageDriver({ fetch: () => previewGate.promise });
