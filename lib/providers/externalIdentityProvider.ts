@@ -42,7 +42,7 @@ export type ExternalIdentityCandidate = {
   resolutionOutcome?: ResolutionDecision["outcome"];
   resolverMatchedSignals?: Array<{ attribute: string; submitted: string; observed: string; similarity: number }>;
   resolverConflictingSignals?: Array<{ attribute: string; submitted: string; observed: string; similarity: number }>;
-  observedEmails?: string[]; observedPhoneNumbers?: string[];
+  observedEmails?: string[]; observedPhoneNumbers?: string[]; observedUsernames?: string[];
   observedOrganizations?: string[]; observedRoles?: string[];
   sourceProvenance?: Array<{ url: string; family: string; query: string }>;
   observedContactProvenance?: Array<{ type: "email" | "phone"; value: string; url: string; family: string }>;
@@ -51,7 +51,7 @@ export type ExternalIdentityCandidate = {
   convergingPaths?: string[][]; sharedIdentifiers?: string[]; loopStrength?: number;
 };
 
-export type PersonalIdentitySignals = { email: string; name?: string; username?: string; phone?: string };
+export type PersonalIdentitySignals = { email: string; name?: string; username?: string; phone?: string; organizations?: string[]; roles?: string[] };
 
 const resolverEntity = (entityId: string): Entity => ({ entityId, workspaceId: "external-identity", entityType: "person", canonicalName: "", aliases: [], domains: [], addresses: [], phoneNumbers: [], emailAddresses: [], registrationIdentifiers: [], peopleAndDirectors: [], relationships: [], status: "unknown", jurisdiction: null, observationIds: [] });
 
@@ -85,10 +85,11 @@ export function rankExternalIdentityCandidates(input: string | PersonalIdentityS
   if (signals.phone) observe(subject, "phone", signals.phone, "submitted-target", 0);
   const entities = candidates.map((candidate) => {
     const entity = resolverEntity(candidate.profileUrl);
-    const handle = socialUrlHandle(candidate.profileUrl);
-    if (handle) observe(entity, "name", handle, candidate.evidenceReference, .7);
     if (candidate.observedDisplayName && !candidate.discoveryOnlyAlias) observe(entity, "name", candidate.observedDisplayName, candidate.evidenceReference, .7);
-    for (const identifier of candidate.matchedIdentifiers) observe(entity, observedIdentityAttribute(identifier), identifier, candidate.evidenceReference, .85);
+    for (const identifier of candidate.matchedIdentifiers) {
+      if (signals.username && normalizeHandle(identifier) === normalizeHandle(signals.username)) continue;
+      observe(entity, observedIdentityAttribute(identifier), identifier, candidate.evidenceReference, .85);
+    }
     for (const observedEmail of candidate.observedEmails || []) observe(entity, "email", observedEmail, candidate.evidenceReference, .85);
     for (const observedPhone of candidate.observedPhoneNumbers || []) observe(entity, "phone", observedPhone, candidate.evidenceReference, .8);
     return entity;
@@ -98,10 +99,16 @@ export function rankExternalIdentityCandidates(input: string | PersonalIdentityS
   const resolverRank = new Map(ranked.map((item) => [item.entityId, item]));
   return candidates.map((candidate, index) => {
     const decision = decisions[index];
+    const username = normalizeHandle(signals.username || "");
+    const handles = [...new Set((candidate.observedUsernames || []).map(normalizeHandle).filter(Boolean))];
+    const handleMatches = username && handles.includes(username)
+      ? [{ attribute: "username", submitted: username, observed: username, similarity: 1 }] : [];
+    const handleConflicts = username ? handles.filter((handle) => handle !== username)
+      .map((handle) => ({ attribute: "username", submitted: username, observed: handle, similarity: 0 })) : [];
     return { ...candidate, resolutionRank: resolverRank.get(entities[index].entityId)?.rank, resolutionEvidenceScore: resolverRank.get(entities[index].entityId)?.combinedEvidenceScore,
       resolutionOutcome: decision.outcome,
-      resolverMatchedSignals: decision.matchedAttributes.map((item) => ({ attribute: item.attribute, submitted: item.left, observed: item.right, similarity: item.similarity })),
-      resolverConflictingSignals: decision.conflictingAttributes.map((item) => ({ attribute: item.attribute, submitted: item.left, observed: item.right, similarity: item.similarity })),
+      resolverMatchedSignals: [...decision.matchedAttributes.map((item) => ({ attribute: item.attribute, submitted: item.left, observed: item.right, similarity: item.similarity })), ...handleMatches],
+      resolverConflictingSignals: [...decision.conflictingAttributes.map((item) => ({ attribute: item.attribute, submitted: item.left, observed: item.right, similarity: item.similarity })), ...handleConflicts],
     };
   })
     .sort((a, b) => (a.resolutionRank || Number.MAX_SAFE_INTEGER) - (b.resolutionRank || Number.MAX_SAFE_INTEGER) || a.profileUrl.localeCompare(b.profileUrl))
@@ -335,6 +342,7 @@ function socialUrlHandle(url: string) { try {
   const first = parts[0].replace(/^@/, "");
   if (/^(?:accounts?|login|signin|signup|search|discover|explore|directory|people|posts?|reels?|watch|hashtag|tag|share)$/i.test(first)) return undefined;
   if (host.endsWith("tiktok.com") && !parts[0].startsWith("@")) return undefined;
+  if (host === "linkedin.com" && first === "in") return parts[1]?.replace(/^@/, "");
   if (host === "youtube.com" && /^(?:channel|c|user)$/i.test(first)) return parts[1]?.replace(/^@/, "");
   return first;
 } catch { return undefined; } }
@@ -589,9 +597,19 @@ function observedContacts(hit: SearchResult) {
   return { emails, phoneNumbers };
 }
 
+const normalizeHandle = (value: string) => value.trim().replace(/^@/u, "").toLowerCase();
+
+function observedUsernames(hit: SearchResult) {
+  const text = `${hit.title} ${hit.description || ""}`;
+  const explicit = [...text.matchAll(/(?:^|[^\p{L}\p{N}_.-])@([\p{L}\p{N}][\p{L}\p{N}_.-]{1,39})(?=$|[^\p{L}\p{N}_.-])/giu)].map((match) => match[1]);
+  const labelled = [...text.matchAll(/\b(?:username|handle)\s*:\s*@?([\p{L}\p{N}][\p{L}\p{N}_.-]{1,39})(?=$|[^\p{L}\p{N}_.-])/giu)].map((match) => match[1]);
+  return [...new Set([socialUrlHandle(hit.url) || "", ...explicit, ...labelled].map(normalizeHandle).filter(Boolean))];
+}
+
 type SignalSearchResult = { result: ResultAdmissionDiagnostic; query: string };
 
 function signalCandidateGroupKey(candidate: ExternalIdentityCandidate, signals: NonNullable<ProviderExecutionContext["identitySignals"]>) {
+  if (candidate.discoveryOnlyAlias) return `source:${candidate.profileUrl}`;
   const matched = new Set(candidate.matchedIdentifiers.map(normalizeIdentifier));
   const anchors: Array<[string, string[]]> = [
     ["email", signals.emails],
@@ -653,6 +671,7 @@ function mergeSignalIdentityCandidates(
       candidateDiscoveryConfidence: Math.max(...group.map((candidate) => candidate.candidateDiscoveryConfidence)),
       observedEmails: values(group.flatMap((candidate) => candidate.observedEmails || [])),
       observedPhoneNumbers: values(group.flatMap((candidate) => candidate.observedPhoneNumbers || [])),
+      observedUsernames: values(group.flatMap((candidate) => candidate.observedUsernames || [])),
       observedOrganizations: values(group.flatMap((candidate) => candidate.observedOrganizations || [])),
       observedRoles: values(group.flatMap((candidate) => candidate.observedRoles || [])),
       sourceProvenance: provenance,
@@ -672,7 +691,7 @@ function corroborateMergedSignalCandidate(candidate: ExternalIdentityCandidate) 
       .map((entry) => entry.family)).size >= 2);
   const hasMatchedSubject = (candidate.resolverMatchedSignals?.length || 0) > 0;
   const hasConflict = (candidate.resolverConflictingSignals?.length || 0) > 0;
-  if (!repeatedContact || !hasMatchedSubject || hasConflict || (candidate.independentSourceFamilyCount || 0) < 2) return candidate;
+  if (candidate.discoveryOnlyAlias || !repeatedContact || !hasMatchedSubject || hasConflict || (candidate.independentSourceFamilyCount || 0) < 2) return candidate;
   return {
     ...candidate,
     status: "Corroborated" as const,
@@ -681,7 +700,7 @@ function corroborateMergedSignalCandidate(candidate: ExternalIdentityCandidate) 
   };
 }
 
-export function buildSignalIdentityCandidates(
+function rawSignalIdentityCandidates(
   entries: SignalSearchResult[],
   signals: NonNullable<ProviderExecutionContext["identitySignals"]>,
 ): ExternalIdentityCandidate[] {
@@ -693,7 +712,13 @@ export function buildSignalIdentityCandidates(
   ];
   const submittedOrganizations = signals.organizations || [];
   const submittedRoles = signals.roles || [];
-  const rawCandidates = entries.map(({ result, query }): ExternalIdentityCandidate => {
+  const rawCandidates = entries.filter(({ result }) => {
+    try {
+      if (!/^https?:$/u.test(new URL(result.url).protocol)) return false;
+      return sourceClassFor(result.url) !== "social_profile" || Boolean(platformFor(result.url) && identityProfileUrl(result.url));
+    } catch { return false; }
+  })
+    .map(({ result, query }): ExternalIdentityCandidate => {
     const text = `${result.title} ${result.description || ""} ${result.url}`;
     const contacts = observedContacts({ title: result.title, description: result.description, url: result.url });
     const matchedIdentifiers = submittedIdentifiers.filter((identifier) => containsIdentifier(text, identifier));
@@ -711,7 +736,7 @@ export function buildSignalIdentityCandidates(
 
     return {
       platform,
-      profileUrl: canonicalUrl(result.url),
+      profileUrl: identityProfileUrl(result.url) || canonicalUrl(result.url),
       observedDisplayName,
       matchedIdentifiers,
       matchType: signals.usernames.some((username) => matchedIdentifiers.includes(username)) ? "username" : "alias",
@@ -731,6 +756,7 @@ export function buildSignalIdentityCandidates(
       identityAttributionConfidence: null,
       observedEmails: contacts.emails,
       observedPhoneNumbers: contacts.phoneNumbers,
+      observedUsernames: observedUsernames(result),
       observedOrganizations: matchedOrganizations,
       observedRoles: matchedRoles,
       sourceProvenance: [{ url: result.url, family: sourceFamily, query }],
@@ -742,7 +768,14 @@ export function buildSignalIdentityCandidates(
     };
   });
 
-  const mergedCandidates = mergeSignalIdentityCandidates(rawCandidates, signals);
+  return rawCandidates;
+}
+
+export function buildSignalIdentityCandidates(
+  entries: SignalSearchResult[],
+  signals: NonNullable<ProviderExecutionContext["identitySignals"]>,
+): ExternalIdentityCandidate[] {
+  const mergedCandidates = mergeSignalIdentityCandidates(rawSignalIdentityCandidates(entries, signals), signals);
   return rankExternalIdentityCandidates({
     email: signals.emails[0] || "",
     name: signals.names[0],
@@ -811,6 +844,13 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
   const search = options.search || braveSearch;
   const normalized = email.trim().toLowerCase(); const localPart = normalized.split("@")[0]; const domain = normalized.split("@")[1]; const usernameStem = numericFreeUsernameStem(localPart);
   const submittedSignals = { email: normalized, ...options.signals };
+  const identitySignals = {
+    emails: [normalized], phones: options.signals?.phone ? [options.signals.phone] : [],
+    names: options.signals?.name ? [options.signals.name] : [],
+    usernames: options.signals?.username ? [options.signals.username] : [], referenceImages: [],
+    organizations: options.signals?.organizations || [], roles: options.signals?.roles || [],
+  };
+  const admittedContactResults: SignalSearchResult[] = [];
   const escapedName = options.signals?.name?.replace(/["\\]/g, " ").trim();
   const nameAndEmailClue = escapedName
     ? `"${escapedName}" "${usernameStem || localPart}"`
@@ -952,6 +992,12 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
       }
       resultDiagnostics.push(resultDiagnostic);
       if (resultDiagnostic.discoveryAdmissionDecision === "REJECTED") continue;
+      const sourceText = `${hit.title} ${hit.description || ""} ${hit.url}`;
+      const contextEligible = !identitySignals.organizations.length
+        || identitySignals.organizations.some((organization) => containsIdentifier(sourceText, organization));
+      if (resultDiagnostic.evidenceAdmissionDecision === "EVIDENCE_ADMITTED" && contextEligible) {
+        admittedContactResults.push({ result: resultDiagnostic, query: item.query });
+      }
       if (!platform) {
         const snippet = `${hit.title}${hit.description ? ` - ${hit.description}` : ""}`.trim();
         const pivots = observedIdentifiers(hit, originals, resultDiagnostic.identifierEvaluations, options.signals?.name);
@@ -985,6 +1031,12 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
       const observedEmails = [...new Set([...(prior?.observedEmails || []), ...contacts.emails])];
       const observedPhoneNumbers = [...new Set([...(prior?.observedPhoneNumbers || []), ...contacts.phoneNumbers])];
       const sourceProvenance = [...new Map([...(prior?.sourceProvenance || []), { url: hit.url, family: underlyingSourceFamily(hit.url), query: item.query }].map((entry) => [`${entry.family}|${entry.url}`, entry])).values()];
+      const observedContactProvenance = [...(prior?.observedContactProvenance || []),
+        ...(resultDiagnostic.evidenceAdmissionDecision === "EVIDENCE_ADMITTED" && contextEligible ? [
+          ...contacts.emails.map((value) => ({ type: "email" as const, value, url: hit.url, family: underlyingSourceFamily(hit.url) })),
+          ...contacts.phoneNumbers.map((value) => ({ type: "phone" as const, value, url: hit.url, family: underlyingSourceFamily(hit.url) })),
+        ] : []),
+      ];
       const observedMatches = [...(prior?.matchedIdentifiers || [])];
       if (currentExact) observedMatches.push(normalized);
       else if (item.hop > 0 && item.identifierStrength === "corroborated_identifier" && containsIdentifier(snippet, item.label)) observedMatches.push(normalizeIdentifier(item.label));
@@ -1017,6 +1069,8 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
         supportingEvidence,
         observedEmails,
         observedPhoneNumbers,
+        observedUsernames: [...new Set([...(prior?.observedUsernames || []), ...observedUsernames(hit)])],
+        observedContactProvenance,
         sourceProvenance,
         independentSourceFamilyCount: new Set(sourceProvenance.map((entry) => entry.family)).size,
         discoveryScore: Math.max(prior?.discoveryScore || 0, discoveryScore),
@@ -1083,7 +1137,22 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
   for (const skipped of queue) { schedulingDiagnostics.push({ pivot: skipped.label, clueType: skipped.clueType, hop: skipped.hop, query: skipped.query, schedulingGeneration: skipped.schedulingGeneration, queryPass: skipped.queryPass, decision: "skipped", reason: searchCount >= limits.maxSearches ? "search_budget" : "closure", remainingSearchBudget: limits.maxSearches - searchCount }); const clue = clues.get(`${skipped.clueType}:${normalizeIdentifier(skipped.label)}`); if (clue) clue.queriesSkipped.push(skipped.query); }
   const convergences: EntityConvergence[] = [...clues.values()].filter((clue) => clue.observedBy.length > 1).map((clue) => ({ clueId: clue.id, convergingPaths: [clue.discoveryPath], sharedIdentifiers: [clue.normalizedValue], loopStrength: Math.min(100, clue.observedBy.length * 20), sourceClasses: [...new Set(clue.observedBy.map((observation) => sourceClassFor(observation.split("|").at(-1) || "")))] }));
   for (const candidate of candidates.values()) { const handle = socialUrlHandle(candidate.profileUrl); const convergence = convergences.find((item) => item.sharedIdentifiers.includes(normalizeIdentifier(handle || ""))); if (convergence) Object.assign(candidate, convergence, { discoveryScore: (candidate.discoveryScore || 0) + convergence.loopStrength }); }
-  const ranked = rankExternalIdentityCandidates(submittedSignals, [...candidates.values()]);
+  for (const sourceCandidate of rawSignalIdentityCandidates(admittedContactResults, identitySignals)) {
+    const prior = candidates.get(sourceCandidate.profileUrl);
+    candidates.set(sourceCandidate.profileUrl, prior ? {
+      ...prior,
+      matchedIdentifiers: [...new Set([...prior.matchedIdentifiers, ...sourceCandidate.matchedIdentifiers])],
+      observedEmails: [...new Set([...(prior.observedEmails || []), ...(sourceCandidate.observedEmails || [])])],
+      observedPhoneNumbers: [...new Set([...(prior.observedPhoneNumbers || []), ...(sourceCandidate.observedPhoneNumbers || [])])],
+      observedUsernames: [...new Set([...(prior.observedUsernames || []), ...(sourceCandidate.observedUsernames || [])])],
+      observedOrganizations: [...new Set([...(prior.observedOrganizations || []), ...(sourceCandidate.observedOrganizations || [])])],
+      observedRoles: [...new Set([...(prior.observedRoles || []), ...(sourceCandidate.observedRoles || [])])],
+      observedContactProvenance: [...new Map([...(prior.observedContactProvenance || []), ...(sourceCandidate.observedContactProvenance || [])]
+        .map((entry) => [`${contactKey(entry.type, entry.value)}|${entry.family}|${entry.url}`, entry])).values()],
+    } : sourceCandidate);
+  }
+  const ranked = rankExternalIdentityCandidates(submittedSignals,
+    mergeSignalIdentityCandidates([...candidates.values()], identitySignals)).map(corroborateMergedSignalCandidate);
   const pathUrls = new Set(edges.filter((edge) => edge.relation !== "search_result").map((edge) => edge.from));
   const visible = ranked.filter((candidate, index) => candidate.confidence >= 45 || pathUrls.has(candidate.profileUrl) || index < 3).slice(0, limits.maxVisibleCandidates).map((candidate, index) => ({ ...candidate, resolutionRank: index + 1 }));
   const anyAdmissible = searches.some((entry) => entry.results.some((result) => result.discoveryAdmissionDecision === "DISCOVERY_ADMITTED"));
@@ -1155,4 +1224,6 @@ export class ExternalIdentityProvider extends BaseProvider { readonly id = "exte
       name: context.identitySignals?.names[0] || context.resolvedEntity?.canonicalName || textSignal("name"),
       username: context.identitySignals?.usernames[0] || textSignal("username") || textSignal("handle"),
       phone: context.identitySignals?.phones[0] || textSignal("phone") || textSignal("phoneNumber"),
+      organizations: context.identitySignals?.organizations,
+      roles: context.identitySignals?.roles,
     } }); const evidence: ProviderEvidence[] = graph.candidates.map((candidate, index) => ({ id: `external-identity-${index + 1}`, type: "search_result", label: candidate.matchLevel === "unverified_candidate" ? "Potential public identity candidate" : "Public identity exact-email match", value: `${candidate.platform} | profile ${candidate.profileUrl} | status ${candidate.status} | matched ${candidate.matchedIdentifiers.join(", ")} | identity attribution ${candidate.identityAttributionConfidence === null ? "Unverified" : `${candidate.identityAttributionConfidence}%`} | candidate score ${candidate.candidateDiscoveryConfidence}% | path ${candidate.discoveryPath.join(" -> ")} | ${candidate.matchBasis}`, source: candidate.evidenceUrl, investigationId: context.investigationId || context.intakeId, canonicalTarget: email, providerName: this.name, collectedAt: new Date().toISOString() })); return { findings: [], evidence, metadata: { lookupPerformed: true, submittedEmail: email, candidateCount: graph.candidates.length, externalIdentityCandidates: graph.candidates, entityClues: graph.clues, entityConvergences: graph.convergences, identityDiscoveryEdges: graph.edges, identityDiscoverySearches: graph.searches, identitySchedulingDiagnostics: graph.schedulingDiagnostics, identityDiscoveryMetrics: graph.metrics, evidencePolicy: "Submitted input is not independent corroboration. Discovery leads cannot establish identity facts. Candidate status requires external evidence. Verification requires independent primary evidence." } }; } finally { clearTimeout(timeout); } } }

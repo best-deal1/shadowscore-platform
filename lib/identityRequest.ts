@@ -22,7 +22,7 @@ const REQUESTED_ATTRIBUTE_PATTERNS: Array<{ attribute: IdentityRequestedAttribut
 ];
 
 const ROLE_PATTERNS: Array<{ label: string; expression: RegExp }> = [
-  { label: "בעלים", expression: /(?:^|[\s,;])(?:בעלים|בעלים\s+שותף|בעלת\s+העסק|בעל\s+העסק)(?=$|[\s,;])/iu },
+  { label: "בעלים", expression: /(?:^|[\s,;])(?:ה?בעלים(?:\s+שותף)?|בעלת\s+העסק|בעל\s+העסק)(?=$|[\s,;])/iu },
   { label: "מנכ״ל", expression: /(?:^|[\s,;])(?:מנכ["״']?ל|מנהלת?\s+כללי[ת]?)(?=$|[\s,;])/iu },
   { label: "מייסד", expression: /(?:^|[\s,;])(?:מייסד|מייסדת|שותף\s+מייסד|שותפה\s+מייסדת)(?=$|[\s,;])/iu },
   { label: "דירקטור", expression: /(?:^|[\s,;])(?:דירקטור|דירקטורית)(?=$|[\s,;])/iu },
@@ -106,11 +106,15 @@ export function interpretIdentityRequest(value: string): IdentityRequestInterpre
 
   const clauses = rawRequest.split(/[\n,;|]+/u).map(cleanClause).filter(Boolean);
   const cleanedClauses = clauses.map(stripRequestLanguage).filter(Boolean);
-  const initialPersonName = cleanedClauses.find(plausibleName);
-  let organization = cleanedClauses.find((clause) => clause !== initialPersonName && clause.length >= 2);
-  organization ||= organizationFollowingRole(rawRequest, matchedRole?.expression);
+  const roleMatch = matchedRole?.expression.exec(rawRequest);
+  const beforeRole = roleMatch && !/[\n,;|]/u.test(rawRequest.slice(0, roleMatch.index)) ? stripRequestLanguage(rawRequest.slice(0, roleMatch.index)
+    .replace(/(?:^|\s)(?:(?:who\s+is|who['’]s|is|as)(?:\s+the)?|שהוא|שהיא|שהינו|שהינה|הוא|היא)\s*$/iu, "")) : "";
+  const initialPersonName = plausibleName(beforeRole) ? beforeRole : cleanedClauses.find(plausibleName);
+  // Relation boundaries are stronger than an unpunctuated whole-clause guess.
+  let organization = organizationFollowingRole(rawRequest, matchedRole?.expression);
+  organization ||= cleanedClauses.find((clause) => clause !== initialPersonName && clause.length >= 2);
   const subjectClauses = cleanedClauses.map((clause) => withoutOrganization(clause, organization)).filter(Boolean);
-  let personName = subjectClauses.find(plausibleName);
+  let personName = plausibleName(beforeRole) ? beforeRole : subjectClauses.find(plausibleName);
 
   if (!organization) {
     const actionDivider = new RegExp(ACTION_PATTERNS.map((pattern) => `(?:${pattern.source})`).join("|"), "iu");

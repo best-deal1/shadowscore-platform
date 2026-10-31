@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { CANONICAL_LOGO_PATH } from "@/lib/brand";
@@ -537,7 +537,7 @@ export default function IntakePage() {
   const [identityRequest, setIdentityRequest] = useState("");
   const [identityOrganization, setIdentityOrganization] = useState("");
   const [identityRole, setIdentityRole] = useState("");
-  const [identityRequestedAttribute, setIdentityRequestedAttribute] = useState<IdentityRequestedAttribute | "">("");
+  const [identityRequestedAttribute, setIdentityRequestedAttribute] = useState<IdentityRequestedAttribute | "" | null>(null);
   const [referenceImage, setReferenceImage] = useState<File | null>(null);
   const [referenceAuthorized, setReferenceAuthorized] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -549,6 +549,7 @@ export default function IntakePage() {
   const [freeScanError, setFreeScanError] = useState("");
   const [saveError, setSaveError] = useState("");
   const [checkoutStage, setCheckoutStage] = useState(false);
+  const journeyRevision = useRef(0);
 
   useEffect(() => {
     const session = getCurrentSession();
@@ -584,11 +585,12 @@ export default function IntakePage() {
     if (!session || !stored) return;
 
     let cancelled = false;
+    const revision = journeyRevision.current;
     void (async () => {
       try {
         const draft = JSON.parse(stored) as ReturnType<typeof intakeRecord>;
         const created = await createIntake(session, draft);
-        if (cancelled) return;
+        if (cancelled || revision !== journeyRevision.current) return;
         setScanMode(draft.scanMode);
         setWebsiteTarget(draft.scanMode === "website" ? draft.target : "");
         setStore(draft.scanMode === "website" ? "" : draft.target);
@@ -600,6 +602,7 @@ export default function IntakePage() {
         window.sessionStorage.removeItem(CHECKOUT_DRAFT_KEY);
         window.location.assign("/workspace");
       } catch {
+        if (cancelled || revision !== journeyRevision.current) return;
         window.sessionStorage.removeItem(CHECKOUT_DRAFT_KEY);
         setFreeScanError("The saved investigation could not be restored. Please save it again.");
       }
@@ -618,9 +621,9 @@ export default function IntakePage() {
   const effectiveIdentityName = identityName.trim() || interpretedIdentityRequest.personName || "";
   const effectiveIdentityOrganization = identityOrganization.trim() || interpretedIdentityRequest.organization || "";
   const effectiveIdentityRole = identityRole.trim() || interpretedIdentityRequest.role || "";
-  const effectiveRequestedAttributes = identityRequestedAttribute
-    ? [identityRequestedAttribute]
-    : interpretedIdentityRequest.requestedAttributes;
+  const effectiveRequestedAttributes = identityRequestedAttribute === null
+    ? interpretedIdentityRequest.requestedAttributes
+    : identityRequestedAttribute ? [identityRequestedAttribute] : [];
   const identityTarget = effectiveIdentityEmail || effectiveIdentityPhone || effectiveIdentityUsername || effectiveIdentityName;
   const activeTarget = scanMode === "website" ? websiteTarget : scanMode === "personal" ? identityTarget : store;
   const canonicalRouting = useMemo(() => resolveInvestigationRouting({ target: activeTarget, scanMode }), [activeTarget, scanMode]);
@@ -882,14 +885,20 @@ export default function IntakePage() {
   };
 
   const resetIdentityJourney = () => {
+    journeyRevision.current += 1;
     setSubmitted(false);
     setLeadSaved(false);
     setIntake(null);
     setCheckoutStage(false);
+    setFreeScanRunning(false);
+    setSaveError("");
+    sessionStorage.removeItem(CHECKOUT_DRAFT_KEY);
+    sessionStorage.removeItem("shadowscore_last_lead");
     resetFreeScan();
   };
 
   const runFreePreview = async () => {
+    const revision = journeyRevision.current;
     setSubmitted(true);
     setFreeScanError("");
     setPreviewStatus("idle");
@@ -913,6 +922,7 @@ export default function IntakePage() {
         body: JSON.stringify(intakeRecord()),
       });
       const payload = await readPreviewJson(response);
+      if (revision !== journeyRevision.current) return;
 
       if (!isPreviewReadyResponse(payload)) {
         throw new Error("Investigation checks finished, but the preview-ready event was missing from the API response.");
@@ -921,15 +931,20 @@ export default function IntakePage() {
       setFreeScanResult(payload as FreeScanResult);
       setPreviewStatus(nextPreviewStatus(payload));
     } catch (error) {
+      if (revision !== journeyRevision.current) return;
       setPreviewStatus("failed");
       setFreeScanError(error instanceof Error ? error.message : "Unable to run investigation checks.");
     } finally {
-      setFreeScanRunning(false);
+      if (revision === journeyRevision.current) setFreeScanRunning(false);
     }
   };
 
 
   const saveLead = async (resolvedEmail = email) => {
+    const revision = journeyRevision.current;
+    const assertCurrent = () => {
+      if (revision !== journeyRevision.current) throw new Error("The investigation changed. Review the current target before continuing.");
+    };
     setSaveError("");
     const session = getCurrentSession();
     const cleanEmail = resolvedEmail.trim().toLowerCase();
@@ -964,6 +979,7 @@ export default function IntakePage() {
       return "";
     }
     const created = await createIntake(session, record);
+    assertCurrent();
     if (scanMode === "personal" && referenceImage) {
       const upload = new FormData();
       upload.set("file", referenceImage);
@@ -972,6 +988,7 @@ export default function IntakePage() {
       const response = await fetch("/api/identity-evidence", { method: "POST", body: upload });
       const payload = await response.json().catch(() => null) as { error?: string } | null;
       if (!response.ok) throw new Error(payload?.error || "The reference image could not be stored.");
+      assertCurrent();
     }
     setIntake(created);
     setLeadSaved(true);
@@ -979,16 +996,16 @@ export default function IntakePage() {
   };
 
   const saveForLater = async () => {
+    const revision = journeyRevision.current;
     try {
       await saveLead();
     } catch (cause) {
-      setSaveError(cause instanceof Error ? cause.message : "The investigation could not be saved.");
+      if (revision === journeyRevision.current) setSaveError(cause instanceof Error ? cause.message : "The investigation could not be saved.");
     }
   };
 
   const handleFileChange = (incoming: File[]) => {
-    setSubmitted(false);
-    setLeadSaved(false);
+    resetIdentityJourney();
     setFiles(incoming);
   };
 
@@ -1034,11 +1051,12 @@ export default function IntakePage() {
             <h2 className="text-2xl font-black text-white">{t.intakeUi.investigationTypeTitle}</h2>
             <p className="mt-2 text-sm leading-6 text-zinc-400">{t.intakeUi.investigationTypeDescription}</p>
             <p className="mt-1 text-sm leading-6 text-zinc-500">{t.intakeUi.investigationTypeReportDescription}</p>
-            <div className="mt-6 grid gap-3 md:grid-cols-3">
+            <div className="mt-6 grid gap-3 md:grid-cols-2">
               {scanModes.map((mode) => (
                 <button
                   key={mode.id}
                   type="button"
+                  aria-pressed={scanMode === mode.id}
                   onClick={() => {
                     if (mode.id === "personal" && !personalIdentityEnabled) return;
                     setScanMode(mode.id);
@@ -1125,7 +1143,7 @@ export default function IntakePage() {
                   <label><span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">Username</span><input value={identityUsername} onChange={(event) => { setIdentityUsername(event.target.value); resetIdentityJourney(); }} className="w-full rounded-2xl border border-white/10 bg-black p-4" placeholder="username" autoComplete="off" /></label>
                   <label><span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">Organization</span><input value={identityOrganization} onChange={(event) => { setIdentityOrganization(event.target.value); resetIdentityJourney(); }} className="w-full rounded-2xl border border-white/10 bg-black p-4" placeholder={interpretedIdentityRequest.organization || "Company or organization"} autoComplete="organization" /></label>
                   <label><span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">Role</span><input value={identityRole} onChange={(event) => { setIdentityRole(event.target.value); resetIdentityJourney(); }} className="w-full rounded-2xl border border-white/10 bg-black p-4" placeholder={interpretedIdentityRequest.role || "Owner, founder, director"} autoComplete="organization-title" /></label>
-                  <label className="md:col-span-2"><span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">Requested result</span><select value={identityRequestedAttribute || interpretedIdentityRequest.requestedAttributes[0] || ""} onChange={(event) => { setIdentityRequestedAttribute(event.target.value as IdentityRequestedAttribute | ""); resetIdentityJourney(); }} className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white"><option value="">General identity match</option><option value="phone">Phone number</option><option value="email">Email address</option><option value="social_profile">Public profile</option><option value="identity_match">Identity match</option></select></label>
+                  <label className="md:col-span-2"><span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">Requested result</span><select value={identityRequestedAttribute ?? interpretedIdentityRequest.requestedAttributes[0] ?? ""} onChange={(event) => { setIdentityRequestedAttribute(event.target.value as IdentityRequestedAttribute | ""); resetIdentityJourney(); }} className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white"><option value="">General identity match</option><option value="phone">Phone number</option><option value="email">Email address</option><option value="social_profile">Public profile</option><option value="identity_match">Identity match</option></select></label>
                 </div>
                 <label className="mt-5 block rounded-2xl border border-dashed border-white/15 p-4"><span className="block text-sm font-bold">Authorized reference image, optional</span><span className="mt-1 block text-xs text-zinc-500">JPG, PNG, or WebP. Maximum 10MB.</span><input className="mt-3 block w-full text-sm" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { setReferenceImage(event.target.files?.[0] || null); resetIdentityJourney(); }} /></label>
                 {referenceImage && <label className="mt-4 flex items-start gap-3 text-sm text-zinc-300"><input className="mt-1" type="checkbox" checked={referenceAuthorized} onChange={(event) => { setReferenceAuthorized(event.target.checked); resetIdentityJourney(); }} /><span>I am authorized to use this image for this investigation.</span></label>}
@@ -1145,8 +1163,7 @@ export default function IntakePage() {
                           value={marketplace}
                           onChange={(e) => {
                             setMarketplace(e.target.value);
-                            setSubmitted(false);
-                            setLeadSaved(false);
+                            resetIdentityJourney();
                           }}
                           className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white"
                         >
@@ -1161,7 +1178,7 @@ export default function IntakePage() {
                         </div>
                         <select
                           value={caseType}
-                          onChange={(e) => setCaseType(e.target.value)}
+                          onChange={(e) => { setCaseType(e.target.value); resetIdentityJourney(); }}
                           className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white"
                         >
                           {CASE_TYPES.map((item) => (
@@ -1177,8 +1194,7 @@ export default function IntakePage() {
                           value={store}
                           onChange={(e) => {
                             setStore(e.target.value);
-                            setSubmitted(false);
-                            setLeadSaved(false);
+                            resetIdentityJourney();
                           }}
                           className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white"
                           placeholder={t.intakeUi.sellerPlaceholder}
@@ -1195,8 +1211,7 @@ export default function IntakePage() {
                         value={store}
                         onChange={(e) => {
                           setStore(e.target.value);
-                          setSubmitted(false);
-                          setLeadSaved(false);
+                          resetIdentityJourney();
                         }}
                         className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white"
                         placeholder={t.intakeUi.evidenceReferencePlaceholder}
@@ -1214,8 +1229,7 @@ export default function IntakePage() {
                       value={customMarketplace}
                       onChange={(e) => {
                         setCustomMarketplace(e.target.value);
-                        setSubmitted(false);
-                        setLeadSaved(false);
+                        resetIdentityJourney();
                       }}
                       className="w-full rounded-2xl border border-red-400/20 bg-black p-4 text-white"
                       placeholder={t.intakeUi.customPlatformPlaceholder}
@@ -1358,7 +1372,9 @@ export default function IntakePage() {
             <button
               type="button"
               onClick={runFreePreview}
-              className="mt-6 block w-full rounded-2xl bg-red-600 px-7 py-5 text-center text-sm font-black uppercase tracking-[0.16em] shadow-[0_0_28px_rgba(220,38,38,0.28)] hover:bg-red-500"
+              disabled={freeScanRunning}
+              aria-busy={freeScanRunning}
+              className="mt-6 block w-full rounded-2xl bg-red-600 px-7 py-5 text-center text-sm font-black uppercase tracking-[0.16em] shadow-[0_0_28px_rgba(220,38,38,0.28)] hover:bg-red-500 disabled:cursor-wait disabled:opacity-60"
             >
               {freeScanRunning ? t.intakeUi.investigating : previewStatus === "ready" ? t.intakeUi.previewReady : t.intakeUi.startInvestigation}
             </button>

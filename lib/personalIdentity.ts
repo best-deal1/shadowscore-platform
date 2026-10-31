@@ -159,7 +159,11 @@ export function requestedIdentityResults(signals: IdentitySignals | undefined, c
       ...(requested.has("identity_match") && corroborated ? [{ type: "Identity match" as const, value: candidate.observedDisplayName || candidate.profileUrl, sourceUrl, association, corroborated }] : []),
     ];
   });
-  return [...new Map(results.map((result) => [`${result.type}|${result.value}|${result.sourceUrl}`, result])).values()];
+  return [...new Map(results.map((result) => {
+    const value = result.type === "Phone number" ? result.value.replace(/\D/gu, "")
+      : result.type === "Email address" ? result.value.trim().toLowerCase() : result.value;
+    return [`${result.type}|${value}|${result.sourceUrl}`, result];
+  })).values()];
 }
 
 export type ContactEvidence = { type: "email" | "phone"; value: string; sourceUrl: string; sourceFamily: string };
