@@ -40,6 +40,9 @@ test("different source names and multi-person excerpts cannot corroborate one id
     const html = await renderPersonalReport(customer);
     assert.ok(html.includes(scenario === "conflicting_names" ? "Sources report different names" : "Profile details could not be attributed"));
     assert.equal(html.includes("Reported role"), false);
+    assert.equal(html.includes("No contradictory identifier was recorded"), false);
+    assert.equal(html.includes("No conflict with submitted signals observed"), false);
+    assert.ok(html.includes("Identity remains unresolved"));
   }
 });
 

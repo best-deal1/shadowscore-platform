@@ -99,6 +99,15 @@ try {
       if (scenario === "empty") assert.ok(await page.getByText("Identity remains unresolved", { exact: true }).isVisible());
       if (scenario === "unavailable") assert.ok(await page.getByText("Public identity search unavailable", { exact: true }).isVisible());
       await page.screenshot({ path: path.join(output, `${scenario}-${viewport.width}.jpg`), fullPage: true, type: "jpeg", quality: 80 });
+      if (scenario === "found") {
+        const details = page.getByText("Matching details", { exact: true });
+        await details.focus();
+        await page.keyboard.press("Enter");
+        assert.ok(await page.getByText("Resolver-backed identity evidence score", { exact: true }).isVisible());
+        await assertLayout(page, viewport.width);
+        await page.keyboard.press("Enter");
+        assert.equal(await page.getByText("Resolver-backed identity evidence score", { exact: true }).isVisible(), false);
+      }
       if (viewport.width === 1363 && scenario === "found") {
         await page.emulateMedia({ media: "print" });
         assert.ok(await page.getByRole("heading", { name: fixtureEmail, exact: true }).isVisible());

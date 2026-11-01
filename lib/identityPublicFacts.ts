@@ -28,14 +28,15 @@ export function publicPhoneObservations(text: string) {
     const prefix = text.slice(Math.max(0, (match.index || 0) - 30), match.index);
     if (/(?:record|reference|identifier|document|order|invoice|id)\s*[:.#=-]?\s*$/iu.test(prefix)) return [];
     const labelled = /(?:phone|telephone|tel|mobile|call|טלפון|נייד)\s*[:.=-]?\s*$/iu.test(prefix);
-    const formatted = /^\+/u.test(value) || /\(\d{2,4}\)/u.test(value) || (value.match(/[ .-]/gu)?.length || 0) >= 2;
+    const formatted = /^\+/u.test(value) || /\(\d{2,4}\)/u.test(value)
+      || /^0(?:[23489]-\d{7}|5\d-\d{7})$/u.test(value) || (value.match(/[ .-]/gu)?.length || 0) >= 2;
     return labelled || formatted ? [value] : [];
   }))];
 }
 
 const normalizedName = (value: string) => value.normalize("NFKC").trim().replace(/\s+/gu, " ").toLowerCase();
 const roleWord = /(?:\b(?:engineer|manager|director|founder|owner|developer|designer|researcher|professor|writer|author|consultant|officer|president|partner|architect|head|chief|ceo|cto|cfo)\b|(?:^|\s)(?:מנהל|מנהלת|מייסד|מייסדת|בעלים|מהנדס|מהנדסת|חוקר|חוקרת)(?:\s|$))/iu;
-const blockedNameWord = /^(?:company|team|contact|profile|public|home|careers|jobs|news|privacy|terms|speaking|talks)$/iu;
+const blockedNameWord = /^(?:company|team|contact|profile|public|home|careers|jobs|news|privacy|terms|speaking|talks|labs?|laboratory|ltd|llc|corp|inc|technologies|solutions|group|studio|university|college|school|foundation|association|services)$/iu;
 
 function personName(value: string) {
   const words = value.trim().split(/\s+/u);

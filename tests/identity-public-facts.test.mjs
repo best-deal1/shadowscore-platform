@@ -12,6 +12,7 @@ test("source employment facts require an observed name and an independently pres
   assert.ok(result.facts.every((fact) => fact.subjectName === "Dana Example" && fact.sourceUrl === input.sourceUrl && fact.excerpt));
   assert.deepEqual(extractSourceReportedIdentityFacts({ ...input, description: "Product manager at Example Labs." }).facts, []);
   assert.deepEqual(extractSourceReportedIdentityFacts({ ...input, observedName: undefined, description: email }).facts, []);
+  assert.deepEqual(extractSourceReportedIdentityFacts({ ...input, title: "Example Labs", observedName: "Example Labs", description: `Product manager at Other Company. ${email}` }).facts, []);
 });
 
 test("qualified employment and labelled subject blocks retain the correct owner", () => {
@@ -59,6 +60,7 @@ test("dates and unformatted identifiers are not reported as phone numbers", () =
   assert.deepEqual(publicPhoneObservations("Record 123456789012. Updated 2026-10-30. Reference 2026-10-30123."), []);
   assert.deepEqual(publicPhoneObservations("Phone: 0501234567"), ["0501234567"]);
   assert.deepEqual(publicPhoneObservations("Call +1 (212) 555-0123"), ["+1 (212) 555-0123"]);
+  assert.deepEqual(publicPhoneObservations("Contact 052-1234567"), ["052-1234567"]);
 });
 
 test("each reported fact counts independent source families rather than pages", () => {

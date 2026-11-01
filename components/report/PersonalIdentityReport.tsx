@@ -44,7 +44,7 @@ function dateTime(value?: string) {
 
 function SourceReportedProfile({ candidate }: { candidate: ExternalIdentityCandidate }) {
   const facts = summarizeSourceReportedFacts(candidate.sourceReportedFacts || [])
-    .filter((fact) => !candidate.sourceNameDisagreement || fact.attribute === "name");
+    .filter((fact) => !(candidate.sourceNameDisagreement || candidate.sourceSubjectAmbiguous) || fact.attribute === "name");
   if (!facts.length && !candidate.sourceSubjectAmbiguous) return null;
   return <div className="mt-5 min-w-0 border border-slate-300 bg-white p-4 sm:p-5">
     <h3 className="text-lg font-semibold text-slate-950">Source-reported profile</h3>
@@ -65,6 +65,8 @@ function CandidateCard({ candidate, index }: { candidate: ExternalIdentityCandid
   const conflicts = candidate.resolverConflictingSignals || [];
   const evidenceScore = matched.length ? candidate.resolutionEvidenceScore || 0 : 0;
   const verified = isCorroboratedIdentityCandidate(candidate);
+  const sourceConflict = candidate.sourceNameDisagreement ? "Sources report different names. Attribution remains unresolved."
+    : candidate.sourceSubjectAmbiguous ? "The source includes multiple people. Subject association remains unresolved." : undefined;
   const provenance = candidate.sourceProvenance || [];
   const observations = [...new Map((candidate.supportingEvidence?.length ? candidate.supportingEvidence : [{
     snippet: candidate.evidenceSnippet, sourceUrl: candidate.evidenceReference, url: candidate.evidenceReference,
@@ -80,20 +82,26 @@ function CandidateCard({ candidate, index }: { candidate: ExternalIdentityCandid
       <div><dt className="font-semibold text-slate-950">Platform</dt><dd className="mt-1">{candidate.platform}</dd></div>
       <div><dt className="font-semibold text-slate-950">Username or display name</dt><dd className="mt-1">{candidate.observedDisplayName || "Not returned by the source"}</dd></div>
       <div className="sm:col-span-2"><dt className="font-semibold text-slate-950">Profile URL</dt><dd className="mt-1"><a className="break-all text-cyan-800 underline underline-offset-2" href={candidate.profileUrl} rel="noreferrer" target="_blank">{candidate.profileUrl}</a></dd></div>
-      <div><dt className="font-semibold text-slate-950">Discovery relevance</dt><dd className="mt-1">{candidate.candidateDiscoveryConfidence ?? 0}%</dd></div>
-      <div><dt className="font-semibold text-slate-950">Resolver-backed identity evidence score</dt><dd className="mt-1">{evidenceScore.toFixed(2)}</dd></div>
       <div><dt className="font-semibold text-slate-950">Matched signals</dt><dd className="mt-1">{matched.map((item) => `${item.attribute}: ${item.observed}`).join(", ") || "No positive resolver evidence"}</dd></div>
-      <div><dt className="font-semibold text-slate-950">Conflicting signals</dt><dd className="mt-1">{conflicts.map((item) => `${item.attribute}: submitted ${item.submitted}, observed ${item.observed}`).join("; ") || "No contradiction observed"}</dd></div>
-      <div><dt className="font-semibold text-slate-950">Resolver outcome</dt><dd className="mt-1">{candidate.resolutionOutcome || "ABSTAIN"}</dd></div>
+      <div><dt className="font-semibold text-slate-950">Conflicting signals</dt><dd className="mt-1">{[conflicts.map((item) => `${item.attribute}: submitted ${item.submitted}, observed ${item.observed}`).join("; "), sourceConflict].filter(Boolean).join(" ") || "No conflict with submitted signals observed"}</dd></div>
       <div><dt className="font-semibold text-slate-950">Verification status</dt><dd className="mt-1">{verified ? "Attribution supported" : "Attribution is not proven"}</dd></div>
       <div><dt className="font-semibold text-slate-950">Independent source count</dt><dd className="mt-1">{candidate.independentSourceFamilyCount || 0}</dd></div>
-      <div><dt className="font-semibold text-slate-950">Identity confidence</dt><dd className="mt-1">{verified && candidate.identityAttributionConfidence !== null ? `${candidate.identityAttributionConfidence}%` : "Unverified"}</dd></div>
       {(candidate.observedPhoneNumbers?.length || 0) > 0 && <div><dt className="font-semibold text-slate-950">Observed phone numbers</dt><dd className="mt-1">{candidate.observedPhoneNumbers?.join(", ")}</dd></div>}
       {(candidate.observedEmails?.length || 0) > 0 && <div><dt className="font-semibold text-slate-950">Observed email addresses</dt><dd className="mt-1 break-all">{candidate.observedEmails?.join(", ")}</dd></div>}
       {(candidate.observedOrganizations?.length || 0) > 0 && <div><dt className="font-semibold text-slate-950">Matched organization context</dt><dd className="mt-1">{candidate.observedOrganizations?.join(", ")}</dd></div>}
       {(candidate.observedRoles?.length || 0) > 0 && <div><dt className="font-semibold text-slate-950">Matched role context</dt><dd className="mt-1">{candidate.observedRoles?.join(", ")}</dd></div>}
       <div className="sm:col-span-2"><dt className="font-semibold text-slate-950">Evidence sources</dt><dd className="mt-1">{provenance.length ? provenance.map((source) => <a key={`${source.url}-${source.family}`} className="mr-3 break-all text-cyan-800 underline" href={source.url} rel="noreferrer" target="_blank">{source.family}</a>) : <a className="break-all text-cyan-800 underline" href={candidate.evidenceReference} rel="noreferrer" target="_blank">{candidate.sourceProvider}</a>}</dd></div>
     </dl>
+    <details className="mt-5 border-t border-slate-200 pt-4">
+      <summary className="cursor-pointer py-2 font-semibold text-slate-950">Matching details</summary>
+      <p className="mt-2 text-sm text-slate-600">Discovery relevance describes search ranking. Matching scores are internal measures, not a probability that this is the person.</p>
+      <dl className="mt-4 grid min-w-0 gap-4 text-sm sm:grid-cols-2">
+        <div><dt className="font-semibold text-slate-950">Discovery relevance</dt><dd className="mt-1">{candidate.candidateDiscoveryConfidence ?? 0}%</dd></div>
+        <div><dt className="font-semibold text-slate-950">Resolver-backed identity evidence score</dt><dd className="mt-1">{evidenceScore.toFixed(2)}</dd></div>
+        <div><dt className="font-semibold text-slate-950">Resolver outcome</dt><dd className="mt-1">{candidate.resolutionOutcome || "ABSTAIN"}</dd></div>
+        <div><dt className="font-semibold text-slate-950">Identity confidence</dt><dd className="mt-1">{verified && candidate.identityAttributionConfidence !== null ? `${candidate.identityAttributionConfidence}%` : "Unverified"}</dd></div>
+      </dl>
+    </details>
     {observations.length > 0 && <div className="mt-6 border-t border-slate-200 pt-4">
       <h4 className="py-2 font-semibold text-slate-950">Source observations ({observations.length})</h4>
       <p className="mt-2 text-sm text-slate-600">Search excerpts show the public result text. Review the linked page for current context.</p>
@@ -170,6 +178,9 @@ export default function PersonalIdentityReport({ report }: { report: ShadowScore
   const completion = personalCompletionPresentation(summary?.completionStatus, candidates.length > 0);
   const matches = candidates.flatMap((candidate) => candidate.resolverMatchedSignals || []);
   const conflicts = candidates.flatMap((candidate) => candidate.resolverConflictingSignals || []);
+  const sourceDisagreements = candidates.some((candidate) => candidate.sourceNameDisagreement)
+    ? "Public sources report different names for the submitted identifier. Attribution remains unresolved."
+    : candidates.some((candidate) => candidate.sourceSubjectAmbiguous) ? "A source includes multiple people without a clear subject association. Attribution remains unresolved." : undefined;
   const verifiedCount = candidates.filter(isCorroboratedIdentityCandidate).length;
   const leadingCandidate = candidates.find(isCorroboratedIdentityCandidate)
     || candidates.find((candidate) => candidate.resolverMatchedSignals?.length && !candidate.resolverConflictingSignals?.length && !candidate.sourceNameDisagreement && !candidate.sourceSubjectAmbiguous)
@@ -189,7 +200,7 @@ export default function PersonalIdentityReport({ report }: { report: ShadowScore
       <section aria-labelledby="identity-finding" className="min-w-0 border-b border-slate-300 pb-8">
         <h2 id="identity-finding" className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-800">Identity finding</h2>
         {leadingCandidate ? <>
-          <p className="mt-3 break-words text-3xl font-semibold text-slate-950" dir="auto">{leadingCandidate.observedDisplayName || "Public profile to review"}</p>
+          <p className="mt-3 break-words text-3xl font-semibold text-slate-950" dir="auto">{leadingCandidate.sourceNameDisagreement || leadingCandidate.sourceSubjectAmbiguous ? "Identity remains unresolved" : leadingCandidate.observedDisplayName || "Public profile to review"}</p>
           <p className="mt-3 font-semibold text-slate-950">{isCorroboratedIdentityCandidate(leadingCandidate) ? "Corroborated public lead" : "Unverified public lead"}</p>
           <p className="mt-2 max-w-3xl leading-7">{leadingCandidate.matchBasis}</p>
           <p className="mt-3 text-sm">{candidates.length} candidate{candidates.length === 1 ? "" : "s"} to review. {verifiedCount} corroborated by independent source families.</p>
@@ -204,7 +215,7 @@ export default function PersonalIdentityReport({ report }: { report: ShadowScore
       <section className="mt-12 border-t border-slate-300 pt-10" aria-labelledby="submitted-signals"><h2 id="submitted-signals" className="text-3xl font-semibold text-slate-950">Submitted Identity Signals</h2><dl className="mt-6 grid gap-3 sm:grid-cols-2">{submitted.length ? submitted.map(([label, value]) => <div key={`${label}-${value}`} className="border border-slate-300 bg-white p-4"><dt className="text-xs font-bold uppercase text-slate-500">{label}</dt><dd className="mt-2 break-all font-semibold text-slate-950">{value}</dd></div>) : <div className="border border-amber-300 bg-amber-50 p-4 sm:col-span-2"><dt className="font-semibold text-amber-950">Submitted signals unavailable</dt><dd className="mt-2 text-amber-950">This legacy report does not contain a recoverable submitted identity signal.</dd></div>}</dl></section>
       {(signals?.requestedAttributes?.length || signals?.requestText) && <section className="mt-12 border-t border-slate-300 pt-10" aria-labelledby="requested-results"><p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-800">Requested output</p><h2 id="requested-results" className="mt-3 text-3xl font-semibold text-slate-950">Requested Results</h2>{signals?.requestText && <div className="mt-5 border border-slate-300 bg-white p-5"><p className="text-xs font-bold uppercase tracking-wider text-slate-500">Original request</p><p className="mt-2 font-semibold text-slate-950">{signals.requestText}</p></div>}<p className="mt-5 text-sm">Requested: {(signals?.requestedAttributes || ["identity_match"]).map(requestedAttributeLabel).join(", ")}.</p>{requestedResults.length ? <div className="mt-5 grid gap-4 sm:grid-cols-2">{requestedResults.map((result) => <article key={`${result.type}-${result.value}-${result.sourceUrl}`} className={`border p-5 ${result.corroborated ? "border-emerald-300 bg-emerald-50" : "border-amber-300 bg-amber-50"}`}><p className={`text-xs font-bold uppercase tracking-wider ${result.corroborated ? "text-emerald-800" : "text-amber-900"}`}>{result.type}</p><p className="mt-2 break-all text-xl font-semibold text-slate-950">{result.value}</p><p className="mt-2 text-sm text-slate-700">{result.association}</p><a className="mt-3 inline-block break-all text-sm font-semibold text-cyan-800 underline underline-offset-2" href={result.sourceUrl} rel="noreferrer" target="_blank">View source</a></article>)}</div> : <div className="mt-5 border border-amber-300 bg-amber-50 p-5 text-amber-950"><p className="font-semibold">No source-backed requested result was found.</p><p className="mt-2 text-sm">ShadowScore leaves the result unresolved instead of inventing missing contact data.</p></div>}</section>}
       <section className="mt-12 border-t border-slate-300 pt-10" aria-labelledby="candidate-title"><h2 id="candidate-title" className="text-3xl font-semibold text-slate-950">Public Identity Candidates</h2><p className="mt-3 max-w-3xl">Every eligible discovery result is shown below. A relevant search result remains an unverified candidate unless resolver evidence supports attribution.</p><div className="mt-6 grid gap-5">{candidates.length ? candidates.map((candidate, index) => <CandidateCard key={candidate.profileUrl} candidate={candidate} index={index} />) : <p className="border border-slate-300 bg-white p-5">No eligible public identity candidate was returned.</p>}</div></section>
-      <section className="mt-12 grid gap-6 border-t border-slate-300 pt-10 lg:grid-cols-2"><div className="border border-slate-300 bg-white p-5"><h2 className="text-xl font-semibold text-slate-950">Identity Matching Evidence</h2><p className="mt-3">{matches.length ? matches.map((item) => `${item.attribute}: ${item.observed}`).join(", ") : "No positive resolver evidence was recorded."}</p></div><div className="border border-slate-300 bg-white p-5"><h2 className="text-xl font-semibold text-slate-950">Contradictory Identifiers</h2><p className="mt-3">{conflicts.length ? conflicts.map((item) => `${item.attribute}: ${item.submitted} differs from ${item.observed}`).join("; ") : "No contradictory identifier was recorded."}</p></div></section>
+      <section className="mt-12 grid gap-6 border-t border-slate-300 pt-10 lg:grid-cols-2"><div className="border border-slate-300 bg-white p-5"><h2 className="text-xl font-semibold text-slate-950">Identity Matching Evidence</h2><p className="mt-3">{matches.length ? matches.map((item) => `${item.attribute}: ${item.observed}`).join(", ") : "No positive resolver evidence was recorded."}</p></div><div className="border border-slate-300 bg-white p-5"><h2 className="text-xl font-semibold text-slate-950">Contradictory Identifiers</h2><p className="mt-3">{[conflicts.map((item) => `${item.attribute}: ${item.submitted} differs from ${item.observed}`).join("; "), sourceDisagreements].filter(Boolean).join(" ") || "No conflict with submitted signals was recorded."}</p></div></section>
       <section className="mt-12 border-t border-slate-300 pt-10" aria-labelledby="identity-sources"><h2 id="identity-sources" className="text-3xl font-semibold text-slate-950">Source Provenance</h2>
         <p className="mt-4 text-sm">Independent source count: <strong>{new Set(sourceLinks.map((source) => source.family)).size}</strong>. Different pages on the same source family count once.</p>
         {sourceLinks.length ? <ul className="mt-5 grid gap-3">{sourceLinks.map((source) => <li key={source.url} className="min-w-0 border-b border-slate-200 pb-3"><p className="font-semibold text-slate-950">{source.family}</p><a href={source.url} className="mt-1 inline-block break-all text-sm text-cyan-800 underline underline-offset-2" rel="noreferrer" target="_blank">{source.url}</a></li>)}</ul> : <p className="mt-5">No candidate source was recorded.</p>}
