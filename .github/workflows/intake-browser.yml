@@ -45,6 +45,8 @@ jobs:
       - run: npm run build
       - name: Verify desktop and mobile intake journeys
         run: npm run test:intake-browser
+      - name: Verify email-only customer reports
+        run: npm run test:identity-report-browser
       - uses: actions/upload-artifact@v5
         if: ${{ !cancelled() }}
         with:

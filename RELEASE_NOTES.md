@@ -1,5 +1,7 @@
 # Release Notes
 
+- Email-only personal reports now lead with the strongest public identity candidate, show the source excerpts and discovery path, and preserve customer-safe search counts. A failed follow-up search retains earlier observations and explicitly marks incomplete coverage. Corroborated search candidates remain distinct from verified identity facts. Narrow-screen and print presentation retain the subject and supporting evidence.
+
 - Investigation intake now fits narrow mobile screens without clipping headings or controls. The form uses flexible grid columns, compact mobile spacing, and a header that wraps when needed.
 
 - Personal Identity checkout now presents a prepared request instead of claiming that a Business Quick Check completed. Identity scope, purchase terms, and progress stay consistent for both Personal mode and free-mail targets entered in Website mode.

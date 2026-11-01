@@ -31,11 +31,11 @@ import { applyCanonicalIdentityToBusinessProfile, applyCanonicalIdentityToIdenti
 import { buildInvestigationIntelligence } from "./investigationIntelligence";
 import { isolateProviderResults } from "./targetIntegrity";
 import { resolveFirstPartyEntities, resolutionTarget } from "./entityResolution/firstParty";
-import { identityInvestigationGuardIssues, identityObjective, normalizeIntakeIdentitySignals } from "./personalIdentity";
+import { identityInvestigationGuardIssues, identityObjective, normalizeIntakeIdentitySignals, summarizeIdentityDiscovery } from "./personalIdentity";
 import { resolveInvestigationRouting } from "./investigationRouting";
 import { investigationCompletionStatus } from "./reportCoverage";
 
-export const REPORT_ENGINE_VERSION = "report-pipeline-v22";
+export const REPORT_ENGINE_VERSION = "report-pipeline-v23";
 
 const providerManager = new ProviderManager().registerMany(createDefaultProviders());
 
@@ -131,11 +131,13 @@ export async function buildReadyReport(input: {
   const searches = (externalIdentityMetadata?.identityDiscoverySearches || []) as import("./providers/externalIdentityProvider").IdentityDiscoverySearchDiagnostic[];
   const discoveryDiagnostics = personalIdentityInvestigation ? {
     searches,
+    searchesAttempted: (externalIdentityMetadata?.identityDiscoveryMetrics as { searchCount?: number } | undefined)?.searchCount ?? searches.length,
     scheduling: (externalIdentityMetadata?.identitySchedulingDiagnostics || []) as import("./providers/externalIdentityProvider").IdentitySchedulingDiagnostic[],
     budgetExhaustionReason: String((externalIdentityMetadata?.identityDiscoveryMetrics as { budgetExhaustionReason?: string } | undefined)?.budgetExhaustionReason || (externalIdentityResult?.status !== "completed" ? "provider_failed" : searches.length === 0 ? "no_search_executed" : publicIdentityCandidates.length === 0 ? "no_eligible_candidates" : "closure_reached")),
     providerStatus: externalIdentityResult?.status || "not_scheduled",
-    providerFailure: externalIdentityResult?.errors[0],
+    providerFailure: externalIdentityResult?.errors[0] || (typeof externalIdentityMetadata?.executionReason === "string" ? externalIdentityMetadata.executionReason : undefined),
   } : undefined;
+  const discoveryExecution = summarizeIdentityDiscovery(discoveryDiagnostics);
   if (personalIdentityInvestigation) console.info("personal_identity_discovery_execution", { investigationId: intake.intakeId, submittedSignalCounts: Object.fromEntries(Object.entries(personalSignals || {}).map(([key, values]) => [key, values.length])), providerStatus: discoveryDiagnostics?.providerStatus, searchCount: searches.length, candidateCount: publicIdentityCandidates.length, emptyResultReason: discoveryDiagnostics?.budgetExhaustionReason, providerFailure: discoveryDiagnostics?.providerFailure });
   const providerCategories = Object.fromEntries(providerManager.listProviders().map((provider) => [provider.id, provider.category]));
   const canonicalEvidenceSummary = summarizeEvidence(evidenceItems, providerCategories);
@@ -211,7 +213,7 @@ export async function buildReadyReport(input: {
   const scorecard = buildShadowScorecard({ evidenceItems: providerEvidenceItems, websiteEvidence: websiteEvidenceItems });
   const investigationTimeline = personalIdentityInvestigation ? [
     { id: "submitted-signals", label: "Submitted identity signals", status: "completed" as const, source: "Personal identity intake", observedAt: now },
-    { id: "public-discovery", label: "Public identity discovery", status: "completed" as const, source: "Identity discovery", observedAt: now },
+    { id: "public-discovery", label: "Public identity discovery", status: discoveryExecution?.providerStatus === "completed" ? "completed" as const : discoveryExecution?.providerStatus === "partial" ? "failed" as const : "unavailable" as const, source: "Identity discovery", observedAt: now },
     { id: "identity-resolution", label: "Identity matching evidence", status: "completed" as const, source: "Entity resolver", observedAt: now },
     { id: "provenance-review", label: "Source provenance review", status: "completed" as const, source: "Investigation pipeline", observedAt: now },
   ] : buildInvestigationTimeline({ websiteIntelligence, completedAt: now, identityCompleted: true, correlationCompleted: true, businessCompleted: true, decisionCompleted: true, executiveCompleted: true });
@@ -314,6 +316,7 @@ export async function buildReadyReport(input: {
         requiredPlanSteps: executionPlan.executionPlan,
       }),
       publicIdentityCandidates,
+      discoveryExecution,
       discoveryDiagnostics,
     },
     riskScore: undefined,

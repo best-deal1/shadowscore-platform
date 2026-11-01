@@ -291,10 +291,10 @@ function rejectionReason(value: string) {
   if (/^[^\p{L}\p{N}]+$/u.test(normalized)) return "non_identifier";
   return undefined;
 }
-function usefulIdentifier(value: string, original: Set<string>) {
+function usefulIdentifier(value: string, original: Set<string>, explicitHandle = false) {
   const normalized = normalizeIdentifier(value);
   return !rejectionReason(value) && !original.has(normalized)
-    && !/^(?:www\.)?[\p{L}\p{N}-]+(?:\.[\p{L}\p{N}-]+)+(?:\/.*)?$/iu.test(normalized)
+    && (explicitHandle || !/^(?:www\.)?[\p{L}\p{N}-]+(?:\.[\p{L}\p{N}-]+)+(?:\/.*)?$/iu.test(normalized))
     && !/^https?:|^[^\p{L}\p{N}]+$/iu.test(normalized)
     && !/^(?:(?:facebook|instagram|linkedin|tiktok|twitter|github|youtube)\s+)?(?:public\s+)?profile(?:\s+[a-z])?$|^unrelated(?:\s+(?:user|account|profile))?$/i.test(normalized)
     && !/^(?:log\s*in|sign\s*(?:in|up)|search results?|click here|learn more)$/i.test(normalized);
@@ -581,7 +581,9 @@ function observedIdentifiers(hit: SearchResult, originals: Set<string>, evaluati
   const seen = new Set<string>();
   const admitted = pivots.filter((pivot) => {
     const id = normalizeIdentifier(pivot.value);
-    const useful = pivot.type === "domain" ? !rejectionReason(pivot.value) && !originals.has(id) : usefulIdentifier(pivot.value, originals);
+    const explicitHandle = pivot.type === "username" && ["explicit_handle", "social_url"].includes(pivot.derivation)
+      && /^[\p{L}\p{N}][\p{L}\p{N}_.-]{1,39}$/u.test(id);
+    const useful = pivot.type === "domain" ? !rejectionReason(pivot.value) && !originals.has(id) : usefulIdentifier(pivot.value, originals, explicitHandle);
     if (!useful) { evaluations?.push({ identifier: pivot.value, type: pivot.type || "unknown", derivation: pivot.derivation, decision: "rejected", reason: rejectionReason(pivot.value) || (originals.has(id) ? "matches_submitted_identifier" : "identifier_quality_rule") }); return false; }
     if (seen.has(id)) { evaluations?.push({ identifier: pivot.value, type: pivot.type || "unknown", derivation: pivot.derivation, decision: "rejected", reason: "duplicate_within_result" }); return false; }
     seen.add(id); return true;
@@ -885,6 +887,7 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
   const searches: IdentityDiscoverySearchDiagnostic[] = [];
   const schedulingDiagnostics: IdentitySchedulingDiagnostic[] = queue.map((item) => ({ pivot: item.label, clueType: item.clueType, hop: item.hop, query: item.query, decision: "scheduled", reason: "seed_plan", remainingSearchBudget: limits.maxSearches }));
   let searchCount = 0; let identifierCount = usernameStem ? 3 : 2; let observationOrder = 0; let seedSearchesRemaining = queue.length; let schedulingGeneration = 0;
+  let searchFailure: { reason: "timeout" | "rate_limited" | "provider_error"; message: string } | undefined;
   const addClue = (clue: EntityClue) => {
     const prior = clues.get(clue.id);
     if (!prior) { clues.set(clue.id, clue); return; }
@@ -968,8 +971,13 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
     try {
       results = await search(item.query, apiKey, signal, limits.maxResultsPerSearch);
     } catch (error) {
-      if (signal.aborted || (error instanceof Error && error.name === "AbortError")) break;
-      throw error;
+      const message = error instanceof Error ? error.message : "Public identity search failed.";
+      const reason = signal.aborted || (error instanceof Error && error.name === "AbortError") ? "timeout"
+        : /429|rate.limit/iu.test(message) ? "rate_limited" : "provider_error";
+      searchFailure = { reason, message };
+      // Preserve admitted observations from completed searches. A later failure
+      // ends expansion and is carried into coverage and customer execution facts.
+      break;
     }
     const identifiersBefore = new Set(edges.filter((edge) => edge.relation !== "search_result").map((edge) => edge.to));
     const resultDiagnostics: ResultAdmissionDiagnostic[] = [];
@@ -1156,13 +1164,13 @@ export async function discoverExternalIdentityGraph(email: string, apiKey: strin
   const pathUrls = new Set(edges.filter((edge) => edge.relation !== "search_result").map((edge) => edge.from));
   const visible = ranked.filter((candidate, index) => candidate.confidence >= 45 || pathUrls.has(candidate.profileUrl) || index < 3).slice(0, limits.maxVisibleCandidates).map((candidate, index) => ({ ...candidate, resolutionRank: index + 1 }));
   const anyAdmissible = searches.some((entry) => entry.results.some((result) => result.discoveryAdmissionDecision === "DISCOVERY_ADMITTED"));
-  const budgetExhaustionReason = signal.aborted ? "timeout" : searchCount >= limits.maxSearches && queue.length ? "max_searches" : identifierCount >= limits.maxIdentifiers && pendingIdentifiers.length ? "max_identifiers" : !anyAdmissible && searches.some((entry) => entry.resultCount > 0) ? "no_admissible_leads" : "closure_reached";
-  return { candidates: visible, allCandidates: ranked, clues: [...clues.values()], convergences, edges, searches, schedulingDiagnostics, metrics: { searchCount, identifierCount, maxHopReached: edges.reduce((max, edge) => Math.max(max, edge.hop), 0), partial: signal.aborted, budgetExhaustionReason, reservedExpansionSearches: limits.reservedExpansionSearches, seedSearchCount: seedQueue.length - Math.max(0, seedQueue.length - seedSearchLimit) } };
+  const budgetExhaustionReason = searchFailure?.reason || (signal.aborted ? "timeout" : searchCount >= limits.maxSearches && queue.length ? "max_searches" : identifierCount >= limits.maxIdentifiers && pendingIdentifiers.length ? "max_identifiers" : !anyAdmissible && searches.some((entry) => entry.resultCount > 0) ? "no_admissible_leads" : "closure_reached");
+  return { candidates: visible, allCandidates: ranked, clues: [...clues.values()], convergences, edges, searches, schedulingDiagnostics, searchFailure, metrics: { searchCount, identifierCount, maxHopReached: edges.reduce((max, edge) => Math.max(max, edge.hop), 0), partial: signal.aborted || Boolean(searchFailure), budgetExhaustionReason, reservedExpansionSearches: limits.reservedExpansionSearches, seedSearchCount: seedQueue.length - Math.max(0, seedQueue.length - seedSearchLimit) } };
 }
 export async function discoverExternalIdentityCandidates(email: string, apiKey: string, signal: AbortSignal) { return (await discoverExternalIdentityGraph(email, apiKey, signal)).candidates; }
 
 export class EmailIntelligenceProvider extends BaseProvider { readonly id = "email-intelligence"; readonly name = "Email Intelligence"; readonly version = "1.2.0"; readonly category = "business_profile" as const; protected async collect(context: ProviderExecutionContext): Promise<Pick<ProviderResult, "findings" | "evidence" | "metadata">> { const email = emailFromContext(context); if (!email) throw new Error("Email intelligence requires an email target."); const routing = context.investigationRouting || resolveInvestigationRouting({ target: email, scanMode: context.scanMode }); const domain = routing.domainInvestigated; const publicMailbox = routing.emailClassification === "FREE_MAIL"; return { findings: [], evidence: [{ id: "email-target-classification", type: "placeholder", label: "Mailbox classification", value: publicMailbox ? "Public mailbox provider" : "Corporate/custom domain candidate", source: "submitted-target", investigationId: context.investigationId || context.intakeId, canonicalTarget: email, providerName: this.name, collectedAt: new Date().toISOString() }], metadata: { lookupPerformed: true, submittedEmail: email, emailDomain: domain, publicMailbox, investigationRouting: routing, evidenceIndependence: "submitted_input_only" } }; } }
-export class ExternalIdentityProvider extends BaseProvider { readonly id = "external-identity"; readonly name = "External Identity Discovery"; readonly version = "4.3.0"; readonly category = "business_profile" as const; failureReason(error: unknown): ProviderFailureReason { if (error instanceof Error && /BRAVE_SEARCH_API_KEY|credential|not configured|provider unavailable/i.test(error.message)) return "Unavailable"; return super.failureReason(error); } protected async collect(context: ProviderExecutionContext): Promise<Pick<ProviderResult, "findings" | "evidence" | "metadata">> { const email = emailFromContext(context); const nonEmailSeeds = nonEmailSeedsFromContext(context); if (!email && !nonEmailSeeds.length) throw new Error("External identity discovery requires an email, phone number, name, or username."); const routing = context.investigationRouting || resolveInvestigationRouting({ target: email || nonEmailSeeds[0].value, scanMode: context.scanMode }); if (email && (routing.emailClassification === "CORPORATE_DOMAIN" || !routing.localPartIdentityExpansionPermitted)) return { findings: [], evidence: [], metadata: { lookupPerformed: false, submittedEmail: email, investigationRouting: routing, candidateCount: 0, externalIdentityCandidates: [], evidencePolicy: "Corporate mailbox identity expansion requires independent evidence connecting a person to the domain or organization." } }; const apiKey = process.env.BRAVE_SEARCH_API_KEY; if (!apiKey) throw new Error("External identity provider unavailable: BRAVE_SEARCH_API_KEY is not configured."); const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 8_000); try { const metadata = context.resolvedEntity?.metadata || {};
+export class ExternalIdentityProvider extends BaseProvider { readonly id = "external-identity"; readonly name = "External Identity Discovery"; readonly version = "4.4.0"; readonly category = "business_profile" as const; failureReason(error: unknown): ProviderFailureReason { if (error instanceof Error && /BRAVE_SEARCH_API_KEY|credential|not configured|provider unavailable/i.test(error.message)) return "Unavailable"; return super.failureReason(error); } protected async collect(context: ProviderExecutionContext): Promise<Pick<ProviderResult, "findings" | "evidence" | "metadata">> { const email = emailFromContext(context); const nonEmailSeeds = nonEmailSeedsFromContext(context); if (!email && !nonEmailSeeds.length) throw new Error("External identity discovery requires an email, phone number, name, or username."); const routing = context.investigationRouting || resolveInvestigationRouting({ target: email || nonEmailSeeds[0].value, scanMode: context.scanMode }); if (email && (routing.emailClassification === "CORPORATE_DOMAIN" || !routing.localPartIdentityExpansionPermitted)) return { findings: [], evidence: [], metadata: { lookupPerformed: false, submittedEmail: email, investigationRouting: routing, candidateCount: 0, externalIdentityCandidates: [], evidencePolicy: "Corporate mailbox identity expansion requires independent evidence connecting a person to the domain or organization." } }; const apiKey = process.env.BRAVE_SEARCH_API_KEY; if (!apiKey) throw new Error("External identity provider unavailable: BRAVE_SEARCH_API_KEY is not configured."); const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 8_000); try { const metadata = context.resolvedEntity?.metadata || {};
     const textSignal = (key: string) => typeof metadata[key] === "string" ? String(metadata[key]).trim() || undefined : undefined;
     if (!email) {
       const submittedOrganizations = context.identitySignals?.organizations || [];
@@ -1226,4 +1234,11 @@ export class ExternalIdentityProvider extends BaseProvider { readonly id = "exte
       phone: context.identitySignals?.phones[0] || textSignal("phone") || textSignal("phoneNumber"),
       organizations: context.identitySignals?.organizations,
       roles: context.identitySignals?.roles,
-    } }); const evidence: ProviderEvidence[] = graph.candidates.map((candidate, index) => ({ id: `external-identity-${index + 1}`, type: "search_result", label: candidate.matchLevel === "unverified_candidate" ? "Potential public identity candidate" : "Public identity exact-email match", value: `${candidate.platform} | profile ${candidate.profileUrl} | status ${candidate.status} | matched ${candidate.matchedIdentifiers.join(", ")} | identity attribution ${candidate.identityAttributionConfidence === null ? "Unverified" : `${candidate.identityAttributionConfidence}%`} | candidate score ${candidate.candidateDiscoveryConfidence}% | path ${candidate.discoveryPath.join(" -> ")} | ${candidate.matchBasis}`, source: candidate.evidenceUrl, investigationId: context.investigationId || context.intakeId, canonicalTarget: email, providerName: this.name, collectedAt: new Date().toISOString() })); return { findings: [], evidence, metadata: { lookupPerformed: true, submittedEmail: email, candidateCount: graph.candidates.length, externalIdentityCandidates: graph.candidates, entityClues: graph.clues, entityConvergences: graph.convergences, identityDiscoveryEdges: graph.edges, identityDiscoverySearches: graph.searches, identitySchedulingDiagnostics: graph.schedulingDiagnostics, identityDiscoveryMetrics: graph.metrics, evidencePolicy: "Submitted input is not independent corroboration. Discovery leads cannot establish identity facts. Candidate status requires external evidence. Verification requires independent primary evidence." } }; } finally { clearTimeout(timeout); } } }
+    } }); const evidence: ProviderEvidence[] = graph.candidates.map((candidate, index) => ({ id: `external-identity-${index + 1}`, type: "search_result", label: candidate.matchLevel === "unverified_candidate" ? "Potential public identity candidate" : "Public identity exact-email match", value: `${candidate.platform} | profile ${candidate.profileUrl} | status ${candidate.status} | matched ${candidate.matchedIdentifiers.join(", ")} | identity attribution ${candidate.identityAttributionConfidence === null ? "Unverified" : `${candidate.identityAttributionConfidence}%`} | candidate score ${candidate.candidateDiscoveryConfidence}% | path ${candidate.discoveryPath.join(" -> ")} | ${candidate.matchBasis}`, source: candidate.evidenceUrl, investigationId: context.investigationId || context.intakeId, canonicalTarget: email, providerName: this.name, collectedAt: new Date().toISOString() })); return { findings: [], evidence, metadata: { lookupPerformed: true, submittedEmail: email, candidateCount: graph.candidates.length, externalIdentityCandidates: graph.candidates, entityClues: graph.clues, entityConvergences: graph.convergences, identityDiscoveryEdges: graph.edges, identityDiscoverySearches: graph.searches, identitySchedulingDiagnostics: graph.schedulingDiagnostics, identityDiscoveryMetrics: graph.metrics,
+      ...(graph.metrics.partial ? {
+        coverageState: "gap",
+        executionCode: graph.metrics.budgetExhaustionReason === "timeout" ? "PROVIDER_EXECUTION_TIMEOUT" : "PROVIDER_EXECUTION_FAILURE",
+        executionReason: graph.searchFailure?.message || "Public identity discovery reached its time limit.",
+        failureReason: graph.metrics.budgetExhaustionReason === "timeout" ? "Timeout" : graph.metrics.budgetExhaustionReason === "rate_limited" ? "Rate Limited" : "Unavailable",
+      } : {}),
+      evidencePolicy: "Submitted input is not independent corroboration. Discovery leads cannot establish identity facts. Candidate status requires external evidence. Verification requires independent primary evidence." } }; } finally { clearTimeout(timeout); } } }

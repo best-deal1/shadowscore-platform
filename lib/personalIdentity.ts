@@ -16,6 +16,34 @@ export type IdentitySignals = {
   requestText?: string;
 };
 
+export type IdentityDiscoveryExecution = {
+  providerStatus: "completed" | "partial" | "unavailable" | "not_scheduled";
+  searchesCompleted: number;
+  searchesAttempted: number;
+  stopReason: "closure_reached" | "max_searches" | "max_identifiers" | "no_admissible_leads" | "no_eligible_candidates" | "no_search_executed" | "timeout" | "rate_limited" | "provider_error" | "provider_unavailable";
+};
+
+/** Customer-safe execution facts survive removal of internal search traces. */
+export function summarizeIdentityDiscovery(diagnostics?: {
+  searches: unknown[];
+  searchesAttempted?: number;
+  providerStatus: string;
+  budgetExhaustionReason: string;
+}): IdentityDiscoveryExecution | undefined {
+  if (!diagnostics) return undefined;
+  const searchesCompleted = diagnostics.searches.length;
+  const searchesAttempted = Math.max(searchesCompleted, Number.isSafeInteger(diagnostics.searchesAttempted) ? diagnostics.searchesAttempted! : searchesCompleted);
+  const reason = diagnostics.budgetExhaustionReason;
+  const incomplete = ["timeout", "rate_limited", "provider_error"].includes(reason);
+  const providerStatus = diagnostics.providerStatus === "not_scheduled" ? "not_scheduled"
+    : diagnostics.providerStatus !== "completed" ? "unavailable"
+      : incomplete ? searchesCompleted ? "partial" : "unavailable" : "completed";
+  const knownReasons: IdentityDiscoveryExecution["stopReason"][] = ["closure_reached", "max_searches", "max_identifiers", "no_admissible_leads", "no_eligible_candidates", "no_search_executed", "timeout", "rate_limited", "provider_error"];
+  const stopReason = knownReasons.includes(reason as IdentityDiscoveryExecution["stopReason"])
+    ? reason as IdentityDiscoveryExecution["stopReason"] : providerStatus === "completed" ? "closure_reached" : "provider_unavailable";
+  return { providerStatus, searchesCompleted, searchesAttempted, stopReason };
+}
+
 export type IdentityReadinessEnvironment = Record<string, string | undefined>;
 
 const enabled = (value?: string) => value?.trim().toLowerCase() === "true";
