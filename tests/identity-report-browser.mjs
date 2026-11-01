@@ -79,6 +79,7 @@ try {
       if (scenario === "multi_hop") {
         assert.ok(await page.locator('a[href="https://instagram.com/dana.river"]').count() > 0);
         assert.equal(await page.getByText("Verified Candidate", { exact: true }).count(), 0);
+        assert.equal((await page.locator("body").textContent()).includes("name: submitted dana example421 gmail com"), false);
       }
       if (scenario === "empty") assert.ok(await page.getByText("Identity remains unresolved", { exact: true }).isVisible());
       if (scenario === "unavailable") assert.ok(await page.getByText("Public identity search unavailable", { exact: true }).isVisible());

@@ -61,11 +61,14 @@ test("a source-stated dotted social handle is followed from email without verify
   const candidate = customer.reportSummary.publicIdentityCandidates.find((entry) => entry.profileUrl === "https://instagram.com/dana.river");
   assert.ok(candidate, "The explicit handle should remain reachable within the existing search budget.");
   assert.notEqual(candidate.resolutionOutcome, "MATCH");
+  assert.ok(customer.reportSummary.publicIdentityCandidates.every((entry) => (entry.resolverConflictingSignals || []).every((signal) => signal.attribute !== "name")));
+  assert.equal(queries.some((query) => query.includes('"dana example421 gmail com"')), false);
   assert.ok(candidate.discoveryPath[0].includes(fixtureEmail));
   assert.ok(candidate.discoveryPath.some((step) => step.includes("dana.river")));
   const html = await renderPersonalReport(customer);
   assert.ok(html.includes("https://instagram.com/dana.river"));
   assert.equal(html.includes("Verified Candidate"), false);
+  assert.equal(html.includes("name: submitted dana example421 gmail com"), false);
 });
 
 test("timeouts retain collected candidates and an initial failure remains unavailable", async () => {
