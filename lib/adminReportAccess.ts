@@ -2,6 +2,7 @@ import "server-only";
 
 import { buildReadyReport } from "./reportPipeline";
 import { normalizeIntakeIdentitySignals } from "./personalIdentity";
+import { resolveInvestigationRouting } from "./investigationRouting";
 import { isSupabaseConfigured, supabaseFetch } from "./supabase";
 import { presentReportForEndUser, type ShadowScoreIntake, type ShadowScoreReport, type WorkspaceSession } from "./workspace";
 
@@ -24,6 +25,7 @@ export async function getAdministratorRole(session: WorkspaceSession): Promise<A
 }
 
 function mapAdministratorIntake(row: IntakeRow): ShadowScoreIntake {
+  const investigationRouting = resolveInvestigationRouting({ target: row.target, scanMode: row.scan_mode, submittedSeed: typeof row.submitted_seed === "string" ? row.submitted_seed : undefined, investigationRouting: row.investigation_routing as ShadowScoreIntake["investigationRouting"] });
   return {
     intakeId: row.intake_id,
     userId: row.user_id,
@@ -32,9 +34,11 @@ function mapAdministratorIntake(row: IntakeRow): ShadowScoreIntake {
     platform: row.platform,
     caseType: typeof row.case_type === "string" ? row.case_type : undefined,
     email: row.email,
-    identitySignals: row.scan_mode === "personal"
-      ? normalizeIntakeIdentitySignals(row.identity_signals, { target: row.target, email: row.email })
+    identitySignals: investigationRouting.primaryInvestigationType === "PERSON_IDENTITY"
+      ? normalizeIntakeIdentitySignals(row.identity_signals, { target: investigationRouting.submittedSeed, email: row.email })
       : undefined,
+    submittedSeed: investigationRouting.submittedSeed,
+    investigationRouting,
     fileNames: Array.isArray(row.file_names) ? row.file_names as string[] : [],
     visibleSignalCategories: Array.isArray(row.visible_signal_categories) ? row.visible_signal_categories as string[] : [],
     paymentStatus: "admin_comped",

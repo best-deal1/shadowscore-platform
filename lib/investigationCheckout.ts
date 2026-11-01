@@ -10,6 +10,7 @@ type InvestigationCheckoutOptions<T> = {
   authenticatedEmail: string;
   persistIntake: (email: string) => Promise<string>;
   createIntent: (intakeId: string) => Promise<T>;
+  isCurrent?: () => boolean;
 };
 
 export function checkoutEmail(email: string, authenticatedEmail: string) {
@@ -22,17 +23,24 @@ export async function prepareInvestigationCheckout<T>({
   authenticatedEmail,
   persistIntake,
   createIntent,
+  isCurrent = () => true,
 }: InvestigationCheckoutOptions<T>): Promise<InvestigationCheckoutResult<T>> {
+  const assertCurrent = () => {
+    if (!isCurrent()) throw new Error("The investigation changed. Review the current target before continuing.");
+  };
+  assertCurrent();
   const resolvedEmail = checkoutEmail(email, authenticatedEmail);
   if (!resolvedEmail || !resolvedEmail.includes("@")) {
     throw new Error("Enter a valid customer email to continue.");
   }
 
   const resolvedIntakeId = intakeId || await persistIntake(resolvedEmail);
+  assertCurrent();
   if (!resolvedIntakeId) {
     throw new Error("The investigation could not be saved. Please try again.");
   }
 
   const intent = await createIntent(resolvedIntakeId);
+  assertCurrent();
   return { email: resolvedEmail, intakeId: resolvedIntakeId, intent };
 }

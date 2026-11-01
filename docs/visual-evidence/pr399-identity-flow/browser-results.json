@@ -1,0 +1,83 @@
+{
+  "sourceSha": "701c5f418d3553b58dd386aa63c4ab33e1a33961",
+  "browser": "Chromium",
+  "serviceMode": "local fixtures",
+  "cases": [
+    {
+      "name": "desktop",
+      "width": 1363,
+      "height": 936,
+      "mobile": false,
+      "passed": true,
+      "layout": {
+        "viewport": 1363,
+        "document": 1363,
+        "mainWidth": 1363,
+        "mainContentWidth": 1363,
+        "mainScrollLeft": 0,
+        "clipped": []
+      },
+      "checks": [
+        "English and Hebrew interpretation",
+        "manual override",
+        "personal review truthfulness",
+        "no horizontal overflow",
+        "touch or pointer controls",
+        "new target uses new intake and checkout",
+        "late preview isolation",
+        "no unexpected requests or console errors"
+      ]
+    },
+    {
+      "name": "mobile-390",
+      "width": 390,
+      "height": 844,
+      "mobile": true,
+      "passed": true,
+      "layout": {
+        "viewport": 390,
+        "document": 390,
+        "mainWidth": 390,
+        "mainContentWidth": 390,
+        "mainScrollLeft": 0,
+        "clipped": []
+      },
+      "checks": [
+        "English and Hebrew interpretation",
+        "manual override",
+        "personal review truthfulness",
+        "no horizontal overflow",
+        "touch or pointer controls",
+        "new target uses new intake and checkout",
+        "late preview isolation",
+        "no unexpected requests or console errors"
+      ]
+    },
+    {
+      "name": "mobile-320",
+      "width": 320,
+      "height": 800,
+      "mobile": true,
+      "passed": true,
+      "layout": {
+        "viewport": 320,
+        "document": 320,
+        "mainWidth": 320,
+        "mainContentWidth": 320,
+        "mainScrollLeft": 0,
+        "clipped": []
+      },
+      "checks": [
+        "English and Hebrew interpretation",
+        "manual override",
+        "personal review truthfulness",
+        "no horizontal overflow",
+        "touch or pointer controls",
+        "new target uses new intake and checkout",
+        "late preview isolation",
+        "no unexpected requests or console errors"
+      ]
+    }
+  ],
+  "passed": true
+}

@@ -9,11 +9,13 @@ import {
   normalizeIdentitySignals,
   normalizeIntakeIdentitySignals,
   preserveContradictoryContacts,
+  requestedIdentityResults,
   scoreIdentityCandidate,
 } from "../lib/personalIdentity.ts";
 import { createIntake } from "../lib/workspace.ts";
-import { ExternalIdentityProvider } from "../lib/providers/externalIdentityProvider.ts";
+import { buildSignalIdentityCandidates, ExternalIdentityProvider } from "../lib/providers/externalIdentityProvider.ts";
 import { discoverExternalIdentityGraph, rankExternalIdentityCandidates } from "../lib/providers/externalIdentityProvider.ts";
+import { interpretIdentityRequest } from "../lib/identityRequest.ts";
 
 const signals = (input) => normalizeIdentitySignals(input);
 
@@ -28,6 +30,203 @@ test("combined investigation retains every normalized signal", () => {
   const result = signals({ emails: ["A@Example.com"], phones: ["+1 212-555-0100"], names: ["Ada Lovelace"], usernames: ["@Ada"] });
   assert.deepEqual(result, { emails: ["a@example.com"], phones: ["+12125550100"], names: ["Ada Lovelace"], usernames: ["ada"], referenceImages: [] });
   assert.match(identityObjective(result), /same person/);
+});
+
+test("free-text request separates person, organization, role, and requested phone", () => {
+  for (const request of [
+    "אריאל תובל נייד\nיכול להשיג\nעצמלא בעלים",
+    "אריאל תובל, עצמלא, בעלים, נייד",
+    "Ariel Tuval, Atzmale, owner, mobile number",
+  ]) {
+    const interpreted = interpretIdentityRequest(request);
+    assert.equal(interpreted.personName, /[\u0590-\u05ff]/u.test(request) ? "אריאל תובל" : "Ariel Tuval");
+    assert.equal(interpreted.organization, /[\u0590-\u05ff]/u.test(request) ? "עצמלא" : "Atzmale");
+    assert.equal(interpreted.role, /[\u0590-\u05ff]/u.test(request) ? "בעלים" : "owner");
+    assert.deepEqual(interpreted.requestedAttributes, ["phone"]);
+    assert.equal(interpreted.confidence, "high");
+    assert.equal(interpreted.needsConfirmation, false);
+  }
+});
+
+test("comma-free requests keep organization clauses out of the person name", () => {
+  for (const [request, personName, organization, role] of [
+    ["Find the phone number for Ariel Tuval owner at Atzmale", "Ariel Tuval", "Atzmale", "owner"],
+    ["Find phone for Ariel Tuval who is owner at Atzmale", "Ariel Tuval", "Atzmale", "owner"],
+    ["Find phone for Ariel Tuval who is the owner at Atzmale", "Ariel Tuval", "Atzmale", "owner"],
+    ["Find phone for Ariel Tuval who's owner at Atzmale", "Ariel Tuval", "Atzmale", "owner"],
+    ["תמצא לי טלפון של אריאל תובל בעלים בעצמלא", "אריאל תובל", "עצמלא", "בעלים"],
+    ["תמצא טלפון של אריאל תובל שהוא הבעלים של עצמלא", "אריאל תובל", "עצמלא", "בעלים"],
+    ["תמצא טלפון של אריאל תובל שהוא בעלים בעצמלא", "אריאל תובל", "עצמלא", "בעלים"],
+    ["תמצא טלפון של מיכל תובל שהיא הבעלים של עצמלא", "מיכל תובל", "עצמלא", "בעלים"],
+  ]) {
+    const interpreted = interpretIdentityRequest(request);
+    assert.equal(interpreted.personName, personName);
+    assert.equal(interpreted.organization, organization);
+    assert.equal(interpreted.role, role);
+    assert.deepEqual(interpreted.requestedAttributes, ["phone"]);
+    assert.equal(interpreted.confidence, "high");
+  }
+});
+
+test("request context persists and produces an accurate source-backed objective", () => {
+  const result = signals({
+    names: ["Ariel Tuval"],
+    organizations: ["Atzmale"],
+    roles: ["owner"],
+    requestedAttributes: ["phone"],
+    requestText: "Ariel Tuval, Atzmale, owner, mobile number",
+  });
+  assert.deepEqual(result.organizations, ["Atzmale"]);
+  assert.deepEqual(result.roles, ["owner"]);
+  assert.deepEqual(result.requestedAttributes, ["phone"]);
+  assert.match(identityObjective(result), /Atzmale as owner/);
+  assert.match(identityObjective(result), /source-backed phone number/);
+});
+
+test("non-email discovery returns structured phone candidates for the requested result", () => {
+  const identitySignals = signals({
+    names: ["Ariel Tuval"],
+    organizations: ["Atzmale"],
+    roles: ["owner"],
+    requestedAttributes: ["phone"],
+  });
+  const candidates = buildSignalIdentityCandidates([{
+    query: '"Ariel Tuval" "Atzmale" "owner"',
+    result: {
+      title: "Ariel Tuval | Atzmale",
+      description: "Ariel Tuval, owner at Atzmale. Phone +972 50-123-4567.",
+      url: "https://atzmale.example/team/ariel-tuval",
+      canonicalDisplayName: "Ariel Tuval",
+      evidenceAdmissionScore: 100,
+    },
+  }], identitySignals);
+  assert.equal(candidates.length, 1);
+  assert.deepEqual(candidates[0].observedPhoneNumbers, ["+972 50-123-4567"]);
+  assert.deepEqual(candidates[0].observedOrganizations, ["Atzmale"]);
+  const requested = requestedIdentityResults(identitySignals, candidates);
+  assert.deepEqual(requested.map((result) => [result.type, result.value]), [["Phone number", "+972 50-123-4567"]]);
+  assert.equal(requested[0].sourceUrl, "https://atzmale.example/team/ariel-tuval");
+  assert.equal(requested[0].corroborated, false);
+  assert.equal(requested[0].association, "Observed on an unverified candidate source");
+});
+
+test("independent sources merge into one corroborated subject and phone result", () => {
+  const identitySignals = signals({
+    names: ["Ariel Tuval"],
+    organizations: ["Atzmale"],
+    roles: ["owner"],
+    requestedAttributes: ["phone"],
+  });
+  const result = (url, title, description) => ({
+    query: '"Ariel Tuval" "Atzmale" "owner"',
+    result: { title, description, url, canonicalDisplayName: "Ariel Tuval", evidenceAdmissionScore: 100 },
+  });
+  const candidates = buildSignalIdentityCandidates([
+    result("https://atzmale.com/team/ariel-tuval", "Ariel Tuval | Atzmale", "Ariel Tuval, owner at Atzmale. Phone +972 50-123-4567."),
+    result("https://industrynews.org/people/ariel-tuval", "Ariel Tuval, Atzmale owner", "Ariel Tuval is the owner of Atzmale. Phone +972 50-123-4567."),
+  ], identitySignals);
+
+  assert.equal(candidates.length, 1);
+  assert.equal(candidates[0].independentSourceFamilyCount, 2);
+  assert.deepEqual(candidates[0].sourceProvenance.map((source) => source.family).sort(), ["atzmale.com", "industrynews.org"]);
+  assert.equal(candidates[0].resolutionOutcome, "MATCH");
+  assert.equal(candidates[0].status, "Corroborated");
+  const requested = requestedIdentityResults(identitySignals, candidates);
+  assert.equal(requested.length, 1);
+  assert.equal(requested[0].value, "+972 50-123-4567");
+  assert.equal(requested[0].corroborated, true);
+  const conflicted = [{ ...candidates[0], resolverConflictingSignals: [{ attribute: "phone", submitted: "+972501234567", observed: "+972509999999", similarity: 0 }] }];
+  assert.equal(requestedIdentityResults(identitySignals, conflicted)[0].corroborated, false);
+});
+
+test("a contact observed by only one source stays unverified after subject aggregation", () => {
+  const identitySignals = signals({ names: ["Ariel Tuval"], organizations: ["Atzmale"], roles: ["owner"], requestedAttributes: ["phone"] });
+  const candidates = buildSignalIdentityCandidates([
+    { query: "subject", result: { title: "Ariel Tuval | Atzmale", description: "Ariel Tuval, owner at Atzmale. Phone +972 50-123-4567.", url: "https://atzmale.com/ariel", canonicalDisplayName: "Ariel Tuval", evidenceAdmissionScore: 100 } },
+    { query: "subject", result: { title: "Ariel Tuval, Atzmale owner", description: "Ariel Tuval is the owner of Atzmale.", url: "https://industrynews.org/ariel", canonicalDisplayName: "Ariel Tuval", evidenceAdmissionScore: 100 } },
+  ], identitySignals);
+  assert.equal(candidates.length, 1);
+  assert.equal(candidates[0].independentSourceFamilyCount, 2);
+  assert.equal(candidates[0].resolutionOutcome, "ABSTAIN");
+  assert.equal(requestedIdentityResults(identitySignals, candidates)[0].corroborated, false);
+});
+
+const contactEntry = (url, description) => ({
+  query: "fixture subject query",
+  result: { title: "Public contact", description, url, evidenceAdmissionScore: 100 },
+});
+
+test("username-only subjects require an exact observed handle and independent repeated contacts", () => {
+  const identitySignals = signals({ usernames: ["@Ariel.Tuval"], requestedAttributes: ["phone"] });
+  const entries = [
+    contactEntry("https://github.com/ariel.tuval", "@ariel.tuval Phone +1 202-555-0147"),
+    contactEntry("https://public-directory.example/people/ariel", "Username: @Ariel.Tuval Phone +12025550147"),
+  ];
+  const candidates = buildSignalIdentityCandidates(entries, identitySignals);
+  assert.equal(candidates.length, 1);
+  assert.equal(candidates[0].resolutionOutcome, "MATCH");
+  assert.ok(candidates[0].resolverMatchedSignals.some((match) => match.attribute === "username" && match.similarity === 1));
+  assert.equal(candidates[0].resolverMatchedSignals.some((match) => match.attribute === "name"), false);
+  const results = requestedIdentityResults(identitySignals, candidates);
+  assert.equal(results.length, 1);
+  assert.equal(results[0].corroborated, true);
+  assert.equal(requestedIdentityResults(identitySignals, buildSignalIdentityCandidates(entries.slice(0, 1), identitySignals))[0].corroborated, false);
+});
+
+test("aliases, substring handles, conflicting handles, and duplicate source families cannot verify username contacts", () => {
+  const identitySignals = signals({ usernames: ["ariel.tuval"], requestedAttributes: ["phone"] });
+  const source = (url, handle) => contactEntry(url, `${handle} Phone +12025550147`);
+  for (const entries of [
+    [source("https://one.example/ariel", "Ariel.Tuval"), source("https://two.example/ariel", "Ariel.Tuval")],
+    [source("https://one.example/ariel", "@ariel.tuval.extra"), source("https://two.example/ariel", "@ariel.tuval.extra")],
+    [source("https://github.com/another.person", "@ariel.tuval"), source("https://two.example/ariel", "@ariel.tuval")],
+    [source("https://one.example/ariel", "@ariel.tuval @another.person"), source("https://two.example/ariel", "@ariel.tuval")],
+    [source("https://one.example/ariel", "@ariel.tuval"), source("https://www.one.example/contact", "@ariel.tuval")],
+  ]) {
+    const candidates = buildSignalIdentityCandidates(entries, identitySignals);
+    assert.ok(requestedIdentityResults(identitySignals, candidates).every((result) => !result.corroborated));
+  }
+});
+
+test("email-seeded contacts retain source-local provenance across social and public-web sources", async () => {
+  for (const name of [undefined, "Ariel Tuval"]) {
+    const identitySignals = signals({ emails: ["ariel.tuval@example.com"], names: name ? [name] : [], requestedAttributes: ["phone"] });
+    const hits = [
+      { title: "Ariel Tuval | GitHub", url: "https://github.com/ariel-tuval", description: "Ariel Tuval. ariel.tuval@example.com Phone +1 202-555-0147" },
+      { title: "Ariel Tuval | Company", url: "https://company.example/team/ariel", description: "Ariel Tuval. ariel.tuval@example.com Phone +12025550147" },
+    ];
+    const graph = await discoverExternalIdentityGraph("ariel.tuval@example.com", "fixture", new AbortController().signal, {
+      signals: { name }, limits: { maxSearches: 2 }, search: async () => hits,
+    });
+    const candidate = graph.candidates.find((item) => item.status === "Corroborated");
+    assert.ok(candidate);
+    assert.equal(candidate.independentSourceFamilyCount, 2);
+    assert.deepEqual(new Set(candidate.observedContactProvenance.filter((entry) => entry.type === "phone").map((entry) => entry.family)), new Set(["github.com", "company.example"]));
+    const requested = requestedIdentityResults(identitySignals, graph.candidates);
+    assert.equal(requested.length, 1);
+    assert.equal(requested[0].corroborated, true);
+    assert.ok(hits.some((hit) => hit.url === requested[0].sourceUrl));
+  }
+});
+
+test("email-seeded contacts remain unverified for single-source, conflicting, and unlinked evidence", async () => {
+  const identitySignals = signals({ emails: ["ariel.tuval@example.com"], requestedAttributes: ["phone"] });
+  const source = (url, email = "ariel.tuval@example.com", phone = "+12025550147") => ({ title: "Ariel Tuval", url, description: `${email} Phone ${phone}` });
+  for (const hits of [
+    [source("https://github.com/ariel-tuval")],
+    [source("https://github.com/ariel-tuval"), source("https://github.com/ariel-contact")],
+    [source("https://github.com/ariel-tuval"), source("https://company.example/ariel", "other@example.com")],
+    [source("https://github.com/ariel-tuval"), source("https://company.example/ariel", "ariel.tuval@example.com", "+12025550148")],
+    [source("https://github.com/ariel-tuval"), { ...source("https://company.example/ariel"), description: "ariel.tuval@example.com other@example.com Phone +12025550147" }],
+  ]) {
+    const graph = await discoverExternalIdentityGraph("ariel.tuval@example.com", "fixture", new AbortController().signal, { limits: { maxSearches: 2 }, search: async () => hits });
+    assert.ok(requestedIdentityResults(identitySignals, graph.candidates).every((result) => !result.corroborated));
+  }
+});
+
+test("editing personal identity inputs clears the persisted intake reference", async () => {
+  const source = await readFile(new URL("../app/intake/page.tsx", import.meta.url), "utf8");
+  assert.match(source, /const resetIdentityJourney = \(\) => \{[\s\S]{0,240}setIntake\(null\)/);
 });
 
 test("legacy personal targets recover identity signals only when structured signals are absent", () => {
@@ -126,7 +325,7 @@ test("explicit name and email retain independent semantics through persistence, 
 
 test("administrator intake mapping restores persisted personal identity signals", async () => {
   const source = await readFile(new URL("../lib/adminReportAccess.ts", import.meta.url), "utf8");
-  assert.match(source, /identitySignals: row\.scan_mode === "personal"[\s\S]*normalizeIntakeIdentitySignals\(row\.identity_signals/);
+  assert.match(source, /identitySignals: investigationRouting\.primaryInvestigationType === "PERSON_IDENTITY"[\s\S]*normalizeIntakeIdentitySignals\(row\.identity_signals/);
 });
 
 test("contradictory email and phone identifiers are preserved", () => {
@@ -170,7 +369,7 @@ test("canonical migration and upload route use only identity-evidence with owner
 test("legacy email and business scan modes remain accepted", async () => {
   const route = await readFile(new URL("../app/api/intakes/route.ts", import.meta.url), "utf8");
   assert.match(route, /"website", "marketplace", "evidence", "personal"/);
-  assert.match(route, /body\.scanMode === "personal"/);
+  assert.match(route, /primaryInvestigationType === "PERSON_IDENTITY"/);
 });
 
 test("production-shaped persisted personal email report uses only identity presentation", async () => {
@@ -183,7 +382,7 @@ test("production-shaped persisted personal email report uses only identity prese
   for (const label of ["Person Under Review", "Personal Identity Investigation", "Submitted Identity Signals", "Public Identity Candidates", "Identity Matching Evidence", "Contradictory Identifiers", "Source Provenance", "Independent source count", "Identity confidence", "Verification status", "Person-Specific Next Actions", "Unverified Candidate", "Discovery relevance", "Resolver-backed identity evidence score", "Matched signals", "Conflicting signals", "Resolver outcome", "Final ranking", "Evidence sources"]) assert.match(presentation, new RegExp(label, "i"));
   for (const forbidden of ["commercial trustworthiness", "DNS", "WHOIS", "SSL/TLS", "Hosting", "Domain registration", "Legal business records", "Company ownership", "Marketplace seller verification", "Business Under Review", "Business Identity"]) assert.doesNotMatch(presentation, new RegExp(forbidden, "i"));
   assert.match(pipeline, /personalIdentityInvestigation[\s\S]*email-intelligence[\s\S]*external-identity/);
-  assert.match(pipeline, /Personal scan mode is authoritative/);
+  assert.match(pipeline, /Canonical personal identity routing permits only person-specific identity providers/);
   assert.match(pipeline, /businessNarrative: personalIdentityInvestigation \? undefined/);
   assert.match(pipeline, /decision: personalIdentityInvestigation \? undefined/);
   assert.match(pipeline, /scorecard: personalIdentityInvestigation \? undefined/);
@@ -196,7 +395,7 @@ test("production-shaped persisted personal email report uses only identity prese
 test("candidate presentation cannot promote discovery relevance without resolver matches", async () => {
   const presentation = await readFile(new URL("../components/report/PersonalIdentityReport.tsx", import.meta.url), "utf8");
   assert.match(presentation, /const evidenceScore = matched\.length \? candidate\.resolutionEvidenceScore \|\| 0 : 0/);
-  assert.match(presentation, /const verified = candidate\.resolutionOutcome === "MATCH" && matched\.length > 0/);
+  assert.match(presentation, /const verified = isCorroboratedIdentityCandidate\(candidate\)/);
   assert.match(presentation, /No positive resolver evidence/);
   assert.match(presentation, /Not returned by the source/);
 });

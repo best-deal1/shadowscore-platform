@@ -66,6 +66,7 @@ export type ProviderExecutionContext = {
   executionProfile?: "free_preview" | "paid_report";
   providerTimeoutMs?: Partial<Record<ProviderCategory | "http", number>>;
   resolvedEntity?: ResolvedEntity;
+  investigationRouting?: import("../investigationRouting").InvestigationRouting;
 };
 
 export type ProviderHealth = {

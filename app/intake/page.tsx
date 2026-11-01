@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { CANONICAL_LOGO_PATH } from "@/lib/brand";
@@ -15,6 +15,9 @@ import { useLocale } from "../../components/LocaleProvider";
 import { BETA_PRODUCT } from "../../lib/pricing";
 import QuickCheckResult from "../../components/quick-check/QuickCheckResult";
 import type { QuickCheckReport } from "../../lib/quickCheck/report";
+import { resolveInvestigationRouting } from "../../lib/investigationRouting";
+import { interpretIdentityRequest, requestedAttributeLabel } from "../../lib/identityRequest";
+import type { IdentityRequestedAttribute } from "../../lib/personalIdentity";
 
 type Severity = "Low" | "Medium" | "High" | "Critical";
 type Finding = {
@@ -531,6 +534,10 @@ export default function IntakePage() {
   const [identityPhone, setIdentityPhone] = useState("");
   const [identityName, setIdentityName] = useState("");
   const [identityUsername, setIdentityUsername] = useState("");
+  const [identityRequest, setIdentityRequest] = useState("");
+  const [identityOrganization, setIdentityOrganization] = useState("");
+  const [identityRole, setIdentityRole] = useState("");
+  const [identityRequestedAttribute, setIdentityRequestedAttribute] = useState<IdentityRequestedAttribute | "" | null>(null);
   const [referenceImage, setReferenceImage] = useState<File | null>(null);
   const [referenceAuthorized, setReferenceAuthorized] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -542,15 +549,12 @@ export default function IntakePage() {
   const [freeScanError, setFreeScanError] = useState("");
   const [saveError, setSaveError] = useState("");
   const [checkoutStage, setCheckoutStage] = useState(false);
+  const journeyRevision = useRef(0);
 
   useEffect(() => {
     const session = getCurrentSession();
     if (session?.email) setEmail((current) => current || session.email);
   }, []);
-
-  useEffect(() => {
-    document.title = scanMode === "personal" ? "Personal Identity Investigation | ShadowScore" : "Start an Investigation | ShadowScore";
-  }, [scanMode]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -577,11 +581,12 @@ export default function IntakePage() {
     if (!session || !stored) return;
 
     let cancelled = false;
+    const revision = journeyRevision.current;
     void (async () => {
       try {
         const draft = JSON.parse(stored) as ReturnType<typeof intakeRecord>;
         const created = await createIntake(session, draft);
-        if (cancelled) return;
+        if (cancelled || revision !== journeyRevision.current) return;
         setScanMode(draft.scanMode);
         setWebsiteTarget(draft.scanMode === "website" ? draft.target : "");
         setStore(draft.scanMode === "website" ? "" : draft.target);
@@ -593,6 +598,7 @@ export default function IntakePage() {
         window.sessionStorage.removeItem(CHECKOUT_DRAFT_KEY);
         window.location.assign("/workspace");
       } catch {
+        if (cancelled || revision !== journeyRevision.current) return;
         window.sessionStorage.removeItem(CHECKOUT_DRAFT_KEY);
         setFreeScanError("The saved investigation could not be restored. Please save it again.");
       }
@@ -604,8 +610,23 @@ export default function IntakePage() {
     marketplace === "Other"
       ? customMarketplace || "Other marketplace"
       : marketplace;
-  const identityTarget = identityEmail.trim() || identityPhone.trim() || identityUsername.trim() || identityName.trim();
+  const interpretedIdentityRequest = useMemo(() => interpretIdentityRequest(identityRequest), [identityRequest]);
+  const effectiveIdentityEmail = identityEmail.trim() || interpretedIdentityRequest.emails[0] || "";
+  const effectiveIdentityPhone = identityPhone.trim() || interpretedIdentityRequest.phones[0] || "";
+  const effectiveIdentityUsername = identityUsername.trim() || interpretedIdentityRequest.usernames[0] || "";
+  const effectiveIdentityName = identityName.trim() || interpretedIdentityRequest.personName || "";
+  const effectiveIdentityOrganization = identityOrganization.trim() || interpretedIdentityRequest.organization || "";
+  const effectiveIdentityRole = identityRole.trim() || interpretedIdentityRequest.role || "";
+  const effectiveRequestedAttributes = identityRequestedAttribute === null
+    ? interpretedIdentityRequest.requestedAttributes
+    : identityRequestedAttribute ? [identityRequestedAttribute] : [];
+  const identityTarget = effectiveIdentityEmail || effectiveIdentityPhone || effectiveIdentityUsername || effectiveIdentityName;
   const activeTarget = scanMode === "website" ? websiteTarget : scanMode === "personal" ? identityTarget : store;
+  const canonicalRouting = useMemo(() => resolveInvestigationRouting({ target: activeTarget, scanMode }), [activeTarget, scanMode]);
+  const canonicalPersonalInvestigation = canonicalRouting.primaryInvestigationType === "PERSON_IDENTITY";
+  useEffect(() => {
+    document.title = canonicalPersonalInvestigation ? "Personal Identity Investigation | ShadowScore" : "Start an Investigation | ShadowScore";
+  }, [canonicalPersonalInvestigation]);
   const requirements = useMemo(
     () =>
       scanMode === "website"
@@ -808,6 +829,8 @@ export default function IntakePage() {
     }
     if (scanMode === "website" && !websiteTarget.trim())
       errors.push("Enter a website URL, business name or company domain.");
+    if (canonicalPersonalInvestigation && !personalIdentityEnabled)
+      errors.push("Personal Identity Investigations are currently unavailable. Choose a business or company-domain target.");
     if (scanMode === "evidence" && files.length === 0)
       errors.push("Upload evidence for case review.");
     if (scanMode === "personal" && !identityTarget) errors.push("Add at least one identity signal.");
@@ -824,6 +847,8 @@ export default function IntakePage() {
     store,
     websiteTarget,
     files.length,
+    canonicalPersonalInvestigation,
+    personalIdentityEnabled,
   ]);
 
   const canAnalyze =
@@ -837,7 +862,17 @@ export default function IntakePage() {
       caseType: scanMode === "website" ? "Business trust scan" : scanMode === "personal" ? "Identity resolution" : caseType,
       target: activeTarget,
       email: resolvedEmail,
-      identitySignals: scanMode === "personal" ? { emails: identityEmail.trim() ? [identityEmail] : [], phones: identityPhone.trim() ? [identityPhone] : [], names: identityName.trim() ? [identityName] : [], usernames: identityUsername.trim() ? [identityUsername] : [], referenceImages: [] } : undefined,
+      identitySignals: scanMode === "personal" ? {
+        emails: effectiveIdentityEmail ? [effectiveIdentityEmail] : [],
+        phones: effectiveIdentityPhone ? [effectiveIdentityPhone] : [],
+        names: effectiveIdentityName ? [effectiveIdentityName] : [],
+        usernames: effectiveIdentityUsername ? [effectiveIdentityUsername] : [],
+        referenceImages: [],
+        organizations: effectiveIdentityOrganization ? [effectiveIdentityOrganization] : [],
+        roles: effectiveIdentityRole ? [effectiveIdentityRole] : [],
+        requestedAttributes: effectiveRequestedAttributes,
+        requestText: identityRequest.trim() || undefined,
+      } : undefined,
       fileNames: files.map((file) => file.name),
       visibleSignalCategories: scanMode === "website" ? WEBSITE_SIGNAL_CATEGORIES : scanMode === "personal" ? ["Identity discovery", "Independent-source corroboration", "Contradictory contact evidence"] : (detectedSignals.length ? detectedSignals.map((item) => item.title) : ["Marketplace identity", t.intakeUi.evidenceReadiness, "Payment or policy categories"]),
     });
@@ -848,14 +883,28 @@ export default function IntakePage() {
     setFreeScanError("");
   };
 
+  const resetIdentityJourney = () => {
+    journeyRevision.current += 1;
+    setSubmitted(false);
+    setLeadSaved(false);
+    setIntake(null);
+    setCheckoutStage(false);
+    setFreeScanRunning(false);
+    setSaveError("");
+    sessionStorage.removeItem(CHECKOUT_DRAFT_KEY);
+    sessionStorage.removeItem("shadowscore_last_lead");
+    resetFreeScan();
+  };
+
   const runFreePreview = async () => {
+    const revision = journeyRevision.current;
     setSubmitted(true);
     setFreeScanError("");
     setPreviewStatus("idle");
 
     if (!canAnalyze) return;
 
-    if (scanMode !== "website") {
+    if (scanMode !== "website" || canonicalPersonalInvestigation) {
       setFreeScanResult(null);
       setPreviewStatus("ready");
       return;
@@ -872,6 +921,7 @@ export default function IntakePage() {
         body: JSON.stringify(intakeRecord()),
       });
       const payload = await readPreviewJson(response);
+      if (revision !== journeyRevision.current) return;
 
       if (!isPreviewReadyResponse(payload)) {
         throw new Error("Investigation checks finished, but the preview-ready event was missing from the API response.");
@@ -880,15 +930,20 @@ export default function IntakePage() {
       setFreeScanResult(payload as FreeScanResult);
       setPreviewStatus(nextPreviewStatus(payload));
     } catch (error) {
+      if (revision !== journeyRevision.current) return;
       setPreviewStatus("failed");
       setFreeScanError(error instanceof Error ? error.message : "Unable to run investigation checks.");
     } finally {
-      setFreeScanRunning(false);
+      if (revision === journeyRevision.current) setFreeScanRunning(false);
     }
   };
 
 
   const saveLead = async (resolvedEmail = email) => {
+    const revision = journeyRevision.current;
+    const assertCurrent = () => {
+      if (revision !== journeyRevision.current) throw new Error("The investigation changed. Review the current target before continuing.");
+    };
     setSaveError("");
     const session = getCurrentSession();
     const cleanEmail = resolvedEmail.trim().toLowerCase();
@@ -923,6 +978,7 @@ export default function IntakePage() {
       return "";
     }
     const created = await createIntake(session, record);
+    assertCurrent();
     if (scanMode === "personal" && referenceImage) {
       const upload = new FormData();
       upload.set("file", referenceImage);
@@ -931,6 +987,7 @@ export default function IntakePage() {
       const response = await fetch("/api/identity-evidence", { method: "POST", body: upload });
       const payload = await response.json().catch(() => null) as { error?: string } | null;
       if (!response.ok) throw new Error(payload?.error || "The reference image could not be stored.");
+      assertCurrent();
     }
     setIntake(created);
     setLeadSaved(true);
@@ -938,16 +995,16 @@ export default function IntakePage() {
   };
 
   const saveForLater = async () => {
+    const revision = journeyRevision.current;
     try {
       await saveLead();
     } catch (cause) {
-      setSaveError(cause instanceof Error ? cause.message : "The investigation could not be saved.");
+      if (revision === journeyRevision.current) setSaveError(cause instanceof Error ? cause.message : "The investigation could not be saved.");
     }
   };
 
   const handleFileChange = (incoming: File[]) => {
-    setSubmitted(false);
-    setLeadSaved(false);
+    resetIdentityJourney();
     setFiles(incoming);
   };
 
@@ -957,7 +1014,7 @@ export default function IntakePage() {
       <div className="fixed inset-0 pointer-events-none bg-[radial-gradient(circle_at_80%_0%,rgba(220,38,38,0.16),transparent_42%)]" />
 
       <header className="relative z-10 border-b border-white/10 bg-black/85 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-6 py-5 sm:flex-nowrap">
           <Link
             href="/"
             className="flex items-center gap-3 text-sm text-zinc-500 hover:text-white"
@@ -973,37 +1030,36 @@ export default function IntakePage() {
             {t.intakeUi.back}
           </Link>
           <div className="rounded-full border border-red-400/25 bg-red-500/10 px-4 py-2 text-sm font-bold text-red-200">
-            {t.intakeUi.preview}
+            {canonicalPersonalInvestigation ? "Personal Identity Investigation" : t.intakeUi.preview}
           </div>
         </div>
       </header>
 
-      <JourneyProgress current={1} />
+      <JourneyProgress current={checkoutStage ? 2 : 1} />
 
       <section className="relative z-10 mx-auto max-w-7xl px-6 py-14">
-        <div className="grid gap-10 lg:grid-cols-[.82fr_1.18fr]">
-          <div>
-            <div className="text-xs uppercase tracking-[0.35em] text-red-300">{scanMode === "personal" ? "Identity investigation" : t.intakeUi.investigationEyebrow}</div>
-            <h1 className="mt-6 text-5xl font-extrabold leading-tight">{scanMode === "personal" ? "Investigate a Personal Identity" : t.intakeUi.investigationTitle}</h1>
-            <p className="mt-6 max-w-lg text-lg leading-8 text-zinc-400">{scanMode === "personal" ? "Submit known identity signals. The report separates public discovery leads from resolver-backed identity evidence." : t.intakeUi.investigationPrice}</p>
-            <div className="mt-8 rounded-2xl border border-white/10 bg-white/[.035] p-5"><p className="font-bold">{scanMode === "personal" ? "What the identity check covers" : t.intakeUi.investigationTime}</p><ol className="mt-4 space-y-3 text-sm text-zinc-300">{scanMode === "personal" ? <><li>1. Review submitted identity signals</li><li>2. Discover eligible public profile candidates</li><li>3. Compare matches, conflicts, and source provenance</li></> : <><li>1. {t.intakeUi.investigationStepIdentify}</li><li>2. {t.intakeUi.investigationStepReview}</li><li>3. {t.intakeUi.investigationStepReport}</li></>}</ol><p className="mt-4 text-sm text-zinc-400">{scanMode === "personal" ? "Purchase includes one private Personal Identity Investigation report after payment." : t.intakeUi.investigationStartTerms}</p></div>
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[.82fr_1.18fr]">
+          <div className="min-w-0">
+            <div className="text-xs uppercase tracking-[0.35em] text-red-300">{canonicalPersonalInvestigation ? "Identity investigation" : t.intakeUi.investigationEyebrow}</div>
+            <h1 className="mt-6 break-words text-4xl font-extrabold leading-tight sm:text-5xl">{canonicalPersonalInvestigation ? "Investigate a Personal Identity" : t.intakeUi.investigationTitle}</h1>
+            <p className="mt-6 max-w-lg text-lg leading-8 text-zinc-400">{canonicalPersonalInvestigation ? "Submit known identity signals. The report separates public discovery leads from resolver-backed identity evidence." : t.intakeUi.investigationPrice}</p>
+            <div className="mt-8 rounded-2xl border border-white/10 bg-white/[.035] p-5"><p className="font-bold">{canonicalPersonalInvestigation ? "What the identity check covers" : t.intakeUi.investigationTime}</p><ol className="mt-4 space-y-3 text-sm text-zinc-300">{canonicalPersonalInvestigation ? <><li>1. Review submitted identity signals</li><li>2. Discover eligible public profile candidates</li><li>3. Compare matches, conflicts, and source provenance</li></> : <><li>1. {t.intakeUi.investigationStepIdentify}</li><li>2. {t.intakeUi.investigationStepReview}</li><li>3. {t.intakeUi.investigationStepReport}</li></>}</ol><p className="mt-4 text-sm text-zinc-400">{canonicalPersonalInvestigation ? "Purchase includes one private Personal Identity Investigation report after payment." : t.intakeUi.investigationStartTerms}</p></div>
           </div>
 
-          <div className="rounded-[32px] border border-white/10 bg-black/55 p-6 shadow-[0_0_60px_rgba(120,0,20,0.16)] backdrop-blur-xl">
+          <div className="min-w-0 rounded-[32px] border border-white/10 bg-black/55 p-4 shadow-[0_0_60px_rgba(120,0,20,0.16)] backdrop-blur-xl sm:p-6">
             <h2 className="text-2xl font-black text-white">{t.intakeUi.investigationTypeTitle}</h2>
-            <p className="mt-2 text-sm leading-6 text-zinc-400">{t.intakeUi.investigationTypeDescription}</p>
-            <p className="mt-1 text-sm leading-6 text-zinc-500">{t.intakeUi.investigationTypeReportDescription}</p>
-            <div className="mt-6 grid gap-3 md:grid-cols-3">
+            <p className="mt-2 text-sm leading-6 text-zinc-400">{canonicalPersonalInvestigation ? "Choose how to identify the person you want to investigate." : t.intakeUi.investigationTypeDescription}</p>
+            <p className="mt-1 text-sm leading-6 text-zinc-400">{canonicalPersonalInvestigation ? "One Personal Identity Investigation produces one private Executive Report." : t.intakeUi.investigationTypeReportDescription}</p>
+            <div className="mt-6 grid gap-3 md:grid-cols-2">
               {scanModes.map((mode) => (
                 <button
                   key={mode.id}
                   type="button"
+                  aria-pressed={scanMode === mode.id}
                   onClick={() => {
                     if (mode.id === "personal" && !personalIdentityEnabled) return;
                     setScanMode(mode.id);
-                    setSubmitted(false);
-                    setLeadSaved(false);
-                    resetFreeScan();
+                    resetIdentityJourney();
                   }}
                   disabled={mode.id === "personal" && !personalIdentityEnabled}
                   aria-describedby={mode.id === "personal" && !personalIdentityEnabled ? "personal-identity-readiness" : undefined}
@@ -1041,29 +1097,56 @@ export default function IntakePage() {
                     value={websiteTarget}
                     onChange={(e) => {
                       setWebsiteTarget(e.target.value);
-                      setSubmitted(false);
-                      setLeadSaved(false);
-                      resetFreeScan();
+                      resetIdentityJourney();
                     }}
                     className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white"
                     placeholder={t.intakeUi.targetPlaceholder}
                   />
                 </label>
+                {activeTarget.trim() && canonicalPersonalInvestigation && <div className="md:col-span-2 rounded-2xl border border-cyan-300/25 bg-cyan-400/10 p-4 text-sm leading-6 text-cyan-100" role="status"><p className="font-bold">Personal Identity Investigation</p><p>This public mailbox routes to a personal identity investigation. The review and purchase details below use that scope.</p></div>}
               </div>
             )}
 
             {scanMode === "personal" && (
-              <fieldset className="mt-6 rounded-2xl border border-white/10 p-5">
+              <fieldset className="mt-6 min-w-0 rounded-2xl border border-white/10 p-4 sm:p-5">
                 <legend className="px-2 text-sm font-bold text-white">Identity signals</legend>
-                <p className="mb-5 text-sm leading-6 text-zinc-400">Add one or more signals for the person you want to investigate. Your account email remains separate and is used for billing and report delivery.</p>
-                <div className="grid gap-5 md:grid-cols-2">
-                  <label><span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">Person&apos;s email</span><input type="email" value={identityEmail} onChange={(event) => setIdentityEmail(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-black p-4" autoComplete="off" /></label>
-                  <label><span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">Person&apos;s phone</span><input type="tel" value={identityPhone} onChange={(event) => setIdentityPhone(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-black p-4" autoComplete="off" /></label>
-                  <label><span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">Full name</span><input value={identityName} onChange={(event) => setIdentityName(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-black p-4" autoComplete="off" /></label>
-                  <label><span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">Username</span><input value={identityUsername} onChange={(event) => setIdentityUsername(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-black p-4" placeholder="username" autoComplete="off" /></label>
+                <p className="mb-5 text-sm leading-6 text-zinc-400">Describe the result you need or add the known signals directly. Your account email remains separate and is used for billing and report delivery.</p>
+                <label className="block">
+                  <span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">Investigation request</span>
+                  <textarea
+                    dir="auto"
+                    value={identityRequest}
+                    onChange={(event) => {
+                      setIdentityRequest(event.target.value);
+                      resetIdentityJourney();
+                    }}
+                    className="min-h-28 w-full min-w-0 rounded-2xl border border-white/10 bg-black p-4 text-white"
+                    placeholder="Example: Ariel Tuval, Atzmale, owner, find a mobile number"
+                    maxLength={500}
+                  />
+                  <span className="mt-2 block text-xs leading-5 text-zinc-500">ShadowScore separates the person, organization, role, and requested result before it searches.</span>
+                </label>
+                {identityRequest.trim() && <div className={`mt-5 rounded-2xl border p-4 ${interpretedIdentityRequest.needsConfirmation ? "border-amber-300/25 bg-amber-400/10 text-amber-100" : "border-emerald-300/25 bg-emerald-400/10 text-emerald-100"}`} role="status" aria-live="polite">
+                  <div className="flex flex-wrap items-center justify-between gap-2"><p className="font-bold">Request interpreted</p><span className="rounded-full border border-current/25 px-3 py-1 text-xs font-bold uppercase tracking-wider">{interpretedIdentityRequest.confidence} confidence</span></div>
+                  <dl className="mt-4 grid grid-cols-1 gap-3 break-words text-sm sm:grid-cols-2">
+                    <div><dt className="text-xs font-bold uppercase tracking-wider opacity-70">Person</dt><dd className="mt-1 font-semibold">{effectiveIdentityName || effectiveIdentityEmail || effectiveIdentityPhone || effectiveIdentityUsername || "Not identified"}</dd></div>
+                    <div><dt className="text-xs font-bold uppercase tracking-wider opacity-70">Organization</dt><dd className="mt-1 font-semibold">{effectiveIdentityOrganization || "Not identified"}</dd></div>
+                    <div><dt className="text-xs font-bold uppercase tracking-wider opacity-70">Role</dt><dd className="mt-1 font-semibold">{effectiveIdentityRole || "Not identified"}</dd></div>
+                    <div><dt className="text-xs font-bold uppercase tracking-wider opacity-70">Requested result</dt><dd className="mt-1 font-semibold">{effectiveRequestedAttributes.map(requestedAttributeLabel).join(", ") || "General identity match"}</dd></div>
+                  </dl>
+                  {interpretedIdentityRequest.needsConfirmation && <p className="mt-3 text-xs leading-5">Review the fields below before starting. Values entered below override this interpretation.</p>}
+                </div>}
+                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                  <label><span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">Person&apos;s email</span><input type="email" value={identityEmail} onChange={(event) => { setIdentityEmail(event.target.value); resetIdentityJourney(); }} className="w-full rounded-2xl border border-white/10 bg-black p-4" autoComplete="off" /></label>
+                  <label><span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">Person&apos;s phone</span><input type="tel" value={identityPhone} onChange={(event) => { setIdentityPhone(event.target.value); resetIdentityJourney(); }} className="w-full rounded-2xl border border-white/10 bg-black p-4" autoComplete="off" /></label>
+                  <label><span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">Full name</span><input value={identityName} onChange={(event) => { setIdentityName(event.target.value); resetIdentityJourney(); }} className="w-full rounded-2xl border border-white/10 bg-black p-4" placeholder={interpretedIdentityRequest.personName || undefined} autoComplete="off" /></label>
+                  <label><span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">Username</span><input value={identityUsername} onChange={(event) => { setIdentityUsername(event.target.value); resetIdentityJourney(); }} className="w-full rounded-2xl border border-white/10 bg-black p-4" placeholder="username" autoComplete="off" /></label>
+                  <label><span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">Organization</span><input value={identityOrganization} onChange={(event) => { setIdentityOrganization(event.target.value); resetIdentityJourney(); }} className="w-full rounded-2xl border border-white/10 bg-black p-4" placeholder={interpretedIdentityRequest.organization || "Company or organization"} autoComplete="organization" /></label>
+                  <label><span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">Role</span><input value={identityRole} onChange={(event) => { setIdentityRole(event.target.value); resetIdentityJourney(); }} className="w-full rounded-2xl border border-white/10 bg-black p-4" placeholder={interpretedIdentityRequest.role || "Owner, founder, director"} autoComplete="organization-title" /></label>
+                  <label className="md:col-span-2"><span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">Requested result</span><select value={identityRequestedAttribute ?? interpretedIdentityRequest.requestedAttributes[0] ?? ""} onChange={(event) => { setIdentityRequestedAttribute(event.target.value as IdentityRequestedAttribute | ""); resetIdentityJourney(); }} className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white"><option value="">General identity match</option><option value="phone">Phone number</option><option value="email">Email address</option><option value="social_profile">Public profile</option><option value="identity_match">Identity match</option></select></label>
                 </div>
-                <label className="mt-5 block rounded-2xl border border-dashed border-white/15 p-4"><span className="block text-sm font-bold">Authorized reference image, optional</span><span className="mt-1 block text-xs text-zinc-500">JPG, PNG, or WebP. Maximum 10MB.</span><input className="mt-3 block w-full text-sm" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setReferenceImage(event.target.files?.[0] || null)} /></label>
-                {referenceImage && <label className="mt-4 flex items-start gap-3 text-sm text-zinc-300"><input className="mt-1" type="checkbox" checked={referenceAuthorized} onChange={(event) => setReferenceAuthorized(event.target.checked)} /><span>I am authorized to use this image for this investigation.</span></label>}
+                <label className="mt-5 block rounded-2xl border border-dashed border-white/15 p-4"><span className="block text-sm font-bold">Authorized reference image, optional</span><span className="mt-1 block text-xs text-zinc-500">JPG, PNG, or WebP. Maximum 10MB.</span><input className="mt-3 block w-full text-sm" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { setReferenceImage(event.target.files?.[0] || null); resetIdentityJourney(); }} /></label>
+                {referenceImage && <label className="mt-4 flex items-start gap-3 text-sm text-zinc-300"><input className="mt-1" type="checkbox" checked={referenceAuthorized} onChange={(event) => { setReferenceAuthorized(event.target.checked); resetIdentityJourney(); }} /><span>I am authorized to use this image for this investigation.</span></label>}
               </fieldset>
             )}
 
@@ -1080,8 +1163,7 @@ export default function IntakePage() {
                           value={marketplace}
                           onChange={(e) => {
                             setMarketplace(e.target.value);
-                            setSubmitted(false);
-                            setLeadSaved(false);
+                            resetIdentityJourney();
                           }}
                           className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white"
                         >
@@ -1096,7 +1178,7 @@ export default function IntakePage() {
                         </div>
                         <select
                           value={caseType}
-                          onChange={(e) => setCaseType(e.target.value)}
+                          onChange={(e) => { setCaseType(e.target.value); resetIdentityJourney(); }}
                           className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white"
                         >
                           {CASE_TYPES.map((item) => (
@@ -1112,8 +1194,7 @@ export default function IntakePage() {
                           value={store}
                           onChange={(e) => {
                             setStore(e.target.value);
-                            setSubmitted(false);
-                            setLeadSaved(false);
+                            resetIdentityJourney();
                           }}
                           className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white"
                           placeholder={t.intakeUi.sellerPlaceholder}
@@ -1130,8 +1211,7 @@ export default function IntakePage() {
                         value={store}
                         onChange={(e) => {
                           setStore(e.target.value);
-                          setSubmitted(false);
-                          setLeadSaved(false);
+                          resetIdentityJourney();
                         }}
                         className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white"
                         placeholder={t.intakeUi.evidenceReferencePlaceholder}
@@ -1149,8 +1229,7 @@ export default function IntakePage() {
                       value={customMarketplace}
                       onChange={(e) => {
                         setCustomMarketplace(e.target.value);
-                        setSubmitted(false);
-                        setLeadSaved(false);
+                        resetIdentityJourney();
                       }}
                       className="w-full rounded-2xl border border-red-400/20 bg-black p-4 text-white"
                       placeholder={t.intakeUi.customPlatformPlaceholder}
@@ -1293,9 +1372,11 @@ export default function IntakePage() {
             <button
               type="button"
               onClick={runFreePreview}
-              className="mt-6 block w-full rounded-2xl bg-red-600 px-7 py-5 text-center text-sm font-black uppercase tracking-[0.16em] shadow-[0_0_28px_rgba(220,38,38,0.28)] hover:bg-red-500"
+              disabled={freeScanRunning}
+              aria-busy={freeScanRunning}
+              className="mt-6 block w-full rounded-2xl bg-red-600 px-7 py-5 text-center text-sm font-black uppercase tracking-[0.16em] shadow-[0_0_28px_rgba(220,38,38,0.28)] hover:bg-red-500 disabled:cursor-wait disabled:opacity-60"
             >
-              {freeScanRunning ? t.intakeUi.investigating : previewStatus === "ready" ? t.intakeUi.previewReady : t.intakeUi.startInvestigation}
+              {freeScanRunning ? t.intakeUi.investigating : previewStatus === "ready" ? canonicalPersonalInvestigation ? "Ready to review" : t.intakeUi.previewReady : t.intakeUi.startInvestigation}
             </button>
 
             {previewStatus === "failed" && freeScanError && (
@@ -1308,8 +1389,19 @@ export default function IntakePage() {
               <div className="mt-8 space-y-6">
                 {(() => {
                   const submittedTarget = freeScanResult?.targetResolution?.requestedTarget || activeTarget;
+                  const checkoutRouting = resolveInvestigationRouting({ target: submittedTarget, scanMode });
+                  const checkoutIsPersonal = checkoutRouting.primaryInvestigationType === "PERSON_IDENTITY";
+                  const checkoutScope = checkoutIsPersonal ? "Personal identity" : "Business and domain";
                   return <>
-                    <QuickCheckResult target={submittedTarget} report={freeScanResult?.quickCheck} />
+                    {checkoutIsPersonal ? <section className="rounded-2xl border border-cyan-300/20 bg-cyan-400/5 p-5" aria-labelledby="identity-review-title">
+                      <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-200">Identity request prepared</p>
+                      <h2 id="identity-review-title" className="mt-3 break-words text-2xl font-bold text-white" dir="auto">{submittedTarget}</h2>
+                      <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2">
+                        <div><dt className="text-zinc-400">Investigation scope</dt><dd className="mt-1 font-semibold text-white">Personal identity</dd></div>
+                        <div><dt className="text-zinc-400">Requested result</dt><dd className="mt-1 font-semibold text-white">{scanMode === "personal" && effectiveRequestedAttributes.length ? effectiveRequestedAttributes.map(requestedAttributeLabel).join(", ") : "General identity match"}</dd></div>
+                      </dl>
+                      <p className="mt-4 text-sm leading-6 text-zinc-300">Review the submitted signals before continuing. Public-source collection begins after payment.</p>
+                    </section> : <QuickCheckResult target={submittedTarget} report={freeScanResult?.quickCheck} />}
 
                     {!checkoutStage ? (
                       <button type="button" onClick={() => setCheckoutStage(true)} className="block w-full rounded-2xl bg-emerald-500 px-7 py-5 text-center text-sm font-black uppercase tracking-[0.12em] text-black hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200">
@@ -1317,11 +1409,11 @@ export default function IntakePage() {
                       </button>
                     ) : (
                     <section className="rounded-[28px] border border-yellow-400/20 bg-yellow-500/10 p-6 text-sm leading-7 text-yellow-100" aria-labelledby="paid-intake-title">
-                        <div className="text-xs uppercase tracking-[0.22em] text-yellow-200">{scanMode === "personal" ? "Personal identity investigation" : "Business Investigation intake"}</div>
-                      <h3 id="paid-intake-title" className="mt-3 text-lg font-bold text-white">Confirm the {scanMode === "personal" ? "person signals" : "business"}, scope, customer account, and purchase.</h3>
-                      <p className="mt-2 text-sm text-yellow-100">Your Free Quick Check remains attached to this intake. Payment starts the full investigation. Your Executive Report becomes available after processing completes.</p>
+                        <div className="text-xs uppercase tracking-[0.22em] text-yellow-200">{checkoutIsPersonal ? "Personal identity investigation" : "Business Investigation intake"}</div>
+                      <h3 id="paid-intake-title" className="mt-3 text-lg font-bold text-white">Confirm the {checkoutIsPersonal ? "identity subject" : "business"}, scope, customer account, and purchase.</h3>
+                      <p className="mt-2 text-sm text-yellow-100">{checkoutIsPersonal ? "Your identity request is ready for review. Payment starts public-source collection." : "Your Free Quick Check remains attached to this intake. Payment starts the full investigation."} Your Executive Report becomes available after processing completes.</p>
                       <div className="mt-5 rounded-2xl border border-white/10 bg-black/30 p-5">
-                        <dl className="mb-5 grid gap-3 text-sm sm:grid-cols-2"><div><dt className="text-zinc-500">{scanMode === "personal" ? "Identity subject" : "Business"}</dt><dd className="font-bold text-white">{submittedTarget}</dd></div><div><dt className="text-zinc-500">Investigation scope</dt><dd className="font-bold text-white">{activeMode.label}</dd></div><div><dt className="text-zinc-500">Existing result</dt><dd className="font-bold text-white">Free Quick Check</dd></div><div><dt className="text-zinc-500">Purchase</dt><dd className="font-bold text-white">Full {scanMode === "personal" ? "Personal Identity" : "Business"} Investigation · {BETA_PRODUCT.price}</dd></div></dl>
+                        <dl className="mb-5 grid gap-3 text-sm sm:grid-cols-2"><div><dt className="text-zinc-400">{checkoutIsPersonal ? "Identity subject" : "Business"}</dt><dd className="break-words font-bold text-white">{submittedTarget}</dd></div><div><dt className="text-zinc-400">Investigation scope</dt><dd className="font-bold text-white">{checkoutScope}</dd></div><div><dt className="text-zinc-400">{checkoutIsPersonal ? "Preparation" : "Existing result"}</dt><dd className="font-bold text-white">{checkoutIsPersonal ? "Identity request reviewed" : "Free Quick Check"}</dd></div><div><dt className="text-zinc-400">Purchase</dt><dd className="font-bold text-white">Full {checkoutIsPersonal ? "Personal Identity" : "Business"} Investigation · {BETA_PRODUCT.price}</dd></div></dl>
                         <label><div className="mb-2 text-xs uppercase tracking-[0.28em] text-zinc-500">Customer email (required)</div><input type="email" required value={email} onChange={(e) => { setEmail(e.target.value); setSaveError(""); }} aria-describedby={saveError ? "checkout-email-error" : undefined} className="w-full rounded-2xl border border-white/10 bg-black p-4 text-white" placeholder="you@example.com" /></label>
                         {saveError && <p id="checkout-email-error" className="mt-3 text-sm text-red-200" role="alert">{saveError}</p>}
                         <ul className="mt-4 space-y-2 text-sm font-bold leading-6 text-white" aria-label="Purchase confidence"><li>✓ One paid investigation</li><li>✓ One-time payment of {BETA_PRODUCT.price}</li><li>✓ No subscription</li><li>✓ Processing begins after payment</li><li>✓ Executive Report available after completion</li></ul>

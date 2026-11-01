@@ -1,5 +1,17 @@
 # Release Notes
 
+- Email-only identity reports now surface source-reported names, roles, and organizations with a citation and independent source count for each detail. An observed organization narrows the follow-up search within the existing budget. Different source names and multi-person excerpts keep attribution unresolved throughout the report. Matching scores sit in an optional keyboard-accessible disclosure. Explicit public (at) email notation is matched with its normalization disclosed, and dates or unformatted identifiers are excluded from observed phone numbers.
+
+- Email-only discovery now follows explicitly observed dotted social handles and recognizes exact mailboxes before sentence punctuation. Derived email display names are kept out of submitted name matching and contradictions. Personal reports lead with the strongest public identity candidate, show the source excerpts and discovery path, and preserve customer-safe search counts. A failed follow-up search retains earlier observations and explicitly marks incomplete coverage. Corroborated search candidates remain distinct from verified identity facts. Narrow-screen and print presentation retain the subject and supporting evidence.
+
+- Investigation intake now fits narrow mobile screens without clipping headings or controls. The form uses flexible grid columns, compact mobile spacing, and a header that wraps when needed.
+
+- Personal Identity checkout now presents a prepared request instead of claiming that a Business Quick Check completed. Identity scope, purchase terms, and progress stay consistent for both Personal mode and free-mail targets entered in Website mode.
+
+- Personal Identity requests now separate relation words from names and organizations in Hebrew and English. Explicitly selecting General identity match overrides inferred contact requests. Email-led investigations preserve contact-level provenance across admitted public sources, and username-led results require exact observed handles before corroboration. Editing the target or investigation type clears saved checkout state and ignores late responses from the previous request.
+
+- Personal Identity intake now interprets free-text requests into person, organization, role, and requested output, including requests without punctuation. Editing any identity field invalidates the prior saved intake before checkout. Name-led discovery merges evidence for the same constrained subject across independent source families, and reports verify a requested contact only when the same value is repeated by those sources.
+
 - Business discovery now keeps similarly named companies separate, preserves result-level claim provenance, avoids unrelated officer assignments, and retains attributable email and address leads.
 
 - Business email investigations now preserve each result's source family, keep search-derived company details out of authoritative registry evidence, and leave ambiguous registration numbers unbound for review.
@@ -233,3 +245,17 @@ This file records customer-visible improvements in each ShadowScore release.
 
 - Corporate and custom-domain email submissions now investigate the domain and associated business or legal entity first. Mailbox local-parts remain unverified until independent evidence connects a person to that organization.
 - Reports and live investigation responses now include the email classification, primary entity, routing reason, investigated domain, and local-part expansion policy.
+
+## 2026-09-07
+
+- Full Investigations now preserve one canonical investigation intent from intake through Executive Report presentation. Corporate mailbox investigations remain scoped to the domain and business. Public mailbox investigations receive the complete personal identity provider and report path, including recovered legacy records.
+- Executive Reports now show evidence and coverage outcomes instead of treating orchestration completion as investigation completion.
+- Personal Identity reports now show the canonical investigation outcome to customers. Submitted inputs and provider placeholders no longer count as completed evidence.
+- Personal investigation readiness now follows canonical routing at intake and execution. Provider timeouts and execution failures remain visible as coverage gaps, even when another provider returns infrastructure observations.
+- Checkout now shows the canonical investigation scope before payment. Reports preserve unknown legacy completion states, and failed HTTP provider outcomes remain visible as coverage gaps.
+
+## Personal identity signal execution
+
+- Phone, name, and username investigations now use the signal-compatible public identity discovery engine instead of email-only providers.
+- Customer-visible completion remains evidence-gated. Submitted clues guide discovery but do not count as independent proof.
+- Required provider evidence rejected by target isolation now produces a visible coverage gap. Redirects to unrelated domains cannot produce a successful completion state.

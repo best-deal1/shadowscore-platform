@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getCurrentSession } from "../lib/auth";
 import { prepareInvestigationCheckout } from "../lib/investigationCheckout";
 import type { PaymentIntent } from "../lib/workspace";
@@ -18,6 +18,8 @@ type PaymentButtonsProps = {
 export default function PaymentButtons({ buttonLabel = "Unlock Executive Report", intakeId, email = "", onEmailResolved, onPersistIntake }: PaymentButtonsProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const activeAttempt = useRef(0);
+  useEffect(() => () => { activeAttempt.current += 1; }, []);
 
   async function createIntent(resolvedIntakeId: string) {
     const response = await fetch("/api/checkout/intent", {
@@ -38,6 +40,8 @@ export default function PaymentButtons({ buttonLabel = "Unlock Executive Report"
 
   async function beginUnlock() {
     if (loading) return;
+    const attempt = ++activeAttempt.current;
+    const isCurrent = () => activeAttempt.current === attempt;
     const session = getCurrentSession();
     if (!session) {
       setLoading(true);
@@ -46,6 +50,7 @@ export default function PaymentButtons({ buttonLabel = "Unlock Executive Report"
         if (!onPersistIntake) throw new Error("Save the investigation before continuing.");
         await onPersistIntake(email);
       } catch (cause) {
+        if (!isCurrent()) return;
         setError(cause instanceof Error ? cause.message : "The investigation could not be saved.");
         setLoading(false);
       }
@@ -60,10 +65,12 @@ export default function PaymentButtons({ buttonLabel = "Unlock Executive Report"
         authenticatedEmail: session.email,
         persistIntake: onPersistIntake || (async () => { throw new Error("Save the investigation before starting checkout."); }),
         createIntent,
+        isCurrent,
       });
       onEmailResolved?.(result.email);
       window.location.assign(`/reports/${result.intent.reportId}/unlock`);
     } catch (cause) {
+      if (!isCurrent()) return;
       setError(cause instanceof Error ? cause.message : "Checkout could not be started.");
       setLoading(false);
     }

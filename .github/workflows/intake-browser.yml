@@ -1,0 +1,56 @@
+name: Intake browser verification
+
+on:
+  pull_request:
+    paths:
+      - "app/**"
+      - "components/**"
+      - "lib/**"
+      - "tests/**"
+      - "package*.json"
+      - ".github/workflows/intake-browser.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: intake-browser-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      # This isolated build exercises the public form with local service fixtures.
+      # No deployment environment or server readiness flag is changed.
+      NEXT_PUBLIC_PERSONAL_IDENTITY_ENABLED: "true"
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Install browser test tooling
+        run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
+      - name: Install Chromium
+        run: npx playwright install chromium --with-deps --only-shell
+      - run: npm test
+      - run: npm run build
+      - name: Verify desktop and mobile intake journeys
+        run: npm run test:intake-browser
+      - name: Verify email-only customer reports
+        run: npm run test:identity-report-browser
+      - uses: actions/upload-artifact@v5
+        if: ${{ !cancelled() }}
+        with:
+          name: intake-browser-${{ github.event.pull_request.head.sha || github.sha }}
+          path: test-results/intake-browser/
+          retention-days: 14
+          if-no-files-found: warn

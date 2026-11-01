@@ -32,6 +32,10 @@ export abstract class BaseProvider implements Provider {
       };
     } catch (error) {
       const completedAtDate = new Date();
+      const message = error instanceof Error ? error.message : "Unknown provider execution error";
+      const failureReason = this.failureReason(error);
+      const executionCode = /found no .*row|no authoritative match/i.test(message) ? "NO_AUTHORITATIVE_MATCH" : /unsupported jurisdiction/i.test(message) ? "UNSUPPORTED_JURISDICTION" : failureReason === "Unavailable" ? "PROVIDER_UNAVAILABLE" : failureReason === "Timeout" ? "PROVIDER_EXECUTION_TIMEOUT" : "PROVIDER_EXECUTION_FAILURE";
+      const coverageState = executionCode === "UNSUPPORTED_JURISDICTION" || executionCode === "NO_AUTHORITATIVE_MATCH" ? "gap" : executionCode === "PROVIDER_UNAVAILABLE" ? "unavailable" : "failed";
       return {
         providerId: this.id,
         providerVersion: this.version,
@@ -40,14 +44,19 @@ export abstract class BaseProvider implements Provider {
         completedAt: completedAtDate.toISOString(),
         duration: completedAtDate.getTime() - startedAtDate.getTime(),
         findings: [],
-        evidence: [{ id: `${this.id}-unavailable`, type: "observation", label: `${this.name} availability`, value: this.failureReason(error), source: this.id }],
+        evidence: executionCode === "PROVIDER_UNAVAILABLE" ? [{ id: `${this.id}-unavailable`, type: "observation", label: `${this.name} availability`, value: failureReason, source: this.id }] : [],
         metadata: {
           category: this.category,
           providerName: this.name,
-          failureReason: this.failureReason(error),
+          failureReason,
+          executionCode,
+          executionReason: message,
+          coverageState,
+          jurisdiction: null,
+          providerSupportedJurisdictions: this.id === "authoritative-company" ? ["US federal public issuers"] : [],
           lookupPerformed: false,
         },
-        errors: [error instanceof Error ? error.message : "Unknown provider execution error"],
+        errors: [message],
       };
     }
   }

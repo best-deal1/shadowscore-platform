@@ -1,0 +1,537 @@
+{
+  "sourceSha": "3c8cb202d74687199e0991cbbf944608c27b439b",
+  "component": "PersonalIdentityReport",
+  "browser": "Chromium",
+  "serviceMode": "production pipeline with isolated search transport",
+  "cases": [
+    {
+      "scenario": "found",
+      "viewport": {
+        "width": 1363,
+        "height": 936,
+        "mobile": false
+      },
+      "layout": {
+        "viewport": 1363,
+        "document": 1363,
+        "report": 1297,
+        "reportContent": 1297,
+        "clipped": []
+      },
+      "execution": {
+        "providerStatus": "completed",
+        "searchesCompleted": 9,
+        "searchesAttempted": 9,
+        "stopReason": "closure_reached"
+      },
+      "passed": true
+    },
+    {
+      "scenario": "professional",
+      "viewport": {
+        "width": 1363,
+        "height": 936,
+        "mobile": false
+      },
+      "layout": {
+        "viewport": 1363,
+        "document": 1363,
+        "report": 1297,
+        "reportContent": 1297,
+        "clipped": []
+      },
+      "execution": {
+        "providerStatus": "completed",
+        "searchesCompleted": 11,
+        "searchesAttempted": 11,
+        "stopReason": "closure_reached"
+      },
+      "passed": true
+    },
+    {
+      "scenario": "conflicting_names",
+      "viewport": {
+        "width": 1363,
+        "height": 936,
+        "mobile": false
+      },
+      "layout": {
+        "viewport": 1363,
+        "document": 1363,
+        "report": 1297,
+        "reportContent": 1297,
+        "clipped": []
+      },
+      "execution": {
+        "providerStatus": "completed",
+        "searchesCompleted": 11,
+        "searchesAttempted": 11,
+        "stopReason": "closure_reached"
+      },
+      "passed": true
+    },
+    {
+      "scenario": "ambiguous_subject",
+      "viewport": {
+        "width": 1363,
+        "height": 936,
+        "mobile": false
+      },
+      "layout": {
+        "viewport": 1363,
+        "document": 1363,
+        "report": 1297,
+        "reportContent": 1297,
+        "clipped": []
+      },
+      "execution": {
+        "providerStatus": "completed",
+        "searchesCompleted": 9,
+        "searchesAttempted": 9,
+        "stopReason": "closure_reached"
+      },
+      "passed": true
+    },
+    {
+      "scenario": "multi_hop",
+      "viewport": {
+        "width": 1363,
+        "height": 936,
+        "mobile": false
+      },
+      "layout": {
+        "viewport": 1363,
+        "document": 1363,
+        "report": 1297,
+        "reportContent": 1297,
+        "clipped": []
+      },
+      "execution": {
+        "providerStatus": "completed",
+        "searchesCompleted": 11,
+        "searchesAttempted": 11,
+        "stopReason": "closure_reached"
+      },
+      "passed": true
+    },
+    {
+      "scenario": "partial",
+      "viewport": {
+        "width": 1363,
+        "height": 936,
+        "mobile": false
+      },
+      "layout": {
+        "viewport": 1363,
+        "document": 1363,
+        "report": 1297,
+        "reportContent": 1297,
+        "clipped": []
+      },
+      "execution": {
+        "providerStatus": "partial",
+        "searchesCompleted": 1,
+        "searchesAttempted": 2,
+        "stopReason": "rate_limited"
+      },
+      "passed": true
+    },
+    {
+      "scenario": "empty",
+      "viewport": {
+        "width": 1363,
+        "height": 936,
+        "mobile": false
+      },
+      "layout": {
+        "viewport": 1363,
+        "document": 1363,
+        "report": 1297,
+        "reportContent": 1297,
+        "clipped": []
+      },
+      "execution": {
+        "providerStatus": "completed",
+        "searchesCompleted": 5,
+        "searchesAttempted": 5,
+        "stopReason": "closure_reached"
+      },
+      "passed": true
+    },
+    {
+      "scenario": "unavailable",
+      "viewport": {
+        "width": 1363,
+        "height": 936,
+        "mobile": false
+      },
+      "layout": {
+        "viewport": 1363,
+        "document": 1363,
+        "report": 1297,
+        "reportContent": 1297,
+        "clipped": []
+      },
+      "execution": {
+        "providerStatus": "unavailable",
+        "searchesCompleted": 0,
+        "searchesAttempted": 0,
+        "stopReason": "provider_unavailable"
+      },
+      "passed": true
+    },
+    {
+      "scenario": "found",
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "mobile": true
+      },
+      "layout": {
+        "viewport": 390,
+        "document": 390,
+        "report": 356,
+        "reportContent": 356,
+        "clipped": []
+      },
+      "execution": {
+        "providerStatus": "completed",
+        "searchesCompleted": 9,
+        "searchesAttempted": 9,
+        "stopReason": "closure_reached"
+      },
+      "passed": true
+    },
+    {
+      "scenario": "professional",
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "mobile": true
+      },
+      "layout": {
+        "viewport": 390,
+        "document": 390,
+        "report": 356,
+        "reportContent": 356,
+        "clipped": []
+      },
+      "execution": {
+        "providerStatus": "completed",
+        "searchesCompleted": 11,
+        "searchesAttempted": 11,
+        "stopReason": "closure_reached"
+      },
+      "passed": true
+    },
+    {
+      "scenario": "conflicting_names",
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "mobile": true
+      },
+      "layout": {
+        "viewport": 390,
+        "document": 390,
+        "report": 356,
+        "reportContent": 356,
+        "clipped": []
+      },
+      "execution": {
+        "providerStatus": "completed",
+        "searchesCompleted": 11,
+        "searchesAttempted": 11,
+        "stopReason": "closure_reached"
+      },
+      "passed": true
+    },
+    {
+      "scenario": "ambiguous_subject",
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "mobile": true
+      },
+      "layout": {
+        "viewport": 390,
+        "document": 390,
+        "report": 356,
+        "reportContent": 356,
+        "clipped": []
+      },
+      "execution": {
+        "providerStatus": "completed",
+        "searchesCompleted": 9,
+        "searchesAttempted": 9,
+        "stopReason": "closure_reached"
+      },
+      "passed": true
+    },
+    {
+      "scenario": "multi_hop",
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "mobile": true
+      },
+      "layout": {
+        "viewport": 390,
+        "document": 390,
+        "report": 356,
+        "reportContent": 356,
+        "clipped": []
+      },
+      "execution": {
+        "providerStatus": "completed",
+        "searchesCompleted": 11,
+        "searchesAttempted": 11,
+        "stopReason": "closure_reached"
+      },
+      "passed": true
+    },
+    {
+      "scenario": "partial",
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "mobile": true
+      },
+      "layout": {
+        "viewport": 390,
+        "document": 390,
+        "report": 356,
+        "reportContent": 356,
+        "clipped": []
+      },
+      "execution": {
+        "providerStatus": "partial",
+        "searchesCompleted": 1,
+        "searchesAttempted": 2,
+        "stopReason": "rate_limited"
+      },
+      "passed": true
+    },
+    {
+      "scenario": "empty",
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "mobile": true
+      },
+      "layout": {
+        "viewport": 390,
+        "document": 390,
+        "report": 356,
+        "reportContent": 356,
+        "clipped": []
+      },
+      "execution": {
+        "providerStatus": "completed",
+        "searchesCompleted": 5,
+        "searchesAttempted": 5,
+        "stopReason": "closure_reached"
+      },
+      "passed": true
+    },
+    {
+      "scenario": "unavailable",
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "mobile": true
+      },
+      "layout": {
+        "viewport": 390,
+        "document": 390,
+        "report": 356,
+        "reportContent": 356,
+        "clipped": []
+      },
+      "execution": {
+        "providerStatus": "unavailable",
+        "searchesCompleted": 0,
+        "searchesAttempted": 0,
+        "stopReason": "provider_unavailable"
+      },
+      "passed": true
+    },
+    {
+      "scenario": "found",
+      "viewport": {
+        "width": 320,
+        "height": 800,
+        "mobile": true
+      },
+      "layout": {
+        "viewport": 320,
+        "document": 320,
+        "report": 286,
+        "reportContent": 286,
+        "clipped": []
+      },
+      "execution": {
+        "providerStatus": "completed",
+        "searchesCompleted": 9,
+        "searchesAttempted": 9,
+        "stopReason": "closure_reached"
+      },
+      "passed": true
+    },
+    {
+      "scenario": "professional",
+      "viewport": {
+        "width": 320,
+        "height": 800,
+        "mobile": true
+      },
+      "layout": {
+        "viewport": 320,
+        "document": 320,
+        "report": 286,
+        "reportContent": 286,
+        "clipped": []
+      },
+      "execution": {
+        "providerStatus": "completed",
+        "searchesCompleted": 11,
+        "searchesAttempted": 11,
+        "stopReason": "closure_reached"
+      },
+      "passed": true
+    },
+    {
+      "scenario": "conflicting_names",
+      "viewport": {
+        "width": 320,
+        "height": 800,
+        "mobile": true
+      },
+      "layout": {
+        "viewport": 320,
+        "document": 320,
+        "report": 286,
+        "reportContent": 286,
+        "clipped": []
+      },
+      "execution": {
+        "providerStatus": "completed",
+        "searchesCompleted": 11,
+        "searchesAttempted": 11,
+        "stopReason": "closure_reached"
+      },
+      "passed": true
+    },
+    {
+      "scenario": "ambiguous_subject",
+      "viewport": {
+        "width": 320,
+        "height": 800,
+        "mobile": true
+      },
+      "layout": {
+        "viewport": 320,
+        "document": 320,
+        "report": 286,
+        "reportContent": 286,
+        "clipped": []
+      },
+      "execution": {
+        "providerStatus": "completed",
+        "searchesCompleted": 9,
+        "searchesAttempted": 9,
+        "stopReason": "closure_reached"
+      },
+      "passed": true
+    },
+    {
+      "scenario": "multi_hop",
+      "viewport": {
+        "width": 320,
+        "height": 800,
+        "mobile": true
+      },
+      "layout": {
+        "viewport": 320,
+        "document": 320,
+        "report": 286,
+        "reportContent": 286,
+        "clipped": []
+      },
+      "execution": {
+        "providerStatus": "completed",
+        "searchesCompleted": 11,
+        "searchesAttempted": 11,
+        "stopReason": "closure_reached"
+      },
+      "passed": true
+    },
+    {
+      "scenario": "partial",
+      "viewport": {
+        "width": 320,
+        "height": 800,
+        "mobile": true
+      },
+      "layout": {
+        "viewport": 320,
+        "document": 320,
+        "report": 286,
+        "reportContent": 286,
+        "clipped": []
+      },
+      "execution": {
+        "providerStatus": "partial",
+        "searchesCompleted": 1,
+        "searchesAttempted": 2,
+        "stopReason": "rate_limited"
+      },
+      "passed": true
+    },
+    {
+      "scenario": "empty",
+      "viewport": {
+        "width": 320,
+        "height": 800,
+        "mobile": true
+      },
+      "layout": {
+        "viewport": 320,
+        "document": 320,
+        "report": 286,
+        "reportContent": 286,
+        "clipped": []
+      },
+      "execution": {
+        "providerStatus": "completed",
+        "searchesCompleted": 5,
+        "searchesAttempted": 5,
+        "stopReason": "closure_reached"
+      },
+      "passed": true
+    },
+    {
+      "scenario": "unavailable",
+      "viewport": {
+        "width": 320,
+        "height": 800,
+        "mobile": true
+      },
+      "layout": {
+        "viewport": 320,
+        "document": 320,
+        "report": 286,
+        "reportContent": 286,
+        "clipped": []
+      },
+      "execution": {
+        "providerStatus": "unavailable",
+        "searchesCompleted": 0,
+        "searchesAttempted": 0,
+        "stopReason": "provider_unavailable"
+      },
+      "passed": true
+    }
+  ],
+  "passed": true
+}

@@ -557,6 +557,9 @@ select {
   header, footer, nav, button, .print\:hidden { display: none !important; }
   .executive-report { margin: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
   .executive-report nav { display: none !important; }
+  .personal-identity-report { overflow: visible !important; }
+  .personal-identity-report > header { display: block !important; background: white !important; color: #0f172a !important; }
+  .personal-identity-report > header p { color: #334155 !important; }
   .sample-report { background: #fff !important; color: #0f172a !important; }
   .sample-report > header { display: block !important; background: #fff !important; color: #0f172a !important; padding-block: 1.5rem !important; }
   .sample-report > header p, .sample-report section p { color: #334155 !important; }

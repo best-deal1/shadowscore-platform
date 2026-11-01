@@ -444,8 +444,8 @@ test("production email candidate remains visible without creating a false identi
     assert.match(reportSource, /candidate\.evidenceReference/);
     assert.match(reportSource, /candidate\.status/);
     const pipelineSource = await readFile(new URL("../lib/reportPipeline.ts", import.meta.url), "utf8");
-    assert.match(pipelineSource, /investigationType: emailInvestigation \? "EMAIL"/);
-    assert.match(pipelineSource, /intake\.scanMode === "website" && !emailInvestigation/);
+    assert.match(pipelineSource, /investigationType: investigationRouting\.primaryInvestigationType/);
+    assert.match(pipelineSource, /investigationRouting\.primaryInvestigationType === "DOMAIN_BUSINESS_LEGAL_ENTITY"/);
   } finally {
     globalThis.fetch = originalFetch;
     if (originalKey === undefined) delete process.env.BRAVE_SEARCH_API_KEY; else process.env.BRAVE_SEARCH_API_KEY = originalKey;
@@ -1173,7 +1173,7 @@ test("production provider sends submitted and observed contact signals through t
     }] : [] } });
   };
   try {
-    const result = await new ExternalIdentityProvider().execute({ intakeId: "production-person", scanMode: "website", target: "signal.person@gmail.com", requestedTarget: "signal.person@gmail.com", platform: "website", fileNames: [], visibleSignalCategories: [], resolvedEntity: { entityId: "person", entityType: "person", displayName: "Signal Person", canonicalName: "Signal Person", resolutionStatus: "resolved", provenance: [], createdAt: "2026-08-24T00:00:00.000Z", updatedAt: "2026-08-24T00:00:00.000Z", resolverVersion: "test", schemaVersion: "test", metadata: { username: "signalperson", phone: "+1 202 555 0100" } } });
+    const result = await new ExternalIdentityProvider().execute({ intakeId: "production-person", scanMode: "website", target: "signal.person@gmail.com", requestedTarget: "signal.person@gmail.com", platform: "website", fileNames: [], visibleSignalCategories: [], identitySignals: { emails: ["signal.person@gmail.com"], names: ["Signal Person"], usernames: ["signalperson"], phones: ["+1 202 555 0100"], referenceImages: [] }, resolvedEntity: { entityId: "person", entityType: "person", displayName: "Signal Person", canonicalName: "Signal Person", resolutionStatus: "resolved", provenance: [], createdAt: "2026-08-24T00:00:00.000Z", updatedAt: "2026-08-24T00:00:00.000Z", resolverVersion: "test", schemaVersion: "test", metadata: { username: "signalperson", phone: "+1 202 555 0100" } } });
     const candidate = result.metadata.externalIdentityCandidates[0];
     assert.equal(result.status, "completed");
     assert.ok(candidate.observedEmails.includes("signal.person@gmail.com"));
