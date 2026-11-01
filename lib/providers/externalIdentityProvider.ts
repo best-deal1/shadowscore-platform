@@ -709,7 +709,7 @@ function mergeSignalIdentityCandidates(
 function corroborateMergedSignalCandidate(candidate: ExternalIdentityCandidate) {
   if (candidate.sourceSubjectAmbiguous || candidate.sourceNameDisagreement) return {
     ...candidate, status: "Candidate" as const, resolutionOutcome: "ABSTAIN" as const,
-    identityAttributionConfidence: null,
+    identityAttributionConfidence: null, confidence: 0,
     matchBasis: candidate.sourceNameDisagreement
       ? "Public sources repeat the submitted identifier with different reported names. Attribution remains unresolved. Review each source before treating the observations as one person."
       : "A source includes multiple people without a clear subject association. Attribution remains unresolved.",
@@ -773,7 +773,7 @@ function rawSignalIdentityCandidates(
       matchedIdentifiers,
       matchType: emailObservation ? "exact_email" : signals.usernames.some((username) => matchedIdentifiers.includes(username)) ? "username" : "alias",
       status: "Candidate",
-      matchLevel: "unverified_candidate",
+      matchLevel: emailObservation ? "exact_match" : "unverified_candidate",
       matchBasis: `The source repeats ${matchedIdentifiers.length ? `submitted identifier ${matchedIdentifiers.join(", ")}` : "the submitted subject"}${contextDetail ? ` with ${contextDetail}` : ""}. Contact details remain source observations until independently corroborated.`,
       confidence: 0,
       evidenceUrl: result.url,

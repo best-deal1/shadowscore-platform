@@ -36,6 +36,7 @@ test("different source names and multi-person excerpts cannot corroborate one id
     assert.ok(candidates.length > 0);
     assert.ok(candidates.every((candidate) => !isCorroboratedIdentityCandidate(candidate)));
     assert.ok(candidates.every((candidate) => candidate.resolutionOutcome !== "MATCH"));
+    assert.ok(candidates.every((candidate) => candidate.identityAttributionConfidence === null && candidate.confidence === 0));
     assert.ok(candidates.every((candidate) => !(candidate.resolverConflictingSignals || []).some((signal) => signal.attribute === "name")));
     const html = await renderPersonalReport(customer);
     assert.ok(html.includes(scenario === "conflicting_names" ? "Sources report different names" : "Profile details could not be attributed"));
@@ -53,6 +54,7 @@ test("public professional (at) notation survives the real discovery and resolver
   const candidate = graph.candidates[0];
   assert.equal(candidate.matchType, "exact_email");
   assert.equal(candidate.emailMatchMethod, "explicit_at_dot");
+  assert.equal(candidate.matchLevel, "exact_match");
   assert.ok(candidate.sourceReportedFacts.some((fact) => fact.attribute === "name" && fact.value === "Addy Osmani"));
   assert.equal(isCorroboratedIdentityCandidate(candidate), false);
 });
