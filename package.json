@@ -83,7 +83,7 @@
     "test:cross-intelligence": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types --test tests/investigation-cross-intelligence.test.mjs",
     "test:live-investigation": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types --test tests/live-investigation-orchestration.test.mjs",
     "test:monitoring": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-strip-types --test tests/continuous-monitoring-pr7.test.mjs",
-    "test:identity-report": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-transform-types --test tests/personal-identity-report.test.mjs tests/production-investigation-routing.test.mjs",
+    "test:identity-report": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-transform-types --test tests/identity-public-facts.test.mjs tests/personal-identity-report.test.mjs tests/production-investigation-routing.test.mjs",
     "test:identity-report-browser": "NODE_OPTIONS=--import=./tests/register-ts-resolution.mjs node --experimental-transform-types tests/identity-report-browser.mjs"
   },
   "dependencies": {

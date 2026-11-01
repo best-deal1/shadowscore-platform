@@ -3,6 +3,56 @@ import test from "node:test";
 import { emailReportFixture, fixtureEmail, fixtureSource, fixtureSnippet } from "./helpers/email-report-fixture.mjs";
 import { renderPersonalReport } from "./helpers/render-personal-report.mjs";
 import { discoverExternalIdentityGraph } from "../lib/providers/externalIdentityProvider.ts";
+import { isCorroboratedIdentityCandidate } from "../lib/personalIdentity.ts";
+
+test("email-only reports extract source-reported role and organization without submitted context", async () => {
+  const { customer } = await emailReportFixture();
+  const candidate = customer.reportSummary.publicIdentityCandidates[0];
+  assert.ok(candidate.sourceReportedFacts.some((fact) => fact.attribute === "role" && fact.value === "Product manager" && fact.sourceUrl === fixtureSource));
+  assert.ok(candidate.sourceReportedFacts.some((fact) => fact.attribute === "organization" && fact.value === "Example Labs"));
+  assert.deepEqual(customer.reportSummary.identitySignals.organizations || [], []);
+  const html = await renderPersonalReport(customer);
+  assert.ok(html.includes("Source-reported profile"));
+  assert.ok(html.includes('aria-label="linkedin.com source for Product manager"'));
+});
+
+test("observed employment context targets a name-and-organization follow-up within the existing budget", async () => {
+  const { customer, queries } = await emailReportFixture({ scenario: "professional" });
+  assert.ok(queries.includes('"Dana Example" "Example Labs"'), JSON.stringify(queries));
+  assert.ok(queries.length <= 12);
+  const candidate = customer.reportSummary.publicIdentityCandidates.find(isCorroboratedIdentityCandidate);
+  assert.ok(candidate);
+  assert.equal(candidate.independentSourceFamilyCount, 2);
+  assert.ok(candidate.sourceReportedFacts.some((fact) => fact.sourceUrl === "https://example.org/team/dana-example"));
+  const html = await renderPersonalReport(customer);
+  assert.ok(html.includes("2 source families"));
+  assert.equal(html.includes("Verified Candidate"), false);
+});
+
+test("different source names and multi-person excerpts cannot corroborate one identity", async () => {
+  for (const scenario of ["conflicting_names", "ambiguous_subject"]) {
+    const { customer } = await emailReportFixture({ scenario });
+    const candidates = customer.reportSummary.publicIdentityCandidates;
+    assert.ok(candidates.length > 0);
+    assert.ok(candidates.every((candidate) => !isCorroboratedIdentityCandidate(candidate)));
+    assert.ok(candidates.every((candidate) => candidate.resolutionOutcome !== "MATCH"));
+    assert.ok(candidates.every((candidate) => !(candidate.resolverConflictingSignals || []).some((signal) => signal.attribute === "name")));
+    const html = await renderPersonalReport(customer);
+    assert.ok(html.includes(scenario === "conflicting_names" ? "Sources report different names" : "Profile details could not be attributed"));
+    assert.equal(html.includes("Reported role"), false);
+  }
+});
+
+test("public professional (at) notation survives the real discovery and resolver path", async () => {
+  const graph = await discoverExternalIdentityGraph("addyosmani@gmail.com", "fixture-key", new AbortController().signal, {
+    limits: { maxSearches: 1 }, search: async () => [{ title: "Addy Osmani - Talks", url: "https://addyosmani.com/talks/", description: "For inquiries about speaking engagements, I am addyosmani(at)gmail.com" }],
+  });
+  const candidate = graph.candidates[0];
+  assert.equal(candidate.matchType, "exact_email");
+  assert.equal(candidate.emailMatchMethod, "explicit_at_dot");
+  assert.ok(candidate.sourceReportedFacts.some((fact) => fact.attribute === "name" && fact.value === "Addy Osmani"));
+  assert.equal(isCorroboratedIdentityCandidate(candidate), false);
+});
 
 test("email-only customer report preserves execution counts after internal traces are removed", async () => {
   const { customer, queries } = await emailReportFixture();

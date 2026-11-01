@@ -1,5 +1,7 @@
 # Release Notes
 
+- Email-only identity reports now surface source-reported names, roles, and organizations with a citation and independent source count for each detail. An observed organization narrows the follow-up search within the existing budget. Different source names and multi-person excerpts keep attribution unresolved. Explicit public (at) email notation is matched with its normalization disclosed, and dates or unformatted identifiers are excluded from observed phone numbers.
+
 - Email-only discovery now follows explicitly observed dotted social handles and recognizes exact mailboxes before sentence punctuation. Derived email display names are kept out of submitted name matching and contradictions. Personal reports lead with the strongest public identity candidate, show the source excerpts and discovery path, and preserve customer-safe search counts. A failed follow-up search retains earlier observations and explicitly marks incomplete coverage. Corroborated search candidates remain distinct from verified identity facts. Narrow-screen and print presentation retain the subject and supporting evidence.
 
 - Investigation intake now fits narrow mobile screens without clipping headings or controls. The form uses flexible grid columns, compact mobile spacing, and a header that wraps when needed.

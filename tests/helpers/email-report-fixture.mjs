@@ -31,6 +31,13 @@ export async function emailReportFixture({ scenario = "found" } = {}) {
     if (scenario === "partial" && queries.length > 1) return new Response("", { status: 429 });
     if (scenario === "timeout" && queries.length > 1) throw new DOMException("Fixture request timed out", "AbortError");
     if (scenario === "first_failure") return new Response("", { status: 503 });
+    if (scenario === "professional" || scenario === "conflicting_names" || scenario === "ambiguous_subject") return Response.json({ web: { results: query === `"${fixtureEmail}"` ? [{
+      title: "Dana Example | LinkedIn", url: fixtureSource,
+      description: scenario === "ambiguous_subject" ? `Dana Example. Casey Other, Chief engineer at Other Labs. Contact ${fixtureEmail}.` : fixtureSnippet,
+    }, ...(scenario === "conflicting_names" ? [{ title: "Casey Other | Public profile", url: "https://other.example/people/casey", description: `Casey Other, Chief engineer at Other Labs. Contact ${fixtureEmail}.` }] : [])]
+      : scenario === "professional" && query === '"Dana Example" "Example Labs"' ? [{
+        title: "Dana Example | Example Labs", url: "https://example.org/team/dana-example", description: `Dana Example, Product manager at Example Labs. Contact ${fixtureEmail}.`,
+      }] : [] } });
     if (scenario === "multi_hop") return Response.json({ web: { results: query === `"${fixtureEmail}"` ? [{
       title: "Dana Example | Professional directory", url: "https://directory.example/people/dana-example",
       description: `${fixtureEmail}. Known as Dana River. Instagram: @dana.river.`,

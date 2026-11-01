@@ -15,7 +15,7 @@ assert.ok(cssFiles.length, "A production build is required before report browser
 const css = (await Promise.all(cssFiles.map((file) => readFile(path.join(staticRoot, file), "utf8")))).join("\n");
 const wrap = (markup) => `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Email-only identity report fixture</title><style>${css}</style></head><body><main class="mx-auto w-full max-w-[90rem] px-4 py-6 sm:px-6 lg:px-8"><p class="mb-4 text-sm text-slate-600">Fictional test data. No live investigation or payment.</p>${markup}</main></body></html>`;
 const fixtures = new Map();
-for (const scenario of ["found", "multi_hop", "partial", "empty", "unavailable"]) {
+for (const scenario of ["found", "professional", "conflicting_names", "ambiguous_subject", "multi_hop", "partial", "empty", "unavailable"]) {
   const fixture = await emailReportFixture({ scenario });
   fixtures.set(scenario, { ...fixture, html: wrap(await renderPersonalReport(fixture.customer)) });
 }
@@ -71,6 +71,21 @@ try {
         await page.evaluate(() => window.scrollTo(0, 0));
       }
       if (scenario === "found") assert.ok(await page.getByText("Public candidates returned", { exact: true }).isVisible());
+      if (scenario === "found" || scenario === "professional" || scenario === "partial") {
+        assert.ok(await page.getByRole("heading", { name: "Source-reported profile", exact: true }).isVisible());
+        assert.ok(await page.getByText("Reported role", { exact: true }).isVisible());
+        assert.ok(await page.getByText("Reported organization", { exact: true }).isVisible());
+        assert.ok(await page.getByRole("link", { name: "linkedin.com source for Product manager", exact: true }).isVisible());
+      }
+      if (scenario === "professional") {
+        assert.ok(await page.getByText("Corroborated public lead", { exact: true }).isVisible());
+        assert.ok(await page.getByRole("link", { name: "example.org source for Product manager", exact: true }).isVisible());
+      }
+      if (scenario === "conflicting_names" || scenario === "ambiguous_subject") {
+        assert.ok(await page.getByText(scenario === "conflicting_names" ? "Sources report different names. The observations remain separate for review." : "The source includes multiple people. Profile details could not be attributed.", { exact: true }).isVisible());
+        assert.equal(await page.getByText("Reported role", { exact: true }).count(), 0);
+        assert.equal(await page.getByText("Corroborated public lead", { exact: true }).count(), 0);
+      }
       if (scenario === "partial") {
         assert.ok((await execution.textContent()).includes("Partial coverage"));
         assert.ok((await execution.textContent()).includes("2 attempted"));

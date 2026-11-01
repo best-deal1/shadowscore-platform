@@ -5,6 +5,7 @@ import type { ExternalIdentityCandidate } from "../../lib/providers/externalIden
 import type { InvestigationCompletionStatus } from "../../lib/reportCoverage";
 import { isCorroboratedIdentityCandidate, requestedIdentityResults, summarizeIdentityDiscovery, type IdentityDiscoveryExecution } from "../../lib/personalIdentity";
 import { requestedAttributeLabel } from "../../lib/identityRequest";
+import { summarizeSourceReportedFacts } from "../../lib/identityPublicFacts";
 
 const COMPLETION_PRESENTATION: Record<InvestigationCompletionStatus, { label: string; detail: string; tone: string }> = {
   COMPLETED_WITH_EVIDENCE: { label: "Completed with evidence", detail: "The investigation returned substantive identity evidence for review.", tone: "border-emerald-300 bg-emerald-50 text-emerald-950" },
@@ -41,6 +42,24 @@ function dateTime(value?: string) {
   return value ? new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(value)) : "Not recorded";
 }
 
+function SourceReportedProfile({ candidate }: { candidate: ExternalIdentityCandidate }) {
+  const facts = summarizeSourceReportedFacts(candidate.sourceReportedFacts || [])
+    .filter((fact) => !candidate.sourceNameDisagreement || fact.attribute === "name");
+  if (!facts.length && !candidate.sourceSubjectAmbiguous) return null;
+  return <div className="mt-5 min-w-0 border border-slate-300 bg-white p-4 sm:p-5">
+    <h3 className="text-lg font-semibold text-slate-950">Source-reported profile</h3>
+    {candidate.sourceNameDisagreement || candidate.sourceSubjectAmbiguous
+      ? <p className="mt-2 font-semibold text-amber-900">{candidate.sourceNameDisagreement ? "Sources report different names. The observations remain separate for review." : "The source includes multiple people. Profile details could not be attributed."}</p>
+      : <p className="mt-2 text-sm text-slate-600">Details reported in public search excerpts. Sources may describe a past role or organization.</p>}
+    <dl className="mt-4 grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-3">{facts.map((fact) => <div key={`${fact.attribute}-${fact.value}`} className="min-w-0">
+      <dt className="text-xs font-bold uppercase tracking-wide text-slate-500">Reported {fact.attribute}</dt>
+      <dd className="mt-1 break-words font-semibold text-slate-950" dir="auto">{fact.value}</dd>
+      <dd className="mt-1 text-xs text-slate-600">{fact.sourceFamilyCount} source {fact.sourceFamilyCount === 1 ? "family" : "families"}</dd>
+      <dd className="mt-2 flex min-w-0 flex-wrap gap-x-3 gap-y-2 text-sm">{fact.sources.map((source) => <a key={source.url} href={source.url} rel="noreferrer" target="_blank" className="break-all text-cyan-800 underline underline-offset-2" aria-label={`${source.family} source for ${fact.value}`}>{source.family}</a>)}</dd>
+    </div>)}</dl>
+  </div>;
+}
+
 function CandidateCard({ candidate, index }: { candidate: ExternalIdentityCandidate; index: number }) {
   const matched = candidate.resolverMatchedSignals || [];
   const conflicts = candidate.resolverConflictingSignals || [];
@@ -56,6 +75,7 @@ function CandidateCard({ candidate, index }: { candidate: ExternalIdentityCandid
       <span className={`rounded-full border px-3 py-1 text-xs font-bold ${verified ? "border-emerald-300 bg-emerald-50 text-emerald-900" : "border-amber-300 bg-amber-50 text-amber-950"}`}>{verified ? "Corroborated Candidate" : "Unverified Candidate"}</span>
     </div>
     <p className="mt-4 text-sm leading-6 text-slate-700">{candidate.matchBasis}</p>
+    {candidate.emailMatchMethod === "explicit_at_dot" && <p className="mt-2 text-sm text-slate-600">The source writes the email with an explicit (at) or [at] marker. ShadowScore normalized that notation for matching.</p>}
     <dl className="mt-5 grid min-w-0 grid-cols-1 gap-4 text-sm sm:grid-cols-2">
       <div><dt className="font-semibold text-slate-950">Platform</dt><dd className="mt-1">{candidate.platform}</dd></div>
       <div><dt className="font-semibold text-slate-950">Username or display name</dt><dd className="mt-1">{candidate.observedDisplayName || "Not returned by the source"}</dd></div>
@@ -152,7 +172,7 @@ export default function PersonalIdentityReport({ report }: { report: ShadowScore
   const conflicts = candidates.flatMap((candidate) => candidate.resolverConflictingSignals || []);
   const verifiedCount = candidates.filter(isCorroboratedIdentityCandidate).length;
   const leadingCandidate = candidates.find(isCorroboratedIdentityCandidate)
-    || candidates.find((candidate) => candidate.resolverMatchedSignals?.length && !candidate.resolverConflictingSignals?.length)
+    || candidates.find((candidate) => candidate.resolverMatchedSignals?.length && !candidate.resolverConflictingSignals?.length && !candidate.sourceNameDisagreement && !candidate.sourceSubjectAmbiguous)
     || candidates[0];
   const submitted: Array<[string, string]> = [
     ...(signals?.emails || []).map((value): [string, string] => ["Email", value]),
@@ -173,6 +193,7 @@ export default function PersonalIdentityReport({ report }: { report: ShadowScore
           <p className="mt-3 font-semibold text-slate-950">{isCorroboratedIdentityCandidate(leadingCandidate) ? "Corroborated public lead" : "Unverified public lead"}</p>
           <p className="mt-2 max-w-3xl leading-7">{leadingCandidate.matchBasis}</p>
           <p className="mt-3 text-sm">{candidates.length} candidate{candidates.length === 1 ? "" : "s"} to review. {verifiedCount} corroborated by independent source families.</p>
+          <SourceReportedProfile candidate={leadingCandidate} />
           <a href="#candidate-title" className="mt-4 inline-block py-2 font-semibold text-cyan-800 underline underline-offset-2">Review identity evidence and sources</a>
         </> : <>
           <p className="mt-3 text-2xl font-semibold text-slate-950">{execution?.providerStatus === "unavailable" || execution?.providerStatus === "not_scheduled" ? "Public identity search unavailable" : "Identity remains unresolved"}</p>

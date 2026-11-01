@@ -160,6 +160,7 @@ export type RequestedIdentityResult = {
 
 export function isCorroboratedIdentityCandidate(candidate: ExternalIdentityCandidate) {
   return candidate.resolutionOutcome === "MATCH"
+    && !candidate.sourceSubjectAmbiguous && !candidate.sourceNameDisagreement
     && (candidate.resolverMatchedSignals?.length || 0) > 0
     && (candidate.resolverConflictingSignals?.length || 0) === 0
     && (candidate.independentSourceFamilyCount || 0) >= 2;
