@@ -1014,7 +1014,7 @@ export default function IntakePage() {
       <div className="fixed inset-0 pointer-events-none bg-[radial-gradient(circle_at_80%_0%,rgba(220,38,38,0.16),transparent_42%)]" />
 
       <header className="relative z-10 border-b border-white/10 bg-black/85 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-6 py-5 sm:flex-nowrap">
           <Link
             href="/"
             className="flex items-center gap-3 text-sm text-zinc-500 hover:text-white"
@@ -1038,15 +1038,15 @@ export default function IntakePage() {
       <JourneyProgress current={checkoutStage ? 2 : 1} />
 
       <section className="relative z-10 mx-auto max-w-7xl px-6 py-14">
-        <div className="grid gap-10 lg:grid-cols-[.82fr_1.18fr]">
-          <div>
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[.82fr_1.18fr]">
+          <div className="min-w-0">
             <div className="text-xs uppercase tracking-[0.35em] text-red-300">{canonicalPersonalInvestigation ? "Identity investigation" : t.intakeUi.investigationEyebrow}</div>
-            <h1 className="mt-6 text-5xl font-extrabold leading-tight">{canonicalPersonalInvestigation ? "Investigate a Personal Identity" : t.intakeUi.investigationTitle}</h1>
+            <h1 className="mt-6 break-words text-4xl font-extrabold leading-tight sm:text-5xl">{canonicalPersonalInvestigation ? "Investigate a Personal Identity" : t.intakeUi.investigationTitle}</h1>
             <p className="mt-6 max-w-lg text-lg leading-8 text-zinc-400">{canonicalPersonalInvestigation ? "Submit known identity signals. The report separates public discovery leads from resolver-backed identity evidence." : t.intakeUi.investigationPrice}</p>
             <div className="mt-8 rounded-2xl border border-white/10 bg-white/[.035] p-5"><p className="font-bold">{canonicalPersonalInvestigation ? "What the identity check covers" : t.intakeUi.investigationTime}</p><ol className="mt-4 space-y-3 text-sm text-zinc-300">{canonicalPersonalInvestigation ? <><li>1. Review submitted identity signals</li><li>2. Discover eligible public profile candidates</li><li>3. Compare matches, conflicts, and source provenance</li></> : <><li>1. {t.intakeUi.investigationStepIdentify}</li><li>2. {t.intakeUi.investigationStepReview}</li><li>3. {t.intakeUi.investigationStepReport}</li></>}</ol><p className="mt-4 text-sm text-zinc-400">{canonicalPersonalInvestigation ? "Purchase includes one private Personal Identity Investigation report after payment." : t.intakeUi.investigationStartTerms}</p></div>
           </div>
 
-          <div className="rounded-[32px] border border-white/10 bg-black/55 p-6 shadow-[0_0_60px_rgba(120,0,20,0.16)] backdrop-blur-xl">
+          <div className="min-w-0 rounded-[32px] border border-white/10 bg-black/55 p-4 shadow-[0_0_60px_rgba(120,0,20,0.16)] backdrop-blur-xl sm:p-6">
             <h2 className="text-2xl font-black text-white">{t.intakeUi.investigationTypeTitle}</h2>
             <p className="mt-2 text-sm leading-6 text-zinc-400">{canonicalPersonalInvestigation ? "Choose how to identify the person you want to investigate." : t.intakeUi.investigationTypeDescription}</p>
             <p className="mt-1 text-sm leading-6 text-zinc-400">{canonicalPersonalInvestigation ? "One Personal Identity Investigation produces one private Executive Report." : t.intakeUi.investigationTypeReportDescription}</p>
@@ -1108,7 +1108,7 @@ export default function IntakePage() {
             )}
 
             {scanMode === "personal" && (
-              <fieldset className="mt-6 rounded-2xl border border-white/10 p-5">
+              <fieldset className="mt-6 min-w-0 rounded-2xl border border-white/10 p-4 sm:p-5">
                 <legend className="px-2 text-sm font-bold text-white">Identity signals</legend>
                 <p className="mb-5 text-sm leading-6 text-zinc-400">Describe the result you need or add the known signals directly. Your account email remains separate and is used for billing and report delivery.</p>
                 <label className="block">
@@ -1120,7 +1120,7 @@ export default function IntakePage() {
                       setIdentityRequest(event.target.value);
                       resetIdentityJourney();
                     }}
-                    className="min-h-28 w-full rounded-2xl border border-white/10 bg-black p-4 text-white"
+                    className="min-h-28 w-full min-w-0 rounded-2xl border border-white/10 bg-black p-4 text-white"
                     placeholder="Example: Ariel Tuval, Atzmale, owner, find a mobile number"
                     maxLength={500}
                   />
@@ -1128,7 +1128,7 @@ export default function IntakePage() {
                 </label>
                 {identityRequest.trim() && <div className={`mt-5 rounded-2xl border p-4 ${interpretedIdentityRequest.needsConfirmation ? "border-amber-300/25 bg-amber-400/10 text-amber-100" : "border-emerald-300/25 bg-emerald-400/10 text-emerald-100"}`} role="status" aria-live="polite">
                   <div className="flex flex-wrap items-center justify-between gap-2"><p className="font-bold">Request interpreted</p><span className="rounded-full border border-current/25 px-3 py-1 text-xs font-bold uppercase tracking-wider">{interpretedIdentityRequest.confidence} confidence</span></div>
-                  <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+                  <dl className="mt-4 grid grid-cols-1 gap-3 break-words text-sm sm:grid-cols-2">
                     <div><dt className="text-xs font-bold uppercase tracking-wider opacity-70">Person</dt><dd className="mt-1 font-semibold">{effectiveIdentityName || effectiveIdentityEmail || effectiveIdentityPhone || effectiveIdentityUsername || "Not identified"}</dd></div>
                     <div><dt className="text-xs font-bold uppercase tracking-wider opacity-70">Organization</dt><dd className="mt-1 font-semibold">{effectiveIdentityOrganization || "Not identified"}</dd></div>
                     <div><dt className="text-xs font-bold uppercase tracking-wider opacity-70">Role</dt><dd className="mt-1 font-semibold">{effectiveIdentityRole || "Not identified"}</dd></div>
@@ -1136,7 +1136,7 @@ export default function IntakePage() {
                   </dl>
                   {interpretedIdentityRequest.needsConfirmation && <p className="mt-3 text-xs leading-5">Review the fields below before starting. Values entered below override this interpretation.</p>}
                 </div>}
-                <div className="grid gap-5 md:grid-cols-2">
+                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                   <label><span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">Person&apos;s email</span><input type="email" value={identityEmail} onChange={(event) => { setIdentityEmail(event.target.value); resetIdentityJourney(); }} className="w-full rounded-2xl border border-white/10 bg-black p-4" autoComplete="off" /></label>
                   <label><span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">Person&apos;s phone</span><input type="tel" value={identityPhone} onChange={(event) => { setIdentityPhone(event.target.value); resetIdentityJourney(); }} className="w-full rounded-2xl border border-white/10 bg-black p-4" autoComplete="off" /></label>
                   <label><span className="mb-2 block text-xs uppercase tracking-[0.2em] text-zinc-500">Full name</span><input value={identityName} onChange={(event) => { setIdentityName(event.target.value); resetIdentityJourney(); }} className="w-full rounded-2xl border border-white/10 bg-black p-4" placeholder={interpretedIdentityRequest.personName || undefined} autoComplete="off" /></label>

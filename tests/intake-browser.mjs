@@ -107,9 +107,21 @@ async function openReview(page, mobile) {
 }
 
 async function verifyWidth(page, width) {
-  const sizes = await page.evaluate(() => ({ viewport: innerWidth, document: document.documentElement.scrollWidth }));
+  const sizes = await page.evaluate(() => {
+    const main = document.querySelector("main");
+    const clipped = [...document.querySelectorAll("input,select,textarea,button,h1,h2,fieldset")].flatMap((element) => {
+      const box = element.getBoundingClientRect();
+      return box.width > 0 && (box.left < -1 || box.right > innerWidth + 1)
+        ? [{ element: element.tagName, label: element.getAttribute("aria-label") || element.textContent?.slice(0, 60), left: box.left, right: box.right }] : [];
+    });
+    return { viewport: innerWidth, document: document.documentElement.scrollWidth,
+      mainWidth: main.clientWidth, mainContentWidth: main.scrollWidth, mainScrollLeft: main.scrollLeft, clipped };
+  });
   assert.equal(sizes.viewport, width);
   assert.ok(sizes.document <= sizes.viewport + 1, `Horizontal overflow: ${JSON.stringify(sizes)}`);
+  assert.ok(sizes.mainContentWidth <= sizes.mainWidth + 1, `Clipped main content: ${JSON.stringify(sizes)}`);
+  assert.equal(sizes.mainScrollLeft, 0, "The main container scrolled horizontally to reach a control");
+  assert.deepEqual(sizes.clipped, [], "An input, button, fieldset, or heading extends outside the viewport");
   return sizes;
 }
 

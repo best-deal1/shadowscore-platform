@@ -1,5 +1,7 @@
 # Release Notes
 
+- Investigation intake now fits narrow mobile screens without clipping headings or controls. The form uses flexible grid columns, compact mobile spacing, and a header that wraps when needed.
+
 - Personal Identity checkout now presents a prepared request instead of claiming that a Business Quick Check completed. Identity scope, purchase terms, and progress stay consistent for both Personal mode and free-mail targets entered in Website mode.
 
 - Personal Identity requests now separate relation words from names and organizations in Hebrew and English. Explicitly selecting General identity match overrides inferred contact requests. Email-led investigations preserve contact-level provenance across admitted public sources, and username-led results require exact observed handles before corroboration. Editing the target or investigation type clears saved checkout state and ignores late responses from the previous request.
