@@ -124,7 +124,7 @@ test("paid report presentation preserves routing while removing internal provide
 });
 
 test("production-shaped paid personal reports preserve and render every canonical completion state", async () => {
-  const presentation = await readFile(new URL("../components/report/PersonalIdentityReport.tsx", import.meta.url), "utf8");
+  const { renderPersonalReport } = await import("./helpers/render-personal-report.mjs");
   const routing = resolveInvestigationRouting({ target: "person@gmail.com", scanMode: "personal" });
   const expected = new Map([
     ["COMPLETED_WITH_EVIDENCE", "Completed with evidence"],
@@ -138,10 +138,10 @@ test("production-shaped paid personal reports preserve and render every canonica
     const report = presentReportForEndUser({ reportId: `paid-${completionStatus}`, title: "Paid personal report", entity: "person@gmail.com", target: "person@gmail.com", platform: "Personal Identity", scanMode: "personal", stage: "Unknown", createdAt: new Date(0).toISOString(), reportStatus: "ready", source: "payment_unlock_pipeline", providerResults: [], reportSummary: { message: "Complete", investigationRouting: routing, investigationType: routing.primaryInvestigationType, completionStatus, discoveryDiagnostics: { searches: [], scheduling: [], budgetExhaustionReason: "provider_failed", providerStatus: "failed" } }, topFactors: [] });
     assert.equal(report.reportSummary.completionStatus, completionStatus);
     assert.equal(report.reportSummary.discoveryDiagnostics, undefined);
-    assert.match(presentation, new RegExp(customerLabel));
+    const html = await renderPersonalReport(report);
+    assert.match(html, new RegExp(customerLabel));
+    assert.match(html, /aria-label="Investigation completion status"/);
   }
-  assert.match(presentation, /personalCompletionPresentation\(summary\?\.completionStatus\)/);
-  assert.match(presentation, /aria-label="Investigation completion status"/);
 });
 
 test("checkout presents canonical personal scope and blocks disabled indirect entry", async () => {

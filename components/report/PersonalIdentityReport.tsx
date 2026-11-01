@@ -15,7 +15,12 @@ const COMPLETION_PRESENTATION: Record<InvestigationCompletionStatus, { label: st
   NO_EVIDENCE_ABSTAIN: { label: "No evidence, result withheld", detail: "No substantive identity evidence was returned, so ShadowScore does not make an identity finding.", tone: "border-slate-300 bg-slate-50 text-slate-950" },
 };
 
-export function personalCompletionPresentation(status?: InvestigationCompletionStatus) {
+export function personalCompletionPresentation(status?: InvestigationCompletionStatus, hasCandidates = false) {
+  if (status === "NO_EVIDENCE_ABSTAIN" && hasCandidates) return {
+    label: "Public candidates returned",
+    detail: "Public source observations are available for review. Each candidate shows its attribution status and supporting sources.",
+    tone: "border-amber-300 bg-amber-50 text-amber-950",
+  };
   return status ? COMPLETION_PRESENTATION[status] : { label: "Status not recorded", detail: "This legacy report does not include a canonical completion status.", tone: "border-slate-300 bg-slate-50 text-slate-950" };
 }
 
@@ -142,7 +147,7 @@ export default function PersonalIdentityReport({ report }: { report: ShadowScore
   const sourceLinks = [...new Map(candidates.flatMap((candidate) => candidate.sourceProvenance || []).map((source) => [source.url, source])).values()];
   const diagnostics = summary?.discoveryDiagnostics;
   const execution = summary?.discoveryExecution || summarizeIdentityDiscovery(diagnostics);
-  const completion = personalCompletionPresentation(summary?.completionStatus);
+  const completion = personalCompletionPresentation(summary?.completionStatus, candidates.length > 0);
   const matches = candidates.flatMap((candidate) => candidate.resolverMatchedSignals || []);
   const conflicts = candidates.flatMap((candidate) => candidate.resolverConflictingSignals || []);
   const verifiedCount = candidates.filter(isCorroboratedIdentityCandidate).length;

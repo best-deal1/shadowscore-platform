@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { emailReportFixture, fixtureEmail, fixtureSource, fixtureSnippet } from "./helpers/email-report-fixture.mjs";
 import { renderPersonalReport } from "./helpers/render-personal-report.mjs";
+import { discoverExternalIdentityGraph } from "../lib/providers/externalIdentityProvider.ts";
 
 test("email-only customer report preserves execution counts after internal traces are removed", async () => {
   const { customer, queries } = await emailReportFixture();
@@ -22,6 +23,10 @@ test("email-only customer report shows the observed person, evidence excerpt, an
   assert.ok(html.includes(fixtureSource));
   assert.ok(html.includes("Unverified Candidate"));
   assert.equal(html.includes("Verified Candidate"), false);
+  assert.ok(html.includes("Public candidates returned"));
+  assert.equal(html.includes("No evidence, result withheld"), false);
+  assert.equal(customer.reportSummary.publicIdentityCandidates[0].matchType, "exact_email");
+  assert.ok(customer.reportSummary.publicIdentityCandidates[0].matchBasis.includes("exact submitted email"));
 });
 
 test("a later search failure preserves earlier email evidence and marks incomplete coverage", async () => {
@@ -80,4 +85,19 @@ test("legacy reports without execution facts show unknown counts instead of zero
   delete customer.reportSummary.discoveryExecution;
   const html = await renderPersonalReport(customer);
   assert.match(html, /Searches completed<\/dt><dd[^>]*>Not recorded<\/dd>/);
+});
+
+test("email sentence punctuation is accepted while longer email tokens cannot match the submitted mailbox", async () => {
+  for (const [observed, expected] of [
+    [`${fixtureEmail}.`, true], [`(${fixtureEmail}),`, true],
+    [`other.${fixtureEmail}`, false], [`${fixtureEmail}.evil`, false], [`${fixtureEmail}.au`, false],
+    [`${fixtureEmail}42`, false], [`${fixtureEmail}-extra`, false], [`${fixtureEmail}.evil123`, false], [`${fixtureEmail}@other.example`, false],
+  ]) {
+    const graph = await discoverExternalIdentityGraph(fixtureEmail, "fixture-key", new AbortController().signal, {
+      limits: { maxSearches: 1 },
+      search: async () => [{ title: "Dana Example | LinkedIn", url: fixtureSource, description: `Contact ${observed}` }],
+    });
+    assert.equal(graph.candidates.some((candidate) => candidate.matchType === "exact_email"), expected, observed);
+    assert.ok(graph.candidates.every((candidate) => candidate.status !== "Verified"));
+  }
 });

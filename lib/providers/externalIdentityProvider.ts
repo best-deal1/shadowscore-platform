@@ -261,7 +261,10 @@ function nonEmailSeedsFromContext(context: ProviderExecutionContext): EntityInve
     ...signals.names.map((value) => ({ type: "person_name" as const, value })),
   ];
 }
-function containsExactEmailToken(text: string, email: string) { const escaped = email.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); return new RegExp(`(^|[^A-Z0-9._%+\\-])${escaped}($|[^A-Z0-9._%+\\-])`, "i").test(text); }
+function observedEmailTokens(text: string) {
+  return [...new Set([...text.matchAll(/(?<![\p{L}\p{N}._%+\-@])[\p{L}\p{N}._%+-]+@[\p{L}\p{N}.-]+\.[\p{L}]{2,}(?=$|[^\p{L}\p{N}._%+\-@]|\.+(?=$|[^\p{L}\p{N}._%+\-@]))/giu)].map((match) => match[0].toLowerCase()))];
+}
+function containsExactEmailToken(text: string, email: string) { return observedEmailTokens(text).includes(email.trim().toLowerCase()); }
 function platformFor(url: string) { try {
   const parsed = new URL(url); const host = parsed.hostname.toLowerCase().replace(/^www\./, "");
   if (!/^https?:$/.test(parsed.protocol) || /\/(?:login|signin|signup|search|discover|explore|directory|tag|hashtag)(?:\/|$)/i.test(parsed.pathname) || !parsed.pathname.replace(/\/+$/, "")) return undefined;
@@ -300,6 +303,7 @@ function usefulIdentifier(value: string, original: Set<string>, explicitHandle =
     && !/^(?:log\s*in|sign\s*(?:in|up)|search results?|click here|learn more)$/i.test(normalized);
 }
 function containsIdentifier(text: string, identifier: string) {
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(identifier)) return containsExactEmailToken(text, identifier);
   if (/^\+?[\d\s().-]{7,}$/.test(identifier)) {
     const normalizedPhone = identifier.replace(/\D/g, "");
     return normalizedPhone.length >= 7 && text.replace(/\D/g, "").includes(normalizedPhone);
@@ -594,7 +598,7 @@ function observedIdentifiers(hit: SearchResult, originals: Set<string>, evaluati
 
 function observedContacts(hit: SearchResult) {
   const text = `${hit.title} ${hit.description || ""}`;
-  const emails = [...new Set([...text.matchAll(/[\p{L}\p{N}._%+-]+@[\p{L}\p{N}.-]+\.[\p{L}]{2,}/giu)].map((match) => match[0].toLowerCase()))];
+  const emails = observedEmailTokens(text);
   const phoneNumbers = [...new Set([...text.matchAll(/(?:^|\s)(\+?\d[\d\s().-]{6,}\d)(?=$|\s|[.,;])/gu)].map((match) => match[1].trim()))];
   return { emails, phoneNumbers };
 }

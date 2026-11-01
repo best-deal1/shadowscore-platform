@@ -62,6 +62,7 @@ try {
         assert.ok(await page.getByRole("heading", { name: "Identity finding", exact: true }).isVisible());
         assert.ok(await page.locator("blockquote").filter({ hasText: fixtureSnippet }).isVisible());
         assert.ok((await page.locator('[aria-labelledby="identity-finding"]').textContent()).includes("Dana Example"));
+        assert.ok((await page.locator('[aria-labelledby="identity-finding"]').textContent()).includes("exact submitted email"));
         assert.ok(await page.getByRole("heading", { name: "Discovery path", exact: true }).isVisible());
         assert.equal(await page.getByText("Verified Candidate", { exact: true }).count(), 0);
         const link = page.getByRole("link", { name: "Review identity evidence and sources", exact: true });
@@ -69,6 +70,7 @@ try {
         assert.equal(new URL(page.url()).hash, "#candidate-title");
         await page.evaluate(() => window.scrollTo(0, 0));
       }
+      if (scenario === "found") assert.ok(await page.getByText("Public candidates returned", { exact: true }).isVisible());
       if (scenario === "partial") {
         assert.ok((await execution.textContent()).includes("Partial coverage"));
         assert.ok((await execution.textContent()).includes("2 attempted"));
